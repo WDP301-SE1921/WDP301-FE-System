@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WDP301-FE-System
 
-## Getting Started
+Frontend web app (Next.js) for the WDP301-SE1921 education-center management platform. Part of a 3-repo project:
+- `WDP301-FE-System` — this repo, web
+- `WDP301-FEM-System` — mobile (React Native/Expo)
+- `WDP301-BE-System` — backend API
 
-First, run the development server:
+## Tech stack
+- Next.js (App Router) + TypeScript
+- Shadcn UI (Maia preset) + Tailwind CSS
+- React Hook Form + Zod
+- TanStack Query + Axios
+- nuqs, date-fns
+
+## Getting started
 
 ```bash
+git clone https://github.com/WDP301-SE1921/WDP301-FE-System.git
+cd WDP301-FE-System
+npm install
+cp .env.example .env.local   # fill in API URL, etc.
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run start` | Run the production build |
+| `npm run lint` | Lint code |
 
-## Learn More
+## Folder structure
 
-To learn more about Next.js, take a look at the following resources:
+Full breakdown in [`docs/architecture.md`](docs/architecture.md). Top level:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/app/         Route groups by role: (public) (auth) (manager) (teacher) (parent)
+src/components/  Shared components + Shadcn UI
+src/features/    Domain logic (students, classes, attendance, payments)
+src/lib/         axios instance, utils, zod validators
+src/hooks/       Custom hooks + React Query hooks
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Design system
+Rounded-corner, "Friendly Professional" style — see [`design.md`](design.md) at repo root.
 
-## Deploy on Vercel
+## Docs
+- [`docs/architecture.md`](docs/architecture.md) — folder structure & conventions in depth
+- [`docs/business-rules.md`](docs/business-rules.md) — domain rules (roles, enrollment, attendance, payment flow)
+- [`docs/setup.md`](docs/setup.md) — environment variables & local setup
+- [`docs/api-integration.md`](docs/api-integration.md) — how the FE talks to `WDP301-BE-System`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Related repos
+- Backend: https://github.com/WDP301-SE1921/WDP301-BE-System
+- Mobile: https://github.com/WDP301-SE1921/WDP301-FEM-System
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Team
+WDP301-SE1921
