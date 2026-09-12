@@ -6,3 +6,4 @@
 - **2026-09** — Shadcn preset: **Maia** (soft, rounded, generous spacing) — chosen for a friendly, non-clinical feel for parents.
 - **2026-09** — Route groups by role: `(public)`, `(auth)`, `(manager)`, `(teacher)`, `(parent)` — each with its own layout.
 - **2026-09** — State management: TanStack Query for server state, `nuqs` for URL state, plain React state for local UI. No Redux/Zustand.
+- **2026-09-12** — Brand primary color: blue `#2563EB` (not green `#16A34A`) — the design doc allowed either; blue chosen by the user when the shared theme file was built. See [[progress]] for the full theme token list.
