@@ -4,16 +4,54 @@ description: Patterns for building and reusing shared UI components (ChildSwitch
 user-invocable: false
 ---
 
-# Shared UI Patterns
+# Shared UI Patterns & Component Standards
 
-## Child switcher (parent role)
-Horizontal avatar/tab list at the top of parent screens. Reads the list of `StudentProfile` for the logged-in account; switching sets the active child in URL state (`nuqs`), not component state, so deep links stay shareable.
+## 1. Core Principles
+* **Primitive Reuse First:** Always import base components from `src/components/ui/` (`Button`, `Card`, `Dialog`, `Table`, `Badge`, `Tabs`, `Input`). Never write inline raw Tailwind tags for these core UI elements.
+* **Semantic Styling:** Use semantic CSS variables (`bg-background`, `text-foreground`, `bg-primary`, `text-destructive`) instead of hardcoded color hexes or raw arbitrary classes.
+* **Responsive Layouts:** All components under `src/components/shared/` must support both Desktop (Manager Dashboard) and Mobile views (Parent/Teacher mobile portals).
 
-## Status badges
-One `<StatusBadge status={...} />` component maps every domain status (`AttendanceRecord.status`, `Enrollment.status`, AI-grading status) to a consistent color + label — don't hand-roll a `<span className={...}>` per screen.
+---
 
-## Empty / loading / error states
-Every list/table view uses the same three shared components (`<EmptyState />`, `<LoadingSkeleton />`, `<ErrorState />`) — never a bare "Loading..." string or a blank screen.
+## 2. Shared Components & Patterns
 
-## Forms
-Every form uses `react-hook-form` + the matching Zod schema from `src/lib/validators/` via `@hookform/resolvers/zod` — no manually-managed form state.
+### Child Switcher (Parent Role)
+Horizontal avatar/tab list at the top of parent screens. 
+* Reads the list of `StudentProfile` for the logged-in parent account.
+* **State Management:** Switching sets the active child in URL query state using `nuqs` (e.g., `?childId=...`), NOT local component state, so deep links stay shareable.
+
+### Status Badges
+Always use a single, centralized `<StatusBadge status={...} />` component.
+* Maps every domain status (`AttendanceStatus`, `EnrollmentStatus`, AI-grading status) to a consistent color palette + display label.
+* **Rule:** Do NOT hand-roll inline `<span className="...">` badges on individual screens.
+
+### Universal List States (Empty / Loading / Error)
+Every list or table view MUST use the three shared system state components — never render plain text like "Loading..." or leave a blank screen:
+* `<LoadingSkeleton />`: Renders skeleton shapes matching the expected content layout.
+* `<EmptyState title="..." description="..." action="..." />`: Displayed when data array is empty.
+* `<ErrorState message="..." onRetry={...} />`: Displayed on API or network fetch failures.
+
+### Form Handling
+All forms across the system MUST follow a unified pattern:
+* Use `react-hook-form` combined with `@hookform/resolvers/zod`.
+* Pair strictly with the matching Zod validation schema imported from `src/lib/validators/`.
+* **Rule:** No manually-managed React `useState` for form fields.
+
+---
+
+## 3. Code Example & Implementation Guidance
+
+### Class Name Utility
+Always merge dynamic class names using the `cn()` utility from `src/lib/utils.ts`:
+
+```tsx
+import { cn } from "@/lib/utils";
+
+export function CustomCard({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div 
+      className={cn("rounded-xl border bg-card p-6 shadow-sm text-card-foreground", className)} 
+      {...props} 
+    />
+  );
+}
