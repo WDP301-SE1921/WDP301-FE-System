@@ -35,25 +35,21 @@ function Calendar({
   month: customMonth,
   onMonthChange,
 }: CalendarProps) {
-  const [currentMonth, setCurrentMonth] = React.useState<Date>(
-    customMonth || selected || new Date()
+  const [internalMonth, setInternalMonth] = React.useState<Date>(
+    selected || new Date()
   )
 
-  React.useEffect(() => {
-    if (customMonth) {
-      setCurrentMonth(customMonth)
-    }
-  }, [customMonth])
+  const currentMonth = customMonth ?? internalMonth
 
   const handlePrevMonth = () => {
     const next = subMonths(currentMonth, 1)
-    setCurrentMonth(next)
+    setInternalMonth(next)
     onMonthChange?.(next)
   }
 
   const handleNextMonth = () => {
     const next = addMonths(currentMonth, 1)
-    setCurrentMonth(next)
+    setInternalMonth(next)
     onMonthChange?.(next)
   }
 

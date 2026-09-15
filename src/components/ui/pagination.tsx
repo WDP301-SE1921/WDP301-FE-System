@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "cn"
-import { Button, type ButtonProps } from "@/components/ui/button"
+import { type ButtonProps } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeft01Icon, ArrowRight01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons"
 
