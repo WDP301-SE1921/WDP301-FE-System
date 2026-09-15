@@ -1,10 +1,32 @@
 # Progress
 
 - **2026-09** — Repo scaffolded (`WDP301-FE-System`), Next.js App Router + TypeScript + Tailwind + Shadcn (Maia preset).
-- **2026-09** — Role-based folder structure set up: `(public)/(auth)/(manager)/(teacher)/(parent)` route groups, `features/`, `lib/`, `hooks/`.
+- **2026-09** — Role-based folder structure set up: `(public)`, `(auth)`, `(manager)`, `(teacher)` route groups, `features/`, `lib/`, `hooks/`. Note: `(parent)` route group is mobile-only / not used on web frontend.
 - **2026-09** — Design system defined (rounded corners everywhere, color tokens) — `.claude/rules/ui.md` / `docs/DESIGN.md`.
 - **2026-09** — `.claude/` agentic setup added: agents (blueprint, frontend, reviewer), commands (feature, fix, forget, review, verify), rules, skills, project memory.
-- **2026-09-12** — Shared theme wired up in `src/app/globals.css` (the single source of truth per `components.json`'s `cssVariables: true`): `--primary`/`--ring` set to brand blue `#2563EB` (oklch), new `--brand-accent`/`--brand-accent-foreground` tokens added (amber `#F59E0B`) for CTA usage — kept separate from Shadcn's own structural `--accent` (neutral hover highlight for menus/tabs) to avoid repainting every hover state orange. Both `:root` and `.dark` updated so the theme stays coherent if dark mode is ever toggled (not default per `.claude/rules/ui.md`). `--radius` scale left untouched — already produces the mandatory rounded-corner look via `rounded-2xl`/`rounded-4xl` in the Shadcn `ui/` primitives.
-- **2026-09-12** — Font swapped in `src/app/layout.tsx`: Figtree/unused-Geist-Sans → Be Vietnam Pro (`latin` + `vietnamese` subsets, weights 400/500/600/700), bound to `--font-sans` — chosen over Inter/Plus Jakarta Sans for its Vietnamese diacritic coverage per `docs/DESIGN.md` target audience (Vietnamese parents). Geist Mono kept unchanged for `--font-mono`.
-- **Note for next phase** — `src/app/page.tsx` is still create-next-app boilerplate with hardcoded zinc colors; intentionally left alone (out of scope for the theme-file task, no real page built yet). When building the first real screen, use `bg-brand-accent`/`text-brand-accent-foreground` for CTA buttons and the standard `primary`/`secondary`/etc. tokens for everything else — don't hand-edit `components/ui/*`, only add classes at the call site.
-- **Next** — implement first feature end-to-end (e.g. student registration) via `/feature` to validate the whole pipeline.
+- **2026-09-12** — Shared theme wired up in `src/app/globals.css`: `--primary`/`--ring` set to brand blue `#2563EB`, `--brand-accent`/`--brand-accent-foreground` set to amber `#F59E0B`.
+- **2026-09-12** — Font swapped in `src/app/layout.tsx` to Be Vietnam Pro (`latin` + `vietnamese` subsets).
+- **2026-09-15 (Phase 0 & 1 UI Primitives)** — Upgraded 8 existing components in `src/components/ui/` (`button`, `badge`, `input`, `dialog`, `table`, `tabs`, `card`, `avatar`) and created 21 missing UI primitives (`spinner`, `skeleton`, `label`, `textarea`, `select`, `checkbox`, `radio-group`, `switch`, `tooltip`, `dropdown-menu`, `toast` via Sonner, `alert`, `sheet`, `popover`, `separator`, `scroll-area`, `progress`, `breadcrumb`, `pagination`, `command`, `calendar`).
+- **2026-09-15 (Phase 1 Shared Components)** — Completed Phase 1:
+  - Installed `@tanstack/react-table` (v9.2.4).
+  - Built Constants System in `src/constants/`: `ui.ts` (with `DEBOUNCE.SEARCH` and `TOAST_DURATION` map), `routes.ts`, `roles.ts`, `storage-keys.ts`, `menu.ts` (manager & teacher web menus), `status.ts` (12 domain status categories), `subjects.ts` (`MATH`, `PHYS`, `CHEM`, `BIOL`), and `messages/` (`common.ts`, `error.ts`, `validation.ts`, `confirm.ts`, `empty.ts`, `index.ts`). *Note: `messages/events/` subfolder will be created when implementing domain features.*
+  - Built Utilities & Providers: `src/lib/format.ts` (currency VND & date formatters), `src/lib/auth-events.ts` (401 session expiry event emitter), `src/providers/providers.tsx` (`QueryClientProvider`, `NuqsAdapter`, `Toaster`), `src/proxy.ts` (App Router role protection).
+  - Built Layout Components in `src/components/shared/layout/`: `app-shell.tsx`, `sidebar.tsx`, `page-header.tsx`, `page-container.tsx`, `auth-layout.tsx`, `role-guard.tsx`, and `header/` (`header.tsx`, `user-menu.tsx`, `quick-create-menu.tsx`, `global-search.tsx`, `notification-bell.tsx`).
+  - Built Feedback Components in `src/components/shared/feedback/`: `status-badge.tsx`, `confirm-dialog.tsx`, `empty-state.tsx`, `error-state.tsx`, `error-page.tsx`, `error-boundary.tsx`, `loading-overlay.tsx`, `skeleton-presets.tsx`, `async-boundary.tsx`, `session-expired-modal.tsx`, `unsaved-changes-guard.tsx`.
+  - Integrated App Router Error Pages: `src/app/not-found.tsx`, `src/app/error.tsx`, `src/app/(manager)/error.tsx`.
+  - Created Dev Showcase Page at `src/app/dev/components/page.tsx` displaying Phase 1 components in development mode.
+- **2026-09-15 (Phase 2 Data-Table & Core Display Components)** — Completed Phase 2:
+  - Built Data-Table system in `src/components/shared/data-table/`: `data-table.tsx` (using `@tanstack/react-table` v9.2.4 legacy API compat layer), `filter-bar.tsx` (URL-synced via `nuqs`), `status-tabs.tsx`, `row-actions.tsx`, `bulk-action-bar.tsx`, `table-pagination.tsx`, `active-filter-chips.tsx`.
+  - Built Core Display components in `src/components/shared/display/`: `user-cell.tsx`, `subject-tag.tsx`, `schedule-text.tsx`, `money-text.tsx`, `date-text.tsx`, `progress-stat.tsx`, `countdown-badge.tsx`, `avatar-group-display.tsx`, `attendance-summary.tsx`, `detail-header.tsx`.
+- **2026-09-15 (Phase 3 Action & Display Components)** — Completed Phase 3:
+  - Built Display components in `src/components/shared/display/`: `kpi-card.tsx`, `section-card.tsx`, `description-list.tsx`, `timeline.tsx`, `change-diff.tsx`, `code-display.tsx`.
+  - Built Action components in `src/components/shared/actions/`: `copy-button.tsx`, `export-button.tsx`, `print-layout.tsx`.
+- **2026-09-15 (Phase 4 Workflows & Pickers Components)** — Completed Phase 4 & Fixes:
+  - Built Pickers in `src/components/shared/pickers/`: `selectable-card.tsx`, `entity-picker.tsx` (with selected entity chip view, dropdown toggle, error state), `entity-picker-presets.tsx` (`StudentPicker`, `TeacherPicker`, `ClassPicker`, `ParentPicker`), `class-option-card.tsx`, `session-option-list.tsx`, `condition-chips.tsx` (refactored to read-only criteria pass/fail indicator).
+  - Built Workflows in `src/components/shared/workflows/`: `stepper.tsx`, `wizard-layout.tsx` (with optional 2/3 content + 1/3 sticky summary panel layout), `sticky-form-footer.tsx`.
+- **2026-09-15 (Phase 5 Calendar & Schedule Components)** — Completed Phase 5:
+  - Built Calendar components in `src/components/shared/calendar/`: `session-block.tsx` (subject-coded class cards with status badges), `session-drawer.tsx` (slide-over Sheet with room, teacher, attendance stats, absent list & quick actions), `schedule-calendar.tsx` (supports View: **Ngày | Tuần** and GroupBy: **Thời gian | Phòng**).
+  - Updated Dev Showcase Page at `src/app/dev/components/page.tsx` showcasing all Phase 1–5 components.
+- **Current System Status**:
+  - **Mock-Only**: The application is currently mock-only (using local state & mock data fixtures). No active backend API client connected yet.
+- **Next** — Domain Features Implementation (`features/` domain logic & views).

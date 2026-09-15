@@ -19,12 +19,13 @@ function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
 function DropdownMenuContent({
   className,
   sideOffset = 4,
+  align = "center",
   children,
   ...props
-}: MenuPrimitive.Popup.Props & { sideOffset?: number }) {
+}: MenuPrimitive.Popup.Props & { sideOffset?: number; align?: "start" | "center" | "end" }) {
   return (
     <DropdownMenuPortal>
-      <MenuPrimitive.Positioner sideOffset={sideOffset}>
+      <MenuPrimitive.Positioner sideOffset={sideOffset} align={align}>
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
