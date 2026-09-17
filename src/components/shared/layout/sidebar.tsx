@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "cn"
-import { NAV_MENU } from "@/constants/menu"
+import { NAV_MENU, type MenuBadgeCounts } from "@/constants/menu"
 import { ROLES, type Role } from "@/constants/roles"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +15,8 @@ export interface SidebarProps {
   role?: Extract<Role, "manager" | "teacher">
   collapsed?: boolean
   onToggleCollapse?: () => void
+  /** Số thật của badge menu, key theo `badgeKey` khai báo trong constants/menu.ts */
+  badgeCounts?: MenuBadgeCounts
   className?: string
 }
 
@@ -30,6 +32,7 @@ function Sidebar({
   role = ROLES.MANAGER,
   collapsed = false,
   onToggleCollapse,
+  badgeCounts,
   className,
 }: SidebarProps) {
   const pathname = usePathname()
@@ -89,6 +92,8 @@ function Sidebar({
             <nav className="space-y-1">
               {group.items.map((item) => {
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
+                const badgeCount = item.badgeKey ? badgeCounts?.[item.badgeKey] : undefined
+                const hasBadge = typeof badgeCount === "number" && badgeCount > 0
 
                 return (
                   <Link
@@ -107,12 +112,12 @@ function Sidebar({
                     {!collapsed && (
                       <span className="flex-1 truncate">{item.title}</span>
                     )}
-                    {!collapsed && item.badge !== undefined && (
+                    {!collapsed && hasBadge && (
                       <Badge
                         variant={isActive ? "secondary" : "info"}
                         className="px-1.5 py-0 text-[10px] h-4"
                       >
-                        {item.badge}
+                        {badgeCount}
                       </Badge>
                     )}
                   </Link>

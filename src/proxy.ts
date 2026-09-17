@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { ROLES } from "@/constants/roles"
+import { STORAGE_KEYS } from "@/constants/storage-keys"
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Retrieve user role from cookie or header (mock fallback for dev)
-  const roleCookie = request.cookies.get("edugrade_role")?.value || ROLES.MANAGER
+  const roleCookie = request.cookies.get(STORAGE_KEYS.ROLE_COOKIE)?.value || ROLES.MANAGER
 
   if (pathname.startsWith("/manager") && roleCookie !== ROLES.MANAGER) {
     const url = request.nextUrl.clone()
