@@ -32,11 +32,23 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     open: { label: "Đang mở", variant: "success" },
     ended: { label: "Đã kết thúc", variant: "neutral" },
   },
+  // Giá trị khớp .claude/rules/data-contracts.md — AttendanceRecord.status
   attendance: {
     present: { label: "Có mặt", variant: "success" },
     absent: { label: "Vắng mặt", variant: "danger" },
-    makeup: { label: "Đã học bù", variant: "info" },
-    permitted_leave: { label: "Nghỉ có phép", variant: "warning" },
+    made_up: { label: "Đã học bù", variant: "info" },
+    excused: { label: "Nghỉ có phép", variant: "neutral" },
+  },
+  student: {
+    active: { label: "Đang học", variant: "success" },
+    paused: { label: "Tạm nghỉ", variant: "neutral" },
+    withdrawn: { label: "Đã nghỉ", variant: "danger" },
+    pending_link: { label: "Chờ liên kết", variant: "warning" },
+  },
+  payment: {
+    succeeded: { label: "Thành công", variant: "success" },
+    pending: { label: "Chờ xử lý", variant: "warning" },
+    failed: { label: "Thất bại", variant: "danger" },
   },
   enrollment: {
     active: { label: "Đang học", variant: "success" },

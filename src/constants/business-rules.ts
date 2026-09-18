@@ -11,6 +11,12 @@ export const BUSINESS_RULES = {
   ACTIVATION_LINK_EXPIRY_DAYS: 7,
   /** Hạn dùng của link đặt lại mật khẩu gửi qua email. */
   PASSWORD_RESET_EXPIRY_MINUTES: 30,
+  /** Ngưỡng cảnh báo gói học phí sắp hết hạn (ngày). */
+  PACKAGE_EXPIRY_WARNING_DAYS: 7,
+  /** Mục tiêu tỷ lệ đi học của trung tâm (%). */
+  ATTENDANCE_RATE_TARGET: 95,
+  /** Sĩ số tối đa một lớp. */
+  CLASS_CAPACITY_MAX: 20,
 } as const
 
 export const WEEKDAYS = [

@@ -47,3 +47,7 @@ export type { CodeDisplayProps } from "./code-display"
 
 export { AttendanceSummary } from "./attendance-summary"
 export type { AttendanceSummaryProps } from "./attendance-summary"
+
+// Phase 6 — Biên lai dùng chung (enrollment wizard + lịch sử thanh toán)
+export { Receipt } from "./receipt"
+export type { ReceiptProps, ReceiptLine, ReceiptParty } from "./receipt"

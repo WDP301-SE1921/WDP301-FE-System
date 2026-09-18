@@ -12,13 +12,17 @@ export const ROUTES = {
     DASHBOARD: "/manager/dashboard",
 
     STUDENTS: "/manager/students",
+    STUDENT_DETAIL: (id: string) => `/manager/students/${id}`,
     PARENTS: "/manager/parents",
+    PARENT_DETAIL: (id: string) => `/manager/parents/${id}`,
     ENROLLMENT_NEW: "/manager/enrollments/new",
     LINK_CODES: "/manager/link-codes",
 
     PAYMENTS: "/manager/payments",
 
     CLASSES: "/manager/classes",
+    CLASS_NEW: "/manager/classes/new",
+    CLASS_DETAIL: (id: string) => `/manager/classes/${id}`,
     SCHEDULE: "/manager/schedule",
     SESSIONS: "/manager/sessions",
 
@@ -29,6 +33,7 @@ export const ROUTES = {
     WITHDRAW: "/manager/absences/withdraw",
 
     TEACHERS: "/manager/teachers",
+    TEACHER_DETAIL: (id: string) => `/manager/teachers/${id}`,
     TEACHER_INVITATIONS: "/manager/teachers/invitations",
     TEACHER_SUBSTITUTES: "/manager/teachers/substitutes",
 

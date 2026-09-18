@@ -45,6 +45,51 @@
   - Constants mới: `src/constants/business-rules.ts` (`BUSINESS_RULES` + `WEEKDAYS`; `PASSWORD_RESET_EXPIRY_MINUTES: 30`, `ACTIVATION_LINK_EXPIRY_DAYS: 7`), `REGEX.PASSWORD_STRONG`, `ROLE_LABEL` trong `roles.ts`, và 3 message validate mới (`PASSWORD_WEAK`, `PASSWORD_NOT_MATCH`, `TERMS_REQUIRED`). `AUTH_MSG` mở rộng cho 2 màn.
   - Validator: `forgotPasswordSchema`, `activateAccountSchema` (dùng `z.boolean().refine()` cho checkbox điều khoản — `z.literal(true)` làm kiểu input của form thành `true` và vỡ type của `defaultValues`).
   - Mock: `mockGetInvitation`, `mockActivateAccount`, `mockRequestPasswordReset` + `MOCK_INVITATIONS`. Token demo: `demo-manager` (hợp lệ), `demo-expired` (hết hạn), `demo-used` (đã dùng). Hook: `use-forgot-password.ts`, `use-invitation.ts`, `use-activate-account.ts`. Type `Invitation` thêm vào `src/types/auth.ts`.
+- **2026-09-18 (PROMPT 2, 3, 3B–3D, 4, 4B — Dashboard, Học sinh, Phụ huynh)**:
+  - **Đổi cấu trúc route manager**: route group `(manager)` không sinh segment URL nên `/students` không khớp `ROUTES.MANAGER.STUDENTS = "/manager/students"` và matcher `/manager/:path*` của `src/proxy.ts`. Đã chuyển page vào `src/app/(manager)/manager/<domain>/` — giữ route group để scope layout theo role, đồng thời sinh đúng URL `/manager/*`. `ROUTES` và `proxy.ts` không đổi. **Màn manager mới phải đặt trong `(manager)/manager/`.**
+  - `src/app/(manager)/layout.tsx` bọc `AppShell` (trước đó chưa có).
+  - Trang: `manager/dashboard`, `manager/students`, `manager/students/[id]` (tab qua nuqs `?tab=`), `manager/parents`, `manager/parents/[id]`.
+  - **Mọi page dùng nuqs phải bọc `<Suspense>`** — `useQueryState` gọi `useSearchParams()`, không có Suspense thì `npm run build` fail ở bước prerender với "should be wrapped in a suspense boundary".
+  - Types theo contract: `src/types/catalog.ts` (Subject, Program, Lesson, Teacher, ClassRecord, ClassSession), `src/types/student.ts` (ParentAccount, StudentProfile, Enrollment, Payment, ActivationLink, AttendanceRecord, EmailLog, AuditLogEntry).
+  - Mock: `src/mocks/data/` + `catalog.ts`, `parents.ts` (14 PH), `students.ts` (18 HS, 25 enrollment), `attendance.ts` (sinh buổi + điểm danh tất định, không random), `payments.ts` (thanh toán, mã liên kết, email log, audit log).
+  - **Field tính được KHÔNG nằm trong entity** — derive ở `features/<domain>/selectors.ts`. Đã ghi rõ danh sách vào `.claude/rules/data-contracts.md` mục "Derived, never stored on the entity".
+  - `STATUS_MAP.attendance` sửa `makeup`→`made_up`, `permitted_leave`→`excused` cho khớp contract; thêm category `student` và `payment`. Thêm `ROLE_LABEL` vào `roles.ts`, `BUSINESS_RULES.PACKAGE_EXPIRY_WARNING_DAYS` + `ATTENDANCE_RATE_TARGET`.
+  - Biểu đồ "Tỷ lệ đi học 7 ngày" dựng bằng div + Tailwind (`features/dashboard/components/attendance-bar-chart.tsx`), không thêm thư viện chart.
+  - Messages mới: `messages/events/dashboard.ts`, `student.ts`, `parent.ts`.
+- **2026-09-18 (PROMPT 5–5E — Wizard Đăng ký học)**:
+  - `manager/enrollments/new` — wizard 5 bước, `?step=` qua nuqs, một `useForm` chung + `trigger()` theo `ENROLLMENT_STEP_FIELDS` từng bước.
+  - Theo đúng 3 luồng của skill `enrollment-flow`: A1 con đầu tiên (tạo PH + HS mới), A2 thêm con cho PH đã có, A3 thêm môn cho HS cũ. Bước 2 đổi form theo loại; cảnh báo A1→A2 khi email đã tồn tại.
+  - `src/lib/validators/enrollment.ts` — một schema, field bắt buộc khác nhau theo `registrationType` qua `superRefine`. **Không dùng `.default("")` trong schema** — nó làm input type optional và lệch kiểu với `zodResolver`.
+  - `src/mocks/data/enrollments.ts` — `mockCreateEnrollment` sinh Payment → Enrollment → ActivationLink → email (đúng thứ tự skill). Mã liên kết tất định theo seed, bảng chữ cái bỏ ký tự dễ nhầm. Cứ lần thứ 3 giả lập email lỗi để dựng được biến thể "Gửi thất bại".
+  - `features/enrollments/components/enrollment-receipt.tsx` — biên lai dùng chung cho cả 3 luồng (skill yêu cầu 1 component). Chuyển lên `shared/` khi PROMPT 7B cần.
+  - Dùng `useWatch({ control })` thay `watch()` — `watch()` bị lint `react-hooks/incompatible-library`.
+- **2026-09-18 (PROMPT 6, 7, 7B — Link/mã liên kết, Lịch sử thanh toán, Biên lai)**:
+  - Trang `manager/link-codes` và `manager/payments`; biên lai là modal trên trang thanh toán.
+  - **`<Receipt />` được nâng lên `src/components/shared/display/receipt.tsx`** (trước ở `features/enrollments/`). Lý do: skill `enrollment-flow` yêu cầu "reuse one `<Receipt />`", và `shared-component-architecture.md` yêu cầu promote khi feature thứ hai cần. `features/enrollments/components/enrollment-receipt.tsx` **đã xóa**; wizard bước 5 giờ render chung `<Receipt />`.
+  - Props biên lai dựng bằng `buildReceiptProps(row)` trong `features/payments/selectors.ts` — đặt ở selector chứ không phải component để enrollments dùng lại mà không import component chéo feature. `StepDone` lấy `findPaymentRow(result.paymentId)`, nên wizard và màn thanh toán ra **đúng một tờ biên lai giống nhau**.
+  - **`DateRangePicker` mới** ở `src/components/shared/pickers/date-range-picker.tsx` (bọc `ui/calendar` + `ui/popover`), state qua nuqs `?from=&to=`. Dùng ở cả link-codes và payments; tái sử dụng được cho PROMPT 9, 13.
+  - `lib/format.ts` thêm `formatMoneyInWords()` — đọc số tiền VND thành chữ cho dòng "Bằng chữ" của biên lai (xử lý đúng "lẻ", "mốt", "lăm").
+  - `Payment` thêm field thật `code` (TXN-...), `receiptCode` (BL-...), `method` + type `PaymentMethod`. Đã ghi vào `.claude/rules/data-contracts.md`.
+  - `src/mocks/data/payments.ts` viết lại: sinh giao dịch và mã liên kết **tất định** từ `MOCK_ENROLLMENTS` (không random) — mỗi ngày tối đa 6 giao dịch, mã liên kết chia bucket để đủ cả 3 tab chưa dùng / đã dùng / hết hạn. Thêm `MOCK_MANAGERS` (người xác nhận thu) và `PAYMENT_METHOD_LABEL`.
+  - Selector `features/payments/selectors.ts` dùng chung cho cả hai màn: `getPaymentRows/getPaymentTotals` và `getLinkCodeRows/getLinkCodeTotals`.
+  - Messages mới: `messages/events/link-code.ts`, `messages/events/payment.ts`.
+  - Mã liên kết chỉ render `code`, không bao giờ render `token` (rule security).
+- **2026-09-18 (PROMPT 8, 8B, 8C, 9, 9B — Lớp học & Lịch học tổng)**:
+  - Trang: `manager/classes`, `manager/classes/new`, `manager/classes/[id]`, `manager/schedule` (9B là cùng trang, `?groupBy=room&view=day`).
+  - **Đổi mô hình buổi học**: trước đây `attendance.ts` sinh buổi theo ENROLLMENT (sai mô hình — buổi học thuộc về LỚP). Giờ `catalog.ts` sinh `MOCK_CLASS_SESSIONS` theo từng lớp từ lịch cố định, còn `attendance.ts` chỉ sinh bản ghi điểm danh của học sinh trên các buổi lớp đó. `MOCK_SESSIONS_TODAY` giờ derive từ đó thay vì hard-code.
+  - **`MOCK_TODAY` đổi từ 2026-09-15 (T3) sang 2026-09-16 (T4)**. Lý do: docs mâu thuẫn — Dashboard nói Toán 8A / Hóa 9B / Lý 7A cùng học Thứ 3, nhưng PROMPT 8C nói Toán 8A học T2-T4-T6. Giữ lịch cố định của 8C, dời "hôm nay" sang T4 để cả 3 lớp cùng có buổi. Hóa 9B đổi lịch sang T2-T4-T6 (docs không pin lịch lớp này). `TODAY` trong `mocks/data/payments.ts` và default của `getPaymentTotals` phải giữ đồng bộ với `MOCK_TODAY`.
+  - `getAttendanceBreakdown(studentId, classId?)` — tham số thứ 2 đổi từ `enrollmentId` sang `classId` do buổi học giờ thuộc lớp.
+  - Selectors mới: `features/classes/selectors.ts` (sĩ số, tiến độ, trạng thái buổi, học bù đến) và `features/schedule/selectors.ts` (map buổi → `CalendarEvent`, tóm tắt tuần, chi tiết buổi cho drawer).
+  - `mocks/data/classes.ts`: `previewSessions()` dùng chung cho card "Xem trước" và lúc tạo lớp thật nên hai bên luôn khớp; `findRoomConflict()` + `findAvailableRooms()` cho cảnh báo trùng phòng ở PROMPT 8B.
+  - Validator `src/lib/validators/class.ts` (`classFormSchema`), messages `events/class.ts` + `events/schedule.ts`, `BUSINESS_RULES.CLASS_CAPACITY_MAX = 20`, routes `CLASS_NEW` / `CLASS_DETAIL(id)`.
+  - Lịch học tổng dùng lại `shared/calendar/schedule-calendar.tsx` + `session-drawer.tsx`; view/groupBy/session đồng bộ qua nuqs. **Không làm view Tháng** theo đúng ghi chú trong docs.
+- **2026-09-18 (PROMPT 11, 11B–11E — Giáo viên, Chi tiết GV, Lời mời & duyệt, Dạy thay, Đổi GV phụ trách)**:
+  - Trang: `manager/teachers`, `manager/teachers/[id]`, `manager/teachers/invitations`, `manager/teachers/substitutes`. PROMPT 11E là modal (`ChangeClassTeacherDialog`) gắn vào nút "Đổi giáo viên" đã có sẵn trên `manager/classes/[id]` — trước đó nút này chỉ điều hướng sang trang Dạy thay, giờ mở đúng modal theo docs.
+  - **Mở rộng `Teacher`** (`types/catalog.ts`): thêm `email`, `phone`, `code`, `yearsExperience`, `rating`, `joinedAt`, `isHeadTeacher?`, `specialty?`. Thay toàn bộ `MOCK_TEACHERS` (5 → 16 giáo viên, đủ dữ liệu cho danh sách + lọc theo môn + trạng thái `active/inactive`).
+  - Type mới `types/teacher.ts`: `TeacherInvitation` (lời mời & duyệt), `SubstituteAssignment` (lịch sử dạy thay). Mock `mocks/data/teachers.ts`: `MOCK_TEACHER_INVITATIONS` (8 hồ sơ), `MOCK_SUBSTITUTES` (4 lượt), cùng `mockInviteTeacher` / `mockApproveInvitation` / `mockRejectInvitation` / `mockAssignSubstitute` / `mockChangeClassTeacher`.
+  - Selector `features/teachers/selectors.ts`: tải giảng dạy theo tuần (`CURRENT_WEEK` derive từ `MOCK_TODAY`), `getSubstituteCandidates()` và `getClassTeacherCandidates()` cùng xếp hạng theo cùng-môn + không-trùng-lịch (trùng lịch tính bằng giao khoảng thời gian trên cùng thứ/ngày, không phải so chuỗi).
+  - Validator `lib/validators/teacher.ts`: `inviteTeacherSchema`, `assignSubstituteSchema`, `changeClassTeacherSchema`. Route `TEACHER_DETAIL(id)` thêm vào `constants/routes.ts`.
+  - Messages `events/teacher.ts` (dài — 4 màn dùng chung 1 file domain theo đúng skill `constants-architecture`).
 - **Current System Status**:
   - **Mock-Only**: The application is currently mock-only (using local state & mock data fixtures). No active backend API client connected yet.
 - **Next** — Domain Features Implementation (`features/` domain logic & views).

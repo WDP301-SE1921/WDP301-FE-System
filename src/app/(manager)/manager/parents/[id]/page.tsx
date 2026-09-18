@@ -1,0 +1,17 @@
+import type { Metadata } from "next"
+import { PARENT_MSG } from "@/constants/messages/events/parent"
+import { ParentDetailView } from "@/features/parents/components/parent-detail-view"
+
+export const metadata: Metadata = {
+  title: PARENT_MSG.DETAIL_TITLE,
+}
+
+export default async function ParentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+
+  return <ParentDetailView parentAccountId={id} />
+}
