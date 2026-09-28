@@ -11,36 +11,23 @@ import { StatusBadge } from "@/components/shared/feedback/status-badge"
 import { ConfirmDialog } from "@/components/shared/feedback/confirm-dialog"
 import { EmptyState } from "@/components/shared/feedback/empty-state"
 import { ErrorState } from "@/components/shared/feedback/error-state"
-import { LoadingOverlay } from "@/components/shared/feedback/loading-overlay"
-import { SkeletonTable, SkeletonKpiGrid } from "@/components/shared/feedback/skeleton-presets"
+import {
+  SkeletonTable,
+  SkeletonKpiGrid,
+  SkeletonDetailHeader,
+} from "@/components/shared/feedback/skeleton-presets"
 
 // Display — Phase 2 & 3
 import { UserCell } from "@/components/shared/display/user-cell"
 import { SubjectTag } from "@/components/shared/display/subject-tag"
 import { ScheduleText } from "@/components/shared/display/schedule-text"
 import { MoneyText } from "@/components/shared/display/money-text"
-import { DateText } from "@/components/shared/display/date-text"
-import { ProgressStat } from "@/components/shared/display/progress-stat"
-import { CountdownBadge } from "@/components/shared/display/countdown-badge"
 import { KpiCard } from "@/components/shared/display/kpi-card"
-import { SectionCard } from "@/components/shared/display/section-card"
-import { DetailHeader } from "@/components/shared/display/detail-header"
-import { DescriptionList } from "@/components/shared/display/description-list"
-import { Timeline } from "@/components/shared/display/timeline"
-import { ChangeDiff } from "@/components/shared/display/change-diff"
-import { AvatarGroupDisplay } from "@/components/shared/display/avatar-group-display"
-import { CodeDisplay } from "@/components/shared/display/code-display"
-import { AttendanceSummary } from "@/components/shared/display/attendance-summary"
-
-// Actions — Phase 3
-import { CopyButton } from "@/components/shared/actions/copy-button"
-import { ExportButton } from "@/components/shared/actions/export-button"
 
 // Pickers & Workflows — Phase 4
 import { SelectableCard } from "@/components/shared/pickers/selectable-card"
 import { ConditionChips } from "@/components/shared/pickers/condition-chips"
 import { ClassOptionCard } from "@/components/shared/pickers/class-option-card"
-import { SessionOptionList } from "@/components/shared/pickers/session-option-list"
 import { Stepper } from "@/components/shared/workflows/stepper"
 
 // Calendar — Phase 5
@@ -50,6 +37,13 @@ import { SessionDrawer, type SessionDetail } from "@/components/shared/calendar/
 // UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { toast } from "@/components/ui/toast"
+
+// Auth events (dev trigger)
+import { emitSessionExpired } from "@/lib/auth-events"
+import { SessionExpiredModalContainer } from "@/features/auth/components/session-expired-modal-container"
 
 const SAMPLE_EVENTS: CalendarEvent[] = [
   {
@@ -95,15 +89,12 @@ export default function DevComponentsShowcasePage() {
   }
 
   const [confirmOpen, setConfirmOpen] = React.useState(false)
-  const [loadingOverlay, setLoadingOverlay] = React.useState(false)
+  const [confirmDefaultOpen, setConfirmDefaultOpen] = React.useState(false)
   const [selectedCard, setSelectedCard] = React.useState("card-1")
 
   // Calendar Drawer state
   const [selectedSession, setSelectedSession] = React.useState<SessionDetail | null>(null)
   const [drawerOpen, setDrawerOpen] = React.useState(false)
-
-  const futureDate = new Date(Date.now() + 3 * 60 * 60 * 1000)
-  const pastDate = new Date("2025-01-15T08:30:00")
 
   return (
     <AppShell role="manager">
@@ -209,17 +200,77 @@ export default function DevComponentsShowcasePage() {
           <CardHeader>
             <CardTitle>Phase 1: Status Badges (constants/status.ts)</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <StatusBadge category="manager" status="active" />
-            <StatusBadge category="manager" status="pending" />
-            <StatusBadge category="manager" status="disabled" />
-            <StatusBadge category="attendance" status="present" />
-            <StatusBadge category="attendance" status="absent" />
-            <StatusBadge category="attendance" status="makeup" />
-            <StatusBadge category="enrollment" status="active" />
-            <StatusBadge category="enrollment" status="dropped" />
-            <StatusBadge category="session" status="scheduled" />
-            <StatusBadge category="grading" status="draft" />
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                Manager / Enrollment / Session / Grading
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge category="manager" status="active" />
+                <StatusBadge category="manager" status="pending" />
+                <StatusBadge category="manager" status="disabled" />
+                <StatusBadge category="enrollment" status="active" />
+                <StatusBadge category="enrollment" status="dropped" />
+                <StatusBadge category="session" status="scheduled" />
+                <StatusBadge category="grading" status="draft" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                Attendance (điểm danh)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge category="attendance" status="present" />
+                <StatusBadge category="attendance" status="absent" />
+                <StatusBadge category="attendance" status="made_up" />
+                <StatusBadge category="attendance" status="excused" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                Student (học sinh)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge category="student" status="active" />
+                <StatusBadge category="student" status="paused" />
+                <StatusBadge category="student" status="withdrawn" />
+                <StatusBadge category="student" status="pending_link" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                Parent Account (tài khoản phụ huynh)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge category="parentAccount" status="activated" />
+                <StatusBadge category="parentAccount" status="pending_link" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                Link Code (mã liên kết)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge category="linkCode" status="active" />
+                <StatusBadge category="linkCode" status="used" />
+                <StatusBadge category="linkCode" status="expired" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                Email
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge category="email" status="sent" />
+                <StatusBadge category="email" status="pending" />
+                <StatusBadge category="email" status="failed" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -250,6 +301,153 @@ export default function DevComponentsShowcasePage() {
           <KpiCard title="Vắng không phép" value="7" trend="down" trendLabel="−3 so với tuần trước" color="red" />
         </div>
 
+        {/* ── PROMPT 16: Toast triggers ─────────────────────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Toast (sonner)</CardTitle></CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              onClick={() => toast.success("Xác nhận thanh toán thành công")}
+            >
+              Toast thành công
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => toast.error("Không thể tải dữ liệu")}
+            >
+              Toast lỗi
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                toast.warning("Đã xác nhận thanh toán nhưng gửi email thất bại", {
+                  action: { label: "Gửi lại", onClick: () => {} },
+                })
+              }
+            >
+              Toast cảnh báo
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                toast.info("AI đang chấm bài, bạn sẽ nhận thông báo khi xong")
+              }
+            >
+              Toast thông tin
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16: Alert, 4 variants ──────────────────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Alert — 4 variants</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <Alert variant="success">
+              <AlertTitle>Thành công</AlertTitle>
+              <AlertDescription>Xác nhận thanh toán thành công.</AlertDescription>
+            </Alert>
+            <Alert variant="warning">
+              <AlertTitle>Cảnh báo</AlertTitle>
+              <AlertDescription>
+                Đã xác nhận thanh toán nhưng gửi email thất bại.
+              </AlertDescription>
+            </Alert>
+            <Alert variant="danger">
+              <AlertTitle>Lỗi</AlertTitle>
+              <AlertDescription>Không thể tải dữ liệu.</AlertDescription>
+            </Alert>
+            <Alert variant="info">
+              <AlertTitle>Thông tin</AlertTitle>
+              <AlertDescription>
+                AI đang chấm bài, bạn sẽ nhận thông báo khi xong.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16: Skeleton presets ───────────────────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Skeleton Presets</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <SkeletonDetailHeader />
+            <SkeletonKpiGrid count={4} />
+            <SkeletonTable rows={3} cols={4} />
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16: Empty state, both variants ─────────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Empty State</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <EmptyState variant="no-data" actionLabel="Tạo lớp" onAction={() => {}} />
+            <EmptyState variant="no-result" actionLabel="Xóa bộ lọc" onAction={() => {}} />
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16: Error state ─────────────────────────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Error State</CardTitle></CardHeader>
+          <CardContent>
+            <ErrorState onRetry={() => {}} />
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16: Confirm dialog, both variants ──────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Confirm Dialog</CardTitle></CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            <Button variant="danger" onClick={() => setConfirmOpen(true)}>
+              Xác nhận xóa (danger)
+            </Button>
+            <Button variant="outline" onClick={() => setConfirmDefaultOpen(true)}>
+              Xác nhận lưu thay đổi (default)
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16: Button variants row ────────────────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Button Variants</CardTitle></CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-3">
+            <Button variant="default">Default</Button>
+            <Button variant="outline">Outline</Button>
+            <Button variant="ghost">Ghost</Button>
+            <Button variant="danger">Danger</Button>
+            <Button isLoading>Đang xử lý</Button>
+            <Button disabled>Vô hiệu hóa</Button>
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16: Input states ────────────────────────────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Input States</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Mặc định</p>
+              <Input placeholder="Nhập nội dung" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Lỗi</p>
+              <Input placeholder="Nhập email" error defaultValue="khong-hop-le" />
+              <p className="text-xs text-destructive">Email không hợp lệ</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Vô hiệu hóa</p>
+              <Input placeholder="Không thể chỉnh sửa" disabled />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── PROMPT 16C: Session Expired overlay trigger ───────────────── */}
+        <Card>
+          <CardHeader><CardTitle>Session Expired Modal</CardTitle></CardHeader>
+          <CardContent>
+            <Button variant="outline" onClick={() => emitSessionExpired()}>
+              Giả lập phiên đăng nhập hết hạn
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Calendar Session Drawer */}
         <SessionDrawer
           session={selectedSession}
@@ -257,7 +455,7 @@ export default function DevComponentsShowcasePage() {
           onOpenChange={setDrawerOpen}
         />
 
-        {/* Confirm Dialog */}
+        {/* Confirm Dialog — danger */}
         <ConfirmDialog
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
@@ -266,7 +464,21 @@ export default function DevComponentsShowcasePage() {
           title="Xác nhận xóa danh mục"
           description="Bạn có chắc chắn muốn xóa danh mục này khỏi hệ thống?"
         />
+
+        {/* Confirm Dialog — default */}
+        <ConfirmDialog
+          open={confirmDefaultOpen}
+          onOpenChange={setConfirmDefaultOpen}
+          onConfirm={() => alert("Đã lưu thay đổi!")}
+          variant="default"
+          title="Xác nhận lưu thay đổi"
+          description="Các thay đổi sẽ được áp dụng ngay lập tức."
+        />
       </PageContainer>
+
+      {/* Trang này không nằm trong (manager)/layout.tsx nên phải tự mount container
+          — nơi khác dùng chung layout đã mount ở đó, xem app/(manager)/layout.tsx. */}
+      <SessionExpiredModalContainer />
     </AppShell>
   )
 }

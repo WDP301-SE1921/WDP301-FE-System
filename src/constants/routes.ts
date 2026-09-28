@@ -45,6 +45,8 @@ export const ROUTES = {
 
     MANAGERS: "/manager/system/managers",
     AUDIT_LOGS: "/manager/system/audit-logs",
+
+    PROFILE: "/manager/profile",
   },
   TEACHER: {
     DASHBOARD: "/teacher/dashboard",

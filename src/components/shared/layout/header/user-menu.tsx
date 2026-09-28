@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ACTION_LABEL } from "@/constants/messages"
+import { ROUTES } from "@/constants/routes"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   UserIcon,
@@ -36,6 +38,7 @@ function UserMenu({
   email = "admin@edugrade.edu.vn",
   onLogout,
 }: UserMenuProps) {
+  const router = useRouter()
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -74,11 +77,13 @@ function UserMenu({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(ROUTES.MANAGER.PROFILE)}>
             <HugeiconsIcon icon={UserIcon} />
             <span>{ACTION_LABEL.ACCOUNT}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => router.push(`${ROUTES.MANAGER.PROFILE}?tab=password`)}
+          >
             <HugeiconsIcon icon={SecurityPasswordIcon} />
             <span>{ACTION_LABEL.CHANGE_PASSWORD}</span>
           </DropdownMenuItem>

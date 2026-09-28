@@ -31,11 +31,14 @@ function FilterBar({
     parseAsString.withDefault("")
   )
   const [inputValue, setInputValue] = React.useState(querySearch)
+  const [prevQuerySearch, setPrevQuerySearch] = React.useState(querySearch)
 
-  // Sync internal state when URL query changes
-  React.useEffect(() => {
+  // Đồng bộ state nội bộ khi query URL đổi từ bên ngoài (vd: reset filter ở nơi khác).
+  // Tính trong render thay vì effect để tránh cascading render (react-hooks/set-state-in-effect).
+  if (querySearch !== prevQuerySearch) {
+    setPrevQuerySearch(querySearch)
     setInputValue(querySearch)
-  }, [querySearch])
+  }
 
   // Debounced update to URL parameter using DEBOUNCE.SEARCH
   React.useEffect(() => {

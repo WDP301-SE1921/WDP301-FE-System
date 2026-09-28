@@ -4,6 +4,9 @@ import * as React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ACTION_LABEL, ERROR_MSG } from "@/constants/messages"
+import { ROLES, type Role } from "@/constants/roles"
+import { ROUTES } from "@/constants/routes"
+import { STORAGE_KEYS } from "@/constants/storage-keys"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   ShieldKeyIcon,
@@ -40,6 +43,34 @@ const ERROR_PRESETS: Record<
   },
 }
 
+/** Đọc cookie vai trò (`STORAGE_KEYS.ROLE_COOKIE`, set bởi `src/proxy.ts`) để suy ra Dashboard tương ứng. */
+function readRoleFromCookie(): Role | null {
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${STORAGE_KEYS.ROLE_COOKIE}=`))
+
+  if (!match) return null
+
+  const value = match.split("=")[1]
+  return value === ROLES.MANAGER || value === ROLES.TEACHER ? value : null
+}
+
+/** `document.cookie` không phát sự kiện thay đổi — không cần subscribe thật, chỉ đọc 1 lần. */
+function subscribeToRoleCookie() {
+  return () => {}
+}
+
+function getServerRoleSnapshot(): Role | null {
+  return null
+}
+
+/** Fallback về trang chủ công khai khi không xác định được vai trò — tránh vòng lặp 403. */
+function getRoleHomeRoute(role: Role | null): string {
+  if (role === ROLES.TEACHER) return ROUTES.TEACHER.DASHBOARD
+  if (role === ROLES.MANAGER) return ROUTES.MANAGER.DASHBOARD
+  return ROUTES.PUBLIC.HOME
+}
+
 function ErrorPage({
   statusCode = 404,
   title,
@@ -51,6 +82,19 @@ function ErrorPage({
   const displayTitle = title || preset.title
   const displayDesc = description || preset.description
   const IconComponent = preset.iconName
+
+  // 403/404: quay về Dashboard theo role hiện tại (tránh bounce lại chính route vừa bị chặn).
+  // 500: giữ nguyên hành vi cũ, trỏ về trang chủ công khai.
+  const isAccessError = statusCode === 403 || statusCode === 404
+  // đọc document.cookie an toàn cho SSR/hydration qua useSyncExternalStore (server snapshot = null).
+  const role = React.useSyncExternalStore(
+    subscribeToRoleCookie,
+    readRoleFromCookie,
+    getServerRoleSnapshot
+  )
+
+  const homeHref = isAccessError ? getRoleHomeRoute(role) : ROUTES.PUBLIC.HOME
+  const homeLabel = isAccessError ? "Về Dashboard" : "Về trang chủ"
 
   return (
     <div className="flex min-h-[80vh] w-full flex-col items-center justify-center p-6 text-center">
@@ -71,9 +115,9 @@ function ErrorPage({
             {ACTION_LABEL.RETRY}
           </Button>
         )}
-        <Button render={<Link href="/" />} className="rounded-full gap-2">
+        <Button render={<Link href={homeHref} />} className="rounded-full gap-2">
           <HugeiconsIcon icon={Home01Icon} className="size-4" />
-          <span>Về trang chủ</span>
+          <span>{homeLabel}</span>
         </Button>
       </div>
     </div>
