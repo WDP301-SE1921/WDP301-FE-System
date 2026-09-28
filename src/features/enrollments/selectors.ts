@@ -97,14 +97,15 @@ export function getParentOptions(): Array<{ value: string; label: string }> {
   }))
 }
 
-/** Danh sách học sinh đang theo học, cho picker ở luồng A3. */
+/**
+ * Danh sách học sinh cho picker ở luồng A3 — bao gồm cả học sinh đã nghỉ hẳn để
+ * quản lý có thể đăng ký lại (nút "Đăng ký lại" ở PROMPT 10F deep-link tới đây).
+ */
 export function getStudentOptions(): Array<{ value: string; label: string }> {
-  return MOCK_STUDENTS.filter((student) => student.status !== "withdrawn").map(
-    (student) => ({
-      value: student.id,
-      label: `${student.name} · ${student.code}`,
-    })
-  )
+  return MOCK_STUDENTS.map((student) => ({
+    value: student.id,
+    label: `${student.name} · ${student.code}`,
+  }))
 }
 
 /** Email + tên học sinh để hiển thị ở card tóm tắt, tùy luồng đăng ký. */

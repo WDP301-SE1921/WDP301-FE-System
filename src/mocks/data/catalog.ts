@@ -1,9 +1,12 @@
 import { SUBJECT_MAP } from "@/constants/subjects"
+import { ERROR_MSG } from "@/constants/messages/error"
+import { MockError } from "@/mocks/utils/mock-query"
 import type {
   ClassRecord,
   ClassSession,
   Lesson,
   Program,
+  Room,
   Subject,
   Teacher,
 } from "@/types/catalog"
@@ -21,29 +24,234 @@ export const MOCK_SUBJECTS: Subject[] = [
 ]
 
 export const MOCK_PROGRAMS: Program[] = [
-  { id: "prg-math-8", subjectId: "subj-math", grade: 8, name: "Toán 8 cơ bản", totalLessons: 36, monthlyFee: 500000 },
-  { id: "prg-math-9", subjectId: "subj-math", grade: 9, name: "Toán 9 nâng cao", totalLessons: 40, monthlyFee: 500000 },
-  { id: "prg-math-10", subjectId: "subj-math", grade: 9, name: "Toán 9 ôn thi", totalLessons: 32, monthlyFee: 500000 },
-  { id: "prg-math-7", subjectId: "subj-math", grade: 7, name: "Toán 7 cơ bản", totalLessons: 34, monthlyFee: 500000 },
-  { id: "prg-math-6", subjectId: "subj-math", grade: 6, name: "Toán 6 cơ bản", totalLessons: 32, monthlyFee: 500000 },
-  { id: "prg-chem-8", subjectId: "subj-chem", grade: 8, name: "Hóa 8 cơ bản", totalLessons: 30, monthlyFee: 500000 },
-  { id: "prg-chem-9", subjectId: "subj-chem", grade: 9, name: "Hóa 9 cơ bản", totalLessons: 34, monthlyFee: 500000 },
-  { id: "prg-phys-7", subjectId: "subj-phys", grade: 7, name: "Lý 7 cơ bản", totalLessons: 28, monthlyFee: 500000 },
-  { id: "prg-phys-9", subjectId: "subj-phys", grade: 9, name: "Lý 9 chuyên đề", totalLessons: 36, monthlyFee: 500000 },
-  { id: "prg-phys-10", subjectId: "subj-phys", grade: 9, name: "Lý 9 ôn thi", totalLessons: 30, monthlyFee: 500000 },
-  { id: "prg-biol-6", subjectId: "subj-biol", grade: 6, name: "Sinh 6 cơ bản", totalLessons: 26, monthlyFee: 500000 },
-  { id: "prg-biol-9", subjectId: "subj-biol", grade: 9, name: "Sinh 9 cơ bản", totalLessons: 30, monthlyFee: 500000 },
+  {
+    id: "prg-math-8",
+    subjectId: "subj-math",
+    grade: 8,
+    name: "Toán 8 cơ bản",
+    totalLessons: 36,
+    monthlyFee: 500000,
+    description: "Chương trình Đại số & Hình học 8 bám sát SGK, luyện tập theo từng chuyên đề.",
+    isActive: true,
+  },
+  {
+    id: "prg-math-9",
+    subjectId: "subj-math",
+    grade: 9,
+    name: "Toán 9 nâng cao",
+    totalLessons: 40,
+    monthlyFee: 500000,
+    description: "Chương trình nâng cao dành cho học sinh khá giỏi, bổ sung dạng bài thi chuyên.",
+    isActive: false,
+  },
+  {
+    id: "prg-math-10",
+    subjectId: "subj-math",
+    grade: 9,
+    name: "Toán 9 ôn thi",
+    totalLessons: 32,
+    monthlyFee: 500000,
+    description: "Ôn tập trọng tâm chuẩn bị kỳ thi tuyển sinh lớp 10.",
+    isActive: true,
+  },
+  {
+    id: "prg-math-7",
+    subjectId: "subj-math",
+    grade: 7,
+    name: "Toán 7 cơ bản",
+    totalLessons: 34,
+    monthlyFee: 500000,
+    description: "Chương trình Toán 7 bám sát SGK, củng cố nền tảng Đại số & Hình học.",
+    isActive: true,
+  },
+  {
+    id: "prg-math-6",
+    subjectId: "subj-math",
+    grade: 6,
+    name: "Toán 6 cơ bản",
+    totalLessons: 32,
+    monthlyFee: 500000,
+    description: "Chương trình làm quen THCS, củng cố kiến thức nền Toán 6.",
+    isActive: true,
+  },
+  {
+    id: "prg-chem-8",
+    subjectId: "subj-chem",
+    grade: 8,
+    name: "Hóa 8 cơ bản",
+    totalLessons: 30,
+    monthlyFee: 500000,
+    description: "Nhập môn Hóa học: nguyên tử, phân tử, phản ứng hóa học cơ bản.",
+    isActive: true,
+  },
+  {
+    id: "prg-chem-9",
+    subjectId: "subj-chem",
+    grade: 9,
+    name: "Hóa 9 cơ bản",
+    totalLessons: 34,
+    monthlyFee: 500000,
+    description: "Hệ thống hóa kiến thức Hóa 9, trọng tâm Axit - Bazơ - Muối.",
+    isActive: true,
+  },
+  {
+    id: "prg-phys-7",
+    subjectId: "subj-phys",
+    grade: 7,
+    name: "Lý 7 cơ bản",
+    totalLessons: 28,
+    monthlyFee: 500000,
+    description: "Chương trình Vật lý 7: quang học, âm học và điện học nhập môn.",
+    isActive: true,
+  },
+  {
+    id: "prg-phys-9",
+    subjectId: "subj-phys",
+    grade: 9,
+    name: "Lý 9 chuyên đề",
+    totalLessons: 36,
+    monthlyFee: 500000,
+    description: "Chuyên đề điện từ học và quang học nâng cao cho học sinh khá giỏi.",
+    isActive: true,
+  },
+  {
+    id: "prg-phys-10",
+    subjectId: "subj-phys",
+    grade: 9,
+    name: "Lý 9 ôn thi",
+    totalLessons: 30,
+    monthlyFee: 500000,
+    description: "Ôn tập trọng tâm Vật lý 9 chuẩn bị kỳ thi tuyển sinh lớp 10.",
+    isActive: true,
+  },
+  {
+    id: "prg-biol-6",
+    subjectId: "subj-biol",
+    grade: 6,
+    name: "Sinh 6 cơ bản",
+    totalLessons: 26,
+    monthlyFee: 500000,
+    description: "Nhập môn Sinh học: tế bào, thực vật và cơ thể sống.",
+    isActive: true,
+  },
+  {
+    id: "prg-biol-9",
+    subjectId: "subj-biol",
+    grade: 9,
+    name: "Sinh 9 cơ bản",
+    totalLessons: 30,
+    monthlyFee: 500000,
+    description: "Hệ thống hóa kiến thức Di truyền học và Sinh thái học lớp 9.",
+    isActive: true,
+  },
 ]
 
 export const MOCK_LESSONS: Lesson[] = [
-  { id: "les-math8-05", programId: "prg-math-8", order: 5, title: "Bài 5: Hằng đẳng thức" },
-  { id: "les-math8-12", programId: "prg-math-8", order: 12, title: "Bài 12: Phân tích đa thức" },
-  { id: "les-math8-13", programId: "prg-math-8", order: 13, title: "Bài 13: Phương trình bậc nhất" },
-  { id: "les-chem9-03", programId: "prg-chem-9", order: 3, title: "Bài 3: Tính chất Axit" },
-  { id: "les-chem9-08", programId: "prg-chem-9", order: 8, title: "Bài 8: Bazơ và muối" },
-  { id: "les-phys7-08", programId: "prg-phys-7", order: 8, title: "Bài 8: Khúc xạ Ánh sáng" },
-  { id: "les-phys9-11", programId: "prg-phys-9", order: 11, title: "Bài 11: Điện từ học" },
-  { id: "les-biol6-07", programId: "prg-biol-6", order: 7, title: "Bài 7: Tế bào thực vật" },
+  {
+    id: "les-math8-01",
+    programId: "prg-math-8",
+    order: 1,
+    title: "Bài 1: Nhân đơn thức với đa thức",
+    description: "Ôn tập quy tắc nhân đơn thức với đa thức và bài tập áp dụng.",
+  },
+  {
+    id: "les-math8-02",
+    programId: "prg-math-8",
+    order: 2,
+    title: "Bài 2: Nhân đa thức với đa thức",
+    description: "Áp dụng quy tắc phân phối để nhân hai đa thức nhiều hạng tử.",
+  },
+  {
+    id: "les-math8-03",
+    programId: "prg-math-8",
+    order: 3,
+    title: "Bài 3: Những hằng đẳng thức đáng nhớ",
+    description: "Giới thiệu 3 hằng đẳng thức cơ bản và bài tập áp dụng.",
+  },
+  {
+    id: "les-math8-04",
+    programId: "prg-math-8",
+    order: 4,
+    title: "Bài 4: Hằng đẳng thức đáng nhớ (tiếp theo)",
+    description: "Mở rộng các hằng đẳng thức bậc ba và bài tập tổng hợp.",
+  },
+  {
+    id: "les-math8-05",
+    programId: "prg-math-8",
+    order: 5,
+    title: "Bài 5: Hằng đẳng thức",
+    description: "Luyện tập tổng hợp các hằng đẳng thức đáng nhớ đã học.",
+  },
+  {
+    id: "les-math8-06",
+    programId: "prg-math-8",
+    order: 6,
+    title: "Bài 6: Phân tích đa thức thành nhân tử (đặt nhân tử chung)",
+    description: "Phương pháp đặt nhân tử chung và dùng hằng đẳng thức.",
+  },
+  {
+    id: "les-math8-07",
+    programId: "prg-math-8",
+    order: 7,
+    title: "Bài 7: Phân tích đa thức thành nhân tử (nhóm hạng tử)",
+    description: "Phương pháp nhóm hạng tử để phân tích đa thức.",
+  },
+  {
+    id: "les-math8-08",
+    programId: "prg-math-8",
+    order: 8,
+    title: "Bài 8: Luyện tập phân tích đa thức thành nhân tử",
+    description: "Tổng hợp bài tập rèn kỹ năng phân tích đa thức.",
+  },
+  {
+    id: "les-math8-12",
+    programId: "prg-math-8",
+    order: 12,
+    title: "Bài 12: Phân tích đa thức",
+    description: "Ôn tập nâng cao các phương pháp phân tích đa thức thành nhân tử.",
+  },
+  {
+    id: "les-math8-13",
+    programId: "prg-math-8",
+    order: 13,
+    title: "Bài 13: Phương trình bậc nhất",
+    description: "Giải phương trình bậc nhất một ẩn và bài toán thực tế.",
+  },
+  {
+    id: "les-chem9-03",
+    programId: "prg-chem-9",
+    order: 3,
+    title: "Bài 3: Tính chất Axit",
+    description: "Tính chất hóa học của Axit và phản ứng với kim loại, bazơ.",
+  },
+  {
+    id: "les-chem9-08",
+    programId: "prg-chem-9",
+    order: 8,
+    title: "Bài 8: Bazơ và muối",
+    description: "Tính chất hóa học của Bazơ, Muối và mối quan hệ giữa các hợp chất.",
+  },
+  {
+    id: "les-phys7-08",
+    programId: "prg-phys-7",
+    order: 8,
+    title: "Bài 8: Khúc xạ Ánh sáng",
+    description: "Hiện tượng khúc xạ ánh sáng và ứng dụng trong đời sống.",
+  },
+  {
+    id: "les-phys9-11",
+    programId: "prg-phys-9",
+    order: 11,
+    title: "Bài 11: Điện từ học",
+    description: "Từ trường, lực điện từ và ứng dụng trong động cơ điện.",
+  },
+  {
+    id: "les-biol6-07",
+    programId: "prg-biol-6",
+    order: 7,
+    title: "Bài 7: Tế bào thực vật",
+    description: "Cấu tạo tế bào thực vật và chức năng các thành phần chính.",
+  },
 ]
 
 export const MOCK_TEACHERS: Teacher[] = [
@@ -236,6 +444,26 @@ export const MOCK_CLASSES: ClassRecord[] = [
 ]
 
 /**
+ * Phòng học. `ClassRecord.room` vẫn là chuỗi tên phòng (không đổi model để tránh
+ * ảnh hưởng các màn đã có) — "Số lớp đang dùng" derive bằng cách so khớp tên.
+ */
+export const MOCK_ROOMS: Room[] = [
+  { id: "room-101", name: "P.101", capacity: 24, isActive: true },
+  { id: "room-102", name: "P.102", capacity: 18, isActive: true },
+  { id: "room-103", name: "P.103", capacity: 18, isActive: true },
+  { id: "room-104", name: "P.104", capacity: 18, isActive: true },
+  { id: "room-105", name: "P.105", capacity: 22, isActive: true },
+  { id: "room-106", name: "P.106", capacity: 25, isActive: true },
+  { id: "room-107", name: "P.107", capacity: 22, isActive: true },
+  { id: "room-108", name: "P.108", capacity: 22, isActive: true },
+  { id: "room-201", name: "P.201", capacity: 20, isActive: true },
+  { id: "room-202", name: "P.202", capacity: 20, isActive: true },
+  { id: "room-203", name: "P.203", capacity: 20, isActive: true },
+  { id: "room-204", name: "P.204", capacity: 20, isActive: true },
+  { id: "room-301", name: "P.301", capacity: 15, isActive: false },
+]
+
+/**
  * Ngày "hôm nay" cố định của bộ mock (Thứ 4) — chọn ngày này để 3 lớp Toán 8A,
  * Hóa 9B và Lý 7A cùng có buổi, khớp nội dung Dashboard trong docs mà vẫn giữ
  * đúng lịch cố định "T2 - T4 - T6" của Toán 8A ở PROMPT 8C.
@@ -359,4 +587,149 @@ export function findLesson(lessonId: string): Lesson | undefined {
 export function findTeacher(teacherId?: string): Teacher | undefined {
   if (!teacherId) return undefined
   return MOCK_TEACHERS.find((item) => item.id === teacherId)
+}
+
+export function findRoom(roomId: string): Room | undefined {
+  return MOCK_ROOMS.find((item) => item.id === roomId)
+}
+
+/**
+ * Mutation giả lập cho Danh mục đào tạo (PROMPT 12, 12B, 12C).
+ * Xóa cùng các hàm find/mock khác trong file này khi nối endpoint danh mục thật.
+ */
+
+export interface ProgramInput {
+  name: string
+  subjectId: string
+  /** Khối lớp, dạng chuỗi vì Select trả `string` — chuyển sang Number khi lưu. */
+  grade: string
+  monthlyFee: number
+  description: string
+  isActive: boolean
+}
+
+let programSequence = MOCK_PROGRAMS.length
+
+export function mockCreateProgram(input: ProgramInput): Program {
+  if (!findSubject(input.subjectId)) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  programSequence += 1
+
+  const program: Program = {
+    id: `prg-new-${programSequence}`,
+    subjectId: input.subjectId,
+    grade: Number(input.grade),
+    name: input.name.trim(),
+    // Chương trình mới chưa có bài học nào — thêm dần qua "Quản lý bài học".
+    totalLessons: 0,
+    monthlyFee: input.monthlyFee,
+    description: input.description.trim(),
+    isActive: input.isActive,
+  }
+
+  MOCK_PROGRAMS.unshift(program)
+
+  return program
+}
+
+export function mockUpdateProgram(programId: string, input: ProgramInput): Program {
+  const program = MOCK_PROGRAMS.find((item) => item.id === programId)
+  if (!program) throw new MockError(ERROR_MSG.NOT_FOUND)
+  if (!findSubject(input.subjectId)) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  program.name = input.name.trim()
+  program.subjectId = input.subjectId
+  program.grade = Number(input.grade)
+  program.monthlyFee = input.monthlyFee
+  program.description = input.description.trim()
+  program.isActive = input.isActive
+
+  return program
+}
+
+export interface LessonInput {
+  programId: string
+  title: string
+  description: string
+}
+
+let lessonSequence = MOCK_LESSONS.length
+
+export function mockAddLesson(input: LessonInput): Lesson {
+  if (!findProgram(input.programId)) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  lessonSequence += 1
+  const currentMaxOrder = Math.max(
+    0,
+    ...MOCK_LESSONS.filter((item) => item.programId === input.programId).map((item) => item.order)
+  )
+
+  const lesson: Lesson = {
+    id: `les-new-${lessonSequence}`,
+    programId: input.programId,
+    order: currentMaxOrder + 1,
+    title: input.title.trim(),
+    description: input.description.trim(),
+  }
+
+  MOCK_LESSONS.push(lesson)
+
+  return lesson
+}
+
+export function mockUpdateLesson(
+  lessonId: string,
+  input: Pick<LessonInput, "title" | "description">
+): Lesson {
+  const lesson = MOCK_LESSONS.find((item) => item.id === lessonId)
+  if (!lesson) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  lesson.title = input.title.trim()
+  lesson.description = input.description.trim()
+
+  return lesson
+}
+
+export function mockDeleteLesson(lessonId: string): { id: string } {
+  const index = MOCK_LESSONS.findIndex((item) => item.id === lessonId)
+  if (index === -1) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  MOCK_LESSONS.splice(index, 1)
+
+  return { id: lessonId }
+}
+
+/**
+ * Sắp xếp lại thứ tự bài học của một chương trình theo mảng id đã kéo-thả.
+ * Ghi lại field `order` 1..N theo đúng vị trí mới — quyết định bài gắn vào buổi
+ * học khi tạo lớp.
+ */
+export function mockReorderLessons(programId: string, orderedLessonIds: string[]): Lesson[] {
+  orderedLessonIds.forEach((lessonId, index) => {
+    const lesson = MOCK_LESSONS.find(
+      (item) => item.id === lessonId && item.programId === programId
+    )
+    if (lesson) lesson.order = index + 1
+  })
+
+  return MOCK_LESSONS.filter((item) => item.programId === programId).sort(
+    (a, b) => a.order - b.order
+  )
+}
+
+export interface RoomInput {
+  name: string
+  capacity: number
+  isActive: boolean
+}
+
+export function mockUpdateRoom(roomId: string, input: RoomInput): Room {
+  const room = MOCK_ROOMS.find((item) => item.id === roomId)
+  if (!room) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  room.name = input.name.trim()
+  room.capacity = input.capacity
+  room.isActive = input.isActive
+
+  return room
 }

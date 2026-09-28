@@ -1,0 +1,92 @@
+export const CATALOG_MSG = {
+  // Trang danh mục
+  PAGE_TITLE: "Danh mục đào tạo",
+  PAGE_DESC: "Quản lý môn học, khối lớp, chương trình đào tạo và phòng học",
+
+  TAB_SUBJECTS: "Môn học",
+  TAB_GRADES: "Khối",
+  TAB_PROGRAMS: "Chương trình",
+  TAB_ROOMS: "Phòng học",
+
+  // Tab Môn học
+  SUBJECT_COL_NAME: "Môn",
+  SUBJECT_COL_PROGRAM_COUNT: "Số chương trình",
+  SUBJECT_COL_CLASS_COUNT: "Số lớp đang dùng",
+
+  // Tab Khối (nhãn "Khối N" dùng lại `STUDENT_MSG.GRADE_LABEL`)
+  GRADE_COL_NAME: "Khối",
+  GRADE_COL_PROGRAM_COUNT: "Số chương trình",
+  GRADE_COL_CLASS_COUNT: "Số lớp đang dùng",
+
+  // Tab Chương trình
+  PROGRAM_CREATE: "Thêm chương trình",
+  PROGRAM_SEARCH_PLACEHOLDER: "Tìm tên chương trình...",
+  PROGRAM_FILTER_ALL_SUBJECTS: "Môn: Tất cả",
+  PROGRAM_FILTER_ALL_GRADES: "Khối: Tất cả",
+  PROGRAM_COL_NAME: "Tên chương trình",
+  PROGRAM_COL_SUBJECT: "Môn",
+  PROGRAM_COL_GRADE: "Khối",
+  PROGRAM_COL_LESSONS: "Số bài học",
+  PROGRAM_COL_FEE: "Học phí/tháng",
+  PROGRAM_COL_CLASS_COUNT: "Số lớp đang dùng",
+  PROGRAM_COL_STATUS: "Trạng thái",
+  PROGRAM_ACTION_EDIT: "Sửa",
+  PROGRAM_ACTION_MANAGE_LESSONS: "Quản lý bài học",
+  PROGRAM_CREATE_SUCCESS: "Thêm chương trình thành công",
+  PROGRAM_UPDATE_SUCCESS: "Cập nhật chương trình thành công",
+  PROGRAM_NOT_FOUND_TITLE: "Không tìm thấy chương trình",
+  PROGRAM_NOT_FOUND_DESC: "Chương trình này không tồn tại hoặc đã bị xóa khỏi hệ thống.",
+
+  // Modal Thêm/Sửa chương trình (12C)
+  PROGRAM_MODAL_CREATE_TITLE: "Thêm chương trình",
+  PROGRAM_MODAL_EDIT_TITLE: "Sửa chương trình",
+  PROGRAM_FIELD_NAME: "Tên chương trình",
+  PROGRAM_FIELD_NAME_PLACEHOLDER: "Toán 8 cơ bản",
+  PROGRAM_FIELD_SUBJECT: "Môn",
+  PROGRAM_FIELD_SUBJECT_PLACEHOLDER: "Chọn môn",
+  PROGRAM_FIELD_GRADE: "Khối",
+  PROGRAM_FIELD_GRADE_PLACEHOLDER: "Chọn khối",
+  PROGRAM_FIELD_FEE: "Học phí/tháng",
+  PROGRAM_FIELD_DESCRIPTION: "Mô tả",
+  PROGRAM_FIELD_DESCRIPTION_PLACEHOLDER: "Mô tả ngắn về chương trình đào tạo",
+  PROGRAM_FIELD_ACTIVE: "Đang sử dụng",
+
+  // Chi tiết chương trình (12B)
+  BREADCRUMB_CATALOG: "Danh mục",
+  BREADCRUMB_PROGRAMS: "Chương trình",
+  PROGRAM_DETAIL_FEE_UNIT: "/tháng",
+  PROGRAM_DETAIL_LESSON_COUNT: (count: number) => `${count} bài`,
+  LESSONS_SECTION_TITLE: "Danh sách bài học",
+  LESSON_CREATE: "Thêm bài học",
+  LESSON_ORDER_HINT_TITLE: "Thứ tự bài học quyết định bài được gắn vào buổi học khi tạo lớp",
+  LESSON_EMPTY_TITLE: "Chưa có bài học nào",
+  LESSON_EMPTY_DESC: "Thêm bài học đầu tiên cho chương trình này.",
+  LESSON_ACTION_EDIT: "Sửa bài học",
+  LESSON_ACTION_DELETE: "Xóa bài học",
+  LESSON_CREATE_SUCCESS: "Thêm bài học thành công",
+  LESSON_UPDATE_SUCCESS: "Cập nhật bài học thành công",
+  LESSON_DELETE_SUCCESS: "Xóa bài học thành công",
+  LESSON_REORDER_SUCCESS: "Cập nhật thứ tự bài học thành công",
+  LESSON_MODAL_CREATE_TITLE: "Thêm bài học",
+  LESSON_MODAL_EDIT_TITLE: "Sửa bài học",
+  LESSON_FIELD_TITLE: "Tên bài học",
+  LESSON_FIELD_TITLE_PLACEHOLDER: "Bài 1: Nhân đơn thức với đa thức",
+  LESSON_FIELD_DESCRIPTION: "Mô tả ngắn",
+  LESSON_FIELD_DESCRIPTION_PLACEHOLDER: "Nội dung chính của bài học",
+  LESSON_DELETE_CONFIRM_TITLE: "Xóa bài học?",
+  LESSON_DELETE_CONFIRM_DESC:
+    "Bài học sẽ bị xóa khỏi chương trình và không thể khôi phục. Các buổi học đã gắn bài này vẫn giữ nguyên.",
+
+  // Tab Phòng học
+  ROOM_COL_NAME: "Tên phòng",
+  ROOM_COL_CAPACITY: "Sức chứa",
+  ROOM_COL_CLASS_COUNT: "Số lớp đang dùng",
+  ROOM_COL_STATUS: "Trạng thái",
+  ROOM_ACTION_EDIT: "Sửa",
+  ROOM_UPDATE_SUCCESS: "Cập nhật phòng học thành công",
+  ROOM_MODAL_EDIT_TITLE: "Sửa phòng học",
+  ROOM_FIELD_NAME: "Tên phòng",
+  ROOM_FIELD_CAPACITY: "Sức chứa",
+  ROOM_FIELD_CAPACITY_UNIT: "học sinh",
+  ROOM_FIELD_ACTIVE: "Đang sử dụng",
+} as const

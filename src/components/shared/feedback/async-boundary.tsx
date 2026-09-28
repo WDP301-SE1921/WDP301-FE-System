@@ -39,12 +39,14 @@ function AsyncBoundary({
     )
   }
 
+  // `data`/`isEmpty` are opt-in: a caller that passes neither (e.g. a detail
+  // view that handles its own not-found/empty branching in `children`) must
+  // fall through to `children`, not silently render `EmptyState` forever.
   const checkEmpty =
     isEmpty !== undefined
       ? isEmpty
-      : data === null ||
-        data === undefined ||
-        (Array.isArray(data) && data.length === 0)
+      : data !== undefined &&
+        (data === null || (Array.isArray(data) && data.length === 0))
 
   if (checkEmpty) {
     return <EmptyState {...emptyProps} />

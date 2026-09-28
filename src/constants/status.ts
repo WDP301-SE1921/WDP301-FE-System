@@ -86,4 +86,20 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     pending: { label: "Chờ duyệt", variant: "warning" },
     rejected: { label: "Từ chối", variant: "danger" },
   },
+  // Trạng thái tính từ khoảng ngày của LongLeave (nghỉ dài hạn) so với hôm nay.
+  longLeave: {
+    active: { label: "Đang nghỉ", variant: "warning" },
+    upcoming: { label: "Sắp tới", variant: "info" },
+    ended: { label: "Đã kết thúc", variant: "neutral" },
+  },
+  // Suy từ Program.isActive — Switch "Đang sử dụng" ở modal Thêm/Sửa chương trình.
+  program: {
+    active: { label: "Đang sử dụng", variant: "success" },
+    inactive: { label: "Ngừng sử dụng", variant: "neutral" },
+  },
+  // Suy từ Room.isActive.
+  room: {
+    active: { label: "Đang sử dụng", variant: "success" },
+    inactive: { label: "Ngừng sử dụng", variant: "neutral" },
+  },
 }

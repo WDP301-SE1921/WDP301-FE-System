@@ -21,6 +21,10 @@ export interface Program {
   totalLessons: number
   /** Học phí một tháng, đơn vị VND. */
   monthlyFee: number
+  /** Mô tả ngắn về chương trình, hiển thị ở modal Thêm/Sửa chương trình. */
+  description?: string
+  /** Chương trình còn được dùng để tạo lớp mới hay không (Switch "Đang sử dụng"). */
+  isActive: boolean
 }
 
 export interface Lesson {
@@ -28,6 +32,16 @@ export interface Lesson {
   programId: string
   order: number
   title: string
+  /** Mô tả ngắn nội dung bài học, hiển thị trong "Danh sách bài học". */
+  description?: string
+}
+
+export interface Room {
+  id: string
+  name: string
+  /** Sức chứa tối đa, đơn vị học sinh. */
+  capacity: number
+  isActive: boolean
 }
 
 export interface Teacher {

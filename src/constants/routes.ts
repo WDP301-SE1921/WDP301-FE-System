@@ -38,6 +38,7 @@ export const ROUTES = {
     TEACHER_SUBSTITUTES: "/manager/teachers/substitutes",
 
     CATALOG: "/manager/catalog",
+    CATALOG_PROGRAM_DETAIL: (id: string) => `/manager/catalog/programs/${id}`,
 
     EMAIL_LOGS: "/manager/notifications/emails",
     SEND_NOTIFICATION: "/manager/notifications/send",
