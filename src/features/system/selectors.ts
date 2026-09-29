@@ -3,7 +3,9 @@ import {
   MOCK_AUDIT_LOG,
   MOCK_MANAGER_ACCOUNTS,
 } from "@/mocks/data/system"
+import { CURRENT_TEACHER_ID, findTeacher } from "@/mocks/data/catalog"
 import type { ManagerAccount, SystemAuditLogEntry } from "@/types/system"
+import type { Teacher } from "@/types/catalog"
 
 /**
  * Selector cho domain "Hệ thống" (quản lý viên + lịch sử thay đổi). Lọc theo
@@ -33,4 +35,9 @@ export function getAuditLogEntries(): SystemAuditLogEntry[] {
 
 export function getCurrentManager(): ManagerAccount | undefined {
   return MOCK_MANAGER_ACCOUNTS.find((item) => item.id === CURRENT_MANAGER_ID)
+}
+
+/** "Giáo viên đang đăng nhập" cho màn Tài khoản cá nhân giáo viên (PROMPT T8). */
+export function getCurrentTeacher(): Teacher | undefined {
+  return findTeacher(CURRENT_TEACHER_ID)
 }

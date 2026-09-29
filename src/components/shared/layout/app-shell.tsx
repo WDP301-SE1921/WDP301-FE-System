@@ -51,7 +51,7 @@ function AppShell({ role = ROLES.MANAGER, badgeCounts, children }: AppShellProps
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
-        <Header onToggleMobileSidebar={() => setMobileOpen(true)} />
+        <Header role={role} onToggleMobileSidebar={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>

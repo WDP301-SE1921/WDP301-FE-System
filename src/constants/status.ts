@@ -102,4 +102,20 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     active: { label: "Đang sử dụng", variant: "success" },
     inactive: { label: "Ngừng sử dụng", variant: "neutral" },
   },
+  // Assignment.status (PROMPT T5/T5B) — xem `types/assignment.ts`.
+  assignment: {
+    draft: { label: "Nháp", variant: "neutral" },
+    assigned: { label: "Đã giao", variant: "info" },
+    closed: { label: "Đã đóng", variant: "secondary" },
+  },
+  // Submission.status (PROMPT T5C/T6/T6B/T6C) — "ai_grading" muốn màu tím theo
+  // docs nhưng `StatusVariant` không có tím, tạm xấp xỉ bằng "info".
+  submission: {
+    not_submitted: { label: "Chưa nộp", variant: "neutral" },
+    pending: { label: "Chờ chấm", variant: "warning" },
+    ai_grading: { label: "AI đang chấm...", variant: "info" },
+    ai_graded: { label: "AI đã chấm - Chờ duyệt", variant: "warning" },
+    reviewed: { label: "Đã duyệt - Chưa công bố", variant: "info" },
+    published: { label: "Đã công bố", variant: "success" },
+  },
 }

@@ -53,13 +53,21 @@ export const ROUTES = {
 
     SCHEDULE: "/teacher/schedule",
     CLASSES: "/teacher/classes",
+    CLASS_DETAIL: (id: string) => `/teacher/classes/${id}`,
     ATTENDANCE: "/teacher/attendance",
+    ATTENDANCE_SESSION: (id: string) => `/teacher/attendance/${id}`,
 
     ASSIGNMENTS: "/teacher/assignments",
+    ASSIGNMENT_NEW: "/teacher/assignments/new",
+    ASSIGNMENT_EDIT: (id: string) => `/teacher/assignments/${id}/edit`,
+    ASSIGNMENT_SUBMISSIONS: (id: string) => `/teacher/assignments/${id}/submissions`,
     SUBMISSIONS: "/teacher/submissions",
 
     GRADING: "/teacher/grading",
+    GRADING_DETAIL: (submissionId: string) => `/teacher/grading/${submissionId}`,
 
     REPORTS: "/teacher/reports",
+
+    PROFILE: "/teacher/profile",
   },
 } as const

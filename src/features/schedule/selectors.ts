@@ -18,6 +18,7 @@ export interface ScheduleFilters {
   teacherId?: string
   subjectId?: string
   room?: string
+  classId?: string
 }
 
 function resolveStatus(sessionDate: string, hasTeacher: boolean): SessionStatus {
@@ -34,6 +35,7 @@ export function getCalendarEvents(filters: ScheduleFilters = {}): CalendarEvent[
     if (filters.teacherId && session.teacherId !== filters.teacherId) return false
     if (filters.subjectId && classRecord.subjectId !== filters.subjectId) return false
     if (filters.room && classRecord.room !== filters.room) return false
+    if (filters.classId && session.classId !== filters.classId) return false
 
     return true
   }).map((session) => {

@@ -125,6 +125,71 @@
   - PROMPT 16B: `proxy.ts` đã rewrite sang `/403` từ trước nhưng **route đó chưa từng tồn tại** (role sai sẽ ra 404) — đã thêm `src/app/403/page.tsx`. `ErrorPage` (`shared/feedback/error-page.tsx`) đổi nút 403/404 từ "Về trang chủ"→`/` cứng sang "Về Dashboard" đọc cookie `STORAGE_KEYS.ROLE_COOKIE` qua `useSyncExternalStore` (không dùng `useEffect`+`setState` vì trúng lint `react-hooks/set-state-in-effect`) để về đúng dashboard theo role, fallback `ROUTES.PUBLIC.HOME` — tránh vòng lặp 403 khi role sai điều hướng nhầm sang dashboard của role kia.
   - PROMPT 16C: `SessionExpiredModal` từng dựng xong nhưng **chưa từng được mount ở đâu**, và không có nơi nào gọi `emitSessionExpired()`. Đã sửa nội dung khớp docs (tiêu đề/mô tả, email đọc từ `STORAGE_KEYS.USER_PROFILE`, thêm field mật khẩu) và **tách kiến trúc**: `session-expired-modal.tsx` (ở `shared/feedback/`) giờ là component thuần nhận `onReauth`/`isSubmitting`/`errorMessage` qua props — không tự gọi `useLogin` nữa vì `shared/` không được import `features/` (`.claude/rules/implement-ui.md` — bản đầu do subagent viết có vi phạm này, đã phát hiện và sửa lại). Logic mutation thật nằm ở `features/auth/components/session-expired-modal-container.tsx`, mount từ `app/(manager)/layout.tsx` (không phải từ `AppShell`, cũng là `shared/`). Trang `dev/components` tự mount container riêng (không nằm trong `(manager)/layout.tsx`) kèm nút demo gọi `emitSessionExpired()`.
   - Cả 2 việc (403 page, session-expired mount) là hạ tầng có sẵn nhưng chưa từng hoạt động thật — không phải màn hình mới bịa ra.
+- **2026-09-29 (Teacher portal T0–T8 — Dashboard/Lịch dạy/Lớp/Điểm danh/Bài tập/Chấm bài AI/Báo cáo/Tài khoản)**:
+  - Toàn bộ cổng thông tin Giáo viên hoàn tất qua 3 batch tuần tự (kế hoạch
+    `zesty-watching-possum`): batch 1+2 dựng `(teacher)/layout.tsx`, Dashboard, Lịch dạy,
+    Lớp của tôi + Chi tiết lớp, Điểm danh, và domain hoàn toàn mới Bài tập/Đề kiểm tra +
+    Chấm bài AI (T5/T5B/T5C/T6/T6B/T6C) — `src/types/assignment.ts`, `src/mocks/data/assignments.ts`,
+    `src/features/assignments/`, `src/features/grading/`. Batch 3 (bullet này) làm nốt
+    T7 (Báo cáo) + T8 (Tài khoản giáo viên) và dọn placeholder.
+  - **PROMPT T7 — Báo cáo** (`(teacher)/teacher/reports`): entity mới `src/types/report.ts`
+    (`TeacherReport`) + mock `src/mocks/data/reports.ts` (5 báo cáo tất định trên các lớp
+    thật của `tch-001`, `mockCreateTeacherReport` tự đặt tên theo lớp+khoảng ngày qua
+    `buildReportName()`, `fileSizeLabel` derive tất định từ số lớp/số học sinh — không
+    `Math.random`). Validator `lib/validators/report.ts` (`createReportSchema`, tái dùng
+    `VALIDATION_MSG.END_DATE_AFTER_START` cho rule `toDate >= fromDate`). Selector
+    `features/reports/selectors.ts` (`getReportRows`, join tên lớp) tái dùng
+    `getMyClassOptions()` của `features/assignments/selectors.ts` cho danh sách lớp thay vì
+    dựng lại. Màn `features/reports/components/teacher-reports-view.tsx`: form Lớp là
+    checkbox-group qua `Controller` (không có multi-select `EntityPicker` sẵn — `EntityPicker`
+    chỉ hỗ trợ chọn 1), 2 field ngày Từ/Đến dựng cục bộ bằng `ui/popover` + `ui/calendar`
+    (không dùng `shared/pickers/date-range-picker.tsx` vì component đó bind cứng qua nuqs,
+    không hợp với state của 1 form), nút "Tạo báo cáo" hiện "Đang tổng hợp..." + `Progress`
+    tĩnh khi `isPending`. Bảng lịch sử dùng `DataTable`/`TablePagination` chuẩn +
+    `ExportButton` ×2 ("Tải Excel"/"Tải PDF", `onExport` no-op có toast theo đúng
+    `.claude/rules/mock-data.md`). **Bỏ qua picker Học sinh (tùy chọn)** — docs ghi rõ "để
+    trống = cả lớp" nên không bắt buộc, và `EntityPicker` sẵn có không hỗ trợ multi-select
+    nên không ép dùng; field `studentProfileIds` vẫn có trong type/schema cho tương lai.
+    Message `constants/messages/events/report.ts` (`REPORT_MSG`), thêm
+    `VALIDATION_MSG.CLASSES_REQUIRED`.
+  - **PROMPT T8 — Tài khoản giáo viên** (`(teacher)/teacher/profile`, route mới
+    `ROUTES.TEACHER.PROFILE`): clone gần như 1:1 `features/system/components/profile-view.tsx`
+    của Quản lý → `features/system/components/teacher-profile-view.tsx` (cùng thư mục
+    `features/system/` vì cùng là màn "tài khoản đang đăng nhập", không tách feature mới),
+    nguồn dữ liệu đổi sang `Teacher`/`CURRENT_TEACHER_ID`/`findTeacher`
+    (`mocks/data/catalog.ts`). Thêm field readonly "Môn dạy" (dòng mới, dưới Email) render
+    `SubjectTag` cho từng `subjectIds` qua `findSubject()`, kèm hint tương tự
+    `EMAIL_DISABLED_HINT`. Mutation `mockUpdateTeacherProfile` thêm vào `catalog.ts` (cạnh
+    `MOCK_TEACHERS`/`findTeacher`), mirror hệt `mockUpdateManagerProfile`. **Đổi mật khẩu
+    dùng lại nguyên `mockChangeManagerPassword`** (`mocks/data/system.ts`) — hàm này vốn đã
+    tra theo email trong `MOCK_ACCOUNTS` bất kể role nên role-agnostic sẵn, `tch-001`
+    (`minh.tran@edugrade.vn`) đã có sẵn trong `MOCK_ACCOUNTS` từ PROMPT 1 nên không cần
+    thêm tài khoản mới. Selector `getCurrentTeacher()` thêm vào `features/system/selectors.ts`
+    (cạnh `getCurrentManager()`). Hook mới `features/system/hooks/use-teacher-profile.ts`.
+    Message `TEACHER_PROFILE_MSG` thêm vào `constants/messages/events/teacher-portal.ts`
+    (cùng file với `TEACHER_CLASS_MSG`/`TEACHER_ATTENDANCE_MSG`).
+  - `header.tsx`: `UserMenu` của giáo viên đổi `accountHref` từ fallback
+    `ROUTES.TEACHER.DASHBOARD` sang `ROUTES.TEACHER.PROFILE` — "Tài khoản"/"Đổi mật khẩu"
+    trên dropdown avatar giờ mở đúng trang.
+  - **Dọn placeholder bắt buộc** (`features/dashboard/teacher-selectors.ts` từng ghi rõ
+    "xóa khi domain Bài tập/Chấm bài được xây"): xóa `TEACHER_STATIC_PLACEHOLDERS`,
+    `SubmissionPlaceholderStatus`, `SubmissionPlaceholderRow`, `getRecentSubmissionsPlaceholder`.
+    Thay bằng số liệu thật: `ungradedSubmissions` đếm `Submission.status === "pending"`,
+    `pendingAiReview` lấy thẳng `getGradingQueueCounts().pending_review` của
+    `features/grading/selectors.ts` (khớp đúng tab "Chờ duyệt" T6, gồm cả `ai_graded` lẫn
+    `ai_grading` — không tính lại khác đi), `assignmentsDueSoon` đếm bài `status: "assigned"`
+    có `dueDate` trong `BUSINESS_RULES.ASSIGNMENT_DUE_SOON_HOURS` giờ tới (thêm hằng số này,
+    72 giờ — chọn mốc cho ra đúng 2 bài trong bộ mock, khớp tinh thần số liệu cũ). Bảng
+    "Bài nộp gần đây" đổi sang `getRecentSubmissions()` (dữ liệu thật, sort theo
+    `submittedAt`), `teacher-dashboard-view.tsx` đổi từ Badge dựng tay sang
+    `<StatusBadge category="submission" .../>` chuẩn (xóa 3 key
+    `SUBMISSION_STATUS_PENDING/AI_GRADED/PUBLISHED` không còn dùng ở
+    `TEACHER_DASHBOARD_MSG`). `(teacher)/layout.tsx` đổi `badgeCounts` sang gọi
+    `getTeacherPendingCounts()` thật thay vì hằng số tĩnh.
+  - Verify cuối batch (đủ cả 3 batch cộng lại): `npx eslint --fix .`, `npm run lint`,
+    `npx tsc --noEmit`, `npm run build` đều sạch — chỉ còn đúng 4 warning có sẵn từ trước
+    (không liên quan): `session-drawer.tsx`, `section-card.tsx`,
+    `entity-picker-presets.tsx`, `entity-picker.tsx`.
 - **Current System Status**:
   - **Mock-Only**: The application is currently mock-only (using local state & mock data fixtures). No active backend API client connected yet.
-- **Next** — PROMPT 13/13B (Lịch sử email, Gửi thông báo) chưa implement dù route đã có sẵn trong `constants/routes.ts`/`menu.ts`; ngoài ra Domain Features Implementation (`features/` domain logic & views) cho role Giáo viên vẫn chưa bắt đầu — `(teacher)/layout.tsx` chưa tồn tại.
+- **Next** — PROMPT 13/13B (Lịch sử email, Gửi thông báo) chưa implement dù route đã có sẵn trong `constants/routes.ts`/`menu.ts`; Domain Features Implementation cho role Giáo viên (T0–T8) đã xong đủ 7 màn theo `docs/ui-screens-teacher.md`.

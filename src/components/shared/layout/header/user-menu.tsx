@@ -28,6 +28,10 @@ export interface UserMenuProps {
   roleLabel?: string
   avatarUrl?: string
   email?: string
+  /** Dòng nhỏ dưới tên — mặc định hiện `email`, truyền vào để hiện thứ khác (vd "Giáo viên · Toán"). */
+  subtitleLine?: string
+  /** Route "Tài khoản"/"Đổi mật khẩu" trỏ tới — mặc định trang hồ sơ Quản lý. */
+  accountHref?: string
   onLogout?: () => void
 }
 
@@ -36,6 +40,8 @@ function UserMenu({
   roleLabel = "Quản lý",
   avatarUrl,
   email = "admin@edugrade.edu.vn",
+  subtitleLine,
+  accountHref = ROUTES.MANAGER.PROFILE,
   onLogout,
 }: UserMenuProps) {
   const router = useRouter()
@@ -64,7 +70,7 @@ function UserMenu({
               {roleLabel}
             </Badge>
           </div>
-          <span className="text-[11px] text-muted-foreground">{email}</span>
+          <span className="text-[11px] text-muted-foreground">{subtitleLine ?? email}</span>
         </div>
         <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
@@ -77,12 +83,12 @@ function UserMenu({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push(ROUTES.MANAGER.PROFILE)}>
+          <DropdownMenuItem onClick={() => router.push(accountHref)}>
             <HugeiconsIcon icon={UserIcon} />
             <span>{ACTION_LABEL.ACCOUNT}</span>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => router.push(`${ROUTES.MANAGER.PROFILE}?tab=password`)}
+            onClick={() => router.push(`${accountHref}?tab=password`)}
           >
             <HugeiconsIcon icon={SecurityPasswordIcon} />
             <span>{ACTION_LABEL.CHANGE_PASSWORD}</span>

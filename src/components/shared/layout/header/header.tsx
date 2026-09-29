@@ -6,15 +6,24 @@ import { GlobalSearch } from "./global-search"
 import { QuickCreateMenu } from "./quick-create-menu"
 import { NotificationBell } from "./notification-bell"
 import { UserMenu } from "./user-menu"
+import { ROLES, ROLE_LABEL, type Role } from "@/constants/roles"
+import { ROUTES } from "@/constants/routes"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Menu01Icon } from "@hugeicons/core-free-icons"
 
 export interface HeaderProps {
+  role?: Extract<Role, "manager" | "teacher">
   onToggleMobileSidebar?: () => void
   onOpenGlobalSearch?: () => void
 }
 
-function Header({ onToggleMobileSidebar, onOpenGlobalSearch }: HeaderProps) {
+function Header({
+  role = ROLES.MANAGER,
+  onToggleMobileSidebar,
+  onOpenGlobalSearch,
+}: HeaderProps) {
+  const isTeacher = role === ROLES.TEACHER
+
   return (
     <header
       data-slot="header"
@@ -36,10 +45,20 @@ function Header({ onToggleMobileSidebar, onOpenGlobalSearch }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <QuickCreateMenu />
+        {!isTeacher && <QuickCreateMenu />}
         <NotificationBell />
         <div className="h-6 w-px bg-border hidden sm:block" />
-        <UserMenu />
+        {isTeacher ? (
+          <UserMenu
+            name="Trần Văn Minh"
+            roleLabel={ROLE_LABEL.teacher}
+            subtitleLine="Giáo viên · Toán"
+            email="minh.tran@edugrade.vn"
+            accountHref={ROUTES.TEACHER.PROFILE}
+          />
+        ) : (
+          <UserMenu />
+        )}
       </div>
     </header>
   )

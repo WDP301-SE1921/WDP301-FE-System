@@ -8,6 +8,7 @@ import {
   getClassTotals,
   type ClassDetail,
   type ClassRow,
+  type ClassRowFilters,
   type ClassTotals,
 } from "@/features/classes/selectors"
 
@@ -17,12 +18,12 @@ export interface ClassesData {
 }
 
 /** Chữ ký hook giữ nguyên khi nối backend — chỉ đổi `queryFn`. */
-export function useClasses() {
+export function useClasses(filters: ClassRowFilters = {}) {
   return useQuery<ClassesData>({
-    queryKey: ["classes"],
+    queryKey: ["classes", filters],
     queryFn: () =>
       mockQuery(() => {
-        const rows = getClassRows()
+        const rows = getClassRows(filters)
         return { rows, totals: getClassTotals(rows) }
       }),
   })

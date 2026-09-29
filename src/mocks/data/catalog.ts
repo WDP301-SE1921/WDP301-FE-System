@@ -254,6 +254,9 @@ export const MOCK_LESSONS: Lesson[] = [
   },
 ]
 
+/** "Giáo viên đang đăng nhập" cho toàn bộ giai đoạn mock — khớp `MOCK_TEACHERS[0]`, cùng tiền lệ `CURRENT_MANAGER_ID` (`mocks/data/system.ts`). */
+export const CURRENT_TEACHER_ID = "tch-001"
+
 export const MOCK_TEACHERS: Teacher[] = [
   { id: "tch-001", name: "Trần Văn Minh", email: "minh.tran@edugrade.vn", phone: "0912 334 881", code: "GV-MAT01", subjectIds: ["subj-math"], status: "active", yearsExperience: 8, rating: 4.9, joinedAt: "2018-08-01", isHeadTeacher: true, specialty: "Toán học (THCS & Luyện thi Chuyên)" },
   { id: "tch-002", name: "Lê Thu Hà", email: "ha.le@edugrade.vn", phone: "0983 112 233", code: "GV-CHM02", subjectIds: ["subj-chem"], status: "active", yearsExperience: 6, rating: 4.8, joinedAt: "2020-02-10", specialty: "Hóa học THCS" },
@@ -732,4 +735,25 @@ export function mockUpdateRoom(roomId: string, input: RoomInput): Room {
   room.isActive = input.isActive
 
   return room
+}
+
+/**
+ * Mutation giả lập cho Tài khoản cá nhân của giáo viên (PROMPT T8) — mirror
+ * `mockUpdateManagerProfile` (`mocks/data/system.ts`). "Môn dạy" (`subjectIds`)
+ * không sửa được ở đây — do Quản lý phân công, xem `TEACHER_PROFILE_MSG`.
+ */
+export interface UpdateTeacherProfileInput {
+  id: string
+  name: string
+  phone: string
+}
+
+export function mockUpdateTeacherProfile(input: UpdateTeacherProfileInput): Teacher {
+  const teacher = findTeacher(input.id)
+  if (!teacher) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  teacher.name = input.name.trim()
+  teacher.phone = input.phone.trim()
+
+  return teacher
 }

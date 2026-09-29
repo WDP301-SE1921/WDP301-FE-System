@@ -17,6 +17,10 @@ export const BUSINESS_RULES = {
   ATTENDANCE_RATE_TARGET: 95,
   /** Sĩ số tối đa một lớp. */
   CLASS_CAPACITY_MAX: 20,
+  /** Ngưỡng độ tin cậy AI (%) để đủ điều kiện duyệt nhanh hàng loạt (PROMPT T6). */
+  AI_HIGH_CONFIDENCE_THRESHOLD: 95,
+  /** Bài tập được tính "sắp hết hạn nộp" nếu hạn nộp trong vòng N giờ tới (Dashboard giáo viên). */
+  ASSIGNMENT_DUE_SOON_HOURS: 72,
 } as const
 
 export const WEEKDAYS = [

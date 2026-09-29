@@ -28,7 +28,6 @@
 | PROMPT T6C | Trạng thái AI đang chấm | biến thể của `(teacher)/grading` |
 | PROMPT T7 | Báo cáo | `(teacher)/reports` |
 | PROMPT T8 | Tài khoản cá nhân (giáo viên) | `(teacher)/profile` |
-| PROMPT T9 | Trạng thái chung (giáo viên) | `/dev/components` |
 
 ---
 
@@ -223,12 +222,3 @@ sửa được).
 
 ---
 
-## PROMPT T9 — Trạng thái chung (giáo viên)
-
-Tương tự PROMPT 16 của Quản lý, chỉ thêm các badge riêng của giáo viên nếu Stitch cần
-tách riêng project:
-- Badge chấm bài: "Chờ chấm" (xám), "AI đang chấm" (tím, có spinner), "AI đã chấm"
-  (cam), "Đã duyệt" (xanh dương), "Đã công bố" (xanh lá).
-- Badge điểm danh buổi: "Chưa điểm danh" (đỏ), "Đã điểm danh" (xanh lá).
-- Empty state riêng: "Chưa có bài tập nào" + nút "Tạo bài tập"; "Không có bài chờ
-  duyệt" (khi hàng đợi AI trống).

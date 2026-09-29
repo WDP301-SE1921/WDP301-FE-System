@@ -1,6 +1,8 @@
 import type { AttendanceRecord, AttendanceStatus } from "@/types/student"
 import { MOCK_ENROLLMENTS } from "@/mocks/data/students"
-import { findSessionsByClass } from "@/mocks/data/catalog"
+import { findClassSession, findSessionsByClass } from "@/mocks/data/catalog"
+import { MockError } from "@/mocks/utils/mock-query"
+import { ERROR_MSG } from "@/constants/messages/error"
 
 /**
  * Bản ghi điểm danh giả lập cho giai đoạn MOCK-ONLY.
@@ -74,6 +76,43 @@ export function findAttendanceByStudent(
 
 export function findAttendanceBySession(classSessionId: string): AttendanceRecord[] {
   return MOCK_ATTENDANCE.filter((item) => item.classSessionId === classSessionId)
+}
+
+export interface SaveAttendanceInput {
+  studentProfileId: string
+  status: AttendanceStatus
+  note?: string
+}
+
+/**
+ * Lưu điểm danh của Giáo viên cho 1 buổi học (PROMPT T4B): thay toàn bộ bản ghi
+ * cũ của buổi này bằng lượt điểm danh mới, và đánh dấu buổi đã điểm danh.
+ */
+export function mockSaveAttendance(
+  sessionId: string,
+  records: SaveAttendanceInput[]
+): AttendanceRecord[] {
+  const session = findClassSession(sessionId)
+  if (!session) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  for (let index = MOCK_ATTENDANCE.length - 1; index >= 0; index -= 1) {
+    if (MOCK_ATTENDANCE[index].classSessionId === sessionId) {
+      MOCK_ATTENDANCE.splice(index, 1)
+    }
+  }
+
+  const newRecords: AttendanceRecord[] = records.map((record, index) => ({
+    id: `att-${sessionId}-${index + 1}`,
+    classSessionId: sessionId,
+    studentProfileId: record.studentProfileId,
+    status: record.status,
+    note: record.note,
+  }))
+
+  MOCK_ATTENDANCE.push(...newRecords)
+  session.attendanceMarkedAt = new Date().toISOString()
+
+  return newRecords
 }
 
 /** Tỷ lệ đi học toàn trung tâm theo 7 ngày gần nhất, dùng cho biểu đồ Dashboard. */

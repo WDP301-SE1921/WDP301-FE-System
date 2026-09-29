@@ -36,7 +36,8 @@ export interface DataTableProps<TData extends RowData, TValue = unknown> {
   isError?: boolean
   error?: Error | null
   onRetry?: () => void
-  selectable?: boolean
+  /** `true` cho phép chọn mọi dòng; truyền hàm để chặn chọn một số dòng (vd dòng đang xử lý). */
+  selectable?: boolean | ((row: TData) => boolean)
   rowSelection?: RowSelectionState
   onRowSelectionChange?: (selection: RowSelectionState) => void
   sorting?: SortingState
@@ -80,6 +81,7 @@ function DataTable<TData extends RowData, TValue = unknown>({
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
+          disabled={!row.getCanSelect()}
           aria-label="Select row"
         />
       ),
@@ -97,7 +99,8 @@ function DataTable<TData extends RowData, TValue = unknown>({
       rowSelection,
       sorting: sorting ?? [],
     },
-    enableRowSelection: selectable,
+    enableRowSelection:
+      typeof selectable === "function" ? (row) => (selectable as (data: TData) => boolean)(row.original) : selectable,
     onRowSelectionChange: (updater: Updater<RowSelectionState>) => {
       const next = typeof updater === "function" ? updater(rowSelection) : updater
       onRowSelectionChange?.(next)
