@@ -28,8 +28,8 @@ import { ERROR_MSG } from "@/constants/messages/error"
 import { SYSTEM_MSG } from "@/constants/messages/events/system"
 import { FIELD_LIMITS } from "@/constants/validation"
 import {
-  useChangeManagerPassword,
-  useCurrentManager,
+  useChangePassword,
+  useCurrentStaff,
   useUpdateProfile,
 } from "@/features/system/hooks/use-profile"
 import {
@@ -39,10 +39,10 @@ import {
   type UpdateProfileFormInput,
 } from "@/lib/validators/system"
 import { MockError } from "@/mocks/utils/mock-query"
-import type { ManagerAccount } from "@/types/system"
+import type { StaffAccount } from "@/types/system"
 
 function ProfileView() {
-  const currentManager = useCurrentManager()
+  const currentManager = useCurrentStaff()
   const [tab, setTab] = useQueryState("tab", parseAsString.withDefault("info"))
 
   return (
@@ -82,7 +82,7 @@ function ProfileView() {
   )
 }
 
-function ProfileInfoTab({ manager }: { manager: ManagerAccount }) {
+function ProfileInfoTab({ manager }: { manager: StaffAccount }) {
   const updateProfile = useUpdateProfile()
 
   const {
@@ -194,7 +194,7 @@ function getPasswordStrength(password: string): {
 }
 
 function ProfilePasswordTab({ email }: { email: string }) {
-  const changePassword = useChangeManagerPassword()
+  const changePassword = useChangePassword()
   const [visibility, setVisibility] = React.useState({
     current: false,
     next: false,

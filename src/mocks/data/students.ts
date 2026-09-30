@@ -9,7 +9,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     id: "stu-001",
     parentAccountId: "par-007",
     name: "Nguyễn Hoàng Nam",
-    code: "HS-2024-0012",
+    code: "HS-2024-0011",
     grade: 8,
     status: "active",
     createdAt: "2025-10-02",
@@ -74,7 +74,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     name: "Bùi Gia Hân",
     code: "HS-2024-0819",
     grade: 6,
-    status: "pending_link",
+    status: "active",
     createdAt: "2026-09-12",
   },
   {
@@ -137,7 +137,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     name: "Đỗ Minh Quân",
     code: "HS-2024-0106",
     grade: 8,
-    status: "pending_link",
+    status: "active",
     createdAt: "2026-09-10",
   },
   {
@@ -146,7 +146,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     name: "Đỗ Minh Châu",
     code: "HS-2024-0107",
     grade: 6,
-    status: "pending_link",
+    status: "active",
     createdAt: "2026-09-10",
   },
   {
@@ -164,7 +164,7 @@ export const MOCK_STUDENTS: StudentProfile[] = [
     name: "Bùi Gia Hân",
     code: "HS-2024-0820",
     grade: 6,
-    status: "pending_link",
+    status: "active",
     createdAt: "2026-09-15",
   },
 ]
@@ -189,7 +189,7 @@ export const MOCK_ENROLLMENTS: Enrollment[] = [
   { id: "enr-011", studentProfileId: "stu-006", subjectId: "subj-phys", classId: "cls-phys-7a", months: 1, status: "reserved", startDate: "2026-08-10", endDate: "2026-09-10", tuitionAmount: 600000, completedLessons: 8 },
   // Vũ Quốc Đạt — Toán 7A
   { id: "enr-012", studentProfileId: "stu-007", subjectId: "subj-math", classId: "cls-math-7a", months: 2, status: "active", startDate: "2026-09-28", endDate: "2026-11-28", tuitionAmount: 1200000, completedLessons: 16 },
-  // Bùi Gia Hân — Toán 6A, Sinh 6A (chờ liên kết)
+  // Bùi Gia Hân — Toán 6A, Sinh 6A
   { id: "enr-013", studentProfileId: "stu-008", subjectId: "subj-math", classId: "cls-math-10a", months: 3, status: "active", startDate: "2026-09-16", endDate: "2026-12-16", tuitionAmount: 1500000, completedLessons: 0 },
   { id: "enr-014", studentProfileId: "stu-008", subjectId: "subj-biol", classId: "cls-biol-6a", months: 3, status: "active", startDate: "2026-09-16", endDate: "2026-12-16", tuitionAmount: 1500000, completedLessons: 0 },
   // Nguyễn Minh Khang — Toán 8A, Hóa 8B (hồ sơ chi tiết chính)

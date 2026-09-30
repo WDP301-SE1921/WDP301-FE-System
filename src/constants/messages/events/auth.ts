@@ -10,10 +10,10 @@ export const AUTH_MSG = {
 
   // ---------- Đăng nhập ----------
   LOGIN_TITLE: "Đăng nhập",
-  LOGIN_DESC: "Dành cho Quản lý và Giáo viên",
+  LOGIN_DESC: "Dành cho nhân sự trung tâm và Giáo viên",
   LOGIN_BRAND_TITLE: "Quản lý trung tâm dạy thêm dễ dàng hơn",
   LOGIN_BRAND_DESC:
-    "Nền tảng số hóa toàn diện cho Quản lý và Giáo viên: quản trị lớp học, điều phối phòng học, quản lý phụ huynh & học sinh trong một cổng.",
+    "Nền tảng số hóa toàn diện cho nhân sự trung tâm và Giáo viên: quản trị lớp học, điều phối phòng học, quản lý phụ huynh & học sinh trong một cổng.",
   LOGIN_ILLUSTRATION_BADGE: "Đăng nhập tự động",
   LOGIN_ILLUSTRATION_TITLE: "Vận hành thông minh & chính xác",
   LOGIN_ILLUSTRATION_DESC:

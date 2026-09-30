@@ -4,10 +4,17 @@ thật trong repo, LUÔN tuân thủ các quy tắc sau. Đây là quy tắc b�
 ## 0. BỐI CẢNH DỰ ÁN (đọc trước khi làm bất cứ gì)
 
 - Dự án: EduGrade — hệ thống quản lý trung tâm dạy thêm (Toán/Lý/Hóa/Sinh, khối 6–9).
-- Chỉ 2 role dùng web: Quản lý (manager) và Giáo viên (teacher). Phụ huynh CHỈ dùng
-  app mobile — không tạo bất kỳ trang/route nào cho phụ huynh trên web.
-- Phân quyền chỉ theo role, KHÔNG có permission chi tiết. Mọi quản lý có đủ toàn bộ
-  tính năng như nhau — không tạo UI ẩn/hiện theo quyền con trong 1 role.
+- 5 role dùng web: Quản trị viên (`admin`), Quản lý trung tâm (`center_manager`), Thiết kế
+  giáo trình (`curriculum_designer`), Nhân viên (`staff`) — 4 role này dùng chung cây
+  `/manager/*` (route group `(manager)` = "back-office trung tâm") — và Giáo viên
+  (`teacher`, cây `/teacher/*`). Phụ huynh CHỈ dùng app mobile — không tạo bất kỳ
+  trang/route nào cho phụ huynh trên web.
+- Phân quyền theo role ở mức MÀN HÌNH: mỗi role có một tập màn hình cố định, nguồn duy
+  nhất là `src/constants/role-access.ts` (`ROLE_AREAS`, `canAccessPath`). Không có
+  permission chi tiết ngoài bảng đó — không tạo UI ẩn/hiện theo quyền con trong 1 role.
+  Nút/link dẫn tới màn mà role hiện tại không vào được phải ẩn (dùng `useRoleAccess()`),
+  không để người dùng bấm rồi nhận 403. Ngoại lệ duy nhất: `ACCOUNT_MANAGE_TARGETS`
+  (role nào được tạo/mời tài khoản của role nào).
 - Đang ở giai đoạn MOCK-ONLY: chưa có backend thật. Không gọi API thật, không thêm
   Axios/service gọi network. Dữ liệu lấy từ `src/mocks/data/*` qua TanStack Query với
   queryFn là hàm mock trong `src/mocks/utils/mock-query.ts`.
@@ -89,7 +96,7 @@ Trước khi viết bất kỳ chuỗi text, số, route, hay className màu nà
    | Nội dung Confirm dialog                    | constants/messages/confirm.ts → CONFIRM_MSG |
    | Empty state (tiêu đề/mô tả)                | constants/messages/empty.ts → EMPTY_MSG |
    | Label + màu badge trạng thái               | constants/status.ts (dùng qua `<StatusBadge domain="..." status="..." />`, KHÔNG tự viết className màu tay) |
-   | Route trang                                | constants/routes.ts → ROUTES.MANAGER.* / ROUTES.TEACHER.* |
+   | Route trang                                | constants/routes.ts → ROUTES.MANAGER.* (back-office) / ROUTES.TEACHER.* |
    | Giới hạn nghiệp vụ (1–12 tháng, 7 ngày hết hạn, ngưỡng cảnh báo...) | constants/business-rules.ts → BUSINESS_RULES |
    | Danh sách thứ trong tuần                   | constants/business-rules.ts → WEEKDAYS |
    | Regex, giới hạn ký tự field                | constants/validation.ts → REGEX, FIELD_LIMITS |
@@ -97,7 +104,8 @@ Trước khi viết bất kỳ chuỗi text, số, route, hay className màu nà
    | Page size, số dòng/trang mặc định          | constants/pagination.ts → PAGINATION |
    | Duration toast, debounce search            | constants/ui.ts → TOAST_DURATION, DEBOUNCE |
    | Màu/label theo môn học                     | constants/subjects.ts |
-   | Vai trò người dùng                         | constants/roles.ts → ROLES (chỉ manager | teacher) |
+   | Vai trò người dùng                         | constants/roles.ts → ROLES, ROLE_LABEL (admin / center_manager / curriculum_designer / staff / teacher / parent) |
+   | Role nào vào được màn nào, trang chủ theo role | constants/role-access.ts → ROLE_AREAS, canAccessPath, ROLE_HOME_ROUTE |
    | Key lưu localStorage (trạng thái sidebar...) | constants/storage-keys.ts → STORAGE_KEYS |
 
 Nếu màn hình cần message/constant chưa có:
@@ -127,8 +135,10 @@ Nếu sau khi tra 2 bảng ở mục 1 và 2 mà thấy KHÔNG có gì phù hợ
 - Field nhập liệu dùng `react-hook-form` + `zod`, schema đặt trong `src/lib/validators/`
   theo đúng field name của data contract (không tự đổi tên field "cho đẹp").
 - Route web KHÔNG có phần dành cho phụ huynh.
-- Mọi trang mới phải nằm trong route group đúng: `(manager)` cho quản lý,
-  `(teacher)` cho giáo viên.
+- Mọi trang mới phải nằm trong route group đúng: `(manager)` (URL `/manager/*`) cho
+  admin / quản lý trung tâm / thiết kế giáo trình / nhân viên, `(teacher)` cho giáo viên.
+  Trang mới của `(manager)` phải được khai báo trong `ROUTE_AREAS` của
+  `constants/role-access.ts` (nếu không, proxy sẽ trả 403 cho mọi role).
 - `shared/` KHÔNG được import từ `mocks/`, `features/`, hay service gọi API — component
   shared chỉ nhận dữ liệu qua props/fetcher truyền từ ngoài vào.
 

@@ -29,7 +29,7 @@ This document provides core project instructions, architectural boundaries, code
 * **App Router Layer (`src/app/`):**[cite: 1]
   * Serves strictly as Page Controllers and Layout Wrappers[cite: 1].
   * **Rule:** Do NOT write business logic inside `page.tsx` files. Delegate logic to `src/features/` or `src/components/`[cite: 1].
-  * Scoped strictly using Route Groups: `(auth)`, `(manager)`, `(teacher)`, `(parent)`, `(public)`[cite: 1].
+  * Scoped strictly using Route Groups: `(auth)`, `(manager)`, `(teacher)`, `(parent)`, `(public)`[cite: 1]. `(manager)` is the shared back-office (`/manager/*`) for `admin`, `center_manager`, `curriculum_designer` and `staff`; which role sees which screen is defined only in `src/constants/role-access.ts`.
 
 * **Feature Domain Layer (`src/features/`):**[cite: 1]
   * Business logic, feature hooks, and domain modules reside in domain folders (`attendance/`, `classes/`, `payments/`, `students/`)[cite: 1].
@@ -43,8 +43,8 @@ This document provides core project instructions, architectural boundaries, code
   * Must use `react-hook-form` paired with Zod validation schemas imported from `src/lib/validators/`. Hand-rolled `useState` form management is prohibited[cite: 1].
 
 * **Domain & Account Model:**[cite: 1]
-  * Parent Account = Unique Login Email + Password[cite: 1].
-  * Student Profile = Child record attached under a Parent Account (1 Parent can manage N Children)[cite: 1].
+  * Parent Account = Unique Login Email + Password, self-registered on the mobile app[cite: 1].
+  * Student Profile = Child record attached under a Parent Account (1 Parent can manage N Children), created by the parent on mobile before the center can enroll it[cite: 1]. There is no activation link/code for parents.
   * There are **NO separate Student login accounts**. Students act via their Parent's active session[cite: 1].
   * AI evaluation yields a **PROPOSED** draft state and **MUST** be reviewed and published by a Teacher before parents/students can view it[cite: 1].
 

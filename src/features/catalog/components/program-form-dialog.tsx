@@ -26,6 +26,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/toast"
+import { BUSINESS_RULES } from "@/constants/business-rules"
 import { ACTION_LABEL } from "@/constants/messages/common"
 import { ERROR_MSG } from "@/constants/messages/error"
 import { CATALOG_MSG } from "@/constants/messages/events/catalog"
@@ -53,6 +54,8 @@ function toDefaultValues(program?: Program): ProgramFormInput {
     subjectId: program?.subjectId ?? "",
     grade: program ? String(program.grade) : "",
     monthlyFee: program?.monthlyFee ?? 0,
+    totalLessons: program?.totalLessons ?? 24,
+    textbook: program?.textbook ?? "",
     description: program?.description ?? "",
     isActive: program?.isActive ?? true,
   }
@@ -248,6 +251,44 @@ function ProgramFormDialog({ open, onOpenChange, mode, program }: ProgramFormDia
             {errors.monthlyFee && (
               <p className="text-xs text-destructive">{errors.monthlyFee.message}</p>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="program-total-lessons" required>
+                {CATALOG_MSG.PROGRAM_FIELD_TOTAL_LESSONS}
+              </Label>
+              <Input
+                id="program-total-lessons"
+                type="number"
+                min={1}
+                max={BUSINESS_RULES.PROGRAM_LESSONS_MAX}
+                error={Boolean(errors.totalLessons)}
+                {...register("totalLessons", { valueAsNumber: true })}
+              />
+              <p
+                className={
+                  errors.totalLessons
+                    ? "text-xs text-destructive"
+                    : "text-xs text-muted-foreground"
+                }
+              >
+                {errors.totalLessons?.message ?? CATALOG_MSG.PROGRAM_FIELD_TOTAL_LESSONS_HINT}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="program-textbook">{CATALOG_MSG.PROGRAM_FIELD_TEXTBOOK}</Label>
+              <Input
+                id="program-textbook"
+                placeholder={CATALOG_MSG.PROGRAM_FIELD_TEXTBOOK_PLACEHOLDER}
+                error={Boolean(errors.textbook)}
+                {...register("textbook")}
+              />
+              {errors.textbook && (
+                <p className="text-xs text-destructive">{errors.textbook.message}</p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-1.5">

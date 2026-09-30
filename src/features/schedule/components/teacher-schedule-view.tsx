@@ -4,8 +4,9 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { parseAsString, useQueryState } from "nuqs"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Alert01Icon } from "@hugeicons/core-free-icons"
+import { Alert01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import {
@@ -27,11 +28,14 @@ import { PageContainer } from "@/components/shared/layout/page-container"
 import { PageHeader } from "@/components/shared/layout/page-header"
 import { SCHEDULE_MSG } from "@/constants/messages/events/schedule"
 import { TEACHER_SCHEDULE_MSG } from "@/constants/messages/events/teacher-portal"
+import { TEACHER_ABSENCE_MSG } from "@/constants/messages/events/teacher-absence"
 import { ROUTES } from "@/constants/routes"
-import { CURRENT_TEACHER_ID } from "@/mocks/data/catalog"
+import { CURRENT_TEACHER_ID, MOCK_TODAY } from "@/mocks/data/catalog"
 import { getClassRows } from "@/features/classes/selectors"
 import { getSessionDetail } from "@/features/schedule/selectors"
 import { useSchedule } from "@/features/schedule/hooks/use-schedule"
+import { ReportAbsenceDialog } from "@/features/schedule/components/report-absence-dialog"
+import { useMyPendingAbsenceSessionIds } from "@/features/work-credits/hooks/use-work-credits"
 
 const ALL_VALUE = "all"
 
@@ -68,11 +72,20 @@ function TeacherScheduleView() {
   )
 
   const schedule = useSchedule(filters)
+  const pendingAbsenceIds = useMyPendingAbsenceSessionIds(CURRENT_TEACHER_ID)
+  const [reportSessionId, setReportSessionId] = React.useState<string | null>(null)
 
   const sessionDetail = React.useMemo(
     () => (selectedSessionId ? getSessionDetail(selectedSessionId) : null),
     [selectedSessionId]
   )
+
+  const reportSessionDetail = React.useMemo(() => {
+    const detail = reportSessionId ? getSessionDetail(reportSessionId) : null
+    return detail
+      ? { id: detail.id, title: detail.title, date: detail.date, time: detail.time }
+      : null
+  }, [reportSessionId])
 
   return (
     <PageContainer>
@@ -84,6 +97,11 @@ function TeacherScheduleView() {
           { label: TEACHER_SCHEDULE_MSG.TITLE },
         ]}
       />
+
+      <Alert variant="info">
+        <HugeiconsIcon icon={InformationCircleIcon} />
+        <AlertDescription>{TEACHER_ABSENCE_MSG.SCHEDULE_FIXED_NOTE}</AlertDescription>
+      </Alert>
 
       <Card className="gap-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -171,9 +189,28 @@ function TeacherScheduleView() {
                   router.push(ROUTES.TEACHER.ATTENDANCE_SESSION(sessionDetail.id)),
                 onViewClassDetail: () =>
                   router.push(ROUTES.TEACHER.CLASS_DETAIL(sessionDetail.classId)),
+                // Chỉ báo nghỉ được buổi của mình chưa diễn ra, chưa điểm danh, chưa hủy, chưa báo.
+                notice: pendingAbsenceIds.data?.includes(sessionDetail.id)
+                  ? TEACHER_ABSENCE_MSG.REPORTED_BADGE
+                  : undefined,
+                onReportAbsence:
+                  sessionDetail.teacherId === CURRENT_TEACHER_ID &&
+                  sessionDetail.date >= MOCK_TODAY &&
+                  !sessionDetail.isMarked &&
+                  !sessionDetail.isCancelled &&
+                  pendingAbsenceIds.data &&
+                  !pendingAbsenceIds.data.includes(sessionDetail.id)
+                    ? () => setReportSessionId(sessionDetail.id)
+                    : undefined,
               }
             : null
         }
+      />
+
+      <ReportAbsenceDialog
+        session={reportSessionDetail}
+        teacherId={CURRENT_TEACHER_ID}
+        onClose={() => setReportSessionId(null)}
       />
     </PageContainer>
   )

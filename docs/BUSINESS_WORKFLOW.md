@@ -8,17 +8,21 @@
 
 ### Key Architectural Constraints & Business Principles
 * **Single Center Scope:** Multi-tenant architecture is not supported; all operations pertain to a single center entity.
+* **Center Roles (web back-office):** five web roles, each with a fixed set of screens (`src/constants/role-access.ts`) — no finer permissions inside a role.
+  * `admin` — everything; manages the accounts of all center staff (center manager, curriculum designer, staff, teachers, parents).
+  * `center_manager` (Quản lý trung tâm) — CRUD staff / parents / teachers; CRUD curriculum and schedule fixed-weekday classes; assigns teachers to existing fixed classes; business dashboard (tuition, student / teacher / staff counts).
+  * `curriculum_designer` (Thiết kế giáo trình) — designs the Math / Physics / Chemistry / Biology curriculum from the textbooks: 1 session = 1 lesson, plus 1 monthly test per month.
+  * `staff` (Nhân viên) — registers students, collects tuition, changes a student's schedule, arranges make-up sessions, withdraws students, creates long-term leave.
+  * `teacher` — takes attendance (which drives the teacher's work-credit), creates homework, grades with AI; the teaching schedule is fixed by the center (teachers do not supply availability and cannot decline a session).
 * **Account Hierarchy:** There are **no separate Student accounts**. Only Parent accounts exist.
-  * `1 Parent Account` = Unique Login Email + Password.
-  * `1 Parent Account` can manage `N Child Profiles` (Student Records).
+  * `1 Parent Account` = Unique Login Email + Password, created by the parent on the mobile app.
+  * `1 Parent Account` can manage `N Child Profiles` (Student Records), also created by the parent on mobile.
   * Students submit assignments through their parent's active login session.
-* **No Direct Online Self-Registration or Payment Integration:**
-  * Managers handle all course enrollments offline/manually via phone or in-person.
-  * Cash and Bank Transfers are collected offline. Payments are recorded only upon explicit Manager confirmation (`Confirm Payment`).
+* **No Direct Online Payment Integration:**
+  * Staff handle all course enrollments at the center or by phone, only for a parent and child profile that already exist on the app.
+  * Cash and Bank Transfers are collected offline. Payments are recorded only upon explicit Staff confirmation (`Confirm Payment`).
   * Integrations with online payment gateways or thermal receipt printers are strictly excluded.
-* **Link / Token Authentication:**
-  * Parents construct their account credentials via a secure single-use link/code (valid for 7 days) generated after payment confirmation.
-  * Managers never generate, view, or reset passwords for Parents.
+* **No Parent Activation Link:** parents self-register on mobile, so there is no activation link / code / token and no `pending_link` state. Centers never create, view, or reset a parent's password. (Web staff accounts are still created through an emailed one-time invitation.)
 * **AI Delegation & Human-in-the-Loop:**
   * AI evaluation (grading/feedback) strictly produces a **draft state**.
   * AI-generated content is **never automatically published** to parents or students without Teacher review and approval.
@@ -28,10 +32,7 @@
 ---
 
 ## 2. Table of Contents
-1. [Workflow A: Student Registration, Payment & Account Linking](#workflow-a-student-registration-payment--account-linking)
-   - [A1: First Child Registration (New Parent Account)](#a1-first-child-registration-new-parent-account)
-   - [A2: Subsequent Child Registration (Existing Parent Account)](#a2-subsequent-child-registration-existing-parent-account)
-   - [A3: Enrolling an Existing Child in Additional Courses/Classes](#a3-enrolling-an-existing-child-in-additional-coursesclasses)
+1. [Workflow A: Student Registration & Payment](#workflow-a-student-registration--payment)
 2. [Workflow B: Class Creation & Automatic Session Generation](#workflow-b-class-creation--automatic-session-generation)
 3. [Workflow C: Attendance Tracking & Automated Email Alerts](#workflow-c-attendance-tracking--automated-email-alerts)
 4. [Workflow D: Single-Session Absence & Make-up Class Scheduling](#workflow-d-single-session-absence--make-up-class-scheduling)
@@ -44,41 +45,40 @@
 
 ---
 
-## Workflow A: Student Registration, Payment & Account Linking
+## Workflow A: Student Registration & Payment
 
-### A1: First Child Registration (New Parent Account)
+One flow only. The center builds the supply side first (curriculum → fixed-schedule classes); the parent builds the demand side on the mobile app (account → child profile); staff then joins them.
 
-#### Actors:
-Center Manager, EduGrade Core Platform, Parent.
+### Actors:
+Curriculum Designer / Center Manager (curriculum + classes, beforehand), Parent (mobile), Staff (or Admin), EduGrade Core Platform.
 
-#### Preconditions:
-* Parent has no pre-existing account on EduGrade (email does not exist in the database).
-* In-person or telephone agreement for course selection has occurred offline.
+### Preconditions:
+* A curriculum (`Program` + `Lesson`s) exists and a class with a fixed weekly schedule has been created from it.
+* The parent has registered a Parent Account on the mobile app and created the child's `StudentProfile` — the profile **must exist beforehand**.
+* The parent has agreed on the class by phone or in person ("registers according to the center's schedule").
 
-#### Flow Diagram:
+### Flow Diagram:
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Manager as Center Manager
+    actor Staff as Staff
     participant System as EduGrade Platform
     participant Email as Email Service
-    actor Parent as Parent
+    actor Parent as Parent (mobile)
 
-    Manager->>System: Input Child Info + Parent Email/Phone + Subject/Class + Month Duration (1–12)
-    System->>Manager: Calculate Fee & Render Confirmation Screen
-    Manager->>System: Collect Funds (Offline) & Click "Confirm Payment"
+    Staff->>System: Enter the parent's Gmail
+    System->>Staff: Show the parent + their child profiles (none found → tell the parent to register / create the child on the app first)
+    Staff->>System: Pick the child → Grade → Subject → Class (fixed schedule; overlap with the child's existing classes is warned)
+    Staff->>System: Set Month Duration (1–12); review Fee
+    Staff->>System: Collect Funds (Offline) & Click "Confirm Payment"
     Note over System: Atomic Transaction Begins
-    System->>System: Create Payment Record (STATUS: COMPLETED)
-    System->>System: Create Enrollment Record (STATUS: PENDING_LINK)
-    System->>System: Generate One-Time Link/Code (Expires in 7 Days, Single-Use)
-    System->>Manager: Render Digital Receipt on UI (with Print button)
-    System->>Email: Dispatch Email (Receipt + Class Schedule + Unique Link/Code)
+    System->>System: Create Payment Record (STATUS: SUCCEEDED)
+    System->>System: Create Enrollment Record attached to the chosen child (STATUS: ACTIVE)
+    System->>Staff: Render Digital Receipt on UI (with Print button)
+    System->>Email: Dispatch Email (Receipt + Class Schedule)
     Note over System: Atomic Transaction Ends
     Email-->>Parent: Deliver Email Notification
-    Parent->>System: Click Link / Enter Code on Web/Mobile Portal
-    System->>Parent: Present Account Creation Form (Set Password)
-    Parent->>System: Submit Password Form
-    System->>System: Create Parent Account (Email = Username)
-    System->>System: Create Child Profile & Bind to Parent Account
-    System->>System: Link Pending Enrollment to Child Profile (STATUS: ACTIVE)
-    System->>Parent: Confirm Link Success & Display Dashboard
+    Parent->>System: Sees the new class on the child's schedule in the app
+```
+
+There is no activation link, code or `PENDING_LINK` state. A staff member never creates a parent or a child on the web; a center manager can only edit / lock / soft-delete parents.

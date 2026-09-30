@@ -42,6 +42,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { toast } from "@/components/ui/toast"
 
 // Auth events (dev trigger)
+import { ROLES } from "@/constants/roles"
 import { emitSessionExpired } from "@/lib/auth-events"
 import { SessionExpiredModalContainer } from "@/features/auth/components/session-expired-modal-container"
 
@@ -97,7 +98,7 @@ export default function DevComponentsShowcasePage() {
   const [drawerOpen, setDrawerOpen] = React.useState(false)
 
   return (
-    <AppShell role="manager">
+    <AppShell role={ROLES.ADMIN}>
       <PageContainer maxWidth="7xl">
         <PageHeader
           title="Component Showcase (Dev Mode)"
@@ -206,9 +207,9 @@ export default function DevComponentsShowcasePage() {
                 Manager / Enrollment / Session / Grading
               </p>
               <div className="flex flex-wrap gap-2">
-                <StatusBadge category="manager" status="active" />
-                <StatusBadge category="manager" status="pending" />
-                <StatusBadge category="manager" status="disabled" />
+                <StatusBadge category="staffAccount" status="active" />
+                <StatusBadge category="staffAccount" status="pending" />
+                <StatusBadge category="staffAccount" status="disabled" />
                 <StatusBadge category="enrollment" status="active" />
                 <StatusBadge category="enrollment" status="dropped" />
                 <StatusBadge category="session" status="scheduled" />
@@ -236,7 +237,6 @@ export default function DevComponentsShowcasePage() {
                 <StatusBadge category="student" status="active" />
                 <StatusBadge category="student" status="paused" />
                 <StatusBadge category="student" status="withdrawn" />
-                <StatusBadge category="student" status="pending_link" />
               </div>
             </div>
 
@@ -246,18 +246,7 @@ export default function DevComponentsShowcasePage() {
               </p>
               <div className="flex flex-wrap gap-2">
                 <StatusBadge category="parentAccount" status="activated" />
-                <StatusBadge category="parentAccount" status="pending_link" />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">
-                Link Code (mã liên kết)
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge category="linkCode" status="active" />
-                <StatusBadge category="linkCode" status="used" />
-                <StatusBadge category="linkCode" status="expired" />
+                <StatusBadge category="parentAccount" status="disabled" />
               </div>
             </div>
 

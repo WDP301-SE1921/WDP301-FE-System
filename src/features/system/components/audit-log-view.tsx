@@ -22,7 +22,7 @@ import { PAGINATION_DEFAULTS } from "@/constants/ui"
 import { ROUTES } from "@/constants/routes"
 import { AuditLogTable } from "@/features/system/components/audit-log-table"
 import { useAuditLog } from "@/features/system/hooks/use-audit-log"
-import { MOCK_MANAGER_ACCOUNTS } from "@/mocks/data/system"
+import { MOCK_STAFF_ACCOUNTS } from "@/mocks/data/staff"
 
 const ALL_VALUE = "all"
 
@@ -35,7 +35,7 @@ const ACTION_ITEMS: Record<string, string> = {
 
 const ACTOR_ITEMS: Record<string, string> = {
   [ALL_VALUE]: SYSTEM_MSG.AUDIT_FILTER_ALL_ACTORS,
-  ...Object.fromEntries(MOCK_MANAGER_ACCOUNTS.map((item) => [item.id, item.name])),
+  ...Object.fromEntries(MOCK_STAFF_ACCOUNTS.map((item) => [item.id, item.name])),
 }
 
 function AuditLogView() {

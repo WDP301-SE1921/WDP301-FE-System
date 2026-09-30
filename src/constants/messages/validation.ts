@@ -22,6 +22,10 @@ export const VALIDATION_MSG = {
   ENROLLMENTS_REQUIRED: "Chọn ít nhất một môn cần kết thúc",
   CONFIRM_NAME_REQUIRED: "Gõ đúng tên học sinh để xác nhận",
   PROGRAM_NAME_REQUIRED: "Vui lòng nhập tên chương trình",
+  LESSON_COUNT_RANGE: `Số bài học từ 1 đến ${BUSINESS_RULES.PROGRAM_LESSONS_MAX}`,
+  ROLE_REQUIRED: "Chọn vai trò cho tài khoản",
+  PARENT_LOOKUP_REQUIRED: "Chọn phụ huynh trước khi tiếp tục",
+  CHILD_REQUIRED: "Chọn hồ sơ con cần đăng ký",
 
   // Bài tập / Đề kiểm tra (PROMPT T5B)
   DUE_DATE_AFTER_OPEN: "Hạn nộp phải sau ngày mở bài",

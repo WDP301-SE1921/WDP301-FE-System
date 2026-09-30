@@ -1,8 +1,10 @@
 import { z } from "zod"
+import { ROLES } from "@/constants/roles"
 import { FIELD_LIMITS, REGEX } from "@/constants/validation"
 import { VALIDATION_MSG } from "@/constants/messages/validation"
 
-export const inviteManagerSchema = z.object({
+/** Mời nhân sự web. Role được chọn phải nằm trong `ACCOUNT_MANAGE_TARGETS` của người mời (kiểm tra ở UI + mock). */
+export const inviteStaffSchema = z.object({
   email: z
     .string()
     .trim()
@@ -14,9 +16,12 @@ export const inviteManagerSchema = z.object({
     .trim()
     .min(FIELD_LIMITS.FULL_NAME_MIN, VALIDATION_MSG.REQUIRED)
     .max(FIELD_LIMITS.FULL_NAME_MAX, VALIDATION_MSG.MAX_LENGTH(FIELD_LIMITS.FULL_NAME_MAX)),
+  role: z.enum([ROLES.CENTER_MANAGER, ROLES.CURRICULUM_DESIGNER, ROLES.STAFF], {
+    message: VALIDATION_MSG.ROLE_REQUIRED,
+  }),
 })
 
-export type InviteManagerFormInput = z.infer<typeof inviteManagerSchema>
+export type InviteStaffFormInput = z.infer<typeof inviteStaffSchema>
 
 export const updateProfileSchema = z.object({
   name: z

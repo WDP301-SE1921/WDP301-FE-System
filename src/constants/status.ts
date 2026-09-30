@@ -14,14 +14,15 @@ export interface StatusConfig {
 }
 
 export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
-  manager: {
+  // Tài khoản nhân sự web (admin / quản lý trung tâm / thiết kế giáo trình / nhân viên).
+  staffAccount: {
     active: { label: "Đang hoạt động", variant: "success" },
     pending: { label: "Chờ kích hoạt", variant: "warning" },
     disabled: { label: "Vô hiệu hóa", variant: "danger" },
   },
   parentAccount: {
     activated: { label: "Đã kích hoạt", variant: "success" },
-    pending_link: { label: "Chờ liên kết", variant: "warning" },
+    disabled: { label: "Đã khóa", variant: "neutral" },
   },
   makeup: {
     pending: { label: "Chờ học bù", variant: "warning" },
@@ -43,7 +44,6 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     active: { label: "Đang học", variant: "success" },
     paused: { label: "Tạm nghỉ", variant: "neutral" },
     withdrawn: { label: "Đã nghỉ", variant: "danger" },
-    pending_link: { label: "Chờ liên kết", variant: "warning" },
   },
   payment: {
     succeeded: { label: "Thành công", variant: "success" },
@@ -54,11 +54,6 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     active: { label: "Đang học", variant: "success" },
     reserved: { label: "Bảo lưu", variant: "warning" },
     dropped: { label: "Nghỉ hẳn", variant: "danger" },
-  },
-  linkCode: {
-    active: { label: "Còn hạn", variant: "success" },
-    used: { label: "Đã sử dụng", variant: "info" },
-    expired: { label: "Hết hạn", variant: "danger" },
   },
   email: {
     sent: { label: "Đã gửi", variant: "success" },
@@ -96,6 +91,27 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
   program: {
     active: { label: "Đang sử dụng", variant: "success" },
     inactive: { label: "Ngừng sử dụng", variant: "neutral" },
+  },
+  // TeacherAbsenceReport.status — giáo viên báo nghỉ một buổi.
+  teacherAbsence: {
+    pending: { label: "Chờ xử lý", variant: "warning" },
+    covered: { label: "Đã xếp dạy thay", variant: "success" },
+    cancelled: { label: "Đã hủy buổi", variant: "neutral" },
+  },
+  // Trạng thái công của một buổi với một giáo viên (derive ở features/work-credits/selectors.ts).
+  workCredit: {
+    settled: { label: "Đã chốt công", variant: "success" },
+    adjusted: { label: "Quản lý ghi nhận", variant: "info" },
+    substituted_in: { label: "Dạy thay", variant: "info" },
+    unsettled: { label: "Chưa chốt công", variant: "warning" },
+    absent_notified: { label: "Nghỉ có báo trước", variant: "neutral" },
+    absent_urgent: { label: "Nghỉ đột xuất", variant: "danger" },
+    cancelled: { label: "Buổi bị hủy", variant: "neutral" },
+  },
+  // ClassSession.kind — buổi học thường hay buổi kiểm tra cuối tháng.
+  sessionKind: {
+    lesson: { label: "Buổi học", variant: "secondary" },
+    monthly_test: { label: "Kiểm tra tháng", variant: "warning" },
   },
   // Suy từ Room.isActive.
   room: {

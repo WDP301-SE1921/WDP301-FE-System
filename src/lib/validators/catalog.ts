@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { BUSINESS_RULES } from "@/constants/business-rules"
 import { FIELD_LIMITS } from "@/constants/validation"
 import { VALIDATION_MSG } from "@/constants/messages/validation"
 
@@ -12,6 +13,12 @@ export const programFormSchema = z.object({
   subjectId: z.string().min(1, VALIDATION_MSG.REQUIRED),
   grade: z.string().min(1, VALIDATION_MSG.REQUIRED),
   monthlyFee: z.number().min(1, VALIDATION_MSG.REQUIRED),
+  totalLessons: z
+    .number()
+    .int(VALIDATION_MSG.LESSON_COUNT_RANGE)
+    .min(1, VALIDATION_MSG.LESSON_COUNT_RANGE)
+    .max(BUSINESS_RULES.PROGRAM_LESSONS_MAX, VALIDATION_MSG.LESSON_COUNT_RANGE),
+  textbook: z.string().trim().max(FIELD_LIMITS.FULL_NAME_MAX, VALIDATION_MSG.MAX_LENGTH(FIELD_LIMITS.FULL_NAME_MAX)),
   description: z.string().trim().max(500, VALIDATION_MSG.MAX_LENGTH(500)),
   isActive: z.boolean(),
 })
@@ -25,6 +32,7 @@ export const lessonFormSchema = z.object({
     .trim()
     .min(1, VALIDATION_MSG.REQUIRED)
     .max(FIELD_LIMITS.FULL_NAME_MAX, VALIDATION_MSG.MAX_LENGTH(FIELD_LIMITS.FULL_NAME_MAX)),
+  chapter: z.string().trim().max(FIELD_LIMITS.FULL_NAME_MAX, VALIDATION_MSG.MAX_LENGTH(FIELD_LIMITS.FULL_NAME_MAX)),
   description: z.string().trim().max(500, VALIDATION_MSG.MAX_LENGTH(500)),
 })
 

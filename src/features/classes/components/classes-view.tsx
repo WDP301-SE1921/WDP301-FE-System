@@ -47,6 +47,7 @@ import { PAGINATION_DEFAULTS } from "@/constants/ui"
 import { ROUTES } from "@/constants/routes"
 import { STATUS_MAP } from "@/constants/status"
 import { SUBJECT_MAP } from "@/constants/subjects"
+import { ClassTeacherDialogHost } from "@/features/classes/components/class-teacher-dialog-host"
 import { useClasses } from "@/features/classes/hooks/use-classes"
 import {
   getProgramOptions,
@@ -55,6 +56,8 @@ import {
 } from "@/features/classes/selectors"
 
 const ALL_VALUE = "all"
+/** Giá trị đặc biệt của bộ lọc giáo viên: các lớp chưa gán giáo viên. */
+const UNASSIGNED_VALUE = "unassigned"
 const GRADE_OPTIONS = [6, 7, 8, 9]
 
 const SUBJECT_ITEMS: Record<string, string> = {
@@ -81,6 +84,8 @@ const STATUS_ITEMS: Record<string, string> = {
 function ClassesView() {
   const router = useRouter()
   const classes = useClasses()
+  /** Lớp đang mở modal gán/đổi giáo viên. */
+  const [teacherDialogClassId, setTeacherDialogClassId] = React.useState<string | null>(null)
 
   const programItems = React.useMemo<Record<string, string>>(
     () => ({
@@ -92,6 +97,7 @@ function ClassesView() {
   const teacherItems = React.useMemo<Record<string, string>>(
     () => ({
       [ALL_VALUE]: CLASS_MSG.FILTER_ALL_TEACHERS,
+      [UNASSIGNED_VALUE]: CLASS_MSG.FILTER_UNASSIGNED,
       ...Object.fromEntries(getTeacherOptions().map((o) => [o.value, o.label])),
     }),
     []
@@ -120,7 +126,11 @@ function ClassesView() {
       if (subject !== ALL_VALUE && row.subjectCode !== subject) return false
       if (grade !== ALL_VALUE && String(row.classRecord.grade) !== grade) return false
       if (program !== ALL_VALUE && row.classRecord.programId !== program) return false
-      if (teacher !== ALL_VALUE && row.classRecord.teacherId !== teacher) return false
+      if (teacher === UNASSIGNED_VALUE) {
+        if (row.classRecord.teacherId) return false
+      } else if (teacher !== ALL_VALUE && row.classRecord.teacherId !== teacher) {
+        return false
+      }
       if (!keyword) return true
 
       return (
@@ -139,7 +149,7 @@ function ClassesView() {
   const resetPage = React.useCallback(() => setPage(null), [setPage])
 
   const columns = React.useMemo<LegacyColumnDef<ClassRow>[]>(
-    () => buildColumns(router),
+    () => buildColumns(router, setTeacherDialogClassId),
     [router]
   )
 
@@ -265,6 +275,11 @@ function ClassesView() {
         <AlertTitle>{CLASS_MSG.LIST_NOTE_TITLE}</AlertTitle>
         <AlertDescription>{CLASS_MSG.LIST_NOTE_DESC}</AlertDescription>
       </Alert>
+
+      <ClassTeacherDialogHost
+        classId={teacherDialogClassId}
+        onClose={() => setTeacherDialogClassId(null)}
+      />
     </PageContainer>
   )
 }
@@ -303,7 +318,8 @@ function FilterSelect({
 }
 
 function buildColumns(
-  router: ReturnType<typeof useRouter>
+  router: ReturnType<typeof useRouter>,
+  onAssignTeacher: (classId: string) => void
 ): LegacyColumnDef<ClassRow>[] {
   return [
     {
@@ -425,8 +441,10 @@ function buildColumns(
             },
             {
               id: "change-teacher",
-              label: CLASS_MSG.ACTION_CHANGE_TEACHER,
-              onClick: () => router.push(ROUTES.MANAGER.TEACHER_SUBSTITUTES),
+              label: row.original.classRecord.teacherId
+                ? CLASS_MSG.ACTION_CHANGE_TEACHER
+                : CLASS_MSG.ACTION_ASSIGN_TEACHER,
+              onClick: () => onAssignTeacher(row.original.classRecord.id),
             },
             "separator",
             {

@@ -10,6 +10,7 @@ import {
   findSessionsByClass,
   resolveLessonOrder,
   resolveLessonTitle,
+  resolveSessionLabel,
 } from "@/mocks/data/catalog"
 import { MOCK_ENROLLMENTS, findStudent } from "@/mocks/data/students"
 import { findAttendanceBySession } from "@/mocks/data/attendance"
@@ -39,6 +40,8 @@ export interface ClassRow {
 export interface ClassSessionRow {
   session: ClassSession
   order: number
+  /** "Buổi 12" hoặc "Kiểm tra tháng" — dùng để hiển thị thay cho `order`. */
+  label: string
   lessonTitle: string
   teacherName?: string
   state: SessionState
@@ -70,7 +73,10 @@ function toClassRow(classRecord: ClassRecord): ClassRow {
     teacherName: findTeacher(classRecord.teacherId)?.name,
     enrolled,
     isFull: enrolled >= classRecord.capacity,
-    completedLessons: sessions.filter((item) => item.attendanceMarkedAt).length,
+    // Buổi kiểm tra tháng không tính vào tiến độ bài học của chương trình.
+    completedLessons: sessions.filter(
+      (item) => item.attendanceMarkedAt && item.kind === "lesson"
+    ).length,
     totalLessons: program?.totalLessons ?? sessions.length,
   }
 }
@@ -108,6 +114,7 @@ function toSessionRow(session: ClassSession): ClassSessionRow {
   return {
     session,
     order,
+    label: resolveSessionLabel(session),
     lessonTitle: resolveLessonTitle(session.lessonId),
     teacherName: findTeacher(session.teacherId)?.name,
     state,

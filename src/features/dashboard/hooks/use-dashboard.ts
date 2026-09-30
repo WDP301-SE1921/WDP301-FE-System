@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { mockQuery } from "@/mocks/utils/mock-query"
 import {
+  getBusinessKpis,
   getPendingTaskCounts,
   getRecentPaymentRows,
   getTodaySessionRows,
@@ -36,6 +37,7 @@ function buildDashboard() {
     todaySessions: getTodaySessionRows(),
     recentPayments: getRecentPaymentRows(),
     tasks: getPendingTaskCounts(),
+    business: getBusinessKpis(),
   }
 }
 

@@ -9,6 +9,13 @@ import type { LegacyColumnDef } from "@tanstack/react-table/legacy"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
 import { DataTable } from "@/components/shared/data-table/data-table"
 import { FilterBar } from "@/components/shared/data-table/filter-bar"
@@ -22,57 +29,76 @@ import { PageHeader } from "@/components/shared/layout/page-header"
 import { EMPTY_MSG } from "@/constants/messages/empty"
 import { ERROR_MSG } from "@/constants/messages/error"
 import { SYSTEM_MSG } from "@/constants/messages/events/system"
+import { ACCOUNT_MANAGE_TARGETS } from "@/constants/role-access"
+import { BACK_OFFICE_ROLES, ROLE_LABEL, type WebRole } from "@/constants/roles"
 import { ROUTES } from "@/constants/routes"
 import { PAGINATION_DEFAULTS } from "@/constants/ui"
-import { InviteManagerDialog } from "@/features/system/components/invite-manager-dialog"
+import { InviteStaffDialog } from "@/features/system/components/invite-staff-dialog"
 import {
-  useDeactivateManager,
-  useManagers,
-  useResendManagerInvite,
-} from "@/features/system/hooks/use-managers"
+  useDeactivateStaff,
+  useResendStaffInvite,
+  useStaffAccounts,
+} from "@/features/system/hooks/use-staff-accounts"
+import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role"
 import { formatDate } from "@/lib/format"
-import { CURRENT_MANAGER_ID } from "@/mocks/data/system"
 import { MockError } from "@/mocks/utils/mock-query"
-import type { ManagerAccount } from "@/types/system"
+import type { StaffAccount } from "@/types/system"
 
-function ManagersView() {
-  const managers = useManagers()
-  const resendInvite = useResendManagerInvite()
-  const deactivateManager = useDeactivateManager()
+const ALL_VALUE = "all"
+
+const ROLE_ITEMS: Record<string, string> = {
+  [ALL_VALUE]: SYSTEM_MSG.FILTER_ALL_ROLES,
+  ...Object.fromEntries(BACK_OFFICE_ROLES.map((role) => [role, ROLE_LABEL[role]])),
+}
+
+function StaffAccountsView() {
+  const staff = useStaffAccounts()
+  const resendInvite = useResendStaffInvite()
+  const deactivateStaff = useDeactivateStaff()
+  const currentRole = useCurrentRole()
+  const currentUser = useCurrentUser()
 
   const [isInviteOpen, setIsInviteOpen] = React.useState(false)
-  const [deactivateTarget, setDeactivateTarget] = React.useState<ManagerAccount | null>(
-    null
-  )
+  const [deactivateTarget, setDeactivateTarget] = React.useState<StaffAccount | null>(null)
 
   const [search] = useQueryState("search", parseAsString.withDefault(""))
-  const [page] = useQueryState("page", parseAsInteger.withDefault(1))
+  const [roleFilter, setRoleFilter] = useQueryState("role", parseAsString.withDefault(ALL_VALUE))
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1))
   const [pageSize] = useQueryState(
     "pageSize",
     parseAsInteger.withDefault(PAGINATION_DEFAULTS.PAGE_SIZE)
   )
 
-  const rows = React.useMemo(() => managers.data?.rows ?? [], [managers.data])
-  const totals = managers.data?.totals
+  const rows = React.useMemo(() => staff.data?.rows ?? [], [staff.data])
+  const totals = staff.data?.totals
 
   const filteredRows = React.useMemo(() => {
     const keyword = search.trim().toLowerCase()
-    if (!keyword) return rows
 
-    return rows.filter(
-      (row) =>
+    return rows.filter((row) => {
+      if (roleFilter !== ALL_VALUE && row.role !== roleFilter) return false
+      if (!keyword) return true
+
+      return (
         row.name.toLowerCase().includes(keyword) ||
         row.email.toLowerCase().includes(keyword)
-    )
-  }, [rows, search])
+      )
+    })
+  }, [rows, search, roleFilter])
 
   const pagedRows = React.useMemo(() => {
     const start = (Math.max(1, page) - 1) * pageSize
     return filteredRows.slice(start, start + pageSize)
   }, [filteredRows, page, pageSize])
 
+  /** Vai trò mà người đang đăng nhập được quản lý (mời / vô hiệu hóa). */
+  const manageableRoles = React.useMemo(
+    () => (currentRole ? (ACCOUNT_MANAGE_TARGETS[currentRole] ?? []) : []),
+    [currentRole]
+  )
+
   const handleResendInvite = React.useCallback(
-    (row: ManagerAccount) => {
+    (row: StaffAccount) => {
       resendInvite.mutate(row.id, {
         onSuccess: () => toast.success(SYSTEM_MSG.RESEND_INVITE_SUCCESS(row.email)),
         onError: (error) => {
@@ -86,68 +112,101 @@ function ManagersView() {
   const handleDeactivate = () => {
     if (!deactivateTarget) return
 
-    deactivateManager.mutate(deactivateTarget.id, {
-      onSuccess: () => {
-        toast.success(SYSTEM_MSG.DEACTIVATE_SUCCESS(deactivateTarget.name))
-        setDeactivateTarget(null)
-      },
-      onError: (error) => {
-        toast.error(error instanceof MockError ? error.message : ERROR_MSG.DEFAULT)
-      },
-    })
+    deactivateStaff.mutate(
+      { id: deactivateTarget.id, actorId: currentUser?.id ?? "" },
+      {
+        onSuccess: () => {
+          toast.success(SYSTEM_MSG.DEACTIVATE_SUCCESS(deactivateTarget.name))
+          setDeactivateTarget(null)
+        },
+        onError: (error) => {
+          toast.error(error instanceof MockError ? error.message : ERROR_MSG.DEFAULT)
+        },
+      }
+    )
   }
 
-  const columns = React.useMemo<LegacyColumnDef<ManagerAccount>[]>(
+  const columns = React.useMemo<LegacyColumnDef<StaffAccount>[]>(
     () =>
       buildColumns({
+        currentUserId: currentUser?.id,
+        manageableRoles,
         onResendInvite: handleResendInvite,
         onRequestDeactivate: setDeactivateTarget,
       }),
-    [handleResendInvite]
+    [currentUser?.id, manageableRoles, handleResendInvite]
   )
 
   return (
     <PageContainer>
       <PageHeader
-        title={SYSTEM_MSG.MANAGERS_TITLE}
-        description={SYSTEM_MSG.MANAGERS_DESC}
+        title={SYSTEM_MSG.STAFF_TITLE}
+        description={SYSTEM_MSG.STAFF_DESC}
         breadcrumbs={[
           { label: "Trang chủ", href: ROUTES.MANAGER.DASHBOARD },
           { label: "Hệ thống" },
-          { label: SYSTEM_MSG.MANAGERS_TITLE },
+          { label: SYSTEM_MSG.STAFF_TITLE },
         ]}
         actions={
           <>
             {totals && (
               <Badge variant="secondary" className="rounded-full">
-                {SYSTEM_MSG.MANAGERS_BADGE(totals.active, totals.pending)}
+                {SYSTEM_MSG.STAFF_BADGE(totals.active, totals.pending)}
               </Badge>
             )}
-            <Button
-              className="rounded-full"
-              leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
-              onClick={() => setIsInviteOpen(true)}
-            >
-              {SYSTEM_MSG.ACTION_INVITE}
-            </Button>
+            {manageableRoles.length > 0 && (
+              <Button
+                className="rounded-full"
+                leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
+                onClick={() => setIsInviteOpen(true)}
+              >
+                {SYSTEM_MSG.ACTION_INVITE}
+              </Button>
+            )}
           </>
         }
       />
 
       <Card className="gap-4">
-        <FilterBar searchPlaceholder={SYSTEM_MSG.SEARCH_PLACEHOLDER}>
+        <FilterBar
+          searchPlaceholder={SYSTEM_MSG.SEARCH_PLACEHOLDER}
+          onClearFilters={() => {
+            setRoleFilter(null)
+            setPage(null)
+          }}
+        >
+          <Select
+            items={ROLE_ITEMS}
+            value={roleFilter}
+            onValueChange={(value) => {
+              setRoleFilter(value === ALL_VALUE ? null : String(value))
+              setPage(null)
+            }}
+          >
+            <SelectTrigger className="w-52 rounded-xl">
+              <SelectValue placeholder={SYSTEM_MSG.FILTER_ALL_ROLES} />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(ROLE_ITEMS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <span className="ml-auto text-xs text-muted-foreground">
-            Hiển thị {pagedRows.length} trên {filteredRows.length} quản lý
+            Hiển thị {pagedRows.length} trên {filteredRows.length} tài khoản
           </span>
         </FilterBar>
 
         <DataTable
           columns={columns}
           data={pagedRows}
-          isLoading={managers.isPending}
-          isError={managers.isError}
-          error={managers.error}
-          onRetry={() => managers.refetch()}
+          isLoading={staff.isPending}
+          isError={staff.isError}
+          error={staff.error}
+          onRetry={() => staff.refetch()}
           emptyTitle={EMPTY_MSG.NO_RESULT_TITLE}
           emptyDescription={EMPTY_MSG.NO_RESULT_DESC}
         />
@@ -155,7 +214,12 @@ function ManagersView() {
         <TablePagination totalItems={filteredRows.length} />
       </Card>
 
-      <InviteManagerDialog open={isInviteOpen} onOpenChange={setIsInviteOpen} />
+      <InviteStaffDialog
+        key={currentRole ?? "none"}
+        open={isInviteOpen}
+        onOpenChange={setIsInviteOpen}
+        inviterRole={currentRole}
+      />
 
       <ConfirmDialog
         open={Boolean(deactivateTarget)}
@@ -171,32 +235,45 @@ function ManagersView() {
             : undefined
         }
         confirmText={SYSTEM_MSG.ACTION_DEACTIVATE}
-        isLoading={deactivateManager.isPending}
+        isLoading={deactivateStaff.isPending}
       />
     </PageContainer>
   )
 }
 
 function buildColumns({
+  currentUserId,
+  manageableRoles,
   onResendInvite,
   onRequestDeactivate,
 }: {
-  onResendInvite: (row: ManagerAccount) => void
-  onRequestDeactivate: (row: ManagerAccount) => void
-}): LegacyColumnDef<ManagerAccount>[] {
+  currentUserId?: string
+  manageableRoles: readonly WebRole[]
+  onResendInvite: (row: StaffAccount) => void
+  onRequestDeactivate: (row: StaffAccount) => void
+}): LegacyColumnDef<StaffAccount>[] {
   return [
     {
-      id: "manager",
-      header: SYSTEM_MSG.COL_MANAGER,
+      id: "staff",
+      header: SYSTEM_MSG.COL_STAFF,
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <UserCell name={row.original.name} sub={row.original.phone} />
-          {row.original.id === CURRENT_MANAGER_ID && (
+          {row.original.id === currentUserId && (
             <Badge variant="secondary" className="shrink-0 rounded-full">
               {SYSTEM_MSG.YOU_BADGE}
             </Badge>
           )}
         </div>
+      ),
+    },
+    {
+      id: "role",
+      header: SYSTEM_MSG.COL_ROLE,
+      cell: ({ row }) => (
+        <Badge variant="info" className="rounded-full">
+          {ROLE_LABEL[row.original.role]}
+        </Badge>
       ),
     },
     {
@@ -210,7 +287,7 @@ function buildColumns({
       id: "status",
       header: SYSTEM_MSG.COL_STATUS,
       cell: ({ row }) => (
-        <StatusBadge category="manager" status={row.original.status} />
+        <StatusBadge category="staffAccount" status={row.original.status} />
       ),
     },
     {
@@ -226,7 +303,9 @@ function buildColumns({
       id: "actions",
       header: "",
       cell: ({ row }) => {
-        if (row.original.id === CURRENT_MANAGER_ID) return null
+        // Người dùng tự quản lý tài khoản mình ở trang Tài khoản; chỉ quản lý được vai trò cấp dưới.
+        if (row.original.id === currentUserId) return null
+        if (!manageableRoles.includes(row.original.role)) return null
 
         const items: (RowActionItem | "separator")[] = []
 
@@ -247,10 +326,10 @@ function buildColumns({
           })
         }
 
-        return <RowActions items={items} />
+        return items.length > 0 ? <RowActions items={items} /> : null
       },
     },
   ]
 }
 
-export { ManagersView }
+export { StaffAccountsView }

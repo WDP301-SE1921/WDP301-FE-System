@@ -1,7 +1,11 @@
 # EduGrade — UI Reference: Quản lý trung tâm (Manager)
 
-> File này mô tả toàn bộ màn hình web dành cho role **Quản lý trung tâm**, dùng làm
-> nguồn tham chiếu khi implement UI từ ảnh chụp Stitch. Khi prompt cho Claude Code,
+> File này mô tả toàn bộ màn hình web của khu **back-office** (`/manager/*`), dùng chung
+> cho 4 role: **Quản trị viên, Quản lý trung tâm, Thiết kế giáo trình, Nhân viên**. Role
+> nào vào được màn nào: `src/constants/role-access.ts` (tóm tắt: Nhân viên = học sinh /
+> phụ huynh / đăng ký / thanh toán / nghỉ-bù; Quản lý trung tâm = lớp / lịch / giáo viên /
+> giáo trình / nhân sự / dashboard doanh thu; Thiết kế giáo trình = chỉ giáo trình; Admin = tất cả).
+> Dùng làm nguồn tham chiếu khi implement UI từ ảnh chụp Stitch. Khi prompt cho Claude Code,
 > trỏ tới **Reference code** tương ứng (vd `PROMPT 3C`) để nó đọc đúng phần mô tả.
 >
 > Áp dụng chung: desktop 1440px, toàn bộ text tiếng Việt, dùng đúng design system và
@@ -29,7 +33,7 @@
 | PROMPT 5C | Đăng ký học — Bước 3: Môn & lớp | `(manager)/enrollments/new` |
 | PROMPT 5D | Đăng ký học — Bước 4: Học phí & thanh toán | `(manager)/enrollments/new` |
 | PROMPT 5E | Đăng ký học — Bước 5: Hoàn tất | `(manager)/enrollments/new` |
-| PROMPT 6 | Link / mã liên kết | `(manager)/link-codes` |
+| PROMPT 6 | ~~Link / mã liên kết~~ (đã bỏ) | — |
 | PROMPT 7 | Lịch sử thanh toán | `(manager)/payments` |
 | PROMPT 7B | Biên lai (modal) | modal trên `(manager)/payments` |
 | PROMPT 8 | Danh sách lớp | `(manager)/classes` |
@@ -54,7 +58,7 @@
 | PROMPT 12C | Modal thêm/sửa chương trình | modal trên `(manager)/catalog` |
 | PROMPT 13 | Lịch sử email | `(manager)/notifications/emails` |
 | PROMPT 13B | Gửi thông báo | `(manager)/notifications/send` |
-| PROMPT 14 | Quản lý viên | `(manager)/system/managers` |
+| PROMPT 14 | Nhân sự trung tâm | `(manager)/system/staff` |
 | PROMPT 14B | Lịch sử thay đổi | `(manager)/system/audit-logs` |
 | PROMPT 15 | Tài khoản cá nhân | `(manager)/profile` |
 | PROMPT 16 | Trạng thái chung (component states) | `/dev/components` |
@@ -82,7 +86,7 @@ App shell:
   - Trên cùng: logo EduGrade + tên trung tâm.
   - Menu chia nhóm, tiêu đề nhóm chữ nhỏ in hoa màu xám:
     - TỔNG QUAN: Dashboard
-    - HỌC SINH & PHỤ HUYNH: Học sinh, Phụ huynh, Đăng ký học, Link / mã liên kết (badge số cam "3")
+    - HỌC SINH & PHỤ HUYNH: Học sinh, Phụ huynh, Đăng ký học
     - THANH TOÁN: Lịch sử thanh toán
     - LỚP HỌC & LỊCH: Lớp học, Lịch học tổng, Buổi học
     - NGHỈ HỌC & HỌC BÙ: Học bù, Đổi buổi, Đổi lịch cố định, Nghỉ dài hạn, Nghỉ môn / Nghỉ hẳn
@@ -140,7 +144,7 @@ Hàng 2 — 2 cột (2/3 và 1/3):
   18:45–20:15 Lý 7A | Bài 8: Ánh sáng | badge đỏ "Chưa có giáo viên"...
   Link "Xem lịch học tổng" cuối card.
 - Phải: card "Việc cần xử lý" dạng danh sách, mỗi dòng có icon màu + text + số + mũi tên:
-  Link/mã sắp hết hạn (3, cam), Email gửi thất bại (2, đỏ), Học sinh sắp hết gói học phí (8, cam), Buổi chưa có giáo viên (1, đỏ), Nghỉ dài hạn sắp kết thúc (2, xanh).
+  Email gửi thất bại (2, đỏ), Học sinh sắp hết gói học phí (8, cam), Buổi chưa có giáo viên (1, đỏ), Nghỉ dài hạn sắp kết thúc (2, xanh).
 
 Hàng 3 — 2 cột:
 - Trái: card "Thanh toán gần đây": 5 dòng gồm tên con, môn/lớp, số tháng, số tiền (1.500.000 ₫), thời gian tương đối.
@@ -159,7 +163,7 @@ Filter bar: ô tìm "Tìm tên học sinh, email phụ huynh...", select Môn, s
 
 Bảng: checkbox | Học sinh (avatar chữ cái + tên + "Khối 8") | Phụ huynh (email + SĐT nhỏ) | Môn đang học (tag màu theo môn: Toán, Hóa) | Tỷ lệ đi học (thanh progress + 92%) | Gói học phí (ngày hết hạn, đỏ nếu còn <7 ngày) | Trạng thái (badge) | nút ⋮.
 Dropdown ⋮ mở ở 1 dòng: Xem chi tiết, Đăng ký thêm môn, Báo nghỉ buổi, Nghỉ dài hạn, Nghỉ môn / Nghỉ hẳn.
-8 dòng dữ liệu tên Việt Nam thực tế, badge: Đang học (xanh lá), Tạm nghỉ (xám), Chờ liên kết (cam).
+8 dòng dữ liệu tên Việt Nam thực tế, badge: Đang học (xanh lá), Tạm nghỉ (xám), Đã nghỉ (đỏ).
 Phân trang cuối bảng: "Hiển thị 1–10 trên 260", chọn số dòng/trang, số trang.
 
 ## PROMPT 3B — Chi tiết học sinh
@@ -197,46 +201,47 @@ Ví dụ: "Xác nhận thanh toán Hóa 9B – 3 tháng" · "Xếp học bù bu�
 
 App shell, menu: Phụ huynh. Page header "Phụ huynh", mô tả "Mỗi tài khoản phụ huynh quản lý một hoặc nhiều hồ sơ con".
 Filter: tìm email / SĐT, select Trạng thái tài khoản.
-Bảng: Email | SĐT | Số con (kèm avatar group tên con) | Trạng thái tài khoản (badge: Đã kích hoạt xanh lá / Chờ liên kết cam) | Ngày tạo | ⋮.
+Bảng: Email | SĐT | Số con (kèm avatar group tên con) | Trạng thái tài khoản (badge: Đã kích hoạt xanh lá / Đã khóa xám) | Ngày tạo | ⋮ (Xem, Sửa liên hệ, Khóa / Mở khóa, Đăng ký học).
+Phụ huynh tự tạo tài khoản trên app mobile nên KHÔNG có nút "Thêm phụ huynh". Quản lý trung tâm chỉ xem / sửa liên hệ / khóa – mở khóa; nhân viên chỉ xem và bấm "Đăng ký học".
 
 ## PROMPT 4B — Chi tiết phụ huynh
 
 Breadcrumb: Phụ huynh / phuhuynh.khang@gmail.com.
-- Card thông tin: email, SĐT, trạng thái tài khoản, ngày kích hoạt. Nút "+ Thêm con".
+- Card thông tin: email, SĐT, trạng thái tài khoản, ngày kích hoạt. Nút "Đăng ký học" (chỉ admin / nhân viên thấy — dẫn tới wizard với `?parentId=`). Không có nút thêm con: hồ sơ con do phụ huynh tạo trên app.
 - Section "Hồ sơ con": lưới card, mỗi card có avatar, tên con, khối, tag các môn, badge trạng thái, link "Xem hồ sơ". 2 card: Nguyễn Minh Khang (Khối 8), Nguyễn Bảo Ngọc (Khối 6).
-- Section "Link / mã liên kết": bảng nhỏ mã, tên con, môn/lớp, hết hạn, trạng thái, nút Gửi lại.
 - Section "Email đã gửi gần đây": danh sách 5 dòng với badge Đã gửi / Thất bại.
 
 ---
 
-## PROMPT 5 — Đăng ký học, bước 1: chọn loại
+> **Luồng mới (thay cho A1/A2/A3 cũ).** Phụ huynh đã tự tạo tài khoản + hồ sơ con trên app mobile. Nhân viên (hoặc admin) tra Gmail phụ huynh → chọn con → khối → môn → lớp (lịch cố định của lớp) → thu tiền offline. Không còn link/mã liên kết, không tạo phụ huynh/hồ sơ con trên web. Chỉ admin và nhân viên vào được màn này.
+
+## PROMPT 5 — Đăng ký học, bước 1: tra cứu phụ huynh
 
 App shell, menu: Đăng ký học. Page header "Đăng ký học".
-Stepper ngang 5 bước: 1 Loại đăng ký · 2 Thông tin · 3 Môn & lớp · 4 Học phí & thanh toán · 5 Hoàn tất. Bước 1 đang active.
+Stepper ngang 5 bước: 1 Phụ huynh · 2 Chọn con · 3 Khối, môn & lớp · 4 Học phí & thanh toán · 5 Hoàn tất. Bước 1 đang active.
 
 Bố cục 2 cột: trái (2/3) nội dung, phải (1/3) card "Tóm tắt đăng ký" sticky (lúc này đa phần trống, hiển thị "Chưa có thông tin").
-Nội dung trái: 3 card lựa chọn lớn dạng radio, có icon, tiêu đề, mô tả:
-- "Con đầu tiên" — Phụ huynh chưa có tài khoản trên hệ thống (đang chọn, viền xanh primary)
-- "Thêm con cho phụ huynh đã có" — Phụ huynh đã có tài khoản, đăng ký cho con mới
-- "Đăng ký thêm môn cho con cũ" — Học sinh đã có hồ sơ
-Footer: nút "Hủy" (ghost), "Tiếp tục" (primary).
+Nội dung trái: card "Chọn phụ huynh" — `ParentPicker` có sẵn (tìm theo Gmail hoặc SĐT; tài khoản đã khóa không hiện). Chọn xong hiện chip phụ huynh (email, SĐT, số hồ sơ con).
+- Bên dưới có alert thông tin: "Không tìm thấy phụ huynh? Phụ huynh cần tải app, đăng ký tài khoản và tạo hồ sơ cho con trước khi trung tâm đăng ký lớp."
+Footer: nút "Hủy" (ghost), "Tiếp tục" (primary, báo lỗi nếu chưa chọn phụ huynh).
 
-## PROMPT 5B — Đăng ký học, bước 2: thông tin
+## PROMPT 5B — Đăng ký học, bước 2: chọn con
 
 Giống layout 5, stepper ở bước 2.
-Card form "Thông tin học sinh": Họ tên con, Khối (select 6/7/8/9).
-Card form "Thông tin phụ huynh": Email phụ huynh (có gợi ý nhỏ "Email này dùng để đăng nhập và nhận thông báo"), SĐT (gợi ý "Chỉ dùng để liên hệ").
-Hiển thị alert cam dưới ô email: "Email này đã có tài khoản phụ huynh. Chuyển sang \"Thêm con cho phụ huynh đã có\"" kèm nút nhỏ "Chuyển".
-Card tóm tắt bên phải đã có tên con và email.
+Card "Chọn hồ sơ con": `EntityPicker` có sẵn liệt kê các hồ sơ con của phụ huynh (tên, mã HS, khối); chọn xong hiện badge trạng thái + tag các môn đang học.
+Phụ huynh chưa có hồ sơ con: empty state "Phụ huynh chưa tạo hồ sơ con trên app".
+Card tóm tắt bên phải đã có email phụ huynh và tên con.
 
-## PROMPT 5C — Đăng ký học, bước 3: chọn môn & lớp
+## PROMPT 5C — Đăng ký học, bước 3: chọn khối, môn & lớp
 
 Stepper bước 3.
-- Hàng chọn môn dạng segmented/tag: Toán | Lý | Hóa | Sinh (Toán đang chọn).
-- Danh sách lớp phù hợp Khối 8 dạng card list, mỗi card: tên lớp "Toán 8A", chương trình, lịch "T2 - T4 - T6 · 15:00–16:30", giáo viên, phòng, sĩ số dạng progress "18/20", nút radio chọn.
+- Chọn Khối (select, mặc định = khối của con; lấy từ danh mục chương trình). Chọn khối khác khối của con → hiện alert nhắc nhẹ.
+- Hàng chọn môn dạng segmented/tag: Toán | Lý | Hóa | Sinh (chỉ các môn có lớp mở ở khối đã chọn).
+- Danh sách lớp phù hợp dạng card list, mỗi card: tên lớp "Toán 8A", chương trình, lịch cố định "T2 - T4 - T6 · 15:00–16:30", giáo viên, phòng, sĩ số dạng progress "18/20", nút radio chọn.
 - 1 card lớp "Toán 8B" hiển thị mờ, badge đỏ "Đã đủ sĩ số", không chọn được.
+- Lớp trùng lịch với lớp con đang học: badge cam "Trùng lịch" + alert cảnh báo (chỉ cảnh báo, vẫn chọn được).
 - Card đang chọn viền primary.
-Tóm tắt bên phải cập nhật môn + lớp + lịch.
+Tóm tắt bên phải cập nhật khối + môn + lớp + lịch.
 
 ## PROMPT 5D — Đăng ký học, bước 4: học phí & thanh toán
 
@@ -251,21 +256,17 @@ Tóm tắt bên phải đầy đủ.
 
 Stepper bước 5 hoàn tất (tất cả tick xanh).
 - Khối trên cùng: icon check tròn xanh lá lớn, "Đăng ký thành công", mô tả "Đã tạo thanh toán và đăng ký học cho Nguyễn Minh Khang".
-- 3 card ngang:
+- 2 card ngang:
   1. "Biên lai" — mã BL-20260915-0012, số tiền, nút "Xem biên lai", "In".
-  2. "Link / mã liên kết" — mã lớn dạng monospace "K7Q2M9XA", link rút gọn, nút copy, dòng "Hết hạn sau 7 ngày (22/09/2026)".
-  3. "Email thông báo" — badge "Đã gửi" xanh lá, tới phuhuynh.khang@gmail.com, nút "Gửi lại".
+  2. "Email biên lai" — badge "Đã gửi" xanh lá, tới phuhuynh.khang@gmail.com, nút "Gửi lại". Phụ huynh thấy lớp mới trên lịch của con ngay trên app (không còn link/mã liên kết).
 - Nút cuối: "Xem hồ sơ học sinh" (outline), "Đăng ký học mới" (primary).
 Thêm biến thể: card Email hiển thị badge đỏ "Gửi thất bại" + nút "Gửi lại" primary, và alert cam trên cùng "Đã xác nhận thanh toán nhưng gửi email thất bại".
 
 ---
 
-## PROMPT 6 — Link / mã liên kết
+## PROMPT 6 — (ĐÃ BỎ) Link / mã liên kết
 
-App shell, menu: Link / mã liên kết. Page header "Link / mã liên kết", mô tả "Phụ huynh dùng link/mã để tạo tài khoản hoặc liên kết hồ sơ con. Mỗi mã dùng 1 lần, hết hạn sau 7 ngày".
-Tabs: Chưa dùng (12) | Đã dùng (340) | Hết hạn (5).
-Filter: tìm mã / tên con / email, date range ngày tạo.
-Bảng: Mã (monospace + nút copy) | Học sinh | Email phụ huynh | Môn / lớp | Ngày tạo | Hết hạn (badge đếm ngược "Còn 2 ngày" cam, "Còn 6 ngày" xám) | Trạng thái | Hành động (Gửi lại email, Tạo mã mới).
+Màn "Link / mã liên kết" đã bị xóa cùng `ActivationLink` và trạng thái `pending_link`: phụ huynh tự tạo tài khoản + hồ sơ con trên app nên không còn bước liên kết bằng mã. Không có menu, route hay badge tương ứng.
 
 ---
 
@@ -480,7 +481,7 @@ Modal "Thêm chương trình": Tên, Môn (select), Khối (select), Học phí/
 
 App shell, menu: Lịch sử email. Page header "Lịch sử email", nút "Gửi lại tất cả email lỗi" (outline đỏ).
 3 thẻ: Đã gửi 1.284 (xanh lá) | Thất bại 2 (đỏ) | Đang chờ 5 (cam).
-Filter: loại email (Link/mã, Thanh toán, Điểm danh, Học bù, Đổi lịch, Nghỉ học, Nhắc học phí, Thông báo chung), trạng thái, date range, tìm email người nhận.
+Filter: loại email (Biên lai, Thanh toán, Điểm danh, Học bù, Đổi lịch, Nghỉ học, Nhắc học phí, Thông báo chung), trạng thái, date range, tìm email người nhận.
 Bảng: Loại (tag) | Người nhận | Tiêu đề | Thời gian | Trạng thái | Số lần thử ("2/3") | ⋮ (Xem nội dung, Gửi lại).
 Dòng thất bại có tooltip lỗi "SMTP timeout".
 
@@ -496,12 +497,12 @@ Footer: "Hủy", "Gửi thông báo" (primary).
 
 ---
 
-## PROMPT 14 — Quản lý viên
+## PROMPT 14 — Nhân sự trung tâm
 
-App shell, menu: Quản lý viên. Page header "Quản lý viên", mô tả "Tất cả quản lý có đầy đủ quyền trên hệ thống", nút "+ Mời quản lý".
-Bảng: Quản lý (avatar + tên) | Email | Trạng thái (Hoạt động / Chờ kích hoạt / Vô hiệu hóa) | Ngày tham gia | ⋮ (Gửi lại lời mời, Vô hiệu hóa).
+App shell, menu: Nhân sự trung tâm (`/manager/system/staff`, chỉ admin và quản lý trung tâm). Page header "Nhân sự trung tâm", mô tả "Tài khoản đăng nhập web của quản lý, thiết kế giáo trình và nhân viên", nút "+ Mời nhân sự".
+Bảng: Nhân sự (avatar + tên) | Vai trò (Quản lý trung tâm / Thiết kế giáo trình / Nhân viên / Quản trị viên) | Email | Trạng thái (Hoạt động / Chờ kích hoạt / Vô hiệu hóa) | Ngày tham gia | ⋮ (Gửi lại lời mời, Vô hiệu hóa). Có bộ lọc theo vai trò.
 Dòng của chính người đăng nhập có badge nhỏ "Bạn" và không có ⋮.
-Modal "Mời quản lý": Email, Họ tên, nút "Gửi lời mời". Không có phần chọn quyền — mọi quản lý có đủ quyền như nhau, không phân quyền chi tiết.
+Modal "Mời nhân sự": Email, Họ tên, Vai trò, nút "Gửi lời mời". Vai trò được chọn bị giới hạn theo người mời: admin mời được Quản lý trung tâm / Thiết kế giáo trình / Nhân viên; quản lý trung tâm chỉ mời được Nhân viên. Quyền vào màn hình theo vai trò nằm ở `src/constants/role-access.ts` — không có phân quyền chi tiết hơn trong một vai trò.
 
 ## PROMPT 14B — Lịch sử thay đổi
 
@@ -531,7 +532,7 @@ Tạo 1 trang tổng hợp các trạng thái UI của EduGrade, cùng design sy
 5. Error state trong card: icon, "Không thể tải dữ liệu", nút "Thử lại".
 6. Confirm dialog default và danger.
 7. Button: primary, outline, ghost, danger, loading "Đang lưu...", disabled.
-8. Badge trạng thái: Có mặt, Vắng, Đã học bù, Nghỉ có phép, Đang học, Tạm nghỉ, Đã nghỉ, Chờ liên kết, Chưa dùng, Đã dùng, Hết hạn, Đã gửi, Thất bại, Đang chờ.
+8. Badge trạng thái: Có mặt, Vắng, Đã học bù, Nghỉ có phép, Đang học, Tạm nghỉ, Đã nghỉ, Đã gửi, Thất bại, Đang chờ.
 9. Tag môn: Toán, Lý, Hóa, Sinh.
 10. Input: default, focus, error kèm text lỗi, disabled.
 

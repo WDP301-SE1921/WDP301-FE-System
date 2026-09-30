@@ -7,12 +7,12 @@ import {
   findClass,
   findSubject,
   findTeacher,
-  resolveLessonOrder,
   resolveLessonTitle,
+  resolveSessionLabel,
 } from "@/mocks/data/catalog"
-import { MOCK_SUBSTITUTES } from "@/mocks/data/teachers"
+import { MOCK_SUBSTITUTES, MOCK_TEACHER_ABSENCES } from "@/mocks/data/teachers"
 import { MOCK_ENROLLMENTS } from "@/mocks/data/students"
-import { findManager } from "@/mocks/data/payments"
+import { findStaffAccount } from "@/mocks/data/staff"
 import type { ClassRecord, ClassSession, Teacher } from "@/types/catalog"
 import type { SubstituteAssignment } from "@/types/teacher"
 
@@ -147,18 +147,31 @@ export interface SubstituteCandidateSession {
   classRecord?: ClassRecord
   subjectCode: string
   lessonTitle: string
-  lessonOrder: number
+  /** "Buổi 12" hoặc "Kiểm tra tháng". */
+  sessionLabel: string
   mainTeacherName?: string
   /** Buổi chưa có giáo viên nào phụ trách. */
   needsTeacher: boolean
   studentCount: number
 }
 
-/** Buổi học từ hôm nay trở đi, dùng cho màn xếp dạy thay (PROMPT 11D). */
+/**
+ * Buổi học từ hôm nay trở đi, dùng cho màn xếp dạy thay (PROMPT 11D): 40 buổi gần nhất, cộng
+ * mọi buổi đang có báo nghỉ chờ xử lý (dù xa hơn) để luôn chọn được từ danh sách báo nghỉ.
+ */
 export function getSubstituteCandidateSessions(): SubstituteCandidateSession[] {
-  return MOCK_CLASS_SESSIONS.filter((session) => session.date >= MOCK_TODAY)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
-    .slice(0, 40)
+  const pendingAbsenceSessionIds = new Set(
+    MOCK_TEACHER_ABSENCES.filter((item) => item.status === "pending").map(
+      (item) => item.classSessionId
+    )
+  )
+
+  const upcoming = MOCK_CLASS_SESSIONS.filter((session) => session.date >= MOCK_TODAY).sort(
+    (a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)
+  )
+
+  return upcoming
+    .filter((session, index) => index < 40 || pendingAbsenceSessionIds.has(session.id))
     .map((session) => {
       const classRecord = findClass(session.classId)
 
@@ -167,7 +180,7 @@ export function getSubstituteCandidateSessions(): SubstituteCandidateSession[] {
         classRecord,
         subjectCode: findSubject(classRecord?.subjectId ?? "")?.code ?? "",
         lessonTitle: resolveLessonTitle(session.lessonId),
-        lessonOrder: resolveLessonOrder(session.lessonId),
+        sessionLabel: resolveSessionLabel(session),
         mainTeacherName: findTeacher(session.teacherId)?.name,
         needsTeacher: !session.teacherId,
         studentCount: MOCK_ENROLLMENTS.filter(
@@ -231,7 +244,7 @@ export interface SubstituteHistoryRow {
   session?: ClassSession
   classRecord?: ClassRecord
   subjectCode: string
-  lessonOrder: number
+  sessionLabel: string
   mainTeacherName?: string
   substituteTeacherName?: string
   assignedByName: string
@@ -249,21 +262,33 @@ export function getSubstituteHistory(): SubstituteHistoryRow[] {
       session,
       classRecord,
       subjectCode: findSubject(classRecord?.subjectId ?? "")?.code ?? "",
-      lessonOrder: session ? resolveLessonOrder(session.lessonId) : 0,
+      sessionLabel: session ? resolveSessionLabel(session) : "—",
       mainTeacherName: findTeacher(assignment.mainTeacherId)?.name,
       substituteTeacherName: findTeacher(assignment.substituteTeacherId)?.name,
-      assignedByName: findManager(assignment.assignedBy)?.name ?? "—",
+      assignedByName: findStaffAccount(assignment.assignedBy)?.name ?? "—",
     }
   })
 }
 
-/** Giáo viên có thể nhận phụ trách một lớp (PROMPT 11E). */
-export function getClassTeacherCandidates(classId: string): SubstituteCandidate[] {
-  const classRecord = findClass(classId)
-  if (!classRecord) return []
+export interface ClassScheduleSlot {
+  subjectId: string
+  weekdays: string[]
+  startTime: string
+  endTime: string
+}
+
+/**
+ * Giáo viên có thể nhận phụ trách một lớp có lịch cố định `slot`, xếp hạng theo không trùng
+ * lịch → cùng môn → ít lớp hơn. Dùng cho cả lớp đã có (PROMPT 11E) lẫn lớp đang tạo (chưa có id).
+ */
+export function getTeacherCandidatesForSchedule(
+  slot: ClassScheduleSlot,
+  excludeTeacherId?: string
+): SubstituteCandidate[] {
+  const classRecord = slot
 
   return MOCK_TEACHERS.filter(
-    (teacher) => teacher.status === "active" && teacher.id !== classRecord.teacherId
+    (teacher) => teacher.status === "active" && teacher.id !== excludeTeacherId
   )
     .map((teacher) => {
       const teacherClasses = MOCK_CLASSES.filter(
@@ -290,6 +315,14 @@ export function getClassTeacherCandidates(classId: string): SubstituteCandidate[
       if (a.isSameSubject !== b.isSameSubject) return a.isSameSubject ? -1 : 1
       return a.sessionsOnDate - b.sessionsOnDate
     })
+}
+
+/** Giáo viên có thể nhận phụ trách một lớp đã có (PROMPT 11E) — loại giáo viên đang giữ lớp. */
+export function getClassTeacherCandidates(classId: string): SubstituteCandidate[] {
+  const classRecord = findClass(classId)
+  if (!classRecord) return []
+
+  return getTeacherCandidatesForSchedule(classRecord, classRecord.teacherId)
 }
 
 export function getSubjectOptions(): Array<{ value: string; label: string }> {

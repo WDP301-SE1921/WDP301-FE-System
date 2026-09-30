@@ -2,36 +2,41 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { mockMutation, mockQuery } from "@/mocks/utils/mock-query"
-import { getCurrentManager } from "@/features/system/selectors"
+import { getStaffAccount } from "@/features/system/selectors"
+import { useCurrentUser } from "@/hooks/use-current-role"
 import {
-  mockChangeManagerPassword,
-  mockUpdateManagerProfile,
-  type ChangeManagerPasswordInput,
-  type UpdateManagerProfileInput,
+  mockChangePassword,
+  mockUpdateStaffProfile,
+  type ChangePasswordInput,
+  type UpdateStaffProfileInput,
 } from "@/mocks/data/system"
-import type { ManagerAccount } from "@/types/system"
+import type { StaffAccount } from "@/types/system"
 
-/** Chữ ký hook giữ nguyên khi nối backend — chỉ đổi `queryFn`. */
-export function useCurrentManager() {
-  return useQuery<ManagerAccount | undefined>({
-    queryKey: ["managers", "current"],
-    queryFn: () => mockQuery(() => getCurrentManager()),
+/** Hồ sơ nhân sự của người đang đăng nhập — id lấy từ phiên. Chữ ký giữ nguyên khi nối backend. */
+export function useCurrentStaff() {
+  const user = useCurrentUser()
+  const userId = user?.id ?? ""
+
+  return useQuery<StaffAccount | undefined>({
+    queryKey: ["staff-accounts", "current", userId],
+    queryFn: () => mockQuery(() => getStaffAccount(userId)),
+    enabled: userId.length > 0,
   })
 }
 
 export function useUpdateProfile() {
   const queryClient = useQueryClient()
 
-  return useMutation<ManagerAccount, Error, UpdateManagerProfileInput>({
-    mutationFn: (input) => mockMutation(input, mockUpdateManagerProfile),
+  return useMutation<StaffAccount, Error, UpdateStaffProfileInput>({
+    mutationFn: (input) => mockMutation(input, mockUpdateStaffProfile),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["managers"] })
+      queryClient.invalidateQueries({ queryKey: ["staff-accounts"] })
     },
   })
 }
 
-export function useChangeManagerPassword() {
-  return useMutation<{ success: true }, Error, ChangeManagerPasswordInput>({
-    mutationFn: (input) => mockMutation(input, mockChangeManagerPassword),
+export function useChangePassword() {
+  return useMutation<{ success: true }, Error, ChangePasswordInput>({
+    mutationFn: (input) => mockMutation(input, mockChangePassword),
   })
 }

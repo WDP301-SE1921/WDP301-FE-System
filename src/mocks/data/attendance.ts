@@ -111,6 +111,8 @@ export function mockSaveAttendance(
 
   MOCK_ATTENDANCE.push(...newRecords)
   session.attendanceMarkedAt = new Date().toISOString()
+  // Người được giao dạy buổi này (giáo viên dạy thay nếu có) là người điểm danh → được tính công.
+  session.attendanceMarkedBy = session.teacherId
 
   return newRecords
 }

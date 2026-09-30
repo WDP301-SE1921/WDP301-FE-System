@@ -6,23 +6,23 @@ import { GlobalSearch } from "./global-search"
 import { QuickCreateMenu } from "./quick-create-menu"
 import { NotificationBell } from "./notification-bell"
 import { UserMenu } from "./user-menu"
-import { ROLES, ROLE_LABEL, type Role } from "@/constants/roles"
+import { getQuickCreateItems } from "@/constants/menu"
+import { ROLES, ROLE_LABEL, type WebRole } from "@/constants/roles"
 import { ROUTES } from "@/constants/routes"
+import { useCurrentUser } from "@/hooks/use-current-role"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Menu01Icon } from "@hugeicons/core-free-icons"
 
 export interface HeaderProps {
-  role?: Extract<Role, "manager" | "teacher">
+  role: WebRole
   onToggleMobileSidebar?: () => void
   onOpenGlobalSearch?: () => void
 }
 
-function Header({
-  role = ROLES.MANAGER,
-  onToggleMobileSidebar,
-  onOpenGlobalSearch,
-}: HeaderProps) {
-  const isTeacher = role === ROLES.TEACHER
+function Header({ role, onToggleMobileSidebar, onOpenGlobalSearch }: HeaderProps) {
+  const user = useCurrentUser()
+  const quickCreateItems = getQuickCreateItems(role)
+  const accountHref = role === ROLES.TEACHER ? ROUTES.TEACHER.PROFILE : ROUTES.MANAGER.PROFILE
 
   return (
     <header
@@ -45,20 +45,16 @@ function Header({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        {!isTeacher && <QuickCreateMenu />}
+        {quickCreateItems.length > 0 && <QuickCreateMenu items={quickCreateItems} />}
         <NotificationBell />
         <div className="h-6 w-px bg-border hidden sm:block" />
-        {isTeacher ? (
-          <UserMenu
-            name="Trần Văn Minh"
-            roleLabel={ROLE_LABEL.teacher}
-            subtitleLine="Giáo viên · Toán"
-            email="minh.tran@edugrade.vn"
-            accountHref={ROUTES.TEACHER.PROFILE}
-          />
-        ) : (
-          <UserMenu />
-        )}
+        <UserMenu
+          name={user?.name}
+          roleLabel={ROLE_LABEL[role]}
+          email={user?.email}
+          avatarUrl={user?.avatarUrl}
+          accountHref={accountHref}
+        />
       </div>
     </header>
   )

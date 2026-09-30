@@ -41,6 +41,7 @@ export function useSaveAttendance() {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] })
+      queryClient.invalidateQueries({ queryKey: ["work-credits"] })
       queryClient.invalidateQueries({ queryKey: ["classes"] })
       queryClient.invalidateQueries({ queryKey: ["schedule"] })
     },

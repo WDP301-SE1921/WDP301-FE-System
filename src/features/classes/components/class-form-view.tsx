@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "@/components/ui/toast"
 import { SectionCard } from "@/components/shared/display/section-card"
+import { StatusBadge } from "@/components/shared/feedback/status-badge"
 import { PageContainer } from "@/components/shared/layout/page-container"
 import { PageHeader } from "@/components/shared/layout/page-header"
 import { StickyFormFooter } from "@/components/shared/workflows/sticky-form-footer"
@@ -50,9 +51,10 @@ import {
   findRoomConflict,
   previewSessions,
 } from "@/mocks/data/classes"
-import { MOCK_CLASSES, MOCK_PROGRAMS, MOCK_SUBJECTS, MOCK_TEACHERS } from "@/mocks/data/catalog"
+import { MOCK_CLASSES, MOCK_PROGRAMS, MOCK_SUBJECTS } from "@/mocks/data/catalog"
 import { MockError } from "@/mocks/utils/mock-query"
 import { useCreateClass } from "@/features/classes/hooks/use-create-class"
+import { getTeacherCandidatesForSchedule } from "@/features/teachers/selectors"
 
 const GRADE_OPTIONS = [6, 7, 8, 9]
 
@@ -67,18 +69,17 @@ const SUBJECT_ITEMS: Record<string, string> = Object.fromEntries(
   ])
 )
 
-const TEACHER_ITEMS: Record<string, string> = Object.fromEntries(
-  MOCK_TEACHERS.map((teacher) => [teacher.id, teacher.name])
-)
-
 const ROOM_ITEMS: Record<string, string> = Object.fromEntries(
   Array.from(new Map(MOCK_CLASSES.map((item) => [item.room, item.capacity]))).map(
     ([room, capacity]) => [room, `${room} · ${CLASS_MSG.ROOM_CAPACITY(capacity)}`]
   )
 )
 
-/** Số buổi hiển thị trong card xem trước, phần còn lại cuộn trong ScrollArea. */
-const PREVIEW_LIMIT = 12
+/** Giá trị nội bộ của lựa chọn "bỏ chọn" trong `FormSelect` (Select không nhận giá trị rỗng). */
+const NONE_VALUE = "__none__"
+
+/** Số buổi tối đa hiển thị trong card xem trước (danh sách cuộn trong ScrollArea). */
+const PREVIEW_LIMIT = 60
 
 function ClassFormView() {
   const router = useRouter()
@@ -142,6 +143,32 @@ function ClassFormView() {
       values.startTime,
       values.endTime,
     ]
+  )
+
+  /** Giáo viên gợi ý theo môn + lịch cố định đang nhập: không trùng lịch → cùng môn lên đầu. */
+  const teacherItems = React.useMemo<Record<string, string>>(
+    () =>
+      Object.fromEntries(
+        getTeacherCandidatesForSchedule({
+          subjectId: values.subjectId,
+          weekdays: values.weekdays,
+          startTime: values.startTime,
+          endTime: values.endTime,
+        }).map((candidate) => {
+          const notes = [
+            candidate.hasConflict ? CLASS_MSG.TEACHER_OPTION_CONFLICT : null,
+            values.subjectId && !candidate.isSameSubject
+              ? CLASS_MSG.TEACHER_OPTION_OTHER_SUBJECT
+              : null,
+          ].filter(Boolean)
+
+          return [
+            candidate.teacher.id,
+            `${candidate.teacher.name} · ${candidate.teacher.code}${notes.length > 0 ? ` (${notes.join(", ")})` : ""}`,
+          ]
+        })
+      ),
+    [values.subjectId, values.weekdays, values.startTime, values.endTime]
   )
 
   const conflict = React.useMemo(
@@ -427,9 +454,11 @@ function ClassFormView() {
                     name="teacherId"
                     label={CLASS_MSG.FIELD_TEACHER}
                     placeholder={CLASS_MSG.FIELD_TEACHER_PLACEHOLDER}
-                    items={TEACHER_ITEMS}
+                    items={teacherItems}
                     error={errors.teacherId?.message}
                     icon={TeacherIcon}
+                    required={false}
+                    noneLabel={CLASS_MSG.FIELD_TEACHER_NONE}
                   />
                   <FormSelect
                     control={control}
@@ -586,6 +615,13 @@ function SessionPreviewCard({
             />
             {CLASS_MSG.PREVIEW_HOLIDAY_NOTE}
           </p>
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <HugeiconsIcon
+              icon={CheckmarkSquare01Icon}
+              className="mt-0.5 size-3.5 shrink-0 text-primary"
+            />
+            {CLASS_MSG.PREVIEW_TEST_NOTE}
+          </p>
 
           <div className="grid grid-cols-2 gap-3 border-y border-border py-3">
             <div>
@@ -627,8 +663,11 @@ function SessionPreviewCard({
                         {session.time}
                       </span>
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {session.lessonTitle}
+                    <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                      {session.kind === "monthly_test" && (
+                        <StatusBadge category="sessionKind" status="monthly_test" />
+                      )}
+                      <span className="truncate">{session.lessonTitle}</span>
                     </p>
                   </div>
                 </li>
@@ -662,6 +701,8 @@ function FormSelect({
   error,
   icon,
   onAfterChange,
+  required = true,
+  noneLabel,
 }: {
   control: ReturnType<typeof useForm<ClassFormInput>>["control"]
   name: "subjectId" | "grade" | "programId" | "teacherId" | "room"
@@ -671,10 +712,15 @@ function FormSelect({
   error?: string
   icon?: typeof TeacherIcon
   onAfterChange?: () => void
+  required?: boolean
+  /** Có giá trị → thêm lựa chọn "bỏ chọn" đầu danh sách, chọn nó sẽ xóa giá trị field. */
+  noneLabel?: string
 }) {
+  const optionItems = noneLabel ? { [NONE_VALUE]: noneLabel, ...items } : items
+
   return (
     <div className="space-y-2">
-      <Label htmlFor={`class-${name}`} required>
+      <Label htmlFor={`class-${name}`} required={required}>
         {label}
       </Label>
       <Controller
@@ -682,10 +728,11 @@ function FormSelect({
         name={name}
         render={({ field }) => (
           <Select
-            items={items}
+            items={optionItems}
             value={field.value || null}
             onValueChange={(value) => {
-              field.onChange(String(value ?? ""))
+              const next = String(value ?? "")
+              field.onChange(next === NONE_VALUE ? "" : next)
               onAfterChange?.()
             }}
           >
@@ -705,7 +752,7 @@ function FormSelect({
               </span>
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(items).map(([value, itemLabel]) => (
+              {Object.entries(optionItems).map(([value, itemLabel]) => (
                 <SelectItem key={value} value={value}>
                   {itemLabel}
                 </SelectItem>

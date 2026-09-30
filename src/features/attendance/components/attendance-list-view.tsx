@@ -25,6 +25,9 @@ import { TEACHER_ATTENDANCE_MSG } from "@/constants/messages/events/teacher-port
 import { ROUTES } from "@/constants/routes"
 import { CURRENT_TEACHER_ID } from "@/mocks/data/catalog"
 import { useTodayAttendance } from "@/features/attendance/hooks/use-attendance"
+import { SectionCard } from "@/components/shared/display/section-card"
+import { WORK_CREDIT_MSG } from "@/constants/messages/events/work-credit"
+import { WorkCreditPanel } from "@/features/work-credits/components/work-credit-panel"
 import type { AttendanceSessionRow } from "@/features/attendance/selectors"
 
 function TeacherAttendanceListView() {
@@ -97,6 +100,10 @@ function TeacherAttendanceListView() {
           )}
         </AsyncBoundary>
       </Card>
+
+      <SectionCard title={WORK_CREDIT_MSG.PANEL_TITLE}>
+        <WorkCreditPanel teacherId={CURRENT_TEACHER_ID} />
+      </SectionCard>
     </PageContainer>
   )
 }

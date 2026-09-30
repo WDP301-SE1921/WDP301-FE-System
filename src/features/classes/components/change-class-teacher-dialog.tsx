@@ -41,11 +41,27 @@ import {
   changeClassTeacherSchema,
   type ChangeClassTeacherFormInput,
 } from "@/lib/validators/teacher"
-import { findTeacher } from "@/mocks/data/catalog"
+import { MOCK_TODAY, findTeacher } from "@/mocks/data/catalog"
 import { MockError } from "@/mocks/utils/mock-query"
 import { getClassTeacherCandidates } from "@/features/teachers/selectors"
 import { useChangeClassTeacher } from "@/features/teachers/hooks/use-teachers"
 import type { ClassDetail } from "@/features/classes/selectors"
+
+/**
+ * Một modal cho hai việc: gán giáo viên lần đầu cho lớp CHƯA có giáo viên (`isAssign`) và
+ * đổi giáo viên phụ trách lớp đã có. Chế độ suy ra từ `detail.classRecord.teacherId`; nơi gọi
+ * nên truyền `key` gồm chế độ để form dựng lại khi lớp vừa được gán xong.
+ */
+function buildDefaultValues(classId: string, isAssign: boolean): ChangeClassTeacherFormInput {
+  return {
+    classId,
+    teacherId: "",
+    effectiveFrom: isAssign ? MOCK_TODAY : "",
+    reason: isAssign ? TEACHER_MSG.CLASS_ASSIGN_DEFAULT_REASON : "",
+    notifyTeacher: true,
+    notifyParents: !isAssign,
+  }
+}
 
 export interface ChangeClassTeacherDialogProps {
   detail: ClassDetail
@@ -60,6 +76,7 @@ function ChangeClassTeacherDialog({
 }: ChangeClassTeacherDialogProps) {
   const changeTeacher = useChangeClassTeacher()
   const currentTeacher = findTeacher(detail.classRecord.teacherId)
+  const isAssign = !detail.classRecord.teacherId
 
   const candidates = React.useMemo(
     () => getClassTeacherCandidates(detail.classRecord.id),
@@ -85,14 +102,7 @@ function ChangeClassTeacherDialog({
     formState: { errors },
   } = useForm<ChangeClassTeacherFormInput>({
     resolver: zodResolver(changeClassTeacherSchema),
-    defaultValues: {
-      classId: detail.classRecord.id,
-      teacherId: "",
-      effectiveFrom: "",
-      reason: "",
-      notifyTeacher: true,
-      notifyParents: true,
-    },
+    defaultValues: buildDefaultValues(detail.classRecord.id, isAssign),
   })
 
   const selectedTeacherId = useWatch({ control, name: "teacherId" })
@@ -102,13 +112,13 @@ function ChangeClassTeacherDialog({
   const onSubmit = (values: ChangeClassTeacherFormInput) => {
     changeTeacher.mutate(values, {
       onSuccess: (result) => {
+        const teacherName = selectedCandidate?.teacher.name ?? ""
         toast.success(
-          TEACHER_MSG.CHANGE_SUCCESS(
-            selectedCandidate?.teacher.name ?? "",
-            result.affectedSessions
-          )
+          isAssign
+            ? TEACHER_MSG.CLASS_ASSIGN_SUCCESS(teacherName, result.affectedSessions)
+            : TEACHER_MSG.CHANGE_SUCCESS(teacherName, result.affectedSessions)
         )
-        reset()
+        reset(buildDefaultValues(detail.classRecord.id, false))
         onOpenChange(false)
       },
       onError: (error) => {
@@ -122,9 +132,13 @@ function ChangeClassTeacherDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {TEACHER_MSG.CHANGE_MODAL_TITLE(detail.classRecord.name)}
+            {isAssign
+              ? TEACHER_MSG.CLASS_ASSIGN_MODAL_TITLE(detail.classRecord.name)
+              : TEACHER_MSG.CHANGE_MODAL_TITLE(detail.classRecord.name)}
           </DialogTitle>
-          <DialogDescription>{TEACHER_MSG.CHANGE_MODAL_DESC}</DialogDescription>
+          <DialogDescription>
+            {isAssign ? TEACHER_MSG.CLASS_ASSIGN_MODAL_DESC : TEACHER_MSG.CHANGE_MODAL_DESC}
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -133,6 +147,12 @@ function ChangeClassTeacherDialog({
           noValidate
           className="space-y-4"
         >
+          {isAssign ? (
+            <Alert variant="warning">
+              <HugeiconsIcon icon={Alert01Icon} />
+              <AlertDescription>{TEACHER_MSG.CLASS_ASSIGN_CURRENT_EMPTY}</AlertDescription>
+            </Alert>
+          ) : (
           <div className="space-y-1.5">
             <Label>{TEACHER_MSG.CHANGE_CURRENT_LABEL}</Label>
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/30 p-3">
@@ -159,10 +179,11 @@ function ChangeClassTeacherDialog({
               </Badge>
             </div>
           </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="change-teacher-select" required>
-              {TEACHER_MSG.CHANGE_FIELD_TEACHER}
+              {isAssign ? TEACHER_MSG.CLASS_ASSIGN_FIELD_TEACHER : TEACHER_MSG.CHANGE_FIELD_TEACHER}
             </Label>
             <Controller
               control={control}
@@ -226,7 +247,7 @@ function ChangeClassTeacherDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="change-effective-date" required>
-              {TEACHER_MSG.CHANGE_FIELD_DATE}
+              {isAssign ? TEACHER_MSG.CLASS_ASSIGN_FIELD_DATE : TEACHER_MSG.CHANGE_FIELD_DATE}
             </Label>
             <Input
               id="change-effective-date"
@@ -242,38 +263,48 @@ function ChangeClassTeacherDialog({
               }
             >
               {errors.effectiveFrom?.message ??
-                TEACHER_MSG.CHANGE_FIELD_DATE_HINT(
+                (isAssign
+                  ? TEACHER_MSG.CLASS_ASSIGN_FIELD_DATE_HINT
+                  : TEACHER_MSG.CHANGE_FIELD_DATE_HINT)(
                   detail.sessions.filter((s) => s.state === "upcoming").length
                 )}
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="change-reason" required>
-              {TEACHER_MSG.CHANGE_FIELD_REASON}
-            </Label>
-            <Textarea
-              id="change-reason"
-              rows={2}
-              placeholder={TEACHER_MSG.CHANGE_FIELD_REASON_PLACEHOLDER}
-              error={Boolean(errors.reason)}
-              {...register("reason")}
-            />
-            {errors.reason && (
-              <p className="text-xs text-destructive">{errors.reason.message}</p>
-            )}
-          </div>
+          {!isAssign && (
+            <div className="space-y-1.5">
+              <Label htmlFor="change-reason" required>
+                {TEACHER_MSG.CHANGE_FIELD_REASON}
+              </Label>
+              <Textarea
+                id="change-reason"
+                rows={2}
+                placeholder={TEACHER_MSG.CHANGE_FIELD_REASON_PLACEHOLDER}
+                error={Boolean(errors.reason)}
+                {...register("reason")}
+              />
+              {errors.reason && (
+                <p className="text-xs text-destructive">{errors.reason.message}</p>
+              )}
+            </div>
+          )}
 
           <NotifyRow
             control={control}
             name="notifyTeacher"
-            label={TEACHER_MSG.CHANGE_NOTIFY_TEACHER}
+            label={
+              isAssign
+                ? TEACHER_MSG.CLASS_ASSIGN_NOTIFY_TEACHER
+                : TEACHER_MSG.CHANGE_NOTIFY_TEACHER
+            }
           />
-          <NotifyRow
-            control={control}
-            name="notifyParents"
-            label={TEACHER_MSG.CHANGE_NOTIFY_PARENTS}
-          />
+          {!isAssign && (
+            <NotifyRow
+              control={control}
+              name="notifyParents"
+              label={TEACHER_MSG.CHANGE_NOTIFY_PARENTS}
+            />
+          )}
         </form>
 
         <DialogFooter>
@@ -291,7 +322,7 @@ function ChangeClassTeacherDialog({
             isLoading={changeTeacher.isPending}
             leftIcon={<HugeiconsIcon icon={RefreshIcon} />}
           >
-            {TEACHER_MSG.CHANGE_SUBMIT}
+            {isAssign ? TEACHER_MSG.CLASS_ASSIGN_SUBMIT : TEACHER_MSG.CHANGE_SUBMIT}
           </Button>
         </DialogFooter>
       </DialogContent>

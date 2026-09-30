@@ -8,10 +8,10 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Alert01Icon,
   InformationCircleIcon,
-  Link01Icon,
   UserAdd01Icon,
   UserGroupIcon,
   UserIcon,
+  UserRemove01Icon,
 } from "@hugeicons/core-free-icons"
 import type { LegacyColumnDef } from "@tanstack/react-table/legacy"
 
@@ -44,6 +44,7 @@ import { EMPTY_MSG } from "@/constants/messages/empty"
 import { STUDENT_MSG } from "@/constants/messages/events/student"
 import { PAGINATION_DEFAULTS } from "@/constants/ui"
 import { ROUTES } from "@/constants/routes"
+import { useRoleAccess } from "@/hooks/use-current-role"
 import { SUBJECT_MAP } from "@/constants/subjects"
 import { formatDate } from "@/lib/format"
 import { getClassOptions, getDaysRemaining, type StudentRow } from "@/features/students/selectors"
@@ -69,6 +70,7 @@ const GRADE_ITEMS: Record<string, string> = {
 
 function StudentsView() {
   const router = useRouter()
+  const { canAccess } = useRoleAccess()
   const students = useStudents()
   const classOptions = React.useMemo(() => getClassOptions(), [])
   const classItems = React.useMemo<Record<string, string>>(
@@ -129,7 +131,6 @@ function StudentsView() {
       active: byStatus("active"),
       paused: byStatus("paused"),
       withdrawn: byStatus("withdrawn"),
-      pendingLink: byStatus("pending_link"),
       expiring: rows.filter(
         (row) =>
           row.packageEndDate !== undefined &&
@@ -140,8 +141,8 @@ function StudentsView() {
   }, [rows])
 
   const columns = React.useMemo<LegacyColumnDef<StudentRow>[]>(
-    () => buildColumns(router),
-    [router]
+    () => buildColumns(router, canAccess),
+    [router, canAccess]
   )
 
   return (
@@ -163,13 +164,15 @@ function StudentsView() {
                 toast.success(STUDENT_MSG.EXPORT_SUCCESS)
               }}
             />
-            <Button
-              className="rounded-full"
-              render={<Link href={ROUTES.MANAGER.ENROLLMENT_NEW} />}
-              leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
-            >
-              {STUDENT_MSG.ADD_ENROLLMENT}
-            </Button>
+            {canAccess(ROUTES.MANAGER.ENROLLMENT_NEW) && (
+              <Button
+                className="rounded-full"
+                render={<Link href={ROUTES.MANAGER.ENROLLMENT_NEW} />}
+                leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
+              >
+                {STUDENT_MSG.ADD_ENROLLMENT}
+              </Button>
+            )}
           </>
         }
       />
@@ -194,10 +197,10 @@ function StudentsView() {
           icon={<HugeiconsIcon icon={Alert01Icon} />}
         />
         <KpiCard
-          title={STUDENT_MSG.KPI_PENDING_LINK}
-          value={counts.pendingLink}
+          title={STUDENT_MSG.KPI_WITHDRAWN}
+          value={counts.withdrawn}
           color="amber"
-          icon={<HugeiconsIcon icon={Link01Icon} />}
+          icon={<HugeiconsIcon icon={UserRemove01Icon} />}
         />
       </div>
 
@@ -315,7 +318,8 @@ function StudentsView() {
 }
 
 function buildColumns(
-  router: ReturnType<typeof useRouter>
+  router: ReturnType<typeof useRouter>,
+  canAccess: (href: string) => boolean
 ): LegacyColumnDef<StudentRow>[] {
   return [
     {
@@ -428,28 +432,42 @@ function buildColumns(
               onClick: () =>
                 router.push(ROUTES.MANAGER.STUDENT_DETAIL(row.original.student.id)),
             },
-            {
-              id: "add-subject",
-              label: STUDENT_MSG.ACTION_ADD_SUBJECT,
-              onClick: () => router.push(ROUTES.MANAGER.ENROLLMENT_NEW),
-            },
-            {
-              id: "absence",
-              label: STUDENT_MSG.ACTION_REPORT_ABSENCE,
-              onClick: () => router.push(ROUTES.MANAGER.MAKEUP),
-            },
-            {
-              id: "long-leave",
-              label: STUDENT_MSG.ACTION_LONG_LEAVE,
-              onClick: () => router.push(ROUTES.MANAGER.LONG_LEAVE),
-            },
-            "separator",
-            {
-              id: "withdraw",
-              label: STUDENT_MSG.ACTION_WITHDRAW,
-              danger: true,
-              onClick: () => router.push(ROUTES.MANAGER.WITHDRAW),
-            },
+            ...(canAccess(ROUTES.MANAGER.ENROLLMENT_NEW)
+              ? [
+                  {
+                    id: "add-subject",
+                    label: STUDENT_MSG.ACTION_ADD_SUBJECT,
+                    onClick: () =>
+                      router.push(
+                        ROUTES.MANAGER.ENROLLMENT_NEW_FOR({
+                          parentId: row.original.student.parentAccountId,
+                          studentId: row.original.student.id,
+                        })
+                      ),
+                  },
+                ]
+              : []),
+            ...(canAccess(ROUTES.MANAGER.MAKEUP)
+              ? [
+                  {
+                    id: "absence",
+                    label: STUDENT_MSG.ACTION_REPORT_ABSENCE,
+                    onClick: () => router.push(ROUTES.MANAGER.MAKEUP),
+                  },
+                  {
+                    id: "long-leave",
+                    label: STUDENT_MSG.ACTION_LONG_LEAVE,
+                    onClick: () => router.push(ROUTES.MANAGER.LONG_LEAVE),
+                  },
+                  "separator" as const,
+                  {
+                    id: "withdraw",
+                    label: STUDENT_MSG.ACTION_WITHDRAW,
+                    danger: true,
+                    onClick: () => router.push(ROUTES.MANAGER.WITHDRAW),
+                  },
+                ]
+              : []),
           ]}
         />
       ),

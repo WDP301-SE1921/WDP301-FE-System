@@ -13,6 +13,7 @@ import {
   type TeacherRow,
   type TeacherTotals,
 } from "@/features/teachers/selectors"
+import { mockUpdateTeacher, type UpdateTeacherInput } from "@/mocks/data/catalog"
 import { MOCK_TEACHER_INVITATIONS } from "@/mocks/data/teachers"
 import {
   mockApproveInvitation,
@@ -25,6 +26,7 @@ import {
   type ChangeClassTeacherResult,
   type InviteTeacherInput,
 } from "@/mocks/data/teachers"
+import type { Teacher } from "@/types/catalog"
 import type { TeacherInvitation } from "@/types/teacher"
 
 export interface TeachersData {
@@ -127,6 +129,18 @@ export function useChangeClassTeacher() {
       queryClient.invalidateQueries({ queryKey: ["classes"] })
       queryClient.invalidateQueries({ queryKey: ["teachers"] })
       queryClient.invalidateQueries({ queryKey: ["schedule"] })
+    },
+  })
+}
+
+export function useUpdateTeacher() {
+  const queryClient = useQueryClient()
+
+  return useMutation<Teacher, Error, UpdateTeacherInput>({
+    mutationFn: (input) => mockMutation(input, mockUpdateTeacher),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] })
+      queryClient.invalidateQueries({ queryKey: ["classes"] })
     },
   })
 }

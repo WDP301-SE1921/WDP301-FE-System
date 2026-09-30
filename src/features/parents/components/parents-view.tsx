@@ -7,8 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkSquare01Icon,
   InformationCircleIcon,
-  Link01Icon,
-  UserAdd01Icon,
+  LockIcon,
   UserGroupIcon,
   UserIcon,
 } from "@hugeicons/core-free-icons"
@@ -16,7 +15,6 @@ import type { LegacyColumnDef } from "@tanstack/react-table/legacy"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
   Select,
@@ -41,6 +39,12 @@ import { PARENT_MSG } from "@/constants/messages/events/parent"
 import { STATUS_MAP } from "@/constants/status"
 import { PAGINATION_DEFAULTS } from "@/constants/ui"
 import { ROUTES } from "@/constants/routes"
+import { canManageAccounts } from "@/constants/role-access"
+import { useRoleAccess } from "@/hooks/use-current-role"
+import {
+  ParentAccountDialogs,
+  type ParentAccountDialogTarget,
+} from "@/features/parents/components/parent-account-dialogs"
 import { useParents } from "@/features/parents/hooks/use-parents"
 import {
   getAverageChildrenPerParent,
@@ -69,7 +73,10 @@ const CHILD_COUNT_ITEMS: Record<string, string> = {
 
 function ParentsView() {
   const router = useRouter()
+  const { role, canAccess } = useRoleAccess()
   const parents = useParents()
+  const [dialogTarget, setDialogTarget] = React.useState<ParentAccountDialogTarget | null>(null)
+  const canManage = canManageAccounts(role)
 
   const [search] = useQueryState("search", parseAsString.withDefault(""))
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1))
@@ -125,7 +132,7 @@ function ParentsView() {
     return {
       total: rows.length,
       activated: rows.filter((row) => row.parent.status === "activated").length,
-      pending: rows.filter((row) => row.parent.status === "pending_link").length,
+      disabled: rows.filter((row) => row.parent.status === "disabled").length,
       totalChildren,
       average: getAverageChildrenPerParent(rows),
     }
@@ -137,8 +144,13 @@ function ParentsView() {
       : Math.round((summary.activated / summary.total) * 100)
 
   const columns = React.useMemo<LegacyColumnDef<ParentRow>[]>(
-    () => buildColumns(router),
-    [router]
+    () =>
+      buildColumns(router, {
+        canEnroll: canAccess(ROUTES.MANAGER.ENROLLMENT_NEW),
+        canManage,
+        onDialog: setDialogTarget,
+      }),
+    [router, canAccess, canManage]
   )
 
   return (
@@ -152,22 +164,13 @@ function ParentsView() {
           { label: PARENT_MSG.LIST_TITLE },
         ]}
         actions={
-          <>
-            <ExportButton
-              variant="outline"
-              className="rounded-full"
-              onExport={() => {
-                toast.success(PARENT_MSG.EXPORT_SUCCESS)
-              }}
-            />
-            <Button
-              className="rounded-full"
-              leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
-              onClick={() => router.push(ROUTES.MANAGER.ENROLLMENT_NEW)}
-            >
-              {PARENT_MSG.ADD_PARENT}
-            </Button>
-          </>
+          <ExportButton
+            variant="outline"
+            className="rounded-full"
+            onExport={() => {
+              toast.success(PARENT_MSG.EXPORT_SUCCESS)
+            }}
+          />
         }
       />
 
@@ -191,11 +194,11 @@ function ParentsView() {
           icon={<HugeiconsIcon icon={CheckmarkSquare01Icon} />}
         />
         <KpiCard
-          title={PARENT_MSG.KPI_PENDING}
-          value={summary.pending}
-          sub={PARENT_MSG.KPI_PENDING_SUB}
+          title={PARENT_MSG.KPI_DISABLED}
+          value={summary.disabled}
+          sub={PARENT_MSG.KPI_DISABLED_SUB}
           color="amber"
-          icon={<HugeiconsIcon icon={Link01Icon} />}
+          icon={<HugeiconsIcon icon={LockIcon} />}
         />
         <KpiCard
           title={PARENT_MSG.KPI_RATIO}
@@ -281,12 +284,19 @@ function ParentsView() {
         <AlertTitle>{PARENT_MSG.RULE_NOTE_TITLE}</AlertTitle>
         <AlertDescription>{PARENT_MSG.RULE_NOTE_DESC}</AlertDescription>
       </Alert>
+
+      <ParentAccountDialogs target={dialogTarget} onClose={() => setDialogTarget(null)} />
     </PageContainer>
   )
 }
 
 function buildColumns(
-  router: ReturnType<typeof useRouter>
+  router: ReturnType<typeof useRouter>,
+  { canEnroll, canManage, onDialog }: {
+    canEnroll: boolean
+    canManage: boolean
+    onDialog: (target: ParentAccountDialogTarget) => void
+  }
 ): LegacyColumnDef<ParentRow>[] {
   return [
     {
@@ -358,24 +368,41 @@ function buildColumns(
               onClick: () =>
                 router.push(ROUTES.MANAGER.PARENT_DETAIL(row.original.parent.id)),
             },
-            {
-              id: "resend",
-              label: PARENT_MSG.ACTION_RESEND_ACTIVATION,
-              disabled: row.original.parent.status === "activated",
-              onClick: () => toast.success(PARENT_MSG.ACTION_RESEND_ACTIVATION),
-            },
-            {
-              id: "add-child",
-              label: PARENT_MSG.ACTION_ADD_CHILD,
-              onClick: () => router.push(ROUTES.MANAGER.ENROLLMENT_NEW),
-            },
-            "separator",
-            {
-              id: "lock",
-              label: PARENT_MSG.ACTION_LOCK_ACCOUNT,
-              danger: true,
-              onClick: () => toast.success(PARENT_MSG.ACTION_LOCK_ACCOUNT),
-            },
+            ...(canEnroll
+              ? [
+                  {
+                    id: "enroll",
+                    label: PARENT_MSG.ACTION_ENROLL,
+                    disabled: row.original.parent.status === "disabled",
+                    onClick: () =>
+                      router.push(
+                        ROUTES.MANAGER.ENROLLMENT_NEW_FOR({
+                          parentId: row.original.parent.id,
+                        })
+                      ),
+                  },
+                ]
+              : []),
+            ...(canManage
+              ? [
+                  {
+                    id: "edit-contact",
+                    label: PARENT_MSG.ACTION_EDIT_CONTACT,
+                    onClick: () => onDialog({ parent: row.original.parent, action: "edit" }),
+                  },
+                  "separator" as const,
+                  {
+                    id: "lock",
+                    label:
+                      row.original.parent.status === "activated"
+                        ? PARENT_MSG.ACTION_LOCK_ACCOUNT
+                        : PARENT_MSG.ACTION_UNLOCK_ACCOUNT,
+                    danger: row.original.parent.status === "activated",
+                    onClick: () =>
+                      onDialog({ parent: row.original.parent, action: "toggle-lock" }),
+                  },
+                ]
+              : []),
           ]}
         />
       ),

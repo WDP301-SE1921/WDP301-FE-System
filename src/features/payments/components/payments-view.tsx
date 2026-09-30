@@ -43,7 +43,8 @@ import { STUDENT_MSG } from "@/constants/messages/events/student"
 import { PAGINATION_DEFAULTS } from "@/constants/ui"
 import { ROUTES } from "@/constants/routes"
 import { SUBJECT_MAP } from "@/constants/subjects"
-import { MOCK_MANAGERS, PAYMENT_METHOD_LABEL } from "@/mocks/data/payments"
+import { PAYMENT_METHOD_LABEL } from "@/mocks/data/payments"
+import { MOCK_STAFF_ACCOUNTS } from "@/mocks/data/staff"
 import { usePayments } from "@/features/payments/hooks/use-payments"
 import { ReceiptDialog } from "@/features/payments/components/receipt-dialog"
 import type { PaymentRow } from "@/features/payments/selectors"
@@ -59,7 +60,11 @@ const SUBJECT_ITEMS: Record<string, string> = {
 
 const CONFIRMER_ITEMS: Record<string, string> = {
   [ALL_VALUE]: PAYMENT_MSG.FILTER_ALL_CONFIRMERS,
-  ...Object.fromEntries(MOCK_MANAGERS.map((item) => [item.id, item.name])),
+  ...Object.fromEntries(
+    MOCK_STAFF_ACCOUNTS.filter((item) => item.role === "staff" && item.status !== "pending").map(
+      (item) => [item.id, item.name]
+    )
+  ),
 }
 
 const METHOD_ITEMS: Record<string, string> = {

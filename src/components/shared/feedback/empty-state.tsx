@@ -42,7 +42,7 @@ function EmptyState({
   return (
     <div
       data-slot="empty-state"
-      className={`flex min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center animate-in fade-in-50 ${className}`}
+      className={`flex min-h-55 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center animate-in fade-in-50 ${className}`}
     >
       <div className="flex size-14 items-center justify-center rounded-full bg-muted/60 mb-4">
         {icon ?? defaultIcon}

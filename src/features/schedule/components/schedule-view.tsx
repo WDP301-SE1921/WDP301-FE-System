@@ -31,6 +31,7 @@ import { PageHeader } from "@/components/shared/layout/page-header"
 import { SCHEDULE_MSG } from "@/constants/messages/events/schedule"
 import { ROUTES } from "@/constants/routes"
 import { SUBJECT_MAP } from "@/constants/subjects"
+import { useRoleAccess } from "@/hooks/use-current-role"
 import { MOCK_SUBJECTS } from "@/mocks/data/catalog"
 import { getRoomOptions, getTeacherOptions } from "@/features/classes/selectors"
 import { getSessionDetail } from "@/features/schedule/selectors"
@@ -50,6 +51,7 @@ const SUBJECT_ITEMS: Record<string, string> = {
 
 function ScheduleView() {
   const router = useRouter()
+  const { canAccess } = useRoleAccess()
 
   const [teacher, setTeacher] = useQueryState("teacher", parseAsString.withDefault(ALL_VALUE))
   const [subject, setSubject] = useQueryState("subject", parseAsString.withDefault(ALL_VALUE))
@@ -203,11 +205,14 @@ function ScheduleView() {
                 totalStudents: sessionDetail.totalStudents,
                 attendedCount: sessionDetail.attendedCount,
                 absentStudents: sessionDetail.absentStudents,
-                onTakeAttendance: () => router.push(ROUTES.TEACHER.ATTENDANCE),
-                onRequestReschedule: () =>
-                  router.push(ROUTES.MANAGER.TEACHER_SUBSTITUTES),
-                onViewClassDetail: () =>
-                  router.push(ROUTES.MANAGER.CLASS_DETAIL(sessionDetail.classId)),
+                // Điểm danh là việc của giáo viên (`/teacher/*`), không có nút này ở khu back-office.
+                // Hai lối tắt dưới chỉ hiện với role vào được màn đích (admin, quản lý trung tâm).
+                onRequestReschedule: canAccess(ROUTES.MANAGER.TEACHER_SUBSTITUTES)
+                  ? () => router.push(ROUTES.MANAGER.TEACHER_SUBSTITUTES)
+                  : undefined,
+                onViewClassDetail: canAccess(ROUTES.MANAGER.CLASSES)
+                  ? () => router.push(ROUTES.MANAGER.CLASS_DETAIL(sessionDetail.classId))
+                  : undefined,
               }
             : null
         }

@@ -1,22 +1,18 @@
 import {
-  MOCK_ACTIVATION_LINKS,
   MOCK_PAYMENTS,
   PAYMENT_METHOD_LABEL,
-  findManager,
 } from "@/mocks/data/payments"
+import { findStaffAccount } from "@/mocks/data/staff"
 import { findClass, findProgram, findSubject } from "@/mocks/data/catalog"
 import { findEnrollment, findStudent } from "@/mocks/data/students"
 import { findParent } from "@/mocks/data/parents"
-import { getLinkStatus } from "@/features/parents/selectors"
 import { PAYMENT_MSG } from "@/constants/messages/events/payment"
 import { PARENT_MSG } from "@/constants/messages/events/parent"
 import { STUDENT_MSG } from "@/constants/messages/events/student"
 import { formatDate, formatDateTime } from "@/lib/format"
 import type { ReceiptProps } from "@/components/shared/display/receipt"
 import type {
-  ActivationLink,
   Enrollment,
-  LinkCodeStatus,
   ParentAccount,
   Payment,
   StudentProfile,
@@ -24,7 +20,7 @@ import type {
 import type { ClassRecord, Program } from "@/types/catalog"
 
 /**
- * Field TÍNH ĐƯỢC của thanh toán và mã liên kết derive tại đây — xem
+ * Field TÍNH ĐƯỢC của thanh toán derive tại đây — xem
  * `.claude/rules/data-contracts.md`. Các hàm này chạy trong `queryFn`, không chạy
  * lúc render, nên được phép đọc thời gian hiện tại.
  */
@@ -41,16 +37,6 @@ export interface PaymentRow {
   methodLabel: string
 }
 
-export interface LinkCodeRow {
-  link: ActivationLink
-  status: LinkCodeStatus
-  student?: StudentProfile
-  parent?: ParentAccount
-  classRecord?: ClassRecord
-  subjectCode: string
-  createdAt: string
-}
-
 function toPaymentRow(payment: Payment): PaymentRow {
   const enrollment = findEnrollment(payment.enrollmentId)
   const student = enrollment ? findStudent(enrollment.studentProfileId) : undefined
@@ -64,7 +50,7 @@ function toPaymentRow(payment: Payment): PaymentRow {
     classRecord,
     program: findProgram(classRecord?.programId ?? ""),
     subjectCode: findSubject(enrollment?.subjectId ?? "")?.code ?? "",
-    confirmedByName: findManager(payment.confirmedBy)?.name ?? "—",
+    confirmedByName: findStaffAccount(payment.confirmedBy)?.name ?? "—",
     methodLabel: PAYMENT_METHOD_LABEL[payment.method],
   }
 }
@@ -114,66 +100,6 @@ export function getPaymentTotals(
       monthRows.length === 0
         ? 0
         : Math.round((monthsSold / monthRows.length) * 10) / 10,
-  }
-}
-
-function toLinkCodeRow(link: ActivationLink, now: number): LinkCodeRow {
-  const enrollment = findEnrollment(link.enrollmentId)
-  const student = enrollment ? findStudent(enrollment.studentProfileId) : undefined
-  const classRecord = findClass(enrollment?.classId ?? "")
-
-  // Ngày tạo suy từ hạn dùng — backend thật sẽ trả `createdAt` trực tiếp.
-  const created = new Date(link.expiresAt)
-  created.setDate(created.getDate() - 7)
-
-  return {
-    link,
-    status: getLinkStatus(link, now),
-    student,
-    parent: findParent(student?.parentAccountId ?? ""),
-    classRecord,
-    subjectCode: findSubject(enrollment?.subjectId ?? "")?.code ?? "",
-    createdAt: created.toISOString(),
-  }
-}
-
-export function getLinkCodeRows(): LinkCodeRow[] {
-  const now = Date.now()
-  return MOCK_ACTIVATION_LINKS.map((link) => toLinkCodeRow(link, now)).sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt)
-  )
-}
-
-export interface LinkCodeTotals {
-  total: number
-  unused: number
-  used: number
-  expired: number
-  activatedPercent: number
-  /** Mã chưa dùng sắp chạm mốc hết hạn (còn ≤ 2 ngày). */
-  expiringSoon: number
-}
-
-export function getLinkCodeTotals(rows: LinkCodeRow[]): LinkCodeTotals {
-  const unused = rows.filter((row) => row.status === "active").length
-  const used = rows.filter((row) => row.status === "used").length
-  const expired = rows.filter((row) => row.status === "expired").length
-
-  const expiringSoon = rows.filter((row) => {
-    if (row.status !== "active") return false
-    const daysLeft =
-      (new Date(row.link.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    return daysLeft <= 2
-  }).length
-
-  return {
-    total: rows.length,
-    unused,
-    used,
-    expired,
-    activatedPercent:
-      rows.length === 0 ? 0 : Math.round((used / rows.length) * 1000) / 10,
-    expiringSoon,
   }
 }
 

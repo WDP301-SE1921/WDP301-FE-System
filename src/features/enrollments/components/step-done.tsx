@@ -7,7 +7,6 @@ import {
   Alert01Icon,
   CheckmarkCircle02Icon,
   Invoice01Icon,
-  Link01Icon,
   Mail01Icon,
   PrinterIcon,
 } from "@hugeicons/core-free-icons"
@@ -22,13 +21,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/toast"
-import { CopyButton } from "@/components/shared/actions/copy-button"
 import { CodeDisplay } from "@/components/shared/display/code-display"
 import { MoneyText } from "@/components/shared/display/money-text"
 import { StatusBadge } from "@/components/shared/feedback/status-badge"
 import { ENROLLMENT_MSG } from "@/constants/messages/events/enrollment"
 import { ROUTES } from "@/constants/routes"
-import { formatDate } from "@/lib/format"
 import { Receipt } from "@/components/shared/display/receipt"
 import { buildReceiptProps, findPaymentRow } from "@/features/payments/selectors"
 import { useResendEnrollmentEmail } from "@/features/enrollments/hooks/use-create-enrollment"
@@ -82,7 +79,7 @@ function StepDone({ result, onStartNew }: StepDoneProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="gap-3">
           <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <HugeiconsIcon icon={Invoice01Icon} className="size-5" />
@@ -114,23 +111,6 @@ function StepDone({ result, onStartNew }: StepDoneProps) {
               {ENROLLMENT_MSG.RECEIPT_PRINT}
             </Button>
           </div>
-        </Card>
-
-        <Card className="gap-3">
-          <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
-            <HugeiconsIcon icon={Link01Icon} className="size-5" />
-          </span>
-          <p className="font-heading text-base font-semibold text-foreground">
-            {ENROLLMENT_MSG.LINK_TITLE}
-          </p>
-          {/* Hiển thị `linkCode` cho quản lý đọc cho phụ huynh; token không render. */}
-          <p className="font-mono text-2xl font-bold tracking-widest text-foreground">
-            {result.linkCode}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {ENROLLMENT_MSG.LINK_EXPIRES(formatDate(result.linkExpiresAt))}
-          </p>
-          <CopyButton value={result.linkCode} className="w-full rounded-full" />
         </Card>
 
         <Card className="gap-3">

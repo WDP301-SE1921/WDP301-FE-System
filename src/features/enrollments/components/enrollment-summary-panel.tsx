@@ -9,23 +9,16 @@ import { MoneyText } from "@/components/shared/display/money-text"
 import { SubjectTag } from "@/components/shared/display/subject-tag"
 import { ENROLLMENT_MSG } from "@/constants/messages/events/enrollment"
 import { STUDENT_MSG } from "@/constants/messages/events/student"
-import { REGISTRATION_TYPE, type RegistrationType } from "@/lib/validators/enrollment"
-
-const TYPE_LABEL: Record<RegistrationType, string> = {
-  [REGISTRATION_TYPE.FIRST_CHILD]: ENROLLMENT_MSG.TYPE_FIRST_CHILD,
-  [REGISTRATION_TYPE.ADDITIONAL_CHILD]: ENROLLMENT_MSG.TYPE_ADDITIONAL_CHILD,
-  [REGISTRATION_TYPE.ADDITIONAL_SUBJECT]: ENROLLMENT_MSG.TYPE_ADDITIONAL_SUBJECT,
-}
-
 export interface EnrollmentSummaryPanelProps {
   currentStep: number
   totalSteps: number
-  registrationType: RegistrationType
   parentEmail: string
   studentName: string
   grade?: number
   subjectCode?: string
   className?: string
+  /** Lịch cố định của lớp đã chọn, vd "T2 - T4 - T6 · 15:00–16:30". */
+  scheduleText?: string
   expectedTuition: number
   discount: number
 }
@@ -33,12 +26,12 @@ export interface EnrollmentSummaryPanelProps {
 function EnrollmentSummaryPanel({
   currentStep,
   totalSteps,
-  registrationType,
   parentEmail,
   studentName,
   grade,
   subjectCode,
   className,
+  scheduleText,
   expectedTuition,
   discount,
 }: EnrollmentSummaryPanelProps) {
@@ -58,12 +51,6 @@ function EnrollmentSummaryPanel({
         </div>
 
         <dl className="space-y-3 border-t border-border pt-3">
-          <SummaryRow label={ENROLLMENT_MSG.SUMMARY_TYPE}>
-            <Badge variant="info" className="rounded-full">
-              {TYPE_LABEL[registrationType]}
-            </Badge>
-          </SummaryRow>
-
           <SummaryRow label={ENROLLMENT_MSG.SUMMARY_PARENT}>
             {parentEmail || <EmptyValue />}
           </SummaryRow>
@@ -90,6 +77,10 @@ function EnrollmentSummaryPanel({
                 {ENROLLMENT_MSG.SUMMARY_NO_CLASS}
               </span>
             )}
+          </SummaryRow>
+
+          <SummaryRow label={ENROLLMENT_MSG.SUMMARY_SCHEDULE}>
+            {scheduleText || <EmptyValue />}
           </SummaryRow>
         </dl>
       </Card>

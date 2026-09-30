@@ -54,6 +54,7 @@ import { PageContainer } from "@/components/shared/layout/page-container"
 import { PageHeader } from "@/components/shared/layout/page-header"
 import { STUDENT_MSG } from "@/constants/messages/events/student"
 import { ROUTES } from "@/constants/routes"
+import { useRoleAccess } from "@/hooks/use-current-role"
 import { formatDate } from "@/lib/format"
 import { findAttendanceByStudent } from "@/mocks/data/attendance"
 import {
@@ -163,6 +164,9 @@ function StudentHero({
   row: StudentRow
   router: ReturnType<typeof useRouter>
 }) {
+  const { canAccess } = useRoleAccess()
+  const canEnroll = canAccess(ROUTES.MANAGER.ENROLLMENT_NEW)
+  const canManageAbsences = canAccess(ROUTES.MANAGER.MAKEUP)
   const activeEnrollments = row.enrollments.filter((item) => item.status !== "dropped")
 
   return (
@@ -187,35 +191,48 @@ function StudentHero({
         ]}
         actions={
           <>
-            <Button
-              className="rounded-full"
-              render={<Link href={ROUTES.MANAGER.ENROLLMENT_NEW} />}
-              leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
-            >
-              {STUDENT_MSG.ACTION_ADD_SUBJECT}
-            </Button>
-            <Button
-              variant="outline"
-              className="rounded-full"
-              render={<Link href={ROUTES.MANAGER.LONG_LEAVE} />}
-            >
-              {STUDENT_MSG.ACTION_LONG_LEAVE}
-            </Button>
-            <RowActions
-              items={[
-                {
-                  id: "drop-subject",
-                  label: STUDENT_MSG.ACTION_DROP_SUBJECT,
-                  onClick: () => router.push(ROUTES.MANAGER.WITHDRAW),
-                },
-                {
-                  id: "withdraw",
-                  label: STUDENT_MSG.ACTION_WITHDRAW,
-                  danger: true,
-                  onClick: () => router.push(ROUTES.MANAGER.WITHDRAW),
-                },
-              ]}
-            />
+            {canEnroll && (
+              <Button
+                className="rounded-full"
+                render={
+                  <Link
+                    href={ROUTES.MANAGER.ENROLLMENT_NEW_FOR({
+                      parentId: row.student.parentAccountId,
+                      studentId: row.student.id,
+                    })}
+                  />
+                }
+                leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
+              >
+                {STUDENT_MSG.ACTION_ADD_SUBJECT}
+              </Button>
+            )}
+            {canManageAbsences && (
+              <>
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  render={<Link href={ROUTES.MANAGER.LONG_LEAVE} />}
+                >
+                  {STUDENT_MSG.ACTION_LONG_LEAVE}
+                </Button>
+                <RowActions
+                  items={[
+                    {
+                      id: "drop-subject",
+                      label: STUDENT_MSG.ACTION_DROP_SUBJECT,
+                      onClick: () => router.push(ROUTES.MANAGER.WITHDRAW),
+                    },
+                    {
+                      id: "withdraw",
+                      label: STUDENT_MSG.ACTION_WITHDRAW,
+                      danger: true,
+                      onClick: () => router.push(ROUTES.MANAGER.WITHDRAW),
+                    },
+                  ]}
+                />
+              </>
+            )}
           </>
         }
       />

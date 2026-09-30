@@ -309,7 +309,7 @@ function SessionsTab({ detail }: { detail: ClassDetail }) {
 function SessionRow({ row }: { row: ClassSessionRow }) {
   return (
     <TableRow>
-      <TableCell className="text-sm font-medium">Buổi {row.order}</TableCell>
+      <TableCell className="text-sm font-medium">{row.label}</TableCell>
       <TableCell className="whitespace-nowrap">
         <DateText value={row.session.date} />
       </TableCell>

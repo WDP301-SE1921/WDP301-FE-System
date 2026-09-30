@@ -23,7 +23,8 @@ export const classFormSchema = z
     startTime: z.string().min(1, VALIDATION_MSG.REQUIRED),
     endTime: z.string().min(1, VALIDATION_MSG.REQUIRED),
     startDate: z.string().min(1, VALIDATION_MSG.REQUIRED),
-    teacherId: z.string().min(1, VALIDATION_MSG.REQUIRED),
+    /** Tùy chọn: lớp có thể tạo trước, quản lý trung tâm gán giáo viên sau. */
+    teacherId: z.string(),
     room: z.string().min(1, VALIDATION_MSG.REQUIRED),
   })
   .superRefine((values, ctx) => {

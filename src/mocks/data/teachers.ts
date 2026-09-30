@@ -1,13 +1,27 @@
 import {
   MOCK_CLASSES,
   MOCK_CLASS_SESSIONS,
+  MOCK_NOW,
   MOCK_TEACHERS,
+  MOCK_TODAY,
+  findClass,
   findClassSession,
   findTeacher,
+  resolveSessionLabel,
 } from "@/mocks/data/catalog"
+import { MOCK_ATTENDANCE } from "@/mocks/data/attendance"
+import { MOCK_ENROLLMENTS } from "@/mocks/data/students"
+import { appendAuditLog } from "@/mocks/data/system"
 import { MockError } from "@/mocks/utils/mock-query"
 import { ERROR_MSG } from "@/constants/messages/error"
-import type { SubstituteAssignment, TeacherInvitation } from "@/types/teacher"
+import { TEACHER_ABSENCE_MSG } from "@/constants/messages/events/teacher-absence"
+import { ROUTES } from "@/constants/routes"
+import type {
+  SubstituteAssignment,
+  TeacherAbsenceReport,
+  TeacherInvitation,
+  WorkCreditAdjustment,
+} from "@/types/teacher"
 
 /**
  * Lời mời giáo viên + lịch sử dạy thay giả lập cho giai đoạn MOCK-ONLY.
@@ -125,7 +139,7 @@ export const MOCK_SUBSTITUTES: SubstituteAssignment[] = [
     mainTeacherId: "tch-002",
     substituteTeacherId: "tch-009",
     reason: "Lý do việc gia đình có đơn xin phép",
-    assignedBy: "mgr-002",
+    assignedBy: "mgr-001",
     assignedAt: "2026-09-11T16:45:00",
     status: "confirmed",
   },
@@ -155,6 +169,8 @@ export interface AssignSubstituteInput {
   classSessionId: string
   substituteTeacherId: string
   reason: string
+  /** Id nhân sự xếp dạy thay (người đang đăng nhập); mặc định quản lý trung tâm mẫu. */
+  assignedBy?: string
   /** Gửi SMS/Email thông báo cho giáo viên dạy thay. */
   notifyTeacher: boolean
   /** Gửi thông báo cho phụ huynh / học sinh của lớp. */
@@ -178,7 +194,7 @@ export function mockAssignSubstitute(
     mainTeacherId: session.teacherId ?? "",
     substituteTeacherId: input.substituteTeacherId,
     reason: input.reason.trim(),
-    assignedBy: "mgr-001",
+    assignedBy: input.assignedBy ?? "mgr-001",
     assignedAt: new Date().toISOString(),
     status: "confirmed",
   }
@@ -187,6 +203,16 @@ export function mockAssignSubstitute(
 
   // Buổi học nhận giáo viên dạy thay ngay để lịch tổng không còn báo thiếu GV.
   session.teacherId = input.substituteTeacherId
+
+  // Giáo viên đã báo nghỉ buổi này được coi là đã có người dạy thay.
+  const pendingReport = MOCK_TEACHER_ABSENCES.find(
+    (item) => item.classSessionId === input.classSessionId && item.status === "pending"
+  )
+  if (pendingReport) {
+    pendingReport.status = "covered"
+    pendingReport.resolvedBy = assignment.assignedBy
+    pendingReport.resolvedAt = MOCK_NOW
+  }
 
   return assignment
 }
@@ -284,4 +310,259 @@ export function mockRejectInvitation(invitationId: string): TeacherInvitation {
   invitation.status = "rejected"
 
   return invitation
+}
+
+// ---------------------------------------------------------------------------
+// Công giáo viên: báo nghỉ, hủy buổi, ghi nhận công thủ công (PROMPT P5)
+// ---------------------------------------------------------------------------
+
+export const MOCK_TEACHER_ABSENCES: TeacherAbsenceReport[] = []
+export const MOCK_WORK_ADJUSTMENTS: WorkCreditAdjustment[] = []
+
+/**
+ * Dựng dữ liệu demo cho công giáo viên, chạy một lần lúc nạp module:
+ * - buổi đã có giáo viên dạy thay xác nhận → giáo viên dạy thay là người dạy (và điểm danh);
+ * - một buổi đã qua của Sinh 6A để ở trạng thái "chưa chốt công";
+ * - hai báo nghỉ đang chờ xử lý (một đột xuất, một báo trước).
+ */
+function seedWorkCreditDemo() {
+  MOCK_SUBSTITUTES.filter((item) => item.status === "confirmed").forEach((item) => {
+    const session = findClassSession(item.classSessionId)
+    if (!session) return
+
+    session.teacherId = item.substituteTeacherId
+    if (session.attendanceMarkedAt) session.attendanceMarkedBy = item.substituteTeacherId
+  })
+
+  const lastPastBiology = MOCK_CLASS_SESSIONS.filter(
+    (session) =>
+      session.classId === "cls-biol-6a" &&
+      session.kind === "lesson" &&
+      session.date < MOCK_TODAY &&
+      session.attendanceMarkedAt
+  ).at(-1)
+  if (lastPastBiology) {
+    lastPastBiology.attendanceMarkedAt = undefined
+    lastPastBiology.attendanceMarkedBy = undefined
+  }
+
+  const urgentSession = MOCK_CLASS_SESSIONS.find(
+    (session) =>
+      session.date === "2026-09-17" && session.teacherId === "tch-003" && session.kind === "lesson"
+  )
+  if (urgentSession) {
+    MOCK_TEACHER_ABSENCES.push({
+      id: "abs-001",
+      classSessionId: urgentSession.id,
+      teacherId: "tch-003",
+      reason: "Sốt cao, bác sĩ chỉ định nghỉ ngơi",
+      reportedAt: "2026-09-16T18:30:00",
+      status: "pending",
+    })
+  }
+
+  const advanceSession = MOCK_CLASS_SESSIONS.find(
+    (session) =>
+      session.date > "2026-09-20" && session.teacherId === "tch-002" && session.kind === "lesson"
+  )
+  if (advanceSession) {
+    MOCK_TEACHER_ABSENCES.push({
+      id: "abs-002",
+      classSessionId: advanceSession.id,
+      teacherId: "tch-002",
+      reason: "Tham dự hội nghị chuyên đề đã đăng ký từ trước",
+      reportedAt: "2026-09-15T10:00:00",
+      status: "pending",
+    })
+  }
+}
+
+seedWorkCreditDemo()
+
+let absenceSequence = MOCK_TEACHER_ABSENCES.length
+
+function sessionTargetLabel(sessionId: string): { label: string; href?: string } {
+  const session = findClassSession(sessionId)
+  const classRecord = findClass(session?.classId ?? "")
+  if (!session || !classRecord) return { label: sessionId }
+
+  return {
+    label: `${classRecord.name} · ${resolveSessionLabel(session)} (${session.date})`,
+    href: ROUTES.MANAGER.CLASS_DETAIL(classRecord.id),
+  }
+}
+
+export interface ReportTeacherAbsenceInput {
+  classSessionId: string
+  teacherId: string
+  reason: string
+}
+
+/** Giáo viên báo nghỉ một buổi của mình. Chỉ báo được buổi chưa diễn ra, chưa điểm danh, chưa hủy. */
+export function mockReportTeacherAbsence(input: ReportTeacherAbsenceInput): TeacherAbsenceReport {
+  const session = findClassSession(input.classSessionId)
+  if (!session) throw new MockError(ERROR_MSG.NOT_FOUND)
+  if (session.teacherId !== input.teacherId) {
+    throw new MockError(TEACHER_ABSENCE_MSG.NOT_YOUR_SESSION)
+  }
+  if (session.date < MOCK_TODAY || session.attendanceMarkedAt || session.cancelledAt) {
+    throw new MockError(TEACHER_ABSENCE_MSG.SESSION_NOT_REPORTABLE)
+  }
+  if (
+    MOCK_TEACHER_ABSENCES.some(
+      (item) => item.classSessionId === input.classSessionId && item.status === "pending"
+    )
+  ) {
+    throw new MockError(TEACHER_ABSENCE_MSG.ALREADY_REPORTED)
+  }
+
+  absenceSequence += 1
+
+  const report: TeacherAbsenceReport = {
+    id: `abs-new-${absenceSequence}`,
+    classSessionId: input.classSessionId,
+    teacherId: input.teacherId,
+    reason: input.reason.trim(),
+    reportedAt: MOCK_NOW,
+    status: "pending",
+  }
+
+  MOCK_TEACHER_ABSENCES.unshift(report)
+
+  const target = sessionTargetLabel(input.classSessionId)
+  appendAuditLog({
+    actorId: input.teacherId,
+    actionType: "teacher_absence",
+    targetLabel: target.label,
+    targetHref: target.href,
+    reason: report.reason,
+    createdAt: MOCK_NOW,
+  })
+
+  return report
+}
+
+export interface CancelSessionInput {
+  classSessionId: string
+  reason: string
+  /** Id nhân sự hủy buổi (người đang đăng nhập). */
+  cancelledBy: string
+}
+
+export interface CancelSessionResult {
+  classSessionId: string
+  /** Số học sinh đã được ghi nhận nghỉ có phép và cần xếp học bù. */
+  affectedStudents: number
+}
+
+/**
+ * Hủy một buổi học: gắn `cancelledAt`, đóng báo nghỉ đang chờ, ghi nhận cả lớp nghỉ có phép
+ * (để nhân viên xếp học bù qua luồng học bù sẵn có). Giáo viên không được tính công buổi này.
+ */
+export function mockCancelSession(input: CancelSessionInput): CancelSessionResult {
+  const session = findClassSession(input.classSessionId)
+  if (!session) throw new MockError(ERROR_MSG.NOT_FOUND)
+  if (session.attendanceMarkedAt || session.cancelledAt) {
+    throw new MockError(TEACHER_ABSENCE_MSG.CANCEL_NOT_ALLOWED)
+  }
+
+  session.cancelledAt = MOCK_NOW
+  session.cancelReason = input.reason.trim()
+
+  const pendingReport = MOCK_TEACHER_ABSENCES.find(
+    (item) => item.classSessionId === input.classSessionId && item.status === "pending"
+  )
+  if (pendingReport) {
+    pendingReport.status = "cancelled"
+    pendingReport.resolvedBy = input.cancelledBy
+    pendingReport.resolvedAt = MOCK_NOW
+  }
+
+  const students = MOCK_ENROLLMENTS.filter(
+    (item) => item.classId === session.classId && item.status === "active"
+  )
+  students.forEach((enrollment) => {
+    const existing = MOCK_ATTENDANCE.find(
+      (record) =>
+        record.classSessionId === session.id &&
+        record.studentProfileId === enrollment.studentProfileId
+    )
+
+    if (existing) {
+      existing.status = "excused"
+      existing.note = TEACHER_ABSENCE_MSG.CANCELLED_ATTENDANCE_NOTE
+      return
+    }
+
+    MOCK_ATTENDANCE.push({
+      id: `att-${session.id}-${enrollment.studentProfileId}`,
+      classSessionId: session.id,
+      studentProfileId: enrollment.studentProfileId,
+      status: "excused",
+      note: TEACHER_ABSENCE_MSG.CANCELLED_ATTENDANCE_NOTE,
+    })
+  })
+
+  const target = sessionTargetLabel(input.classSessionId)
+  appendAuditLog({
+    actorId: input.cancelledBy,
+    actionType: "cancel_session",
+    targetLabel: target.label,
+    targetHref: target.href,
+    reason: session.cancelReason,
+    effectiveDate: session.date,
+    createdAt: MOCK_NOW,
+  })
+
+  return { classSessionId: session.id, affectedStudents: students.length }
+}
+
+export interface AdjustWorkCreditInput {
+  classSessionId: string
+  teacherId: string
+  reason: string
+  /** Id nhân sự ghi nhận (người đang đăng nhập). */
+  adjustedBy: string
+}
+
+let adjustmentSequence = 0
+
+/** Ghi nhận công thủ công cho buổi đã qua mà giáo viên chưa điểm danh. */
+export function mockAdjustWorkCredit(input: AdjustWorkCreditInput): WorkCreditAdjustment {
+  const session = findClassSession(input.classSessionId)
+  if (!session || !findTeacher(input.teacherId)) throw new MockError(ERROR_MSG.NOT_FOUND)
+  if (
+    session.date >= MOCK_TODAY ||
+    session.attendanceMarkedAt ||
+    session.cancelledAt ||
+    MOCK_WORK_ADJUSTMENTS.some((item) => item.classSessionId === input.classSessionId)
+  ) {
+    throw new MockError(TEACHER_ABSENCE_MSG.ADJUST_NOT_ALLOWED)
+  }
+
+  adjustmentSequence += 1
+
+  const adjustment: WorkCreditAdjustment = {
+    id: `wca-new-${adjustmentSequence}`,
+    classSessionId: input.classSessionId,
+    teacherId: input.teacherId,
+    reason: input.reason.trim(),
+    adjustedBy: input.adjustedBy,
+    adjustedAt: MOCK_NOW,
+  }
+
+  MOCK_WORK_ADJUSTMENTS.unshift(adjustment)
+
+  const target = sessionTargetLabel(input.classSessionId)
+  appendAuditLog({
+    actorId: input.adjustedBy,
+    actionType: "adjust_work_credit",
+    targetLabel: `${findTeacher(input.teacherId)?.name ?? ""} — ${target.label}`,
+    targetHref: target.href,
+    reason: adjustment.reason,
+    effectiveDate: session.date,
+    createdAt: MOCK_NOW,
+  })
+
+  return adjustment
 }

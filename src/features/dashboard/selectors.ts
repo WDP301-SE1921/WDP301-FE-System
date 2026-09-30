@@ -1,13 +1,15 @@
 import {
   MOCK_SESSIONS_TODAY,
+  MOCK_TEACHERS,
   findClass,
   findTeacher,
   resolveLessonTitle,
 } from "@/mocks/data/catalog"
-import { MOCK_ACTIVATION_LINKS, MOCK_EMAIL_LOGS, MOCK_PAYMENTS } from "@/mocks/data/payments"
-import { MOCK_ENROLLMENTS, findStudent } from "@/mocks/data/students"
+import { MOCK_EMAIL_LOGS, MOCK_PAYMENTS } from "@/mocks/data/payments"
+import { MOCK_ENROLLMENTS, MOCK_STUDENTS, findStudent } from "@/mocks/data/students"
+import { MOCK_STAFF_ACCOUNTS } from "@/mocks/data/staff"
+import { getPaymentRows, getPaymentTotals } from "@/features/payments/selectors"
 import { getDaysRemaining } from "@/features/students/selectors"
-import { BUSINESS_RULES } from "@/constants/business-rules"
 import type { Payment } from "@/types/student"
 
 /** Số liệu Dashboard đều derive từ mock entity, không hardcode trong page. */
@@ -70,8 +72,29 @@ export function getRecentPaymentRows(limit = 5): RecentPaymentRow[] {
     })
 }
 
+export interface BusinessKpis {
+  /** Học phí thực thu trong tháng hiện tại của bộ mock (VND). */
+  monthlyRevenue: number
+  monthPaymentCount: number
+  activeStudentCount: number
+  activeTeacherCount: number
+  activeStaffCount: number
+}
+
+/** KPI kinh doanh cho admin / quản lý trung tâm: học phí, số học sinh, giáo viên, nhân sự. */
+export function getBusinessKpis(): BusinessKpis {
+  const totals = getPaymentTotals(getPaymentRows())
+
+  return {
+    monthlyRevenue: totals.monthAmount,
+    monthPaymentCount: totals.monthCount,
+    activeStudentCount: MOCK_STUDENTS.filter((item) => item.status === "active").length,
+    activeTeacherCount: MOCK_TEACHERS.filter((item) => item.status === "active").length,
+    activeStaffCount: MOCK_STAFF_ACCOUNTS.filter((item) => item.status === "active").length,
+  }
+}
+
 export interface PendingTaskCounts {
-  expiringLinks: number
   failedEmails: number
   expiringPackages: number
   sessionsWithoutTeacher: number
@@ -80,12 +103,6 @@ export interface PendingTaskCounts {
 
 /** Số lượng của từng nhóm việc cần xử lý trên Dashboard. */
 export function getPendingTaskCounts(today: Date = new Date()): PendingTaskCounts {
-  const expiringLinks = MOCK_ACTIVATION_LINKS.filter(
-    (link) =>
-      !link.usedAt &&
-      getDaysRemaining(link.expiresAt, today) <= BUSINESS_RULES.ACTIVATION_LINK_EXPIRY_DAYS
-  ).length
-
   const failedEmails = MOCK_EMAIL_LOGS.filter((item) => item.status === "failed").length
 
   const expiringPackages = MOCK_ENROLLMENTS.filter(
@@ -101,7 +118,6 @@ export function getPendingTaskCounts(today: Date = new Date()): PendingTaskCount
   ).length
 
   return {
-    expiringLinks,
     failedEmails,
     expiringPackages,
     sessionsWithoutTeacher,

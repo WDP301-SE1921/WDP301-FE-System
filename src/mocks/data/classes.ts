@@ -6,27 +6,25 @@ import {
 } from "@/mocks/data/catalog"
 import { MockError } from "@/mocks/utils/mock-query"
 import { ERROR_MSG } from "@/constants/messages/error"
+import {
+  buildSlotIdentity,
+  generateSessionSlots,
+} from "@/mocks/data/session-schedule"
 import type { ClassFormInput } from "@/lib/validators/class"
-import type { ClassRecord, ClassSession } from "@/types/catalog"
+import type { ClassRecord, ClassSession, SessionKind } from "@/types/catalog"
 
 /**
  * Tạo lớp + sinh buổi học giả lập cho giai đoạn MOCK-ONLY.
  * Xóa file này trong cùng PR nối endpoint lớp học thật.
  */
 
-/** Nhãn thứ trong `ClassRecord.weekdays` → số thứ tự theo `Date.getUTCDay()`. */
-const WEEKDAY_TO_INDEX: Record<string, number> = {
-  CN: 0,
-  T2: 1,
-  T3: 2,
-  T4: 3,
-  T5: 4,
-  T6: 5,
-  T7: 6,
-}
-
 export interface SessionPreview {
+  /** Số thứ tự buổi trong lịch (1..N), tính cả buổi kiểm tra tháng. */
   order: number
+  kind: SessionKind
+  /** Id buổi học sẽ được tạo — khớp với `mockCreateClass`. */
+  sessionId: string
+  lessonId: string
   date: string
   weekdayLabel: string
   lessonTitle: string
@@ -45,54 +43,38 @@ export interface CreateClassResult {
   sessionCount: number
 }
 
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
-
-function toWeekdayLabel(date: Date): string {
-  const index = date.getUTCDay()
-  return (
-    Object.entries(WEEKDAY_TO_INDEX).find(([, value]) => value === index)?.[0] ?? ""
-  )
-}
-
 /**
  * Sinh trước danh sách buổi học từ lịch cố định — dùng cho card "Xem trước" ở
- * PROMPT 8B và cho chính lúc tạo lớp, để xem trước và kết quả luôn khớp nhau.
+ * PROMPT 8B và cho chính lúc tạo lớp, để xem trước và kết quả luôn khớp nhau. Bộ sinh
+ * (`generateSessionSlots`) tự chèn buổi kiểm tra vào buổi cuối mỗi tháng.
+ *
+ * Cần `classId` khi muốn biết id buổi học thật; xem trước chưa có lớp nên dùng id tạm.
  */
 export function previewSessions(
-  input: Pick<ClassFormInput, "programId" | "weekdays" | "startDate" | "startTime" | "endTime">
+  input: Pick<ClassFormInput, "programId" | "weekdays" | "startDate" | "startTime" | "endTime">,
+  classId = "preview"
 ): SessionPreview[] {
   const program = findProgram(input.programId)
-  if (!program || input.weekdays.length === 0 || !input.startDate) return []
+  if (!program) return []
 
-  const wantedDays = input.weekdays
-    .map((day) => WEEKDAY_TO_INDEX[day])
-    .filter((day) => day !== undefined)
+  return generateSessionSlots({
+    weekdays: input.weekdays,
+    startDate: input.startDate,
+    totalLessons: program.totalLessons,
+  }).map((slot, index) => {
+    const { sessionId, lessonId } = buildSlotIdentity(program.id, classId, slot)
 
-  if (wantedDays.length === 0) return []
-
-  const sessions: SessionPreview[] = []
-  const cursor = new Date(input.startDate)
-  let order = 0
-
-  // Chặn trên để vòng lặp luôn kết thúc.
-  for (let guard = 0; guard < 500 && order < program.totalLessons; guard += 1) {
-    if (wantedDays.includes(cursor.getUTCDay())) {
-      order += 1
-      sessions.push({
-        order,
-        date: toIsoDate(cursor),
-        weekdayLabel: toWeekdayLabel(cursor),
-        lessonTitle: resolveLessonTitle(`${program.id}-${order}`),
-        time: `${input.startTime}–${input.endTime}`,
-      })
+    return {
+      order: index + 1,
+      kind: slot.kind,
+      sessionId,
+      lessonId,
+      date: slot.date,
+      weekdayLabel: slot.weekdayLabel,
+      lessonTitle: resolveLessonTitle(lessonId),
+      time: `${input.startTime}–${input.endTime}`,
     }
-
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return sessions
+  })
 }
 
 /**
@@ -159,7 +141,7 @@ export function mockCreateClass(input: ClassFormInput): CreateClassResult {
     subjectId: input.subjectId,
     programId: input.programId,
     grade: Number(input.grade),
-    teacherId: input.teacherId,
+    teacherId: input.teacherId || undefined,
     room: input.room,
     weekdays: input.weekdays,
     startTime: input.startTime,
@@ -170,16 +152,17 @@ export function mockCreateClass(input: ClassFormInput): CreateClassResult {
 
   MOCK_CLASSES.push(classRecord)
 
-  const sessions: ClassSession[] = previewSessions(input).map((preview) => ({
-    id: `ses-${classId}-${preview.order}`,
+  const sessions: ClassSession[] = previewSessions(input, classId).map((preview) => ({
+    id: preview.sessionId,
     classId,
-    lessonId: `${program.id}-${preview.order}`,
+    lessonId: preview.lessonId,
+    kind: preview.kind,
     programId: program.id,
     date: preview.date,
     capacity: input.capacity,
     startTime: input.startTime,
     endTime: input.endTime,
-    teacherId: input.teacherId,
+    teacherId: input.teacherId || undefined,
   }))
 
   MOCK_CLASS_SESSIONS.push(...sessions)

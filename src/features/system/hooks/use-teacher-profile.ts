@@ -7,15 +7,12 @@ import {
   mockUpdateTeacherProfile,
   type UpdateTeacherProfileInput,
 } from "@/mocks/data/catalog"
-import {
-  mockChangeManagerPassword,
-  type ChangeManagerPasswordInput,
-} from "@/mocks/data/system"
+import { mockChangePassword, type ChangePasswordInput } from "@/mocks/data/system"
 import type { Teacher } from "@/types/catalog"
 
 /**
  * Chữ ký hook giữ nguyên khi nối backend — chỉ đổi `queryFn`. Đổi mật khẩu dùng
- * lại `mockChangeManagerPassword` (`mocks/data/system.ts`) — hàm đó chỉ tra cứu
+ * lại `mockChangePassword` (`mocks/data/system.ts`) — hàm đó chỉ tra cứu
  * theo email trong `MOCK_ACCOUNTS` nên vốn đã role-agnostic, không cần bản riêng
  * cho giáo viên.
  */
@@ -38,7 +35,7 @@ export function useUpdateTeacherProfile() {
 }
 
 export function useChangeTeacherPassword() {
-  return useMutation<{ success: true }, Error, ChangeManagerPasswordInput>({
-    mutationFn: (input) => mockMutation(input, mockChangeManagerPassword),
+  return useMutation<{ success: true }, Error, ChangePasswordInput>({
+    mutationFn: (input) => mockMutation(input, mockChangePassword),
   })
 }

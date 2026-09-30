@@ -4,8 +4,8 @@ import {
   findClass,
   findSubject,
   findTeacher,
-  resolveLessonOrder,
   resolveLessonTitle,
+  resolveSessionLabel,
 } from "@/mocks/data/catalog"
 import { findAttendanceBySession } from "@/mocks/data/attendance"
 import { MOCK_ENROLLMENTS, findStudent } from "@/mocks/data/students"
@@ -21,8 +21,12 @@ export interface ScheduleFilters {
   classId?: string
 }
 
-function resolveStatus(sessionDate: string, hasTeacher: boolean): SessionStatus {
-  if (!hasTeacher) return "CANCELLED"
+function resolveStatus(
+  sessionDate: string,
+  hasTeacher: boolean,
+  isCancelled = false
+): SessionStatus {
+  if (isCancelled || !hasTeacher) return "CANCELLED"
   if (sessionDate < MOCK_TODAY) return "COMPLETED"
   return "SCHEDULED"
 }
@@ -57,14 +61,14 @@ export function getCalendarEvents(filters: ScheduleFilters = {}): CalendarEvent[
 
     return {
       id: session.id,
-      title: `${classRecord?.name ?? ""} · Buổi ${resolveLessonOrder(session.lessonId)}`,
+      title: `${classRecord?.name ?? ""} · ${resolveSessionLabel(session)}`,
       subject: findSubject(classRecord?.subjectId ?? "")?.code ?? "",
       date: session.date,
       time: `${session.startTime} - ${session.endTime}`,
       startHour: Number(session.startTime.slice(0, 2)),
       room: classRecord?.room,
       teacherName: teacher?.name,
-      status: resolveStatus(session.date, Boolean(session.teacherId)),
+      status: resolveStatus(session.date, Boolean(session.teacherId), Boolean(session.cancelledAt)),
       totalStudents: classStudentIds.length,
       attendedCount: records.filter(
         (record) => record.status === "present" || record.status === "made_up"
@@ -110,13 +114,16 @@ export function getSessionDetail(sessionId: string) {
 
   return {
     id: session.id,
-    title: `${classRecord?.name ?? ""} · Buổi ${resolveLessonOrder(session.lessonId)}`,
+    title: `${classRecord?.name ?? ""} · ${resolveSessionLabel(session)}`,
     subject: findSubject(classRecord?.subjectId ?? "")?.code ?? "",
     date: session.date,
     time: `${session.startTime} - ${session.endTime}`,
     room: classRecord?.room,
     teacherName: findTeacher(session.teacherId)?.name,
-    status: resolveStatus(session.date, Boolean(session.teacherId)),
+    status: resolveStatus(session.date, Boolean(session.teacherId), Boolean(session.cancelledAt)),
+    teacherId: session.teacherId,
+    isMarked: Boolean(session.attendanceMarkedAt),
+    isCancelled: Boolean(session.cancelledAt),
     lessonTitle: resolveLessonTitle(session.lessonId),
     totalStudents: MOCK_ENROLLMENTS.filter(
       (item) => item.classId === session.classId

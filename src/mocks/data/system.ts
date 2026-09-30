@@ -2,142 +2,137 @@ import { ROUTES } from "@/constants/routes"
 import { ERROR_MSG } from "@/constants/messages/error"
 import { AUTH_MSG } from "@/constants/messages/events/auth"
 import { SYSTEM_MSG } from "@/constants/messages/events/system"
+import { ACCOUNT_MANAGE_TARGETS } from "@/constants/role-access"
+import type { BackOfficeRole } from "@/constants/roles"
 import { MOCK_ACCOUNTS } from "@/mocks/data/auth"
+import { MOCK_STAFF_ACCOUNTS, findStaffAccount } from "@/mocks/data/staff"
 import { MockError } from "@/mocks/utils/mock-query"
-import type { ManagerAccount, SystemAuditLogEntry } from "@/types/system"
+import type { StaffAccount, SystemAuditLogEntry } from "@/types/system"
 
 /**
- * Quản lý viên + lịch sử thay đổi giả lập cho giai đoạn MOCK-ONLY.
- * `CURRENT_MANAGER_ID` là "quản lý đang đăng nhập" cho toàn bộ giai đoạn mock (chưa có
- * session/auth-context thật) — khớp `MOCK_ACCOUNTS[0]` (Nguyễn Thị Lan) trong
- * `src/mocks/data/auth.ts` và tên hiển thị mặc định của `user-menu.tsx`.
- * Xóa file này trong cùng PR nối endpoint hệ thống thật.
+ * Nhân sự trung tâm + lịch sử thay đổi giả lập cho giai đoạn MOCK-ONLY. Danh sách tài khoản
+ * nằm ở `mocks/data/staff.ts`; "người đang đăng nhập" lấy từ phiên (`useCurrentUser`), không
+ * hard-code ở đây. Xóa file này trong cùng PR nối endpoint hệ thống thật.
  */
-export const CURRENT_MANAGER_ID = "mgr-001"
 
-export const MOCK_MANAGER_ACCOUNTS: ManagerAccount[] = [
-  {
-    id: "mgr-001",
-    name: "Nguyễn Thị Lan",
-    email: "lan.nguyen@edugrade.vn",
-    phone: "0913 345 678",
-    status: "active",
-    joinedAt: "2018-08-01",
-  },
-  {
-    id: "mgr-002",
-    name: "Phạm Thị Hoa",
-    email: "hoa.pham@edugrade.vn",
-    phone: "0904 556 112",
-    status: "disabled",
-    joinedAt: "2019-03-15",
-  },
-  {
-    id: "mgr-003",
-    name: "Hoàng Tuấn",
-    email: "tuan.hoang@edugrade.vn",
-    phone: "0977 224 668",
-    status: "active",
-    joinedAt: "2021-07-01",
-  },
-  {
-    id: "mgr-004",
-    name: "Vũ Minh Khoa",
-    email: "khoa.vu@edugrade.vn",
-    phone: "0966 331 889",
-    status: "active",
-    joinedAt: "2022-11-10",
-  },
-  {
-    id: "mgr-005",
-    name: "Đặng Thu Hằng",
-    email: "hang.dang@edugrade.vn",
-    phone: "0938 771 204",
-    status: "pending",
-    joinedAt: "2026-09-15",
-  },
-]
+let auditSequence = 0
 
-export function findManagerAccount(id: string): ManagerAccount | undefined {
-  return MOCK_MANAGER_ACCOUNTS.find((item) => item.id === id)
+export interface AppendAuditInput {
+  actorId: string
+  actionType: SystemAuditLogEntry["actionType"]
+  targetLabel: string
+  targetHref?: string
+  reason?: string
+  effectiveDate?: string
+  /** Mốc thời gian theo `MOCK_NOW` do nơi gọi truyền vào. */
+  createdAt: string
 }
 
-export interface InviteManagerInput {
+/** Ghi thêm một dòng vào Lịch sử thay đổi — dùng bởi các mutation giả lập cần dấu vết (hủy buổi, ghi nhận công…). */
+export function appendAuditLog(input: AppendAuditInput): SystemAuditLogEntry {
+  auditSequence += 1
+
+  const entry: SystemAuditLogEntry = {
+    id: `log-new-${auditSequence}`,
+    createdAt: input.createdAt,
+    actorId: input.actorId,
+    actionType: input.actionType,
+    targetLabel: input.targetLabel,
+    targetHref: input.targetHref,
+    reason: input.reason,
+    effectiveDate: input.effectiveDate,
+    ip: "127.0.0.1",
+  }
+
+  MOCK_AUDIT_LOG.unshift(entry)
+
+  return entry
+}
+
+export interface InviteStaffInput {
   email: string
   name: string
+  role: Extract<BackOfficeRole, "center_manager" | "curriculum_designer" | "staff">
+  /** Role người mời — dùng để kiểm tra `ACCOUNT_MANAGE_TARGETS`. */
+  inviterRole: BackOfficeRole
 }
 
-let managerSequence = MOCK_MANAGER_ACCOUNTS.length
+let staffSequence = MOCK_STAFF_ACCOUNTS.length
 
-export function mockInviteManager(input: InviteManagerInput): ManagerAccount {
+export function mockInviteStaff(input: InviteStaffInput): StaffAccount {
   const email = input.email.trim()
-  const exists = MOCK_MANAGER_ACCOUNTS.some(
+  const allowedRoles = ACCOUNT_MANAGE_TARGETS[input.inviterRole] ?? []
+  if (!allowedRoles.includes(input.role)) throw new MockError(SYSTEM_MSG.INVITE_ROLE_FORBIDDEN)
+
+  const exists = MOCK_STAFF_ACCOUNTS.some(
     (item) => item.email.toLowerCase() === email.toLowerCase()
   )
   if (exists) throw new MockError(SYSTEM_MSG.INVITE_EMAIL_EXISTS(email))
 
-  managerSequence += 1
+  staffSequence += 1
 
-  const manager: ManagerAccount = {
-    id: `mgr-new-${managerSequence}`,
+  const account: StaffAccount = {
+    id: `stf-new-${staffSequence}`,
     name: input.name.trim(),
     email,
+    role: input.role,
     status: "pending",
     joinedAt: new Date().toISOString().slice(0, 10),
   }
 
-  MOCK_MANAGER_ACCOUNTS.unshift(manager)
+  MOCK_STAFF_ACCOUNTS.unshift(account)
 
-  return manager
+  return account
 }
 
-export function mockResendManagerInvite(id: string): ManagerAccount {
-  const manager = findManagerAccount(id)
-  if (!manager) throw new MockError(ERROR_MSG.NOT_FOUND)
+export function mockResendStaffInvite(id: string): StaffAccount {
+  const account = findStaffAccount(id)
+  if (!account) throw new MockError(ERROR_MSG.NOT_FOUND)
 
-  return manager
+  return account
 }
 
-export function mockDeactivateManager(id: string): ManagerAccount {
-  if (id === CURRENT_MANAGER_ID) {
-    throw new MockError(SYSTEM_MSG.CANNOT_DEACTIVATE_SELF)
-  }
-
-  const manager = findManagerAccount(id)
-  if (!manager) throw new MockError(ERROR_MSG.NOT_FOUND)
-
-  manager.status = "disabled"
-
-  return manager
+export interface DeactivateStaffInput {
+  id: string
+  /** Id người đang thao tác — không được tự vô hiệu hóa chính mình. */
+  actorId: string
 }
 
-export interface UpdateManagerProfileInput {
+export function mockDeactivateStaff({ id, actorId }: DeactivateStaffInput): StaffAccount {
+  if (id === actorId) throw new MockError(SYSTEM_MSG.CANNOT_DEACTIVATE_SELF)
+
+  const account = findStaffAccount(id)
+  if (!account) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  account.status = "disabled"
+
+  return account
+}
+
+export interface UpdateStaffProfileInput {
   id: string
   name: string
   phone: string
 }
 
-export function mockUpdateManagerProfile(
-  input: UpdateManagerProfileInput
-): ManagerAccount {
-  const manager = findManagerAccount(input.id)
-  if (!manager) throw new MockError(ERROR_MSG.NOT_FOUND)
+export function mockUpdateStaffProfile(input: UpdateStaffProfileInput): StaffAccount {
+  const account = findStaffAccount(input.id)
+  if (!account) throw new MockError(ERROR_MSG.NOT_FOUND)
 
-  manager.name = input.name.trim()
-  manager.phone = input.phone.trim()
+  account.name = input.name.trim()
+  account.phone = input.phone.trim()
 
-  return manager
+  return account
 }
 
-export interface ChangeManagerPasswordInput {
+export interface ChangePasswordInput {
   email: string
   currentPassword: string
   newPassword: string
 }
 
-export function mockChangeManagerPassword(
-  input: ChangeManagerPasswordInput
-): { success: true } {
+/** Đổi mật khẩu theo email trong `MOCK_ACCOUNTS` — không phân biệt role nên dùng chung cho nhân sự và giáo viên. */
+export function mockChangePassword(input: ChangePasswordInput): { success: true } {
   const account = MOCK_ACCOUNTS.find(
     (item) => item.email.toLowerCase() === input.email.trim().toLowerCase()
   )
@@ -161,7 +156,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-001",
     createdAt: "2026-09-16T08:15:00",
-    actorId: "mgr-001",
+    actorId: "stf-001",
     actionType: "confirm_payment",
     targetLabel: "Nguyễn Hoàng Nam",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-001"),
@@ -170,7 +165,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-002",
     createdAt: "2026-09-15T14:30:00",
-    actorId: "mgr-001",
+    actorId: "stf-001",
     actionType: "change_class",
     targetLabel: "Trần Mai Anh",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-002"),
@@ -183,7 +178,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-003",
     createdAt: "2026-09-15T09:00:00",
-    actorId: "mgr-002",
+    actorId: "mgr-001",
     actionType: "substitute",
     targetLabel: "Toán 8A",
     targetHref: ROUTES.MANAGER.CLASS_DETAIL("cls-math-8a"),
@@ -196,7 +191,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-004",
     createdAt: "2026-09-14T16:45:00",
-    actorId: "mgr-003",
+    actorId: "mgr-001",
     actionType: "change_teacher",
     targetLabel: "Hóa 9B",
     targetHref: ROUTES.MANAGER.CLASS_DETAIL("cls-chem-9b"),
@@ -209,7 +204,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-005",
     createdAt: "2026-09-14T10:20:00",
-    actorId: "mgr-001",
+    actorId: "stf-001",
     actionType: "assign_makeup",
     targetLabel: "Vũ Quốc Đạt",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-007"),
@@ -220,7 +215,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-006",
     createdAt: "2026-09-13T11:00:00",
-    actorId: "mgr-004",
+    actorId: "stf-004",
     actionType: "swap_session",
     targetLabel: "Đỗ Minh Quân",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-005"),
@@ -231,7 +226,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-007",
     createdAt: "2026-09-13T08:30:00",
-    actorId: "mgr-002",
+    actorId: "stf-004",
     actionType: "long_leave",
     targetLabel: "Hoàng Thảo My",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-006"),
@@ -242,7 +237,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-008",
     createdAt: "2026-09-12T15:10:00",
-    actorId: "mgr-001",
+    actorId: "stf-001",
     actionType: "withdraw_subject",
     targetLabel: "Phạm Khánh Linh",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-004"),
@@ -253,7 +248,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-009",
     createdAt: "2026-09-12T09:45:00",
-    actorId: "mgr-003",
+    actorId: "stf-004",
     actionType: "withdraw_full",
     targetLabel: "Lê Bảo Long",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-003"),
@@ -264,7 +259,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-010",
     createdAt: "2026-09-11T13:25:00",
-    actorId: "mgr-004",
+    actorId: "stf-001",
     actionType: "reenroll",
     targetLabel: "Bùi Gia Hân",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-008"),
@@ -285,7 +280,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-012",
     createdAt: "2026-09-10T17:00:00",
-    actorId: "mgr-002",
+    actorId: "stf-004",
     actionType: "confirm_payment",
     targetLabel: "Trần Mai Anh",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-002"),
@@ -294,7 +289,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-013",
     createdAt: "2026-09-10T10:30:00",
-    actorId: "mgr-003",
+    actorId: "stf-004",
     actionType: "change_class",
     targetLabel: "Đỗ Minh Quân",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-005"),
@@ -307,7 +302,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-014",
     createdAt: "2026-09-09T14:15:00",
-    actorId: "mgr-004",
+    actorId: "mgr-001",
     actionType: "substitute",
     targetLabel: "Lý 7A",
     targetHref: ROUTES.MANAGER.CLASS_DETAIL("cls-phys-7a"),
@@ -320,7 +315,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-015",
     createdAt: "2026-09-08T09:00:00",
-    actorId: "mgr-001",
+    actorId: "stf-001",
     actionType: "assign_makeup",
     targetLabel: "Hoàng Thảo My",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-006"),
@@ -331,7 +326,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-016",
     createdAt: "2026-09-07T16:20:00",
-    actorId: "mgr-002",
+    actorId: "stf-004",
     actionType: "confirm_payment",
     targetLabel: "Vũ Quốc Đạt",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-007"),
@@ -340,7 +335,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-017",
     createdAt: "2026-09-06T11:10:00",
-    actorId: "mgr-003",
+    actorId: "stf-001",
     actionType: "swap_session",
     targetLabel: "Bùi Gia Hân",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-008"),
@@ -351,7 +346,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-018",
     createdAt: "2026-09-04T14:00:00",
-    actorId: "mgr-004",
+    actorId: "stf-004",
     actionType: "long_leave",
     targetLabel: "Đỗ Minh Quân",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-005"),
@@ -375,7 +370,7 @@ export const MOCK_AUDIT_LOG: SystemAuditLogEntry[] = [
   {
     id: "log-020",
     createdAt: "2026-09-01T10:00:00",
-    actorId: "mgr-002",
+    actorId: "stf-004",
     actionType: "withdraw_subject",
     targetLabel: "Nguyễn Hoàng Nam",
     targetHref: ROUTES.MANAGER.STUDENT_DETAIL("stu-001"),

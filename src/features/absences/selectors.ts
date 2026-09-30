@@ -11,7 +11,7 @@ import {
   resolveLessonTitle,
 } from "@/mocks/data/catalog"
 import { MOCK_ENROLLMENTS, MOCK_STUDENTS, findEnrollment, findStudent } from "@/mocks/data/students"
-import { findManager } from "@/mocks/data/payments"
+import { findStaffAccount } from "@/mocks/data/staff"
 import {
   MOCK_LONG_LEAVES,
   MOCK_MAKEUP_ASSIGNMENTS,
@@ -70,6 +70,39 @@ export async function fetchActiveStudentOptions(search: string): Promise<EntityO
     )
     .slice(0, 20)
     .map(toStudentEntityOption)
+}
+
+export interface MakeupPrefill {
+  student: EntityOption
+  enrollmentId: string
+  originalSessionId: string
+}
+
+/**
+ * Điền sẵn luồng xếp học bù từ deep-link `?studentId=&sessionId=` (vd từ danh sách buổi bị hủy):
+ * học sinh, enrollment của học sinh trong lớp của buổi đó, và buổi nghỉ. Không hợp lệ → `null`.
+ */
+export function getMakeupPrefill(
+  studentId?: string | null,
+  sessionId?: string | null
+): MakeupPrefill | null {
+  const student = studentId ? findStudent(studentId) : undefined
+  const session = sessionId ? findClassSession(sessionId) : undefined
+  if (!student || !session) return null
+
+  const enrollment = MOCK_ENROLLMENTS.find(
+    (item) =>
+      item.studentProfileId === student.id &&
+      item.classId === session.classId &&
+      item.status === "active"
+  )
+  if (!enrollment) return null
+
+  return {
+    student: toStudentEntityOption(student),
+    enrollmentId: enrollment.id,
+    originalSessionId: session.id,
+  }
 }
 
 function toStudentEntityOption(student: StudentProfile): EntityOption {
@@ -189,7 +222,7 @@ export function getPendingMakeupRows(kind?: MakeupKind): MakeupPendingRow[] {
         originalClass: originalSession ? findClass(originalSession.classId) : undefined,
         makeupSession,
         makeupClass: makeupSession ? findClass(makeupSession.classId) : undefined,
-        assignedByName: findManager(assignment.assignedBy)?.name ?? "—",
+        assignedByName: findStaffAccount(assignment.assignedBy)?.name ?? "—",
       }
     })
     .sort((a, b) => b.assignment.assignedAt.localeCompare(a.assignment.assignedAt))
@@ -204,7 +237,8 @@ function getClassProgress(classId: string): { completed: number; total: number }
   const classRecord = findClass(classId)
   const program = classRecord ? findProgram(classRecord.programId) : undefined
   const completed = MOCK_CLASS_SESSIONS.filter(
-    (session) => session.classId === classId && session.attendanceMarkedAt
+    (session) =>
+      session.classId === classId && session.attendanceMarkedAt && session.kind === "lesson"
   ).length
 
   return { completed, total: program?.totalLessons ?? 0 }

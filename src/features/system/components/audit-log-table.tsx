@@ -23,7 +23,8 @@ import { AUDIT_ACTION_MAP } from "@/constants/audit"
 import { EMPTY_MSG } from "@/constants/messages/empty"
 import { SYSTEM_MSG } from "@/constants/messages/events/system"
 import { formatDate, formatDateTime } from "@/lib/format"
-import { findManagerAccount } from "@/mocks/data/system"
+import { findTeacher } from "@/mocks/data/catalog"
+import { findStaffAccount } from "@/mocks/data/staff"
 import type { SystemAuditLogEntry } from "@/types/system"
 
 export interface AuditLogTableProps {
@@ -76,7 +77,7 @@ function AuditLogTable({
         <TableBody>
           {rows.map((row) => {
             const isExpanded = expandedId === row.id
-            const actorName = findManagerAccount(row.actorId)?.name ?? "—"
+            const actorName = (findStaffAccount(row.actorId) ?? findTeacher(row.actorId))?.name ?? "—"
             const action = AUDIT_ACTION_MAP[row.actionType]
 
             return (

@@ -3,15 +3,14 @@ export const PARENT_MSG = {
   LIST_TITLE: "Phụ huynh",
   LIST_DESC: "Mỗi tài khoản phụ huynh quản lý một hoặc nhiều hồ sơ con",
   SEARCH_PLACEHOLDER: "Tìm email, số điện thoại phụ huynh...",
-  ADD_PARENT: "Thêm phụ huynh",
 
   // KPI
   KPI_TOTAL: "Tổng phụ huynh",
   KPI_TOTAL_SUB: "Tài khoản quản lý hệ thống",
   KPI_ACTIVATED: "Đã kích hoạt",
   KPI_ACTIVATED_SUB: "Sử dụng EduGrade Portal",
-  KPI_PENDING: "Chờ liên kết",
-  KPI_PENDING_SUB: "Chưa quét mã hoặc xác thực",
+  KPI_DISABLED: "Đã khóa",
+  KPI_DISABLED_SUB: "Trung tâm đã khóa tài khoản",
   KPI_RATIO: "Tỷ lệ con / PH",
   KPI_RATIO_SUB: (total: number) => `Tổng cộng ${total} học sinh`,
 
@@ -31,9 +30,10 @@ export const PARENT_MSG = {
 
   // Hành động
   ACTION_VIEW_DETAIL: "Xem chi tiết hồ sơ",
-  ACTION_RESEND_ACTIVATION: "Gửi lại mã kích hoạt",
-  ACTION_ADD_CHILD: "Thêm hồ sơ con",
+  ACTION_ENROLL: "Đăng ký học",
   ACTION_LOCK_ACCOUNT: "Khóa tài khoản",
+  ACTION_UNLOCK_ACCOUNT: "Mở khóa tài khoản",
+  ACTION_EDIT_CONTACT: "Sửa liên hệ",
 
   // Chi tiết
   DETAIL_TITLE: "Chi tiết phụ huynh",
@@ -52,25 +52,27 @@ export const PARENT_MSG = {
   CHILD_VIEW_PROFILE: "Xem hồ sơ học sinh",
   CHILD_GRADE: (grade: number) => `Khối ${grade}`,
 
-  LINK_SECTION_TITLE: "Link & Mã liên kết tài khoản",
-  LINK_SECTION_DESC: "Dùng để phụ huynh quét hoặc nhập vào ứng dụng di động",
-  LINK_COL_CODE: "Mã liên kết",
-  LINK_COL_CHILD: "Học sinh / Lớp",
-  LINK_COL_EXPIRES: "Hết hạn",
-  LINK_COL_STATUS: "Trạng thái",
-  LINK_RESEND: "Gửi lại",
-  LINK_NOTE_TITLE: "Tự động đồng bộ ứng dụng",
-  LINK_NOTE_DESC:
-    "Khi phụ huynh kích hoạt tài khoản bằng mã này, toàn bộ dữ liệu chuyên cần và điểm thi sẽ tự động thông báo qua ứng dụng EduGrade Parent.",
-
   EMAIL_SECTION_TITLE: "Lịch sử thông báo & Email gần đây",
   EMAIL_SECTION_DESC: "Ghi nhận thông báo gửi tự động từ hệ thống và giáo viên",
   EMAIL_SEND: "Gửi email",
   EMAIL_RESEND: "Gửi lại",
 
-  RULE_NOTE_TITLE: "Quy tắc định danh tài khoản phụ huynh",
+  RULE_NOTE_TITLE: "Quy tắc tài khoản phụ huynh",
   RULE_NOTE_DESC:
-    "Mỗi phụ huynh sử dụng duy nhất 01 email để làm mã định danh trên cổng thông tin EduGrade. Số điện thoại chỉ dùng để liên hệ, không cần duy nhất. Khi phụ huynh kích hoạt tài khoản qua đường dẫn email hoặc quét mã QR trung tâm cung cấp, toàn bộ hồ sơ của các con sẽ tự động liên kết đồng bộ lịch học, bảng điểm và biên lai học phí từng tháng.",
+    "Phụ huynh tự đăng ký tài khoản và tạo hồ sơ con trên ứng dụng EduGrade — trung tâm không tạo tài khoản hay đặt mật khẩu thay phụ huynh. Mỗi phụ huynh dùng duy nhất 01 email làm định danh; số điện thoại chỉ để liên hệ, không cần duy nhất. Khi trung tâm đăng ký lớp cho một hồ sơ con, lịch học và biên lai tự đồng bộ lên ứng dụng.",
+
+  // Sửa liên hệ / khóa tài khoản (admin, quản lý trung tâm)
+  CONTACT_MODAL_TITLE: "Sửa thông tin liên hệ",
+  CONTACT_MODAL_DESC: "Chỉ số điện thoại sửa được trên web — email là định danh đăng nhập do phụ huynh tự quản lý trên ứng dụng.",
+  CONTACT_EMAIL_HINT: "Email không thể thay đổi",
+  CONTACT_UPDATE_SUCCESS: "Đã cập nhật thông tin liên hệ",
+  LOCK_CONFIRM_TITLE: "Khóa tài khoản phụ huynh?",
+  LOCK_CONFIRM_DESC: (email: string) =>
+    `${email} sẽ không thể được đăng ký học mới cho đến khi mở khóa. Các lớp đang học không bị ảnh hưởng.`,
+  LOCK_SUCCESS: (email: string) => `Đã khóa tài khoản ${email}`,
+  UNLOCK_CONFIRM_TITLE: "Mở khóa tài khoản phụ huynh?",
+  UNLOCK_CONFIRM_DESC: (email: string) => `${email} sẽ có thể được đăng ký học mới trở lại.`,
+  UNLOCK_SUCCESS: (email: string) => `Đã mở khóa tài khoản ${email}`,
 
   NOT_FOUND_TITLE: "Không tìm thấy phụ huynh",
   NOT_FOUND_DESC: "Tài khoản phụ huynh này không tồn tại hoặc đã bị xóa khỏi hệ thống.",

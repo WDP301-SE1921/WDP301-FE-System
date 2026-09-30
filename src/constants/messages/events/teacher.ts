@@ -49,6 +49,12 @@ export const TEACHER_MSG = {
 
   // Chi tiết
   DETAIL_EDIT: "Chỉnh sửa hồ sơ",
+  TAB_WORK_CREDITS: "Công",
+  EDIT_MODAL_TITLE: "Chỉnh sửa hồ sơ giáo viên",
+  EDIT_MODAL_DESC: "Cập nhật liên hệ, chuyên môn và môn dạy. Email là định danh đăng nhập nên không đổi được.",
+  EDIT_FIELD_SPECIALTY: "Chuyên môn",
+  EDIT_FIELD_SPECIALTY_PLACEHOLDER: "Toán học (THCS & Luyện thi Chuyên)",
+  EDIT_SUCCESS: "Đã cập nhật hồ sơ giáo viên",
   DETAIL_ASSIGN: "Phân công lớp",
   DETAIL_SYNC_NOTE: (time: string) => `Đồng bộ lịch học: Hôm nay lúc ${time}`,
   STAT_CLASSES: "Lớp quản lý",
@@ -205,4 +211,18 @@ export const TEACHER_MSG = {
   CHANGE_SUBMIT: "Xác nhận đổi giáo viên",
   CHANGE_SUCCESS: (teacher: string, count: number) =>
     `Đã bàn giao lớp cho ${teacher}, cập nhật ${count} buổi học`,
+
+  // Gán giáo viên cho lớp CHƯA có giáo viên (cùng modal, chế độ "assign")
+  CLASS_ASSIGN_MODAL_TITLE: (className: string) => `Gán giáo viên phụ trách – Lớp ${className}`,
+  CLASS_ASSIGN_MODAL_DESC: "Lớp chưa có giáo viên. Chọn giáo viên phù hợp với lịch cố định của lớp — giáo viên sẽ dạy đúng các buổi này, không tự chọn lịch.",
+  CLASS_ASSIGN_CURRENT_EMPTY: "Chưa có giáo viên phụ trách",
+  CLASS_ASSIGN_FIELD_TEACHER: "Chọn giáo viên phụ trách lớp",
+  CLASS_ASSIGN_FIELD_DATE: "Bắt đầu dạy từ ngày",
+  CLASS_ASSIGN_FIELD_DATE_HINT: (count: number) =>
+    `Tất cả ${count} buổi học từ ngày này trở đi sẽ do giáo viên này phụ trách và điểm danh.`,
+  CLASS_ASSIGN_DEFAULT_REASON: "Gán giáo viên phụ trách lần đầu",
+  CLASS_ASSIGN_NOTIFY_TEACHER: "Gửi email thông báo lịch dạy và danh sách học sinh cho giáo viên",
+  CLASS_ASSIGN_SUBMIT: "Xác nhận gán giáo viên",
+  CLASS_ASSIGN_SUCCESS: (teacher: string, count: number) =>
+    `Đã gán ${teacher} phụ trách lớp, cập nhật ${count} buổi học`,
 } as const

@@ -31,6 +31,10 @@ export interface SessionDetail extends SessionBlockProps {
   onTakeAttendance?: () => void
   onRequestReschedule?: () => void
   onViewClassDetail?: () => void
+  /** Giáo viên báo nghỉ buổi này (chỉ truyền khi được phép báo). */
+  onReportAbsence?: () => void
+  /** Dòng thông báo nổi bật dưới tiêu đề, vd "Đã báo nghỉ — chờ xử lý". */
+  notice?: string
 }
 
 export interface SessionDrawerProps {
@@ -72,6 +76,12 @@ function SessionDrawer({ session, open, onOpenChange }: SessionDrawerProps) {
 
         {/* Content body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {session.notice && (
+            <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-200">
+              {session.notice}
+            </p>
+          )}
+
           {/* Room & Teacher */}
           <div className="grid grid-cols-2 gap-4 rounded-2xl border border-border bg-card p-4">
             <div>
@@ -128,6 +138,16 @@ function SessionDrawer({ session, open, onOpenChange }: SessionDrawerProps) {
             <Button onClick={session.onTakeAttendance} className="w-full gap-2 rounded-xl">
               <HugeiconsIcon icon={CheckmarkSquare01Icon} className="size-4" />
               Điểm danh buổi học
+            </Button>
+          )}
+
+          {session.onReportAbsence && (
+            <Button
+              variant="outline"
+              onClick={session.onReportAbsence}
+              className="w-full rounded-xl text-destructive hover:text-destructive"
+            >
+              Báo nghỉ buổi này
             </Button>
           )}
 

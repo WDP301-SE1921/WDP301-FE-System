@@ -9,7 +9,7 @@ export const STUDENT_MSG = {
   KPI_TOTAL: "Tổng học sinh",
   KPI_ACTIVE: "Đang theo học",
   KPI_EXPIRING: "Sắp hết gói",
-  KPI_PENDING_LINK: "Chờ liên kết PH",
+  KPI_WITHDRAWN: "Đã nghỉ",
 
   // Cột bảng
   COL_STUDENT: "Học sinh",

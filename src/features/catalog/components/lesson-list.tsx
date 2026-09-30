@@ -154,6 +154,9 @@ function LessonList({ programId, lessons }: LessonListProps) {
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{lesson.title}</p>
+                {lesson.chapter && (
+                  <p className="truncate text-xs text-primary">{lesson.chapter}</p>
+                )}
                 {lesson.description && (
                   <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                     {lesson.description}

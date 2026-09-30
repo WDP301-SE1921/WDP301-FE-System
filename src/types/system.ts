@@ -1,16 +1,20 @@
+import type { BackOfficeRole } from "@/constants/roles"
+
 /**
- * Quản lý viên (tài khoản quản lý) và lịch sử thay đổi toàn hệ thống.
- * Tên field bám theo `.claude/rules/data-contracts.md` — `status` là string union,
+ * Tài khoản nhân sự trung tâm (đăng nhập web back-office) và lịch sử thay đổi toàn hệ thống.
+ * Tên field bám theo `.claude/rules/data-contracts.md` — `status`/`role` là string union,
  * không dùng numeric enum.
  */
-export type ManagerAccountStatus = "active" | "pending" | "disabled"
+export type StaffAccountStatus = "active" | "pending" | "disabled"
 
-export interface ManagerAccount {
+export interface StaffAccount {
   id: string
   name: string
   email: string
   phone?: string
-  status: ManagerAccountStatus
+  /** admin | center_manager | curriculum_designer | staff — quyết định màn hình vào được (`role-access.ts`). */
+  role: BackOfficeRole
+  status: StaffAccountStatus
   /** ISO date — "ngày tham gia" khi active, "ngày mời" khi pending. */
   joinedAt: string
 }
@@ -27,12 +31,15 @@ export type AuditActionType =
   | "withdraw_full"
   | "confirm_payment"
   | "edit_ai_grading"
+  | "teacher_absence"
+  | "cancel_session"
+  | "adjust_work_credit"
 
 export interface SystemAuditLogEntry {
   id: string
   /** ISO datetime. */
   createdAt: string
-  /** `ManagerAccount.id` của người thực hiện. */
+  /** `StaffAccount.id` của người thực hiện. */
   actorId: string
   actionType: AuditActionType
   /** Vd "Nguyễn Minh Khang", "Toán 8A". */

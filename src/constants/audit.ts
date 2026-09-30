@@ -21,4 +21,7 @@ export const AUDIT_ACTION_MAP: Record<
   withdraw_full: { label: "Nghỉ hẳn", variant: "danger" },
   confirm_payment: { label: "Xác nhận thanh toán", variant: "success" },
   edit_ai_grading: { label: "Sửa kết quả AI", variant: "info" },
+  teacher_absence: { label: "Giáo viên báo nghỉ", variant: "warning" },
+  cancel_session: { label: "Hủy buổi học", variant: "danger" },
+  adjust_work_credit: { label: "Ghi nhận công", variant: "info" },
 }

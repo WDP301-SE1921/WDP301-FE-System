@@ -1,6 +1,6 @@
 import { ROLES } from "@/constants/roles"
 import { BUSINESS_RULES } from "@/constants/business-rules"
-import { ROUTES } from "@/constants/routes"
+import { ROLE_HOME_ROUTE } from "@/constants/role-access"
 import { AUTH_MSG } from "@/constants/messages/events/auth"
 import { MockError } from "@/mocks/utils/mock-query"
 import type { AuthUser, Invitation, LoginResult } from "@/types/auth"
@@ -19,13 +19,40 @@ interface MockAccount extends AuthUser {
   isDisabled?: boolean
 }
 
+/**
+ * Tài khoản nhân sự dùng làm "người thực hiện" khi phiên đăng nhập không đọc được hồ sơ
+ * (vd. đã xóa storage nhưng còn cookie). Chỉ dùng trong giai đoạn mock.
+ */
+export const MOCK_DEFAULT_ACTOR_ID = "stf-001"
+
 export const MOCK_ACCOUNTS: MockAccount[] = [
+  {
+    id: "adm-001",
+    email: "admin@edugrade.vn",
+    password: "edugrade123",
+    name: "Trần Quốc Việt",
+    role: ROLES.ADMIN,
+  },
   {
     id: "mgr-001",
     email: "lan.nguyen@edugrade.vn",
     password: "edugrade123",
     name: "Nguyễn Thị Lan",
-    role: ROLES.MANAGER,
+    role: ROLES.CENTER_MANAGER,
+  },
+  {
+    id: "cur-001",
+    email: "tuan.hoang@edugrade.vn",
+    password: "edugrade123",
+    name: "Hoàng Văn Tuấn",
+    role: ROLES.CURRICULUM_DESIGNER,
+  },
+  {
+    id: "stf-001",
+    email: "khoa.vu@edugrade.vn",
+    password: "edugrade123",
+    name: "Vũ Minh Khoa",
+    role: ROLES.STAFF,
   },
   {
     id: "tch-001",
@@ -35,19 +62,14 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     role: ROLES.TEACHER,
   },
   {
-    id: "mgr-002",
+    id: "stf-002",
     email: "hoa.pham@edugrade.vn",
     password: "edugrade123",
     name: "Phạm Thị Hoa",
-    role: ROLES.MANAGER,
+    role: ROLES.STAFF,
     isDisabled: true,
   },
 ]
-
-const HOME_BY_ROLE: Record<string, string> = {
-  [ROLES.MANAGER]: ROUTES.MANAGER.DASHBOARD,
-  [ROLES.TEACHER]: ROUTES.TEACHER.DASHBOARD,
-}
 
 export function mockLogin({ email, password }: LoginInput): LoginResult {
   const account = MOCK_ACCOUNTS.find(
@@ -70,7 +92,7 @@ export function mockLogin({ email, password }: LoginInput): LoginResult {
       role: account.role,
       avatarUrl: account.avatarUrl,
     },
-    redirectTo: HOME_BY_ROLE[account.role] ?? ROUTES.PUBLIC.HOME,
+    redirectTo: ROLE_HOME_ROUTE[account.role],
   }
 }
 
@@ -82,7 +104,7 @@ export const MOCK_INVITATIONS: Invitation[] = [
   {
     id: "inv-001",
     email: "nguyenthilan@edugrade.vn",
-    role: ROLES.MANAGER,
+    role: ROLES.CENTER_MANAGER,
     suggestedName: "Nguyễn Thị Lan",
     expiresAt: addDays(BUSINESS_RULES.ACTIVATION_LINK_EXPIRY_DAYS).toISOString(),
   },
@@ -96,9 +118,23 @@ export const MOCK_INVITATIONS: Invitation[] = [
   {
     id: "inv-003",
     email: "phamthihoa@edugrade.vn",
-    role: ROLES.MANAGER,
+    role: ROLES.STAFF,
     expiresAt: addDays(BUSINESS_RULES.ACTIVATION_LINK_EXPIRY_DAYS).toISOString(),
     usedAt: addDays(-2).toISOString(),
+  },
+  {
+    id: "inv-004",
+    email: "nhanvien.moi@edugrade.vn",
+    role: ROLES.STAFF,
+    suggestedName: "Đỗ Thu Trang",
+    expiresAt: addDays(BUSINESS_RULES.ACTIVATION_LINK_EXPIRY_DAYS).toISOString(),
+  },
+  {
+    id: "inv-005",
+    email: "giaotrinh.moi@edugrade.vn",
+    role: ROLES.CURRICULUM_DESIGNER,
+    suggestedName: "Bùi Anh Dũng",
+    expiresAt: addDays(BUSINESS_RULES.ACTIVATION_LINK_EXPIRY_DAYS).toISOString(),
   },
 ]
 
@@ -107,6 +143,8 @@ const MOCK_INVITATION_TOKEN: Record<string, string> = {
   "demo-manager": "inv-001",
   "demo-expired": "inv-002",
   "demo-used": "inv-003",
+  "demo-staff": "inv-004",
+  "demo-curriculum": "inv-005",
 }
 
 function addDays(days: number): Date {

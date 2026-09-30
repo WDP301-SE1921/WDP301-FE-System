@@ -29,6 +29,7 @@ import type { Lesson } from "@/types/catalog"
 function toDefaultValues(lesson?: Lesson): LessonFormInput {
   return {
     title: lesson?.title ?? "",
+    chapter: lesson?.chapter ?? "",
     description: lesson?.description ?? "",
   }
 }
@@ -127,6 +128,19 @@ function LessonFormDialog({
               {...register("title")}
             />
             {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="lesson-chapter">{CATALOG_MSG.LESSON_FIELD_CHAPTER}</Label>
+            <Input
+              id="lesson-chapter"
+              placeholder={CATALOG_MSG.LESSON_FIELD_CHAPTER_PLACEHOLDER}
+              error={Boolean(errors.chapter)}
+              {...register("chapter")}
+            />
+            {errors.chapter && (
+              <p className="text-xs text-destructive">{errors.chapter.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">

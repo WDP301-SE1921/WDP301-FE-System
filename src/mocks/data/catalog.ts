@@ -1,5 +1,11 @@
 import { SUBJECT_MAP } from "@/constants/subjects"
+import { STATUS_MAP } from "@/constants/status"
 import { ERROR_MSG } from "@/constants/messages/error"
+import {
+  buildSlotIdentity,
+  generateSessionSlots,
+  getTestMonth,
+} from "@/mocks/data/session-schedule"
 import { MockError } from "@/mocks/utils/mock-query"
 import type {
   ClassRecord,
@@ -31,6 +37,7 @@ export const MOCK_PROGRAMS: Program[] = [
     name: "Toán 8 cơ bản",
     totalLessons: 36,
     monthlyFee: 500000,
+    textbook: "Toán 8 — Cánh Diều",
     description: "Chương trình Đại số & Hình học 8 bám sát SGK, luyện tập theo từng chuyên đề.",
     isActive: true,
   },
@@ -151,6 +158,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-01",
     programId: "prg-math-8",
     order: 1,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 1: Nhân đơn thức với đa thức",
     description: "Ôn tập quy tắc nhân đơn thức với đa thức và bài tập áp dụng.",
   },
@@ -158,6 +166,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-02",
     programId: "prg-math-8",
     order: 2,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 2: Nhân đa thức với đa thức",
     description: "Áp dụng quy tắc phân phối để nhân hai đa thức nhiều hạng tử.",
   },
@@ -165,6 +174,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-03",
     programId: "prg-math-8",
     order: 3,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 3: Những hằng đẳng thức đáng nhớ",
     description: "Giới thiệu 3 hằng đẳng thức cơ bản và bài tập áp dụng.",
   },
@@ -172,6 +182,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-04",
     programId: "prg-math-8",
     order: 4,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 4: Hằng đẳng thức đáng nhớ (tiếp theo)",
     description: "Mở rộng các hằng đẳng thức bậc ba và bài tập tổng hợp.",
   },
@@ -179,6 +190,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-05",
     programId: "prg-math-8",
     order: 5,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 5: Hằng đẳng thức",
     description: "Luyện tập tổng hợp các hằng đẳng thức đáng nhớ đã học.",
   },
@@ -186,6 +198,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-06",
     programId: "prg-math-8",
     order: 6,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 6: Phân tích đa thức thành nhân tử (đặt nhân tử chung)",
     description: "Phương pháp đặt nhân tử chung và dùng hằng đẳng thức.",
   },
@@ -193,6 +206,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-07",
     programId: "prg-math-8",
     order: 7,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 7: Phân tích đa thức thành nhân tử (nhóm hạng tử)",
     description: "Phương pháp nhóm hạng tử để phân tích đa thức.",
   },
@@ -200,6 +214,7 @@ export const MOCK_LESSONS: Lesson[] = [
     id: "les-math8-08",
     programId: "prg-math-8",
     order: 8,
+    chapter: "Chương 1: Phép nhân và phép chia các đa thức",
     title: "Bài 8: Luyện tập phân tích đa thức thành nhân tử",
     description: "Tổng hợp bài tập rèn kỹ năng phân tích đa thức.",
   },
@@ -473,70 +488,49 @@ export const MOCK_ROOMS: Room[] = [
  */
 export const MOCK_TODAY = "2026-09-16"
 
+/** "Bây giờ" của bộ mock — dùng cho mọi dấu thời gian sinh ra lúc chạy để khớp `MOCK_TODAY`. */
+export const MOCK_NOW = `${MOCK_TODAY}T09:00:00`
+
 /** Ngày khai giảng chung của kỳ học trong bộ mock (Thứ 2). */
 const TERM_START = "2026-08-03"
 
-/** Nhãn thứ trong `ClassRecord.weekdays` → số thứ tự theo `Date.getDay()`. */
-const WEEKDAY_TO_INDEX: Record<string, number> = {
-  CN: 0,
-  T2: 1,
-  T3: 2,
-  T4: 3,
-  T5: 4,
-  T6: 5,
-  T7: 6,
-}
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
-
 /**
- * Sinh toàn bộ buổi học của một lớp: đi từ ngày khai giảng, mỗi lần gặp thứ nằm
- * trong lịch cố định thì tạo một buổi, cho tới khi đủ số bài của chương trình.
- * Buổi đã qua được đánh dấu là đã điểm danh.
+ * Sinh toàn bộ buổi học của một lớp từ lịch cố định (bộ sinh dùng chung với tạo lớp mới ở
+ * `session-schedule.ts`): mỗi buổi một bài, buổi cuối mỗi tháng là kiểm tra tháng. Buổi đã
+ * qua được đánh dấu là đã điểm danh.
  */
 function buildSessionsForClass(classRecord: ClassRecord): ClassSession[] {
   const program = MOCK_PROGRAMS.find((item) => item.id === classRecord.programId)
   if (!program) return []
 
-  const wantedDays = classRecord.weekdays
-    .map((day) => WEEKDAY_TO_INDEX[day])
-    .filter((day) => day !== undefined)
+  return generateSessionSlots({
+    weekdays: classRecord.weekdays,
+    startDate: TERM_START,
+    totalLessons: program.totalLessons,
+  }).map((slot) => {
+    const { sessionId, lessonId } = buildSlotIdentity(program.id, classRecord.id, slot)
+    const isPast = slot.date < MOCK_TODAY
+    const isEarlierToday = slot.date === MOCK_TODAY && classRecord.startTime < "17:00"
 
-  const sessions: ClassSession[] = []
-  const cursor = new Date(TERM_START)
-  let order = 0
-
-  // Chặn trên để vòng lặp luôn kết thúc kể cả khi lịch cố định rỗng.
-  for (let guard = 0; guard < 400 && order < program.totalLessons; guard += 1) {
-    if (wantedDays.includes(cursor.getUTCDay())) {
-      order += 1
-      const date = toIsoDate(cursor)
-      const isPast = date < MOCK_TODAY
-      const isEarlierToday = date === MOCK_TODAY && classRecord.startTime < "17:00"
-
-      sessions.push({
-        id: `ses-${classRecord.id}-${order}`,
-        classId: classRecord.id,
-        lessonId: `${program.id}-${order}`,
-        programId: program.id,
-        date,
-        capacity: classRecord.capacity,
-        startTime: classRecord.startTime,
-        endTime: classRecord.endTime,
-        teacherId: classRecord.teacherId,
-        attendanceMarkedAt:
-          classRecord.teacherId && (isPast || isEarlierToday)
-            ? `${date}T${classRecord.endTime}:00`
-            : undefined,
-      })
+    return {
+      id: sessionId,
+      classId: classRecord.id,
+      lessonId,
+      kind: slot.kind,
+      programId: program.id,
+      date: slot.date,
+      capacity: classRecord.capacity,
+      startTime: classRecord.startTime,
+      endTime: classRecord.endTime,
+      teacherId: classRecord.teacherId,
+      attendanceMarkedAt:
+        classRecord.teacherId && (isPast || isEarlierToday)
+          ? `${slot.date}T${classRecord.endTime}:00`
+          : undefined,
+      attendanceMarkedBy:
+        classRecord.teacherId && (isPast || isEarlierToday) ? classRecord.teacherId : undefined,
     }
-
-    cursor.setUTCDate(cursor.getUTCDate() + 1)
-  }
-
-  return sessions
+  })
 }
 
 /** Buổi học của mọi lớp — nguồn dữ liệu cho Chi tiết lớp và Lịch học tổng. */
@@ -557,13 +551,27 @@ export function findClassSession(sessionId: string): ClassSession | undefined {
   return MOCK_CLASS_SESSIONS.find((session) => session.id === sessionId)
 }
 
-/** Số thứ tự bài học suy từ `lessonId` sinh theo chương trình. */
+/** Số thứ tự bài học suy từ `lessonId` sinh theo chương trình; buổi kiểm tra tháng không có số bài (0). */
 export function resolveLessonOrder(lessonId: string): number {
+  if (getTestMonth(lessonId)) return 0
   return Number(lessonId.split("-").at(-1) ?? 0)
+}
+
+/** Nhãn ngắn của buổi trong lịch: "Buổi 12" hoặc "Kiểm tra tháng". */
+export function resolveSessionLabel(session: Pick<ClassSession, "kind" | "lessonId">): string {
+  return session.kind === "monthly_test"
+    ? STATUS_MAP.sessionKind.monthly_test.label
+    : `Buổi ${resolveLessonOrder(session.lessonId)}`
 }
 
 /** Tên bài học hiển thị; ưu tiên bài đã đặt tên trong `MOCK_LESSONS`. */
 export function resolveLessonTitle(lessonId: string): string {
+  const testMonth = getTestMonth(lessonId)
+  if (testMonth) {
+    const [year, month] = testMonth.split("-")
+    return `${STATUS_MAP.sessionKind.monthly_test.label} ${month}/${year}`
+  }
+
   const order = resolveLessonOrder(lessonId)
   const named = MOCK_LESSONS.find(
     (lesson) => lesson.programId === lessonId.replace(`-${order}`, "") && lesson.order === order
@@ -607,6 +615,9 @@ export interface ProgramInput {
   /** Khối lớp, dạng chuỗi vì Select trả `string` — chuyển sang Number khi lưu. */
   grade: string
   monthlyFee: number
+  /** Tổng số bài học của chương trình — quyết định số buổi học sinh ra khi tạo lớp. */
+  totalLessons: number
+  textbook: string
   description: string
   isActive: boolean
 }
@@ -623,9 +634,10 @@ export function mockCreateProgram(input: ProgramInput): Program {
     subjectId: input.subjectId,
     grade: Number(input.grade),
     name: input.name.trim(),
-    // Chương trình mới chưa có bài học nào — thêm dần qua "Quản lý bài học".
-    totalLessons: 0,
+    // Danh sách bài học cụ thể thêm dần ở trang chi tiết; `totalLessons` là số bài cần đủ.
+    totalLessons: input.totalLessons,
     monthlyFee: input.monthlyFee,
+    textbook: input.textbook.trim() || undefined,
     description: input.description.trim(),
     isActive: input.isActive,
   }
@@ -644,6 +656,8 @@ export function mockUpdateProgram(programId: string, input: ProgramInput): Progr
   program.subjectId = input.subjectId
   program.grade = Number(input.grade)
   program.monthlyFee = input.monthlyFee
+  program.totalLessons = input.totalLessons
+  program.textbook = input.textbook.trim() || undefined
   program.description = input.description.trim()
   program.isActive = input.isActive
 
@@ -653,6 +667,7 @@ export function mockUpdateProgram(programId: string, input: ProgramInput): Progr
 export interface LessonInput {
   programId: string
   title: string
+  chapter: string
   description: string
 }
 
@@ -672,6 +687,7 @@ export function mockAddLesson(input: LessonInput): Lesson {
     programId: input.programId,
     order: currentMaxOrder + 1,
     title: input.title.trim(),
+    chapter: input.chapter.trim() || undefined,
     description: input.description.trim(),
   }
 
@@ -682,12 +698,13 @@ export function mockAddLesson(input: LessonInput): Lesson {
 
 export function mockUpdateLesson(
   lessonId: string,
-  input: Pick<LessonInput, "title" | "description">
+  input: Pick<LessonInput, "title" | "chapter" | "description">
 ): Lesson {
   const lesson = MOCK_LESSONS.find((item) => item.id === lessonId)
   if (!lesson) throw new MockError(ERROR_MSG.NOT_FOUND)
 
   lesson.title = input.title.trim()
+  lesson.chapter = input.chapter.trim() || undefined
   lesson.description = input.description.trim()
 
   return lesson
@@ -742,6 +759,27 @@ export function mockUpdateRoom(roomId: string, input: RoomInput): Room {
  * `mockUpdateManagerProfile` (`mocks/data/system.ts`). "Môn dạy" (`subjectIds`)
  * không sửa được ở đây — do Quản lý phân công, xem `TEACHER_PROFILE_MSG`.
  */
+export interface UpdateTeacherInput {
+  id: string
+  name: string
+  phone: string
+  specialty: string
+  subjectIds: string[]
+}
+
+/** Quản lý trung tâm / admin sửa hồ sơ giáo viên (khác `mockUpdateTeacherProfile` — GV tự sửa, không đổi được môn dạy). */
+export function mockUpdateTeacher(input: UpdateTeacherInput): Teacher {
+  const teacher = findTeacher(input.id)
+  if (!teacher) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  teacher.name = input.name.trim()
+  teacher.phone = input.phone.trim()
+  teacher.specialty = input.specialty.trim() || undefined
+  teacher.subjectIds = input.subjectIds
+
+  return teacher
+}
+
 export interface UpdateTeacherProfileInput {
   id: string
   name: string

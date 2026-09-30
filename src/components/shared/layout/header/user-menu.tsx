@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ACTION_LABEL } from "@/constants/messages"
 import { ROUTES } from "@/constants/routes"
+import { clearSession } from "@/lib/auth/session"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   UserIcon,
@@ -24,22 +25,24 @@ import {
 } from "@hugeicons/core-free-icons"
 
 export interface UserMenuProps {
+  /** Tên người dùng; chưa biết (trước khi hydrate) thì hiện nhãn trung tính. */
   name?: string
   roleLabel?: string
   avatarUrl?: string
   email?: string
-  /** Dòng nhỏ dưới tên — mặc định hiện `email`, truyền vào để hiện thứ khác (vd "Giáo viên · Toán"). */
+  /** Dòng nhỏ dưới tên — mặc định hiện `email`, truyền vào để hiện thứ khác. */
   subtitleLine?: string
-  /** Route "Tài khoản"/"Đổi mật khẩu" trỏ tới — mặc định trang hồ sơ Quản lý. */
+  /** Route "Tài khoản"/"Đổi mật khẩu" trỏ tới — mặc định trang hồ sơ khu back-office. */
   accountHref?: string
+  /** Mặc định: xóa phiên (cookie role + hồ sơ đã lưu) rồi về trang đăng nhập. */
   onLogout?: () => void
 }
 
 function UserMenu({
-  name = "Quản lý viên",
-  roleLabel = "Quản lý",
+  name = "Tài khoản",
+  roleLabel,
   avatarUrl,
-  email = "admin@edugrade.edu.vn",
+  email,
   subtitleLine,
   accountHref = ROUTES.MANAGER.PROFILE,
   onLogout,
@@ -51,6 +54,15 @@ function UserMenu({
     .join("")
     .slice(0, 2)
     .toUpperCase()
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout()
+      return
+    }
+    clearSession()
+    router.replace(ROUTES.AUTH.LOGIN)
+  }
 
   return (
     <DropdownMenu>
@@ -66,11 +78,15 @@ function UserMenu({
             <span className="text-xs font-semibold leading-none text-foreground">
               {name}
             </span>
-            <Badge variant="info" className="px-1.5 py-0 text-[10px] h-4">
-              {roleLabel}
-            </Badge>
+            {roleLabel && (
+              <Badge variant="info" className="px-1.5 py-0 text-[10px] h-4">
+                {roleLabel}
+              </Badge>
+            )}
           </div>
-          <span className="text-[11px] text-muted-foreground">{subtitleLine ?? email}</span>
+          {(subtitleLine ?? email) && (
+            <span className="text-[11px] text-muted-foreground">{subtitleLine ?? email}</span>
+          )}
         </div>
         <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
@@ -78,7 +94,7 @@ function UserMenu({
         <DropdownMenuLabel>
           <div className="flex flex-col gap-0.5">
             <span className="font-semibold text-foreground">{name}</span>
-            <span className="text-xs text-muted-foreground font-normal">{email}</span>
+            {email && <span className="text-xs text-muted-foreground font-normal">{email}</span>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -96,7 +112,7 @@ function UserMenu({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={onLogout}
+          onClick={handleLogout}
           className="text-destructive focus:bg-destructive/10 focus:text-destructive"
         >
           <HugeiconsIcon icon={Logout01Icon} />

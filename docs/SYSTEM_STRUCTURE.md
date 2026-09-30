@@ -43,7 +43,7 @@ EduGrade/
 │   │   ├── (auth)/                      # Group Router: Login & Token Activation
 │   │   │   ├── login/
 │   │   │   └── register/
-│   │   ├── (manager)/                   # Group Router: Center Manager Web Portal
+│   │   ├── (manager)/                   # Group Router: center back-office (/manager/*) shared by admin, center_manager, curriculum_designer, staff — see src/constants/role-access.ts
 │   │   │   ├── classes/                 # Class, fixed schedule & session management
 │   │   │   ├── dashboard/               # Operational analytics dashboard
 │   │   │   ├── payments/                # Payment confirmation & receipt generation

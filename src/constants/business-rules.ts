@@ -17,6 +17,15 @@ export const BUSINESS_RULES = {
   ATTENDANCE_RATE_TARGET: 95,
   /** Sĩ số tối đa một lớp. */
   CLASS_CAPACITY_MAX: 20,
+  /**
+   * Mỗi tháng lịch có 1 buổi kiểm tra ở buổi cuối của tháng. Tháng nào lớp học chưa đủ
+   * số buổi này kể từ lần kiểm tra trước (hoặc từ ngày khai giảng) thì bỏ qua kiểm tra.
+   */
+  MONTHLY_TEST_MIN_LESSONS: 4,
+  /** Giáo viên báo nghỉ trong vòng N giờ trước giờ học được coi là nghỉ đột xuất. */
+  TEACHER_ABSENCE_URGENT_HOURS: 24,
+  /** Số bài học tối đa của một chương trình. */
+  PROGRAM_LESSONS_MAX: 200,
   /** Ngưỡng độ tin cậy AI (%) để đủ điều kiện duyệt nhanh hàng loạt (PROMPT T6). */
   AI_HIGH_CONFIDENCE_THRESHOLD: 95,
   /** Bài tập được tính "sắp hết hạn nộp" nếu hạn nộp trong vòng N giờ tới (Dashboard giáo viên). */

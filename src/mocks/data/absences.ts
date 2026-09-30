@@ -24,7 +24,8 @@ import type { AttendanceStatus } from "@/types/student"
  * phải thiếu sót.
  */
 
-const ACTOR_ID = "mgr-001"
+/** Nhân viên thực hiện các thao tác nghỉ / học bù trong bộ mock. */
+const ACTOR_ID = "stf-001"
 
 /** Số chỗ còn lại của một buổi = sĩ số lớp - số HS đã đăng ký lớp đó - số buổi học bù đã xếp vào buổi này. */
 export function getAvailableSlots(sessionId: string): number {

@@ -27,7 +27,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { toast } from "@/components/ui/toast"
 import { ScheduleCalendar } from "@/components/shared/calendar/schedule-calendar"
 import { DateText } from "@/components/shared/display/date-text"
 import { DetailHeader } from "@/components/shared/display/detail-header"
@@ -47,6 +46,8 @@ import { TEACHER_MSG } from "@/constants/messages/events/teacher"
 import { ROUTES } from "@/constants/routes"
 import { getClassDetail } from "@/features/classes/selectors"
 import { getCalendarEvents } from "@/features/schedule/selectors"
+import { EditTeacherDialog } from "@/features/teachers/components/edit-teacher-dialog"
+import { WorkCreditPanel } from "@/features/work-credits/components/work-credit-panel"
 import { getSubstituteHistory, type TeacherRow } from "@/features/teachers/selectors"
 import { useTeacher } from "@/features/teachers/hooks/use-teachers"
 
@@ -54,6 +55,7 @@ const TABS = [
   { value: "classes", label: TEACHER_MSG.TAB_CLASSES },
   { value: "schedule", label: TEACHER_MSG.TAB_SCHEDULE },
   { value: "substitute", label: TEACHER_MSG.TAB_SUBSTITUTE },
+  { value: "work-credits", label: TEACHER_MSG.TAB_WORK_CREDITS },
   { value: "review", label: TEACHER_MSG.TAB_REVIEW },
 ] as const
 
@@ -111,6 +113,9 @@ function TeacherDetailView({ teacherId }: TeacherDetailViewProps) {
               {tab === "schedule" && <ScheduleTab row={teacher.data} />}
               {tab === "classes" && <ClassesTab row={teacher.data} />}
               {tab === "substitute" && <SubstituteTab row={teacher.data} />}
+              {tab === "work-credits" && (
+                <WorkCreditPanel teacherId={teacher.data.teacher.id} canAdjust />
+              )}
               {tab === "review" && (
                 <EmptyState
                   icon={<HugeiconsIcon icon={StarIcon} />}
@@ -128,6 +133,7 @@ function TeacherDetailView({ teacherId }: TeacherDetailViewProps) {
 
 function TeacherHero({ row }: { row: TeacherRow }) {
   const router = useRouter()
+  const [isEditOpen, setIsEditOpen] = React.useState(false)
   const { teacher } = row
 
   return (
@@ -147,14 +153,14 @@ function TeacherHero({ row }: { row: TeacherRow }) {
               variant="outline"
               className="rounded-full"
               leftIcon={<HugeiconsIcon icon={Edit02Icon} />}
-              onClick={() => toast.success(TEACHER_MSG.DETAIL_EDIT)}
+              onClick={() => setIsEditOpen(true)}
             >
               {TEACHER_MSG.DETAIL_EDIT}
             </Button>
             <Button
               className="rounded-full"
               leftIcon={<HugeiconsIcon icon={Folder01Icon} />}
-              onClick={() => router.push(ROUTES.MANAGER.CLASSES)}
+              onClick={() => router.push(ROUTES.MANAGER.CLASSES_UNASSIGNED)}
             >
               {TEACHER_MSG.DETAIL_ASSIGN}
             </Button>
@@ -190,6 +196,13 @@ function TeacherHero({ row }: { row: TeacherRow }) {
           {teacher.yearsExperience} năm kinh nghiệm
         </Badge>
       </div>
+
+      <EditTeacherDialog
+        key={teacher.id}
+        teacher={teacher}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
@@ -401,7 +414,7 @@ function SubstituteTab({ row }: { row: TeacherRow }) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   <DateText value={item.session?.date} /> ·{" "}
-                  {CLASS_MSG.SESSION_NUMBER(item.lessonOrder)}
+                  {item.sessionLabel}
                 </p>
               </TableCell>
               <TableCell>

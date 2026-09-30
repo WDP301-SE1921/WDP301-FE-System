@@ -335,7 +335,7 @@ function buildColumns(
               {
                 id: "assign",
                 label: TEACHER_MSG.ACTION_ASSIGN_CLASS,
-                onClick: () => router.push(ROUTES.MANAGER.CLASSES),
+                onClick: () => router.push(ROUTES.MANAGER.CLASSES_UNASSIGNED),
               },
               "separator",
               {

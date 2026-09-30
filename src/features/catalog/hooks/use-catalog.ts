@@ -124,6 +124,7 @@ export interface UpdateLessonVariables {
   lessonId: string
   programId: string
   title: string
+  chapter: string
   description: string
 }
 
@@ -133,7 +134,11 @@ export function useUpdateLesson() {
   return useMutation<Lesson, Error, UpdateLessonVariables>({
     mutationFn: (vars) =>
       mockMutation(vars, () =>
-        mockUpdateLesson(vars.lessonId, { title: vars.title, description: vars.description })
+        mockUpdateLesson(vars.lessonId, {
+          title: vars.title,
+          chapter: vars.chapter,
+          description: vars.description,
+        })
       ),
     onSuccess: (lesson) => {
       queryClient.invalidateQueries({ queryKey: ["catalog-program", lesson.programId] })

@@ -4,15 +4,15 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "cn"
-import { NAV_MENU, type MenuBadgeCounts } from "@/constants/menu"
-import { ROLES, type Role } from "@/constants/roles"
+import { getNavMenu, type MenuBadgeCounts } from "@/constants/menu"
+import type { WebRole } from "@/constants/roles"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import * as Icons from "@hugeicons/core-free-icons"
 
 export interface SidebarProps {
-  role?: Extract<Role, "manager" | "teacher">
+  role: WebRole
   collapsed?: boolean
   onToggleCollapse?: () => void
   /** Số thật của badge menu, key theo `badgeKey` khai báo trong constants/menu.ts */
@@ -29,14 +29,14 @@ function SidebarIcon({ name }: { name: string }) {
 }
 
 function Sidebar({
-  role = ROLES.MANAGER,
+  role,
   collapsed = false,
   onToggleCollapse,
   badgeCounts,
   className,
 }: SidebarProps) {
   const pathname = usePathname()
-  const menuGroups = NAV_MENU[role] || NAV_MENU[ROLES.MANAGER]
+  const menuGroups = getNavMenu(role)
 
   return (
     <aside

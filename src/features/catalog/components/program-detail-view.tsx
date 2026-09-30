@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Edit02Icon } from "@hugeicons/core-free-icons"
+import { Alert01Icon, Edit02Icon, InformationCircleIcon } from "@hugeicons/core-free-icons"
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MoneyText } from "@/components/shared/display/money-text"
@@ -52,8 +53,27 @@ function ProgramDetailView({ programId }: ProgramDetailViewProps) {
             <div className="space-y-6">
               <ProgramHero row={detail.data.row} onEdit={() => setIsEditOpen(true)} />
 
+              {detail.data.lessons.length < detail.data.row.program.totalLessons && (
+                <Alert variant="warning">
+                  <HugeiconsIcon icon={Alert01Icon} />
+                  <AlertTitle>{CATALOG_MSG.LESSON_MISSING_TITLE}</AlertTitle>
+                  <AlertDescription>
+                    {CATALOG_MSG.LESSON_MISSING_DESC(
+                      detail.data.row.program.totalLessons - detail.data.lessons.length,
+                      detail.data.row.program.totalLessons
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <SectionCard title={CATALOG_MSG.LESSONS_SECTION_TITLE}>
-                <LessonList programId={programId} lessons={detail.data.lessons} />
+                <div className="space-y-4">
+                  <Alert variant="info">
+                    <HugeiconsIcon icon={InformationCircleIcon} />
+                    <AlertDescription>{CATALOG_MSG.LESSON_MONTHLY_TEST_NOTE}</AlertDescription>
+                  </Alert>
+                  <LessonList programId={programId} lessons={detail.data.lessons} />
+                </div>
               </SectionCard>
 
               {isEditOpen && (
@@ -116,6 +136,11 @@ function ProgramHero({
         <Badge variant="outline" className="rounded-full">
           {CATALOG_MSG.PROGRAM_DETAIL_LESSON_COUNT(program.totalLessons)}
         </Badge>
+        {program.textbook && (
+          <Badge variant="outline" className="rounded-full">
+            {CATALOG_MSG.PROGRAM_DETAIL_TEXTBOOK(program.textbook)}
+          </Badge>
+        )}
       </div>
     </div>
   )

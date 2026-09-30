@@ -1,15 +1,21 @@
+import { redirect } from "next/navigation"
 import { AppShell } from "@/components/shared/layout/app-shell"
 import { SessionExpiredModalContainer } from "@/features/auth/components/session-expired-modal-container"
-import { ROLES } from "@/constants/roles"
+import { ROUTES } from "@/constants/routes"
+import { getServerRole } from "@/lib/auth/server-role"
 
-export default function ManagerLayout({
+export default async function ManagerLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // `proxy.ts` đã chặn role không hợp lệ; nhánh này chỉ là lưới an toàn cho lần render trực tiếp.
+  const role = await getServerRole()
+  if (!role) redirect(ROUTES.AUTH.LOGIN)
+
   return (
     <>
-      <AppShell role={ROLES.MANAGER}>{children}</AppShell>
+      <AppShell role={role}>{children}</AppShell>
       <SessionExpiredModalContainer />
     </>
   )

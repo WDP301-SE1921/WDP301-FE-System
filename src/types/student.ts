@@ -6,15 +6,18 @@
  * các interface này — chúng được derive ở `src/features/<domain>/selectors.ts`.
  */
 
-export type StudentStatus = "active" | "paused" | "withdrawn" | "pending_link"
-export type ParentAccountStatus = "activated" | "pending_link"
+export type StudentStatus = "active" | "paused" | "withdrawn"
+/** `disabled`: trung tâm đã khóa tài khoản — không đăng ký học mới được. */
+export type ParentAccountStatus = "activated" | "disabled"
 export type EnrollmentStatus = "active" | "reserved" | "dropped"
 export type PaymentStatus = "succeeded" | "pending" | "failed"
 export type AttendanceStatus = "present" | "absent" | "made_up" | "excused"
-export type LinkCodeStatus = "active" | "used" | "expired"
 export type EmailStatus = "sent" | "pending" | "failed"
 
-/** Contract: id, email, phone. `email` là email đăng nhập, duy nhất. */
+/**
+ * Contract: id, email, phone. `email` là email đăng nhập, duy nhất. Phụ huynh tự đăng ký
+ * trên app mobile — web không bao giờ tạo tài khoản phụ huynh.
+ */
 export interface ParentAccount {
   id: string
   email: string
@@ -25,7 +28,7 @@ export interface ParentAccount {
   activatedAt?: string
 }
 
-/** Contract: id, parentAccountId, name. */
+/** Contract: id, parentAccountId, name. Do phụ huynh tạo trên app trước khi trung tâm đăng ký lớp. */
 export interface StudentProfile {
   id: string
   parentAccountId: string
@@ -66,7 +69,7 @@ export interface Payment {
   id: string
   enrollmentId: string
   confirmedAt: string
-  /** Id của quản lý đã xác nhận. */
+  /** Id của nhân viên đã xác nhận thu. */
   confirmedBy: string
   amount: number
   status: PaymentStatus
@@ -75,21 +78,6 @@ export interface Payment {
   /** Mã biên lai hiển thị, vd "BL-20260915-0012". */
   receiptCode: string
   method: PaymentMethod
-}
-
-/** Contract: id, enrollmentId, token, expiresAt, usedAt. */
-export interface ActivationLink {
-  id: string
-  enrollmentId: string
-  /**
-   * Credential dùng một lần — KHÔNG BAO GIỜ render ra UI hay log.
-   * Phần hiển thị cho quản lý là `code`.
-   */
-  token: string
-  /** Mã ngắn để quản lý đọc cho phụ huynh, vd "EDU-BA-KHANG06". */
-  code: string
-  expiresAt: string
-  usedAt?: string
 }
 
 /** Contract: id, classSessionId, studentProfileId, status. */

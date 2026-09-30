@@ -2,7 +2,6 @@ export const DASHBOARD_MSG = {
   TITLE: "Dashboard",
   DESC: (todayLabel: string) => `Tổng quan hoạt động hôm nay, ${todayLabel}`,
   EXPORT_REPORT: "Xuất báo cáo",
-  QUICK_ATTENDANCE: "Điểm danh nhanh",
   EXPORT_SUCCESS: "Đã xuất báo cáo tổng quan",
 
   // KPI
@@ -15,6 +14,14 @@ export const DASHBOARD_MSG = {
   KPI_ATTENDANCE_RATE: "Tỷ lệ đi học tuần",
   KPI_ATTENDANCE_RATE_SUB: (target: number) => `Mục tiêu trung tâm ≥ ${target}%`,
   KPI_TRANSACTIONS: (count: number) => `${count} giao dịch`,
+
+  // KPI kinh doanh (admin / quản lý trung tâm)
+  KPI_MONTHLY_REVENUE: "Học phí thu trong tháng",
+  KPI_MONTHLY_REVENUE_SUB: (count: number) => `${count} giao dịch đã xác nhận`,
+  KPI_ACTIVE_TEACHERS: "Giáo viên đang dạy",
+  KPI_ACTIVE_TEACHERS_SUB: "Đang hoạt động",
+  KPI_ACTIVE_STAFF: "Nhân sự trung tâm",
+  KPI_ACTIVE_STAFF_SUB: "Tài khoản đang hoạt động",
 
   // Buổi học hôm nay
   TODAY_SESSIONS_TITLE: "Buổi học hôm nay",
@@ -35,8 +42,6 @@ export const DASHBOARD_MSG = {
   // Việc cần xử lý
   TASKS_TITLE: "Việc cần xử lý",
   TASKS_COUNT: (count: number) => `${count} mục`,
-  TASK_EXPIRING_LINKS: "Link/mã sắp hết hạn",
-  TASK_EXPIRING_LINKS_DESC: "Cần tạo liên kết mới",
   TASK_FAILED_EMAILS: "Email gửi thất bại",
   TASK_FAILED_EMAILS_DESC: "Sai hòm thư người nhận",
   TASK_EXPIRING_PACKAGES: "Học sinh sắp hết gói học phí",
@@ -45,7 +50,6 @@ export const DASHBOARD_MSG = {
   TASK_NO_TEACHER_DESC: "Cần xếp giáo viên dạy thay",
   TASK_ENDING_LEAVES: "Nghỉ dài hạn sắp kết thúc",
   TASK_ENDING_LEAVES_DESC: "Dự kiến quay lại tuần tới",
-  TASKS_FOOTER: "Kiểm tra toàn bộ tác vụ",
 
   // Thanh toán gần đây
   RECENT_PAYMENTS_TITLE: "Thanh toán gần đây",

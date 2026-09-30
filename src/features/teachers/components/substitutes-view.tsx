@@ -57,10 +57,15 @@ import {
   useAssignSubstitute,
   useSubstituteData,
 } from "@/features/teachers/hooks/use-teachers"
+import { PendingAbsencesCard } from "@/features/teachers/components/pending-absences-card"
+import { useCurrentUser } from "@/hooks/use-current-role"
+import { TEACHER_ABSENCE_MSG } from "@/constants/messages/events/teacher-absence"
+import type { TeacherAbsenceRow } from "@/features/work-credits/selectors"
 
 function SubstitutesView() {
   const substituteData = useSubstituteData()
   const assignSubstitute = useAssignSubstitute()
+  const currentUser = useCurrentUser()
 
   const [sessionTab, setSessionTab] = useQueryState(
     "sessionTab",
@@ -113,8 +118,16 @@ function SubstitutesView() {
     setValue("substituteTeacherId", "")
   }
 
+  /** Từ danh sách báo nghỉ: chọn buổi, điền sẵn lý do rồi cuộn tới form chọn giáo viên dạy thay. */
+  const handleAssignFromAbsence = (row: TeacherAbsenceRow) => {
+    handleSelectSession(row.report.classSessionId)
+    setValue("reason", TEACHER_ABSENCE_MSG.SUBSTITUTE_REASON_PREFIX(row.teacherName) + `: ${row.report.reason}`)
+    setSessionTab("all")
+    document.getElementById("substitute-form-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
   const onSubmit = (values: AssignSubstituteFormInput) => {
-    assignSubstitute.mutate(values, {
+    assignSubstitute.mutate({ ...values, assignedBy: currentUser?.id }, {
       onSuccess: () => {
         const teacherName = candidates.find(
           (item) => item.teacher.id === values.substituteTeacherId
@@ -167,7 +180,9 @@ function SubstitutesView() {
         onRetry={() => substituteData.refetch()}
       >
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <PendingAbsencesCard onAssign={handleAssignFromAbsence} />
+
+          <div id="substitute-form-anchor" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <SectionCard title={TEACHER_MSG.SESSION_PICKER_TITLE}>
               <div className="space-y-3">
                 <Tabs
@@ -560,7 +575,7 @@ function HistoryTable({ rows }: { rows: SubstituteHistoryRow[] }) {
                       {item.classRecord?.name ?? "—"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      <DateText value={item.session?.date} /> · Buổi {item.lessonOrder}
+                      <DateText value={item.session?.date} /> · {item.sessionLabel}
                     </p>
                   </TableCell>
                   <TableCell>

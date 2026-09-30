@@ -5,6 +5,8 @@
 
 export type ClassStatus = "open" | "ended"
 export type TeacherStatus = "active" | "on_leave" | "inactive"
+/** `monthly_test`: buổi kiểm tra cuối tháng, tự chèn khi sinh buổi học (không phải một `Lesson`). */
+export type SessionKind = "lesson" | "monthly_test"
 
 export interface Subject {
   id: string
@@ -21,6 +23,8 @@ export interface Program {
   totalLessons: number
   /** Học phí một tháng, đơn vị VND. */
   monthlyFee: number
+  /** Sách giáo khoa chương trình bám theo, vd "Toán 8 — Cánh Diều". */
+  textbook?: string
   /** Mô tả ngắn về chương trình, hiển thị ở modal Thêm/Sửa chương trình. */
   description?: string
   /** Chương trình còn được dùng để tạo lớp mới hay không (Switch "Đang sử dụng"). */
@@ -34,6 +38,8 @@ export interface Lesson {
   title: string
   /** Mô tả ngắn nội dung bài học, hiển thị trong "Danh sách bài học". */
   description?: string
+  /** Chương / phần của sách giáo khoa chứa bài học, vd "Chương 1". */
+  chapter?: string
 }
 
 export interface Room {
@@ -84,7 +90,9 @@ export interface ClassRecord {
 export interface ClassSession {
   id: string
   classId: string
+  /** Buổi kiểm tra tháng dùng id dạng `<programId>-test-<YYYY-MM>` (không trỏ tới `Lesson`). */
   lessonId: string
+  kind: SessionKind
   programId: string
   date: string
   capacity: number
@@ -94,4 +102,9 @@ export interface ClassSession {
   teacherId?: string
   /** Bỏ trống khi giáo viên chưa điểm danh buổi này. */
   attendanceMarkedAt?: string
+  /** Giáo viên đã điểm danh buổi này (giáo viên dạy thay nếu có) — người được tính công. */
+  attendanceMarkedBy?: string
+  /** Buổi bị trung tâm hủy (vd giáo viên nghỉ đột xuất, không có người dạy thay). */
+  cancelledAt?: string
+  cancelReason?: string
 }

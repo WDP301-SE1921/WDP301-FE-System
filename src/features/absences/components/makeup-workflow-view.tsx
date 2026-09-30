@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { parseAsString, useQueryState } from "nuqs"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -49,7 +50,12 @@ import {
   useMarkAbsentOnly,
   useReportableSessions,
 } from "@/features/absences/hooks/use-absences"
-import { fetchActiveStudentOptions, getActiveEnrollmentOptions } from "@/features/absences/selectors"
+import {
+  fetchActiveStudentOptions,
+  getActiveEnrollmentOptions,
+  getMakeupPrefill,
+} from "@/features/absences/selectors"
+import { CancelledSessionsMakeupCard } from "@/features/absences/components/cancelled-sessions-makeup-card"
 import { PendingMakeupTable } from "@/features/absences/components/pending-makeup-table"
 import { MAKEUP_KIND, assignMakeupSchema, type AssignMakeupFormInput } from "@/lib/validators/absence"
 import { findClassSession, resolveLessonTitle } from "@/mocks/data/catalog"
@@ -72,7 +78,13 @@ const EMPTY_DEFAULTS: AssignMakeupFormInput = {
 
 function MakeupWorkflowView({ mode }: MakeupWorkflowViewProps) {
   const isSwap = mode === MAKEUP_KIND.SWAP
-  const [selectedStudent, setSelectedStudent] = React.useState<EntityOption | null>(null)
+  const [studentIdParam] = useQueryState("studentId", parseAsString)
+  const [sessionIdParam] = useQueryState("sessionId", parseAsString)
+  // Deep-link từ danh sách buổi bị hủy: học sinh + buổi nghỉ chọn sẵn.
+  const [prefill] = React.useState(() => getMakeupPrefill(studentIdParam, sessionIdParam))
+  const [selectedStudent, setSelectedStudent] = React.useState<EntityOption | null>(
+    prefill?.student ?? null
+  )
 
   const {
     control,
@@ -83,7 +95,17 @@ function MakeupWorkflowView({ mode }: MakeupWorkflowViewProps) {
     formState: { errors },
   } = useForm<AssignMakeupFormInput>({
     resolver: zodResolver(assignMakeupSchema),
-    defaultValues: { ...EMPTY_DEFAULTS, kind: mode },
+    defaultValues: {
+      ...EMPTY_DEFAULTS,
+      kind: mode,
+      ...(prefill
+        ? {
+            studentProfileId: prefill.student.id,
+            enrollmentId: prefill.enrollmentId,
+            originalSessionId: prefill.originalSessionId,
+          }
+        : {}),
+    },
   })
 
   const studentProfileId = useWatch({ control, name: "studentProfileId" })
@@ -188,6 +210,8 @@ function MakeupWorkflowView({ mode }: MakeupWorkflowViewProps) {
           <AlertDescription>{ABSENCE_MSG.SWAP_INFO_ALERT_DESC}</AlertDescription>
         </Alert>
       )}
+
+      {!isSwap && <CancelledSessionsMakeupCard />}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 items-start">
         <div className="lg:col-span-2">

@@ -41,6 +41,7 @@ import { AsyncBoundary } from "@/components/shared/feedback/async-boundary"
 import { EmptyState } from "@/components/shared/feedback/empty-state"
 import { ErrorState } from "@/components/shared/feedback/error-state"
 import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets"
+import { StatusBadge } from "@/components/shared/feedback/status-badge"
 import { PageContainer } from "@/components/shared/layout/page-container"
 import { PageHeader } from "@/components/shared/layout/page-header"
 import { CLASS_MSG } from "@/constants/messages/events/class"
@@ -169,7 +170,9 @@ function ClassHero({
               leftIcon={<HugeiconsIcon icon={RefreshIcon} />}
               onClick={() => setIsChangeTeacherOpen(true)}
             >
-              {CLASS_MSG.ACTION_CHANGE_TEACHER}
+              {classRecord.teacherId
+                ? CLASS_MSG.ACTION_CHANGE_TEACHER
+                : CLASS_MSG.ACTION_ASSIGN_TEACHER}
             </Button>
             <Button
               variant="outline"
@@ -254,6 +257,7 @@ function ClassHero({
       </div>
 
       <ChangeClassTeacherDialog
+        key={`${classRecord.id}-${classRecord.teacherId ? "change" : "assign"}`}
         detail={detail}
         open={isChangeTeacherOpen}
         onOpenChange={(open) => {
@@ -423,8 +427,11 @@ function SessionRow({ row }: { row: ClassSessionRow }) {
       <TableCell>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">
-            {CLASS_MSG.SESSION_NUMBER(row.order)}
+            {row.session.kind === "monthly_test" ? row.label : CLASS_MSG.SESSION_NUMBER(row.order)}
           </span>
+          {row.session.kind === "monthly_test" && (
+            <StatusBadge category="sessionKind" status="monthly_test" />
+          )}
           {row.isToday && (
             <Badge variant="default" className="rounded-full">
               {CLASS_MSG.SESSION_TODAY_BADGE}

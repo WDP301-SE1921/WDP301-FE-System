@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { parseAsInteger, useQueryState } from "nuqs"
+import { parseAsInteger, parseAsString, useQueryState } from "nuqs"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -20,7 +20,6 @@ import { ERROR_MSG } from "@/constants/messages/error"
 import { ROUTES } from "@/constants/routes"
 import {
   ENROLLMENT_STEP_FIELDS,
-  REGISTRATION_TYPE,
   enrollmentSchema,
   type EnrollmentInput,
 } from "@/lib/validators/enrollment"
@@ -28,84 +27,85 @@ import { findClass, findSubject } from "@/mocks/data/catalog"
 import { MockError } from "@/mocks/utils/mock-query"
 import {
   getClassOptionRows,
+  getEnrollmentIdentity,
+  getEnrollmentPrefill,
   getTuitionBreakdown,
-  resolveSummaryIdentity,
 } from "@/features/enrollments/selectors"
 import { useCreateEnrollment } from "@/features/enrollments/hooks/use-create-enrollment"
 import { EnrollmentSummaryPanel } from "@/features/enrollments/components/enrollment-summary-panel"
+import { StepChild } from "@/features/enrollments/components/step-child"
 import { StepClass } from "@/features/enrollments/components/step-class"
 import { StepDone } from "@/features/enrollments/components/step-done"
-import { StepInfo } from "@/features/enrollments/components/step-info"
+import { StepLookup } from "@/features/enrollments/components/step-lookup"
 import { StepPayment } from "@/features/enrollments/components/step-payment"
-import { StepRegistrationType } from "@/features/enrollments/components/step-registration-type"
 import type { EnrollmentResult } from "@/mocks/data/enrollments"
 
 const STEPS = [
-  { id: "type", label: ENROLLMENT_MSG.STEP_TYPE, description: ENROLLMENT_MSG.STEP_TYPE_SUB },
-  { id: "info", label: ENROLLMENT_MSG.STEP_INFO, description: ENROLLMENT_MSG.STEP_INFO_SUB },
+  { id: "parent", label: ENROLLMENT_MSG.STEP_PARENT, description: ENROLLMENT_MSG.STEP_PARENT_SUB },
+  { id: "child", label: ENROLLMENT_MSG.STEP_CHILD, description: ENROLLMENT_MSG.STEP_CHILD_SUB },
   { id: "class", label: ENROLLMENT_MSG.STEP_CLASS, description: ENROLLMENT_MSG.STEP_CLASS_SUB },
   { id: "payment", label: ENROLLMENT_MSG.STEP_PAYMENT, description: ENROLLMENT_MSG.STEP_PAYMENT_SUB },
   { id: "done", label: ENROLLMENT_MSG.STEP_DONE, description: ENROLLMENT_MSG.STEP_DONE_SUB },
 ]
 
+const CHILD_STEP = 1
+const PAYMENT_STEP = 3
 const LAST_STEP = STEPS.length - 1
 
 const NEXT_LABEL: Record<number, string> = {
-  0: ENROLLMENT_MSG.NEXT_INFO,
+  0: ENROLLMENT_MSG.NEXT_CHILD,
   1: ENROLLMENT_MSG.NEXT_CLASS,
   2: ENROLLMENT_MSG.NEXT_PAYMENT,
-  3: ENROLLMENT_MSG.PAYMENT_CONFIRM_ACTION,
+  [PAYMENT_STEP]: ENROLLMENT_MSG.PAYMENT_CONFIRM_ACTION,
+}
+
+const EMPTY_VALUES: EnrollmentInput = {
+  parentAccountId: "",
+  studentProfileId: "",
+  grade: "",
+  subjectId: "",
+  classId: "",
+  months: 3,
+  hasReceivedPayment: false,
 }
 
 function EnrollmentWizard() {
   const router = useRouter()
   const createEnrollment = useCreateEnrollment()
-  const [step, setStep] = useQueryState("step", parseAsInteger.withDefault(0))
   const [result, setResult] = React.useState<EnrollmentResult | null>(null)
+
+  // Deep-link từ chi tiết phụ huynh / học sinh: `?parentId=&studentId=` điền sẵn và nhảy bước.
+  const [parentIdParam, setParentIdParam] = useQueryState("parentId", parseAsString)
+  const [studentIdParam, setStudentIdParam] = useQueryState("studentId", parseAsString)
+  const prefill = React.useMemo(
+    () => getEnrollmentPrefill(parentIdParam, studentIdParam),
+    [parentIdParam, studentIdParam]
+  )
+
+  const stepParser = React.useMemo(
+    () => parseAsInteger.withDefault(prefill?.step ?? 0),
+    [prefill?.step]
+  )
+  const [step, setStep] = useQueryState("step", stepParser)
 
   const form = useForm<EnrollmentInput>({
     resolver: zodResolver(enrollmentSchema),
-    defaultValues: {
-      registrationType: REGISTRATION_TYPE.FIRST_CHILD,
-      studentName: "",
-      grade: "",
-      parentEmail: "",
-      parentPhone: "",
-      parentAccountId: "",
-      studentProfileId: "",
-      subjectId: "",
-      classId: "",
-      months: 3,
-      hasReceivedPayment: false,
-    },
+    defaultValues: prefill ? { ...EMPTY_VALUES, ...prefill } : EMPTY_VALUES,
   })
 
   const { control, setValue, trigger, getValues, reset, formState } = form
   const values = useWatch({ control }) as EnrollmentInput
 
-  const rawStep = Math.min(LAST_STEP, Math.max(0, step))
-  const currentStep = rawStep === LAST_STEP && result === null ? 3 : rawStep
+  const requestedStep = Math.min(LAST_STEP, Math.max(0, step))
+  const isDone = requestedStep === LAST_STEP && result !== null
 
-  const identity = React.useMemo(
-    () =>
-      resolveSummaryIdentity({
-        registrationType: values.registrationType,
-        studentName: values.studentName,
-        parentEmail: values.parentEmail,
-        parentAccountId: values.parentAccountId,
-        studentProfileId: values.studentProfileId,
-      }),
-    [
-      values.registrationType,
-      values.studentName,
-      values.parentEmail,
-      values.parentAccountId,
-      values.studentProfileId,
-    ]
-  )
+  // Chưa tra cứu được phụ huynh / chưa chọn con thì không được đứng ở bước phía sau.
+  let currentStep = requestedStep === LAST_STEP && result === null ? PAYMENT_STEP : requestedStep
+  if (!isDone && currentStep > 0 && !values.parentAccountId) currentStep = 0
+  if (!isDone && currentStep > CHILD_STEP && !values.studentProfileId) currentStep = CHILD_STEP
 
-  const selectedGrade =
-    identity.grade ?? (values.grade ? Number(values.grade) : undefined)
+  const identity = getEnrollmentIdentity(values.parentAccountId, values.studentProfileId)
+  const selectedGrade = values.grade ? Number(values.grade) : undefined
 
   const selectedClass = values.classId ? findClass(values.classId) : undefined
   const monthlyFee = React.useMemo(() => {
@@ -126,13 +126,13 @@ function EnrollmentWizard() {
     [monthlyFee, values.months]
   )
 
-  const goToStep = (next: number) => setStep(next === 0 ? null : next)
+  const goToStep = (next: number) => setStep(next)
 
   const handleNext = async () => {
     const isValid = await trigger(ENROLLMENT_STEP_FIELDS[currentStep])
     if (!isValid) return
 
-    if (currentStep < 3) {
+    if (currentStep < PAYMENT_STEP) {
       goToStep(currentStep + 1)
       return
     }
@@ -154,18 +154,18 @@ function EnrollmentWizard() {
   }
 
   const handleStartNew = () => {
-    reset()
+    reset(EMPTY_VALUES)
     setResult(null)
     createEnrollment.reset()
-    goToStep(0)
+    setParentIdParam(null)
+    setStudentIdParam(null)
+    setStep(0)
   }
 
   const handleCancel = () => {
     toast.success(ENROLLMENT_MSG.CANCELLED)
     router.push(ROUTES.MANAGER.STUDENTS)
   }
-
-  const isDone = currentStep === LAST_STEP && result !== null
 
   return (
     <PageContainer>
@@ -187,13 +187,12 @@ function EnrollmentWizard() {
       <WizardLayout
         steps={STEPS}
         currentStep={currentStep}
-        onStepClick={(index) => !isDone && goToStep(index)}
+        onStepClick={(index) => !isDone && index <= currentStep && goToStep(index)}
         summaryPanel={
           isDone ? undefined : (
             <EnrollmentSummaryPanel
               currentStep={currentStep}
               totalSteps={STEPS.length}
-              registrationType={values.registrationType}
               parentEmail={identity.parentEmail}
               studentName={identity.studentName}
               grade={selectedGrade}
@@ -201,6 +200,11 @@ function EnrollmentWizard() {
                 values.subjectId ? findSubject(values.subjectId)?.code : undefined
               }
               className={selectedClass?.name}
+              scheduleText={
+                selectedClass
+                  ? `${selectedClass.weekdays.join(" - ")} · ${selectedClass.startTime}–${selectedClass.endTime}`
+                  : undefined
+              }
               expectedTuition={tuition.total}
               discount={0}
             />
@@ -243,7 +247,7 @@ function EnrollmentWizard() {
                   <Button
                     className="rounded-full"
                     isLoading={createEnrollment.isPending}
-                    disabled={currentStep === 3 && !values.hasReceivedPayment}
+                    disabled={currentStep === PAYMENT_STEP && !values.hasReceivedPayment}
                     onClick={handleNext}
                   >
                     {NEXT_LABEL[currentStep]}
@@ -254,30 +258,25 @@ function EnrollmentWizard() {
           )
         }
       >
-        {currentStep === 0 && (
-          <StepRegistrationType
-            value={values.registrationType}
-            onChange={(next) => setValue("registrationType", next)}
-          />
-        )}
+        {currentStep === 0 && <StepLookup form={form} />}
 
-        {currentStep === 1 && (
-          <StepInfo
-            form={form}
-            onSwitchToExistingParent={() => {
-              setValue("registrationType", REGISTRATION_TYPE.ADDITIONAL_CHILD)
-              setValue("parentEmail", "")
-            }}
-          />
-        )}
+        {currentStep === CHILD_STEP && <StepChild form={form} />}
 
         {currentStep === 2 && (
           <StepClass
+            studentProfileId={values.studentProfileId}
+            childGrade={identity.childGrade}
+            grade={values.grade}
             subjectId={values.subjectId}
             classId={values.classId}
-            grade={selectedGrade}
+            gradeError={formState.errors.grade?.message}
             subjectError={formState.errors.subjectId?.message}
             classError={formState.errors.classId?.message}
+            onGradeChange={(grade) => {
+              setValue("grade", grade)
+              setValue("subjectId", "")
+              setValue("classId", "")
+            }}
             onSubjectChange={(subjectId) => {
               setValue("subjectId", subjectId)
               setValue("classId", "")
@@ -286,7 +285,7 @@ function EnrollmentWizard() {
           />
         )}
 
-        {currentStep === 3 && <StepPayment form={form} tuition={tuition} />}
+        {currentStep === PAYMENT_STEP && <StepPayment form={form} tuition={tuition} />}
 
         {currentStep === LAST_STEP && result && (
           <StepDone result={result} onStartNew={handleStartNew} />

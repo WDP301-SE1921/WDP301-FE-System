@@ -7,7 +7,6 @@ import {
   CheckmarkSquare01Icon,
   Clock01Icon,
   Invoice01Icon,
-  Link01Icon,
   Mail01Icon,
   Task01Icon,
   TeacherIcon,
@@ -16,7 +15,6 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -39,15 +37,17 @@ import { PageContainer } from "@/components/shared/layout/page-container"
 import { PageHeader } from "@/components/shared/layout/page-header"
 import { BUSINESS_RULES } from "@/constants/business-rules"
 import { DASHBOARD_MSG } from "@/constants/messages/events/dashboard"
+import { ROLES, type WebRole } from "@/constants/roles"
 import { ROUTES } from "@/constants/routes"
-import { formatDate } from "@/lib/format"
+import { useRoleAccess } from "@/hooks/use-current-role"
+import { formatDate, formatMoney } from "@/lib/format"
 import { MOCK_TODAY } from "@/mocks/data/catalog"
 import { AttendanceBarChart } from "@/features/dashboard/components/attendance-bar-chart"
 import {
   PendingTaskList,
   type PendingTaskItem,
 } from "@/features/dashboard/components/pending-task-list"
-import { useDashboard } from "@/features/dashboard/hooks/use-dashboard"
+import { useDashboard, type DashboardData } from "@/features/dashboard/hooks/use-dashboard"
 import type {
   PendingTaskCounts,
   TodaySessionRow,
@@ -62,8 +62,15 @@ const ATTENDANCE_BADGE: Record<
   no_teacher: { label: DASHBOARD_MSG.ATTENDANCE_NO_TEACHER, variant: "danger" },
 }
 
-function DashboardView() {
+export interface DashboardViewProps {
+  /** Admin / quản lý trung tâm thấy thêm KPI kinh doanh; nhân viên chỉ thấy khối vận hành. */
+  role: WebRole
+}
+
+function DashboardView({ role }: DashboardViewProps) {
   const dashboard = useDashboard()
+  const { canAccess } = useRoleAccess()
+  const isBusinessRole = role === ROLES.ADMIN || role === ROLES.CENTER_MANAGER
 
   return (
     <PageContainer>
@@ -75,23 +82,14 @@ function DashboardView() {
           { label: DASHBOARD_MSG.TITLE },
         ]}
         actions={
-          <>
-            <ExportButton
-              variant="outline"
-              className="rounded-full"
-              label={DASHBOARD_MSG.EXPORT_REPORT}
-              onExport={() => {
-                toast.success(DASHBOARD_MSG.EXPORT_SUCCESS)
-              }}
-            />
-            <Button
-              className="rounded-full"
-              render={<Link href={ROUTES.TEACHER.ATTENDANCE} />}
-              leftIcon={<HugeiconsIcon icon={CheckmarkSquare01Icon} />}
-            >
-              {DASHBOARD_MSG.QUICK_ATTENDANCE}
-            </Button>
-          </>
+          <ExportButton
+            variant="outline"
+            className="rounded-full"
+            label={DASHBOARD_MSG.EXPORT_REPORT}
+            onExport={() => {
+              toast.success(DASHBOARD_MSG.EXPORT_SUCCESS)
+            }}
+          />
         }
       />
 
@@ -104,6 +102,8 @@ function DashboardView() {
       >
         {dashboard.data && (
           <div className="space-y-6">
+            {isBusinessRole && <BusinessKpiRow business={dashboard.data.business} />}
+
             {/* Hàng 1 — KPI */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
@@ -245,16 +245,9 @@ function DashboardView() {
                   </span>
                 }
               >
-                <div className="space-y-3">
-                  <PendingTaskList items={buildTaskItems(dashboard.data.tasks)} />
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-full"
-                    render={<Link href={ROUTES.MANAGER.LINK_CODES} />}
-                  >
-                    {DASHBOARD_MSG.TASKS_FOOTER}
-                  </Button>
-                </div>
+                <PendingTaskList
+                  items={buildTaskItems(dashboard.data.tasks).filter((item) => canAccess(item.href))}
+                />
               </SectionCard>
             </div>
 
@@ -332,17 +325,43 @@ function DashboardView() {
   )
 }
 
+function BusinessKpiRow({ business }: { business: DashboardData["business"] }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiCard
+        title={DASHBOARD_MSG.KPI_MONTHLY_REVENUE}
+        value={formatMoney(business.monthlyRevenue)}
+        sub={DASHBOARD_MSG.KPI_MONTHLY_REVENUE_SUB(business.monthPaymentCount)}
+        color="green"
+        icon={<HugeiconsIcon icon={Invoice01Icon} />}
+      />
+      <KpiCard
+        title={DASHBOARD_MSG.KPI_ACTIVE_STUDENTS}
+        value={business.activeStudentCount}
+        sub={DASHBOARD_MSG.KPI_ACTIVE_STUDENTS_SUB}
+        color="blue"
+        icon={<HugeiconsIcon icon={UserIcon} />}
+      />
+      <KpiCard
+        title={DASHBOARD_MSG.KPI_ACTIVE_TEACHERS}
+        value={business.activeTeacherCount}
+        sub={DASHBOARD_MSG.KPI_ACTIVE_TEACHERS_SUB}
+        color="purple"
+        icon={<HugeiconsIcon icon={TeacherIcon} />}
+      />
+      <KpiCard
+        title={DASHBOARD_MSG.KPI_ACTIVE_STAFF}
+        value={business.activeStaffCount}
+        sub={DASHBOARD_MSG.KPI_ACTIVE_STAFF_SUB}
+        color="amber"
+        icon={<HugeiconsIcon icon={UserGroupIcon} />}
+      />
+    </div>
+  )
+}
+
 function buildTaskItems(tasks: PendingTaskCounts): PendingTaskItem[] {
   return [
-    {
-      id: "expiring-links",
-      icon: Link01Icon,
-      label: DASHBOARD_MSG.TASK_EXPIRING_LINKS,
-      description: DASHBOARD_MSG.TASK_EXPIRING_LINKS_DESC,
-      count: tasks.expiringLinks,
-      tone: "warning",
-      href: ROUTES.MANAGER.LINK_CODES,
-    },
     {
       id: "failed-emails",
       icon: Mail01Icon,

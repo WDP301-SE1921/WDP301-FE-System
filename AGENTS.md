@@ -1,7 +1,7 @@
 # AGENTS.md — WDP301-FE-System
 
 ## Project
-Next.js (App Router) frontend for an education-center management platform (WDP301-SE1921). Serves 3 roles: Quản lý (manager), Giáo viên (teacher), Phụ huynh (parent — one account manages multiple children, no separate student login).
+Next.js (App Router) frontend for an education-center management platform (WDP301-SE1921). Web serves 5 roles: Quản trị viên (`admin`), Quản lý trung tâm (`center_manager`), Thiết kế giáo trình (`curriculum_designer`), Nhân viên (`staff`) — sharing the `/manager/*` back-office, screens per role in `src/constants/role-access.ts` — and Giáo viên (`teacher`, `/teacher/*`). Phụ huynh (parent, mobile only) — one account manages multiple children, no separate student login.
 
 ## Tech stack
 - Next.js App Router + TypeScript
@@ -28,7 +28,7 @@ Next.js (App Router) frontend for an education-center management platform (WDP30
 - Images: WebP format, lazy loading.
 
 ## Folder structure
-- `src/app/(public)`, `(auth)`, `(manager)`, `(teacher)`, `(parent)` — route groups per role, each with its own `layout.tsx`.
+- `src/app/(public)`, `(auth)`, `(manager)` (back-office for admin / center manager / curriculum designer / staff), `(teacher)`, `(parent)` — route groups, each with its own `layout.tsx`.
 - `src/components/ui` — Shadcn-generated; don't hand-edit beyond the CLI.
 - `src/components/shared` — cross-role components (Header, ChildSwitcher, Sidebar).
 - `src/features/<domain>` — domain logic + UI colocated (students, classes, attendance, payments).

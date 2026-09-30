@@ -68,7 +68,12 @@ function ReenrollTab() {
                     className="rounded-full"
                     onClick={() => {
                       toast.info(ABSENCE_MSG.REENROLL_HINT(row.student.name))
-                      router.push(ROUTES.MANAGER.ENROLLMENT_NEW)
+                      router.push(
+                        ROUTES.MANAGER.ENROLLMENT_NEW_FOR({
+                          parentId: row.student.parentAccountId,
+                          studentId: row.student.id,
+                        })
+                      )
                     }}
                   >
                     {ABSENCE_MSG.REENROLL_ACTION}

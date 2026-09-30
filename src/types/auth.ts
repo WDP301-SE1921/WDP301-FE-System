@@ -1,11 +1,11 @@
-import type { Role } from "@/constants/roles"
+import type { WebRole } from "@/constants/roles"
 
-/** Người dùng web đã đăng nhập. Web chỉ có Quản lý và Giáo viên. */
+/** Người dùng web đã đăng nhập: admin, quản lý trung tâm, thiết kế giáo trình, nhân viên hoặc giáo viên. */
 export interface AuthUser {
   id: string
   email: string
   name: string
-  role: Role
+  role: WebRole
   avatarUrl?: string
 }
 
@@ -19,7 +19,7 @@ export interface LoginResult {
 export interface Invitation {
   id: string
   email: string
-  role: Role
+  role: WebRole
   /** Tên gợi ý sẵn do Quản trị viên nhập khi gửi lời mời. */
   suggestedName?: string
   expiresAt: string

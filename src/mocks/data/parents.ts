@@ -1,4 +1,6 @@
-import type { ParentAccount } from "@/types/student"
+import { ERROR_MSG } from "@/constants/messages/error"
+import { MockError } from "@/mocks/utils/mock-query"
+import type { ParentAccount, ParentAccountStatus } from "@/types/student"
 
 /**
  * Phụ huynh giả lập cho giai đoạn MOCK-ONLY.
@@ -33,8 +35,9 @@ export const MOCK_PARENTS: ParentAccount[] = [
     id: "par-004",
     email: "hoanghai.do@fpt.vn",
     phone: "0934 556 677",
-    status: "pending_link",
+    status: "activated",
     createdAt: "2026-09-10",
+    activatedAt: "2026-09-10T09:30:00",
   },
   {
     id: "par-005",
@@ -48,8 +51,9 @@ export const MOCK_PARENTS: ParentAccount[] = [
     id: "par-006",
     email: "bichngoc.pham@gmail.com",
     phone: "0966 334 455",
-    status: "pending_link",
+    status: "activated",
     createdAt: "2026-09-15",
+    activatedAt: "2026-09-15T14:05:00",
   },
   {
     id: "par-007",
@@ -111,11 +115,60 @@ export const MOCK_PARENTS: ParentAccount[] = [
     id: "par-014",
     email: "giahan.bui@gmail.com",
     phone: "0966 334 455",
-    status: "pending_link",
+    status: "activated",
     createdAt: "2026-09-12",
+    activatedAt: "2026-09-12T18:20:00",
+  },
+  // Đã đăng ký trên app nhưng CHƯA tạo hồ sơ con — dựng nhánh empty-state ở bước 2 của wizard.
+  {
+    id: "par-015",
+    email: "phuhuynh.moi@gmail.com",
+    phone: "0905 111 222",
+    status: "activated",
+    createdAt: "2026-09-20",
+    activatedAt: "2026-09-20T20:10:00",
+  },
+  // Tài khoản đã bị trung tâm khóa — wizard không cho đăng ký học.
+  {
+    id: "par-016",
+    email: "taikhoan.bikhoa@gmail.com",
+    phone: "0906 333 444",
+    status: "disabled",
+    createdAt: "2026-05-11",
+    activatedAt: "2026-05-11T08:00:00",
   },
 ]
 
 export function findParent(parentAccountId: string): ParentAccount | undefined {
   return MOCK_PARENTS.find((item) => item.id === parentAccountId)
+}
+
+export interface UpdateParentContactInput {
+  id: string
+  phone: string
+}
+
+/** Sửa thông tin liên hệ — email là định danh đăng nhập nên web không đổi được. */
+export function mockUpdateParentContact(input: UpdateParentContactInput): ParentAccount {
+  const parent = findParent(input.id)
+  if (!parent) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  parent.phone = input.phone.trim()
+
+  return parent
+}
+
+export interface SetParentStatusInput {
+  id: string
+  status: ParentAccountStatus
+}
+
+/** Khóa / mở khóa tài khoản phụ huynh (`disabled` chặn đăng ký học mới). */
+export function mockSetParentStatus(input: SetParentStatusInput): ParentAccount {
+  const parent = findParent(input.id)
+  if (!parent) throw new MockError(ERROR_MSG.NOT_FOUND)
+
+  parent.status = input.status
+
+  return parent
 }
