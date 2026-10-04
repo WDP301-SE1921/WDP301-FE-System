@@ -16,6 +16,9 @@ import {
 import { ACTION_LABEL } from "@/constants/messages"
 import { ROUTES } from "@/constants/routes"
 import { clearSession } from "@/lib/auth/session"
+import { apiRequest, ApiError, apiErrorMessage } from "@/lib/api/client"
+import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "@/components/ui/toast"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   UserIcon,
@@ -48,6 +51,8 @@ function UserMenu({
   onLogout,
 }: UserMenuProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -55,13 +60,24 @@ function UserMenu({
     .slice(0, 2)
     .toUpperCase()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (onLogout) {
       onLogout()
       return
     }
-    clearSession()
-    router.replace(ROUTES.AUTH.LOGIN)
+    setIsLoggingOut(true)
+    try {
+      await apiRequest("auth/logout", { method: "POST" })
+      clearSession()
+      queryClient.clear()
+      router.replace(ROUTES.AUTH.LOGIN)
+      router.refresh()
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSession(); queryClient.clear(); router.replace(ROUTES.AUTH.LOGIN); router.refresh()
+      } else toast.error(apiErrorMessage(error))
+    }
+    finally { setIsLoggingOut(false) }
   }
 
   return (
@@ -113,6 +129,7 @@ function UserMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}
+          disabled={isLoggingOut}
           className="text-destructive focus:bg-destructive/10 focus:text-destructive"
         >
           <HugeiconsIcon icon={Logout01Icon} />

@@ -164,10 +164,10 @@ function StudentsView() {
                 toast.success(STUDENT_MSG.EXPORT_SUCCESS)
               }}
             />
-            {canAccess(ROUTES.MANAGER.ENROLLMENT_NEW) && (
+            {canAccess(ROUTES.STAFF.ENROLLMENT_NEW) && (
               <Button
                 className="rounded-full"
-                render={<Link href={ROUTES.MANAGER.ENROLLMENT_NEW} />}
+                render={<Link href={ROUTES.STAFF.ENROLLMENT_NEW} />}
                 leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
               >
                 {STUDENT_MSG.ADD_ENROLLMENT}
@@ -308,9 +308,8 @@ function StudentsView() {
         <HugeiconsIcon icon={InformationCircleIcon} />
         <AlertTitle>Lưu ý quản lý phụ huynh & học sinh</AlertTitle>
         <AlertDescription>
-          Học sinh có trạng thái <strong>Chờ liên kết</strong> cần được gửi mã QR hoặc
-          liên kết kích hoạt tới phụ huynh để hoàn tất xác thực thông tin liên lạc và
-          cập nhật danh sách đăng ký học tự động.
+          Phụ huynh tự tạo tài khoản và hồ sơ con trên ứng dụng. Nhân viên chọn hồ sơ
+          có sẵn và xác nhận thanh toán để đăng ký lớp cho con.
         </AlertDescription>
       </Alert>
     </PageContainer>
@@ -432,14 +431,14 @@ function buildColumns(
               onClick: () =>
                 router.push(ROUTES.MANAGER.STUDENT_DETAIL(row.original.student.id)),
             },
-            ...(canAccess(ROUTES.MANAGER.ENROLLMENT_NEW)
+            ...(canAccess(ROUTES.STAFF.ENROLLMENT_NEW)
               ? [
                   {
                     id: "add-subject",
                     label: STUDENT_MSG.ACTION_ADD_SUBJECT,
                     onClick: () =>
                       router.push(
-                        ROUTES.MANAGER.ENROLLMENT_NEW_FOR({
+                        ROUTES.STAFF.ENROLLMENT_NEW_FOR({
                           parentId: row.original.student.parentAccountId,
                           studentId: row.original.student.id,
                         })

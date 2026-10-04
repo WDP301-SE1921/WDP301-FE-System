@@ -7,7 +7,6 @@ skills:
   - enrollment-flow
   - attendance-rules
   - shared-ui
-  - constants-architecture
 ---
 
 You implement features for WDP301-FE-System (Next.js App Router + Shadcn UI, Maia preset).

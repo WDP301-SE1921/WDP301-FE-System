@@ -4,6 +4,7 @@ import { DASHBOARD_MSG } from "@/constants/messages/events/dashboard"
 import { ROLE_HOME_ROUTE } from "@/constants/role-access"
 import { ROUTES } from "@/constants/routes"
 import { DashboardView } from "@/features/dashboard/components/dashboard-view"
+import { RegistrationDashboardView } from "@/features/registration-flow/components/dashboard-view"
 import { getServerRole } from "@/lib/auth/server-role"
 
 export const metadata: Metadata = {
@@ -16,5 +17,5 @@ export default async function DashboardPage() {
   // Vai trò không có dashboard (vd thiết kế giáo trình) về trang chủ riêng.
   if (ROLE_HOME_ROUTE[role] !== ROUTES.MANAGER.DASHBOARD) redirect(ROLE_HOME_ROUTE[role])
 
-  return <DashboardView role={role} />
+  return role === "staff" || role === "center_manager" ? <RegistrationDashboardView manager={role === "center_manager"} /> : <DashboardView role={role} />
 }

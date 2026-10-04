@@ -1,5 +1,5 @@
 export * from "./auth-illustration"
 export * from "./login-form"
 export * from "./forgot-password-form"
-export * from "./activate-account-form"
+export * from "./register-parent-form"
 export * from "./session-expired-modal-container"

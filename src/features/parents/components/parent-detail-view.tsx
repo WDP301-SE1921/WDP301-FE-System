@@ -115,14 +115,14 @@ function ParentDetailContent({ row }: { row: ParentRow }) {
                 </Button>
               </>
             )}
-            {canAccess(ROUTES.MANAGER.ENROLLMENT_NEW) && (
+            {canAccess(ROUTES.STAFF.ENROLLMENT_NEW) && (
               <Button
                 className="rounded-full"
                 disabled={row.parent.status === "disabled"}
                 leftIcon={<HugeiconsIcon icon={UserAdd01Icon} />}
                 onClick={() =>
                   router.push(
-                    ROUTES.MANAGER.ENROLLMENT_NEW_FOR({ parentId: row.parent.id })
+                    ROUTES.STAFF.ENROLLMENT_NEW_FOR({ parentId: row.parent.id })
                   )
                 }
               >
