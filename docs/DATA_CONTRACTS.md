@@ -1,12 +1,12 @@
 # Data Contracts
 
-Human-readable version of `.claude/rules/data-contracts.md` — read that file for the version agents enforce verbatim; this one explains the *why*.
+Human-readable version of `.claude/rules/data-contracts.md`.
 
-## Why field names must match the backend exactly
-Every mismatch between the FE's naming and the API's naming becomes a mapping layer someone has to maintain and eventually gets out of sync silently (the classic "FE says `enrollmentStatus`, API says `status`" bug). We don't do that here — Zod schemas in `src/lib/validators/` use the API's field names verbatim.
+## What changed
+- No `ActivationLink` entity — account and profile creation are fully self-service by the parent in the app; staff never generate or send a link/code.
+- `Payment.confirmedBy` is a **staff (Nhân viên)** id, not a manager id.
+- `AttendanceRecord` is no longer purely informational — it now feeds teacher compensation. The exact payroll schema isn't defined yet; don't build FE assumptions around a specific shape until backend confirms it.
+- A new `Program`-adjacent curriculum shape (owned by Thiết kế giáo trình) needs confirming with backend before building those screens — subject, grade level, ordered lessons, and the 1-lesson/1-test pacing.
 
 ## Core entities
-`ParentAccount`, `StudentProfile`, `Enrollment`, `Payment`, `AttendanceRecord`, `ClassSession`, `StaffAccount`, `TeacherAbsenceReport`, `WorkCreditAdjustment` — see `.claude/rules/data-contracts.md` for exact fields. (`ActivationLink` and the `pending_link` statuses were removed: parents self-register on mobile.)
-
-## Status fields
-Always string unions (`"present" | "absent" | "made_up" | "excused"`), never numeric enums — this project doesn't use TypeScript enums anywhere (see naming/frontend rules), partly because string unions serialize identically to what the API sends, with zero mapping.
+`ParentAccount`, `StudentProfile`, `Enrollment`, `Payment`, `AttendanceRecord`, `ClassSession`, `Program` — see `.claude/rules/data-contracts.md` for exact fields.

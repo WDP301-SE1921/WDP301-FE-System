@@ -1,6 +1,6 @@
-import { ROUTES } from "./routes"
-import { AREA, canAccessArea, type Area } from "./role-access"
-import { ROLES, type WebRole } from "./roles"
+import { ROUTES } from "./routes";
+import { AREA, canAccessArea, canAccessPath, type Area } from "./role-access";
+import { ROLES, type WebRole } from "./roles";
 
 /**
  * Key của badge đếm số trên menu. menu.ts chỉ khai báo item nào CÓ badge,
@@ -11,25 +11,26 @@ export const MENU_BADGE_KEYS = {
   UNMARKED_SESSIONS_TODAY: "unmarkedSessionsToday",
   UNGRADED_SUBMISSIONS: "ungradedSubmissions",
   PENDING_AI_REVIEW: "pendingAiReview",
-} as const
+} as const;
 
-export type MenuBadgeKey = (typeof MENU_BADGE_KEYS)[keyof typeof MENU_BADGE_KEYS]
+export type MenuBadgeKey =
+  (typeof MENU_BADGE_KEYS)[keyof typeof MENU_BADGE_KEYS];
 
-export type MenuBadgeCounts = Partial<Record<MenuBadgeKey, number>>
+export type MenuBadgeCounts = Partial<Record<MenuBadgeKey, number>>;
 
 export interface MenuItem {
-  title: string
-  href: string
-  iconName: string
+  title: string;
+  href: string;
+  iconName: string;
   /** Area của item — sidebar chỉ hiện item mà role hiện tại vào được (`role-access.ts`). */
-  area: Area
-  badgeKey?: MenuBadgeKey
-  subItems?: MenuItem[]
+  area: Area;
+  badgeKey?: MenuBadgeKey;
+  subItems?: MenuItem[];
 }
 
 export interface MenuGroup {
-  groupTitle?: string
-  items: MenuItem[]
+  groupTitle?: string;
+  items: MenuItem[];
 }
 
 /** Menu chung của khu back-office `/manager/*`; mỗi role thấy phần giao với `ROLE_AREAS`. */
@@ -62,7 +63,7 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
       },
       {
         title: "Đăng ký học",
-        href: ROUTES.MANAGER.ENROLLMENT_NEW,
+        href: ROUTES.STAFF.ENROLLMENT_NEW,
         iconName: "UserAdd01Icon",
         area: AREA.ENROLLMENTS,
       },
@@ -73,7 +74,7 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     items: [
       {
         title: "Lịch sử thanh toán",
-        href: ROUTES.MANAGER.PAYMENTS,
+        href: ROUTES.STAFF.PAYMENTS,
         iconName: "Invoice01Icon",
         area: AREA.PAYMENTS,
       },
@@ -206,7 +207,39 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
       },
     ],
   },
-]
+];
+
+export const MENU_STAFF: MenuGroup[] = [
+  {
+    groupTitle: "ĐĂNG KÝ & THU HỌC PHÍ",
+    items: [
+      {
+        title: "Đăng ký học",
+        href: ROUTES.STAFF.ENROLLMENT_NEW,
+        iconName: "UserAdd01Icon",
+        area: AREA.ENROLLMENTS,
+      },
+      {
+        title: "Phụ huynh",
+        href: ROUTES.STAFF.PARENTS,
+        iconName: "UserGroupIcon",
+        area: AREA.PARENTS,
+      },
+      {
+        title: "Hồ sơ con",
+        href: ROUTES.STAFF.STUDENTS,
+        iconName: "StudentsIcon",
+        area: AREA.STUDENTS,
+      },
+      {
+        title: "Đăng ký & biên lai",
+        href: ROUTES.STAFF.PAYMENTS,
+        iconName: "Invoice01Icon",
+        area: AREA.PAYMENTS,
+      },
+    ],
+  },
+];
 
 export const MENU_TEACHER: MenuGroup[] = [
   {
@@ -285,31 +318,39 @@ export const MENU_TEACHER: MenuGroup[] = [
       },
     ],
   },
-]
+];
 
 /** Menu của một role: menu theo khu (back-office hoặc giáo viên), chỉ giữ item role đó vào được. */
 export function getNavMenu(role: WebRole): MenuGroup[] {
-  const source = role === ROLES.TEACHER ? MENU_TEACHER : MENU_BACK_OFFICE
+  const source =
+    role === ROLES.STAFF
+      ? MENU_STAFF
+      : role === ROLES.TEACHER
+        ? MENU_TEACHER
+        : MENU_BACK_OFFICE;
   return source
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => canAccessArea(role, item.area)),
+      items: group.items.filter(
+        (item) =>
+          canAccessArea(role, item.area) && canAccessPath(role, item.href),
+      ),
     }))
-    .filter((group) => group.items.length > 0)
+    .filter((group) => group.items.length > 0);
 }
 
 export interface QuickCreateItem {
-  title: string
-  href: string
-  iconName: string
-  area: Area
+  title: string;
+  href: string;
+  iconName: string;
+  area: Area;
 }
 
 /** Các lối tắt của nút "Tạo nhanh" trên header (chỉ back-office). */
 export const QUICK_CREATE_ITEMS: QuickCreateItem[] = [
   {
     title: "Đăng ký học mới",
-    href: ROUTES.MANAGER.ENROLLMENT_NEW,
+    href: ROUTES.STAFF.ENROLLMENT_NEW,
     iconName: "UserAdd01Icon",
     area: AREA.ENROLLMENTS,
   },
@@ -319,8 +360,10 @@ export const QUICK_CREATE_ITEMS: QuickCreateItem[] = [
     iconName: "SchoolIcon",
     area: AREA.CLASSES,
   },
-]
+];
 
 export function getQuickCreateItems(role: WebRole): QuickCreateItem[] {
-  return QUICK_CREATE_ITEMS.filter((item) => canAccessArea(role, item.area))
+  return QUICK_CREATE_ITEMS.filter(
+    (item) => canAccessArea(role, item.area) && canAccessPath(role, item.href),
+  );
 }

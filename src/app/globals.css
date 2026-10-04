@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -135,5 +136,22 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@media print {
+  body:has([data-registration-receipt]) * {
+    visibility: hidden;
+  }
+  [data-registration-receipt],
+  [data-registration-receipt] * {
+    visibility: visible !important;
+  }
+  [data-registration-receipt] {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    border: none;
+    box-shadow: none;
   }
 }

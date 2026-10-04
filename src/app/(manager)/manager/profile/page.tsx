@@ -4,12 +4,15 @@ import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-pres
 import { PageContainer } from "@/components/shared/layout/page-container"
 import { SYSTEM_MSG } from "@/constants/messages/events/system"
 import { ProfileView } from "@/features/system/components/profile-view"
+import { AccountProfile } from "@/features/auth/components/account-profile"
+import { getServerRole } from "@/lib/auth/server-role"
 
 export const metadata: Metadata = {
   title: SYSTEM_MSG.PROFILE_TITLE,
 }
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const role = await getServerRole()
   // nuqs dùng `useSearchParams()` nên phải có Suspense khi prerender tĩnh.
   return (
     <Suspense
@@ -19,7 +22,7 @@ export default function ProfilePage() {
         </PageContainer>
       }
     >
-      <ProfileView />
+      {role === "staff" || role === "center_manager" ? <AccountProfile /> : <ProfileView />}
     </Suspense>
   )
 }

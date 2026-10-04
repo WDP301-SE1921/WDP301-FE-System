@@ -146,7 +146,7 @@ function ParentsView() {
   const columns = React.useMemo<LegacyColumnDef<ParentRow>[]>(
     () =>
       buildColumns(router, {
-        canEnroll: canAccess(ROUTES.MANAGER.ENROLLMENT_NEW),
+        canEnroll: canAccess(ROUTES.STAFF.ENROLLMENT_NEW),
         canManage,
         onDialog: setDialogTarget,
       }),
@@ -376,7 +376,7 @@ function buildColumns(
                     disabled: row.original.parent.status === "disabled",
                     onClick: () =>
                       router.push(
-                        ROUTES.MANAGER.ENROLLMENT_NEW_FOR({
+                        ROUTES.STAFF.ENROLLMENT_NEW_FOR({
                           parentId: row.original.parent.id,
                         })
                       ),

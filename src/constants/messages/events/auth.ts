@@ -35,40 +35,12 @@ export const AUTH_MSG = {
   FORGOT_SENT_DESC: `Vui lòng kiểm tra hộp thư đến (hoặc hòm thư rác) và làm theo hướng dẫn để thiết lập mật khẩu mới trong vòng ${BUSINESS_RULES.PASSWORD_RESET_EXPIRY_MINUTES} phút.`,
   FORGOT_EMAIL_NOT_FOUND: "Email này chưa được đăng ký trong hệ thống",
 
-  // ---------- Kích hoạt tài khoản ----------
-  ACTIVATE_TITLE: "Kích hoạt tài khoản",
-  ACTIVATE_BADGE: "Lời mời tham gia thành viên",
-  /** Dùng khi vai trò render thành Badge tách rời phần chữ. */
-  ACTIVATE_INVITED_PREFIX: "Bạn được mời tham gia EduGrade với vai trò",
-  ACTIVATE_BRAND_DESC:
-    "Kích hoạt tài khoản chỉ trong 1 phút để tiếp nhận bàn giao lịch biểu, danh sách lớp học và hồ sơ phụ huynh.",
-  ACTIVATE_ILLUSTRATION_BADGE: "Kích hoạt tài khoản thành viên",
-  ACTIVATE_ILLUSTRATION_TITLE: "Chào mừng bạn đến với EduGrade",
-  ACTIVATE_ILLUSTRATION_DESC:
-    "Hoàn tất thiết lập thông tin bảo mật để truy cập quản lý các phân hệ lớp học & học sinh.",
-  ACTIVATE_EMAIL_LABEL: "Email tài khoản",
-  ACTIVATE_EMAIL_LOCKED: "Không thể sửa",
-  ACTIVATE_FULL_NAME_LABEL: "Họ và tên",
-  ACTIVATE_FULL_NAME_PLACEHOLDER: "Nguyễn Thị Lan",
-  ACTIVATE_NEW_PASSWORD_LABEL: "Mật khẩu mới",
-  ACTIVATE_NEW_PASSWORD_PLACEHOLDER: "Tạo mật khẩu an toàn",
-  ACTIVATE_PASSWORD_HINT: `Gợi ý: Tối thiểu ${FIELD_LIMITS.PASSWORD_MIN} ký tự (bao gồm chữ hoa, chữ thường và số)`,
-  ACTIVATE_CONFIRM_PASSWORD_LABEL: "Xác nhận mật khẩu",
-  ACTIVATE_CONFIRM_PASSWORD_PLACEHOLDER: "Nhập lại mật khẩu mới",
-  ACTIVATE_TERMS_PREFIX: "Tôi đồng ý với",
-  ACTIVATE_TERMS_PRIVACY: "Điều khoản bảo mật",
-  ACTIVATE_TERMS_CONJUNCTION: "và",
-  ACTIVATE_TERMS_POLICY: "Quy chế nội bộ",
-  ACTIVATE_TERMS_SUFFIX: "của EduGrade.",
-  ACTIVATE_SUBMIT: "Kích hoạt tài khoản",
-  ACTIVATE_SUCCESS: "Kích hoạt tài khoản thành công",
-  ACTIVATE_ALREADY_DONE: "Đã kích hoạt trước đó?",
-  ACTIVATE_GO_TO_LOGIN: "Đến trang Đăng nhập",
-  ACTIVATE_INVALID_TOKEN_TITLE: "Lời mời không hợp lệ",
-  ACTIVATE_INVALID_TOKEN_DESC:
-    "Lời mời không tồn tại hoặc đã được sử dụng. Vui lòng liên hệ Quản trị viên để được gửi lại.",
-  ACTIVATE_EXPIRED_TITLE: "Lời mời đã hết hạn",
-  ACTIVATE_EXPIRED_DESC: `Link kích hoạt chỉ có hiệu lực trong ${BUSINESS_RULES.ACTIVATION_LINK_EXPIRY_DAYS} ngày. Vui lòng liên hệ Quản trị viên để được gửi lại lời mời mới.`,
+  // ---------- Phụ huynh tự đăng ký ----------
+  REGISTER_TITLE: "Đăng ký tài khoản phụ huynh",
+  REGISTER_DESC: "Tự tạo tài khoản bằng email và mật khẩu, sau đó tạo hồ sơ con trên ứng dụng.",
+  REGISTER_SUBMIT: "Đăng ký tài khoản",
+  REGISTER_SUCCESS: "Đã tạo tài khoản phụ huynh",
+  REGISTER_NEXT: "Mở ứng dụng EduGrade, đăng nhập bằng tài khoản vừa tạo và tạo hồ sơ con. Kiểm tra email để xác minh tài khoản trước khi tạo hồ sơ theo yêu cầu của máy chủ.",
 
   // ---------- Label & placeholder field dùng chung ----------
   EMAIL_LABEL: "Địa chỉ Email",

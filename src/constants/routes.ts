@@ -6,7 +6,7 @@ export const ROUTES = {
   AUTH: {
     LOGIN: "/login",
     FORGOT_PASSWORD: "/forgot-password",
-    ACTIVATE: "/activate",
+    REGISTER: "/register",
   },
   MANAGER: {
     DASHBOARD: "/manager/dashboard",
@@ -15,20 +15,6 @@ export const ROUTES = {
     STUDENT_DETAIL: (id: string) => `/manager/students/${id}`,
     PARENTS: "/manager/parents",
     PARENT_DETAIL: (id: string) => `/manager/parents/${id}`,
-    ENROLLMENT_NEW: "/manager/enrollments/new",
-    /** Mở wizard đăng ký với phụ huynh / hồ sơ con đã chọn sẵn (`?parentId=&studentId=`). */
-    ENROLLMENT_NEW_FOR: (params: { parentId?: string; studentId?: string }) => {
-      const query = new URLSearchParams()
-      if (params.parentId) query.set("parentId", params.parentId)
-      if (params.studentId) query.set("studentId", params.studentId)
-      const queryString = query.toString()
-      return queryString
-        ? `/manager/enrollments/new?${queryString}`
-        : "/manager/enrollments/new"
-    },
-
-    PAYMENTS: "/manager/payments",
-
     CLASSES: "/manager/classes",
     /** Danh sách lớp đã lọc các lớp chưa có giáo viên — điểm vào để gán giáo viên. */
     CLASSES_UNASSIGNED: "/manager/classes?teacher=unassigned",
@@ -62,6 +48,30 @@ export const ROUTES = {
 
     PROFILE: "/manager/profile",
   },
+  STAFF: {
+    ENROLLMENT_NEW: "/staff/enrollments/new",
+    /** Mở wizard đăng ký với phụ huynh / hồ sơ con đã chọn sẵn (`?parentId=&studentId=`). */
+    ENROLLMENT_NEW_FOR: (params: {
+      parentId?: string;
+      studentId?: string;
+      email?: string;
+    }) => {
+      const query = new URLSearchParams();
+      if (params.parentId) query.set("parentId", params.parentId);
+      if (params.studentId) query.set("studentId", params.studentId);
+      if (params.email) query.set("email", params.email);
+      const queryString = query.toString();
+      return queryString
+        ? `/staff/enrollments/new?${queryString}`
+        : "/staff/enrollments/new";
+    },
+
+    PAYMENTS: "/staff/payments",
+
+    PARENTS: "/staff/parents",
+    STUDENTS: "/staff/students",
+    PROFILE: "/staff/profile",
+  },
   TEACHER: {
     DASHBOARD: "/teacher/dashboard",
 
@@ -74,14 +84,16 @@ export const ROUTES = {
     ASSIGNMENTS: "/teacher/assignments",
     ASSIGNMENT_NEW: "/teacher/assignments/new",
     ASSIGNMENT_EDIT: (id: string) => `/teacher/assignments/${id}/edit`,
-    ASSIGNMENT_SUBMISSIONS: (id: string) => `/teacher/assignments/${id}/submissions`,
+    ASSIGNMENT_SUBMISSIONS: (id: string) =>
+      `/teacher/assignments/${id}/submissions`,
     SUBMISSIONS: "/teacher/submissions",
 
     GRADING: "/teacher/grading",
-    GRADING_DETAIL: (submissionId: string) => `/teacher/grading/${submissionId}`,
+    GRADING_DETAIL: (submissionId: string) =>
+      `/teacher/grading/${submissionId}`,
 
     REPORTS: "/teacher/reports",
 
     PROFILE: "/teacher/profile",
   },
-} as const
+} as const;

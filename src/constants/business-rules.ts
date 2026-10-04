@@ -7,8 +7,6 @@ export const BUSINESS_RULES = {
   /** Số tháng một Enrollment được đăng ký. */
   ENROLLMENT_MONTHS_MIN: 1,
   ENROLLMENT_MONTHS_MAX: 12,
-  /** Hạn dùng của link kích hoạt tài khoản gửi qua email. */
-  ACTIVATION_LINK_EXPIRY_DAYS: 7,
   /** Hạn dùng của link đặt lại mật khẩu gửi qua email. */
   PASSWORD_RESET_EXPIRY_MINUTES: 30,
   /** Ngưỡng cảnh báo gói học phí sắp hết hạn (ngày). */

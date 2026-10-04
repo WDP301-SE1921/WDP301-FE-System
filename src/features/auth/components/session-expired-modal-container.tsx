@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import {
-  SessionExpiredModal,
-} from "@/components/shared/feedback/session-expired-modal"
-import { ERROR_MSG } from "@/constants/messages/error"
-import { MockError } from "@/mocks/utils/mock-query"
-import { useLogin } from "@/features/auth/hooks/use-login"
+import { SessionExpiredModal } from "@/components/shared/feedback/session-expired-modal";
+import { apiErrorMessage } from "@/lib/api/client";
+import { usePathname, useRouter } from "next/navigation";
+import { canAccessPath } from "@/constants/role-access";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { useLogin } from "@/features/auth/hooks/use-login";
 
 /**
  * Nối `SessionExpiredModal` (component thuần trong `shared/`) với mutation đăng
@@ -14,24 +14,32 @@ import { useLogin } from "@/features/auth/hooks/use-login"
  * `AppShell` (cũng là `shared/`).
  */
 function SessionExpiredModalContainer() {
-  const login = useLogin()
+  const login = useLogin();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const errorMessage = login.error
-    ? login.error instanceof MockError
-      ? login.error.message
-      : ERROR_MSG.DEFAULT
-    : null
+  const errorMessage = login.error ? apiErrorMessage(login.error) : null;
 
   function handleReauth(email: string, password: string) {
     return new Promise<void>((resolve, reject) => {
       login.mutate(
-        { email, password, rememberMe: false },
         {
-          onSuccess: () => resolve(),
+          email,
+          password,
+          rememberMe:
+            window.localStorage.getItem(STORAGE_KEYS.USER_PROFILE) !== null,
+        },
+        {
+          onSuccess: (result) => {
+            if (!canAccessPath(result.user.role, pathname))
+              router.replace(result.redirectTo);
+            router.refresh();
+            resolve();
+          },
           onError: (error) => reject(error),
-        }
-      )
-    })
+        },
+      );
+    });
   }
 
   return (
@@ -40,7 +48,7 @@ function SessionExpiredModalContainer() {
       isSubmitting={login.isPending}
       errorMessage={errorMessage}
     />
-  )
+  );
 }
 
-export { SessionExpiredModalContainer }
+export { SessionExpiredModalContainer };

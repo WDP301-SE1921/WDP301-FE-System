@@ -22,13 +22,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AUTH_MSG } from "@/constants/messages/events/auth"
-import { ERROR_MSG } from "@/constants/messages/error"
 import { ROUTES } from "@/constants/routes"
 import {
   forgotPasswordSchema,
   type ForgotPasswordInput,
 } from "@/lib/validators/auth"
-import { MockError } from "@/mocks/utils/mock-query"
+import { apiErrorMessage } from "@/lib/api/client"
 import { useForgotPassword } from "@/features/auth/hooks/use-forgot-password"
 
 const EMAIL_FIELD_ID = "forgot-password-email"
@@ -45,11 +44,7 @@ function ForgotPasswordForm() {
     defaultValues: { email: "" },
   })
 
-  const submitError = forgotPassword.error
-    ? forgotPassword.error instanceof MockError
-      ? forgotPassword.error.message
-      : ERROR_MSG.DEFAULT
-    : null
+  const submitError = forgotPassword.error ? apiErrorMessage(forgotPassword.error) : null
 
   const sentToEmail = forgotPassword.data?.email ?? null
 

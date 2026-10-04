@@ -1,19 +1,21 @@
-"use client"
+"use client";
 
-import { useMutation } from "@tanstack/react-query"
-import { persistSession } from "@/lib/auth/session"
-import { mockLogin } from "@/mocks/data/auth"
-import { mockMutation } from "@/mocks/utils/mock-query"
-import type { LoginInput } from "@/lib/validators/auth"
-import type { LoginResult } from "@/types/auth"
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { persistSession } from "@/lib/auth/session";
+import { apiRequest } from "@/lib/api/client";
+import type { LoginInput } from "@/lib/validators/auth";
+import type { LoginResult } from "@/types/auth";
 
-/**
- * Chữ ký hook giữ nguyên khi nối backend thật — chỉ đổi `mutationFn` từ
- * `mockLogin` sang lời gọi API.
- */
+/** Tokens are set as HttpOnly cookies by the web API; only the display profile reaches JS. */
 export function useLogin() {
+  const queryClient = useQueryClient();
   return useMutation<LoginResult, Error, LoginInput>({
-    mutationFn: (input) => mockMutation(input, mockLogin),
-    onSuccess: (result, input) => persistSession(result.user, input.rememberMe),
-  })
+    mutationFn: (input) =>
+      apiRequest("auth/login", { method: "POST", body: input }),
+    retry: false,
+    onSuccess: (result, input) => {
+      queryClient.clear();
+      persistSession(result.user, input.rememberMe);
+    },
+  });
 }

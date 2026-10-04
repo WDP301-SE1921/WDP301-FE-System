@@ -1,5 +1,5 @@
-import { ROUTES } from "./routes"
-import { ROLES, isWebRole, type BackOfficeRole, type WebRole } from "./roles"
+import { ROUTES } from "./routes";
+import { ROLES, isWebRole, type BackOfficeRole, type WebRole } from "./roles";
 
 /**
  * Nguồn duy nhất cho "role nào vào được màn nào". Sidebar (`getNavMenu`), `src/proxy.ts`
@@ -24,24 +24,28 @@ export const AREA = {
   AUDIT_LOGS: "audit_logs",
   PROFILE: "profile",
   TEACHER_PORTAL: "teacher_portal",
-} as const
+} as const;
 
-export type Area = (typeof AREA)[keyof typeof AREA]
+export type Area = (typeof AREA)[keyof typeof AREA];
 
 interface RouteArea {
-  prefix: string
-  area: Area
+  prefix: string;
+  area: Area;
 }
 
-const M = ROUTES.MANAGER
+const M = ROUTES.MANAGER;
+const S = ROUTES.STAFF;
 
 /** Tiền tố route → area. Khớp tiền tố dài nhất (`/a/b` thắng `/a`). */
 const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: M.DASHBOARD, area: AREA.DASHBOARD },
   { prefix: M.STUDENTS, area: AREA.STUDENTS },
   { prefix: M.PARENTS, area: AREA.PARENTS },
-  { prefix: M.ENROLLMENT_NEW, area: AREA.ENROLLMENTS },
-  { prefix: M.PAYMENTS, area: AREA.PAYMENTS },
+  { prefix: S.ENROLLMENT_NEW, area: AREA.ENROLLMENTS },
+  { prefix: S.PAYMENTS, area: AREA.PAYMENTS },
+  { prefix: S.PARENTS, area: AREA.PARENTS },
+  { prefix: S.STUDENTS, area: AREA.STUDENTS },
+  { prefix: S.PROFILE, area: AREA.PROFILE },
   { prefix: "/manager/absences", area: AREA.ABSENCES },
   { prefix: M.CLASSES, area: AREA.CLASSES },
   { prefix: M.SCHEDULE, area: AREA.SCHEDULE },
@@ -53,7 +57,7 @@ const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: M.AUDIT_LOGS, area: AREA.AUDIT_LOGS },
   { prefix: M.PROFILE, area: AREA.PROFILE },
   { prefix: "/teacher", area: AREA.TEACHER_PORTAL },
-]
+];
 
 const ALL_BACK_OFFICE_AREAS: readonly Area[] = [
   AREA.DASHBOARD,
@@ -70,7 +74,7 @@ const ALL_BACK_OFFICE_AREAS: readonly Area[] = [
   AREA.STAFF_ACCOUNTS,
   AREA.AUDIT_LOGS,
   AREA.PROFILE,
-]
+];
 
 export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
   [ROLES.ADMIN]: ALL_BACK_OFFICE_AREAS,
@@ -78,7 +82,6 @@ export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
     AREA.DASHBOARD,
     AREA.STUDENTS,
     AREA.PARENTS,
-    AREA.PAYMENTS,
     AREA.CLASSES,
     AREA.SCHEDULE,
     AREA.TEACHERS,
@@ -100,49 +103,66 @@ export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
     AREA.PROFILE,
   ],
   [ROLES.TEACHER]: [AREA.TEACHER_PORTAL],
-}
+};
 
 /** Trang chủ sau đăng nhập / nút "Về Dashboard" theo role. */
 export const ROLE_HOME_ROUTE: Record<WebRole, string> = {
   [ROLES.ADMIN]: ROUTES.MANAGER.DASHBOARD,
   [ROLES.CENTER_MANAGER]: ROUTES.MANAGER.DASHBOARD,
   [ROLES.CURRICULUM_DESIGNER]: ROUTES.MANAGER.CATALOG,
-  [ROLES.STAFF]: ROUTES.MANAGER.DASHBOARD,
+  [ROLES.STAFF]: ROUTES.STAFF.ENROLLMENT_NEW,
   [ROLES.TEACHER]: ROUTES.TEACHER.DASHBOARD,
-}
+};
 
 /** Role nào được mời/tạo tài khoản nhân sự của role nào (ngoại lệ duy nhất của "không quyền con"). */
 export type InvitableStaffRole = Extract<
   BackOfficeRole,
   "center_manager" | "curriculum_designer" | "staff"
->
+>;
 
-export const ACCOUNT_MANAGE_TARGETS: Partial<Record<WebRole, readonly InvitableStaffRole[]>> = {
+export const ACCOUNT_MANAGE_TARGETS: Partial<
+  Record<WebRole, readonly InvitableStaffRole[]>
+> = {
   [ROLES.ADMIN]: [ROLES.CENTER_MANAGER, ROLES.CURRICULUM_DESIGNER, ROLES.STAFF],
   [ROLES.CENTER_MANAGER]: [ROLES.STAFF],
-}
+};
 
 /** Role được tạo/khóa tài khoản cấp dưới (nhân sự, phụ huynh, giáo viên) — admin và quản lý trung tâm. */
 export function canManageAccounts(role: string | null | undefined): boolean {
-  return isWebRole(role) && ACCOUNT_MANAGE_TARGETS[role] !== undefined
+  return isWebRole(role) && ACCOUNT_MANAGE_TARGETS[role] !== undefined;
 }
 
 export function getAreaForPath(pathname: string): Area | null {
-  let best: RouteArea | null = null
+  let best: RouteArea | null = null;
   for (const entry of ROUTE_AREAS) {
-    const matches = pathname === entry.prefix || pathname.startsWith(`${entry.prefix}/`)
-    if (matches && (!best || entry.prefix.length > best.prefix.length)) best = entry
+    const matches =
+      pathname === entry.prefix || pathname.startsWith(`${entry.prefix}/`);
+    if (matches && (!best || entry.prefix.length > best.prefix.length))
+      best = entry;
   }
-  return best?.area ?? null
+  return best?.area ?? null;
 }
 
-export function canAccessArea(role: string | null | undefined, area: Area): boolean {
-  return isWebRole(role) && ROLE_AREAS[role].includes(area)
+export function canAccessArea(
+  role: string | null | undefined,
+  area: Area,
+): boolean {
+  return isWebRole(role) && ROLE_AREAS[role].includes(area);
 }
 
 /** Đường dẫn thuộc khu cần đăng nhập (`/manager/*`, `/teacher/*`) mà role không vào được → false. */
-export function canAccessPath(role: string | null | undefined, pathname: string): boolean {
-  const area = getAreaForPath(pathname)
-  if (!area) return false
-  return canAccessArea(role, area)
+export function canAccessPath(
+  role: string | null | undefined,
+  pathname: string,
+): boolean {
+  if (pathname === "/staff" || pathname.startsWith("/staff/")) {
+    if (role !== ROLES.STAFF) return false;
+  } else if (
+    role === ROLES.STAFF &&
+    (pathname === "/manager" || pathname.startsWith("/manager/"))
+  )
+    return false;
+  const area = getAreaForPath(pathname);
+  if (!area) return false;
+  return canAccessArea(role, area);
 }

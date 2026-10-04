@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:registration": "node --test tests/registration-flow.test.cjs",
+    "test:registration:http": "node --test tests/registration-http.test.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
