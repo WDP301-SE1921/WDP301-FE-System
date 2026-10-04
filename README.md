@@ -38,7 +38,7 @@ Open http://localhost:3000
 Full breakdown in [`docs/architecture.md`](docs/architecture.md). Top level:
 
 ```
-src/app/         Route groups by role: (public) (auth) (manager) (teacher) (parent)
+src/app/         Route groups by role: (public) (auth) (manager) (curriculum) (staff) (teacher) (parent)
 src/components/  Shared components + Shadcn UI
 src/features/    Domain logic (students, classes, attendance, payments)
 src/lib/         axios instance, utils, zod validators

@@ -261,7 +261,7 @@ function DashboardView({ role }: DashboardViewProps) {
                       {DASHBOARD_MSG.RECENT_PAYMENTS_BADGE}
                     </Badge>
                     <Link
-                      href={ROUTES.MANAGER.PAYMENTS}
+                      href={ROUTES.STAFF.PAYMENTS}
                       className="text-sm font-medium text-primary underline-offset-4 hover:underline"
                     >
                       {DASHBOARD_MSG.RECENT_PAYMENTS_VIEW_ALL}

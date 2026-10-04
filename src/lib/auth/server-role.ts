@@ -1,13 +1,13 @@
-import { cookies } from "next/headers"
-import { isWebRole, type WebRole } from "@/constants/roles"
-import { STORAGE_KEYS } from "@/constants/storage-keys"
+import { headers } from "next/headers";
+import { isWebRole, type WebRole } from "@/constants/roles";
+import { VERIFIED_ROLE_HEADER } from "@/lib/api/server";
 
 /**
- * Role của request hiện tại, đọc ở Server Component (layout/page). `proxy.ts` đã chặn role
- * sai trước khi tới đây, nên `null` chỉ xảy ra khi route không nằm sau proxy.
+ * Role validated against /auth/me by Proxy. The inbound client header is overwritten
+ * before protected layouts/pages render; a role cookie is never used as authorization.
  */
 export async function getServerRole(): Promise<WebRole | null> {
-  const cookieStore = await cookies()
-  const value = cookieStore.get(STORAGE_KEYS.ROLE_COOKIE)?.value
-  return isWebRole(value) ? value : null
+  const requestHeaders = await headers();
+  const value = requestHeaders.get(VERIFIED_ROLE_HEADER);
+  return isWebRole(value) ? value : null;
 }

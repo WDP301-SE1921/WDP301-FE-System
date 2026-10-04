@@ -3,13 +3,17 @@
 import * as React from "react"
 import { canAccessPath } from "@/constants/role-access"
 import type { WebRole } from "@/constants/roles"
-import { parseStoredUser, readRoleCookie, readStoredUserRaw } from "@/lib/auth/session"
+import { parseStoredUser, readRoleCookie, readStoredUserRaw, SESSION_CHANGED_EVENT } from "@/lib/auth/session"
 import type { AuthUser } from "@/types/auth"
 
-/** `document.cookie` / storage không phát sự kiện trong cùng tab — chỉ lắng nghe `storage` liên tab. */
+/** Synchronize profile changes within this tab and between tabs. */
 function subscribe(onChange: () => void) {
   window.addEventListener("storage", onChange)
-  return () => window.removeEventListener("storage", onChange)
+  window.addEventListener(SESSION_CHANGED_EVENT, onChange)
+  return () => {
+    window.removeEventListener("storage", onChange)
+    window.removeEventListener(SESSION_CHANGED_EVENT, onChange)
+  }
 }
 
 /** Role hiện tại ở client (snapshot server = `null` để khớp SSR). */

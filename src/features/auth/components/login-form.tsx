@@ -29,10 +29,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/toast"
 import { AUTH_MSG } from "@/constants/messages/events/auth"
-import { ERROR_MSG } from "@/constants/messages/error"
 import { ROUTES } from "@/constants/routes"
 import { loginSchema, type LoginInput } from "@/lib/validators/auth"
-import { MockError } from "@/mocks/utils/mock-query"
+import { apiErrorMessage } from "@/lib/api/client"
 import { useLogin } from "@/features/auth/hooks/use-login"
 
 const FIELD_ID = {
@@ -56,11 +55,7 @@ function LoginForm() {
     defaultValues: { email: "", password: "", rememberMe: false },
   })
 
-  const submitError = login.error
-    ? login.error instanceof MockError
-      ? login.error.message
-      : ERROR_MSG.DEFAULT
-    : null
+  const submitError = login.error ? apiErrorMessage(login.error) : null
 
   function onSubmit(values: LoginInput) {
     login.mutate(values, {
@@ -196,6 +191,7 @@ function LoginForm() {
       </Card>
 
       <div className="space-y-1 text-center text-xs text-muted-foreground">
+        <p><Link href={ROUTES.AUTH.REGISTER} className="font-medium text-primary hover:underline">Đăng ký tài khoản phụ huynh</Link> · Quản lý hồ sơ con trên ứng dụng.</p>
         <p>{AUTH_MSG.SUPPORT_HINT}</p>
         <p className="font-medium text-foreground">{AUTH_MSG.SUPPORT_CONTACT}</p>
       </div>

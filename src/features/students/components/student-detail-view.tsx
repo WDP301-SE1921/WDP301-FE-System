@@ -165,7 +165,7 @@ function StudentHero({
   router: ReturnType<typeof useRouter>
 }) {
   const { canAccess } = useRoleAccess()
-  const canEnroll = canAccess(ROUTES.MANAGER.ENROLLMENT_NEW)
+  const canEnroll = canAccess(ROUTES.STAFF.ENROLLMENT_NEW)
   const canManageAbsences = canAccess(ROUTES.MANAGER.MAKEUP)
   const activeEnrollments = row.enrollments.filter((item) => item.status !== "dropped")
 
@@ -196,7 +196,7 @@ function StudentHero({
                 className="rounded-full"
                 render={
                   <Link
-                    href={ROUTES.MANAGER.ENROLLMENT_NEW_FOR({
+                    href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
                       parentId: row.student.parentAccountId,
                       studentId: row.student.id,
                     })}

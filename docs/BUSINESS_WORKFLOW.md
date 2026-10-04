@@ -1,84 +1,32 @@
-# EduGrade — System Workflow Specification
+# Business Workflow
 
----
+## Roles (5, up from the original 3)
+- **Quản lý trung tâm** (Web) — CRUD staff/teacher/parent records, dashboard (revenue, counts), creates classes (subject + grade + program + room + fixed schedule), assigns a teacher to an existing fixed class. The "admin: có tất cả" line in the spec describes this role's overall authority, not a separate 6th role.
+- **Thiết kế giáo trình** (Web, **new**) — authors per-subject curriculum content (Toán/Lý/Hóa/Sinh, based on textbooks), sets pacing: 1 lesson per session, 1 test per month.
+- **Nhân viên** (Web, **new**) — day-to-day admissions/operations: student registration (see A below), payment confirmation, schedule changes, makeup scheduling, permanent/long-term leave.
+- **Giáo viên** (Web — see platform note) — attendance (now also feeds teacher compensation), homework, AI-grading review/approval, reports, confirms the fixed schedule for an assigned class.
+- **Phụ huynh** (Mobile) — self-registers their own account and creates each child's `StudentProfile` themselves in the app. No separate student account.
 
-## 1. System Overview & Core Principles
+**Platform note:** the role list says "Giáo viên — Web" only; §1.3's own heading still says "(Web + Mobile)". Treated as Web-only here — flag if that's not intended.
 
-**EduGrade** is a specialized management system designed for a single tutoring center catering to Grades 6, 7, 8, and 9 in Mathematics, Physics, Chemistry, and Biology.
+## A. Registration + payment (no activation link — removed entirely)
+- **No account yet**: at the counter, staff tells the parent to download the app → parent self-registers (email + password) → parent creates the child's `StudentProfile` themselves. Staff isn't involved in this part.
+- **Shared step, every case**: staff types the parent's email into a debounced search (suggestions after 1–2 characters) → picks the account → sees that account's children → picks the right one → picks subject/class (against the class's fixed schedule) → confirms payment → `Enrollment` is created and attached immediately. No link, no extra parent confirmation — the parent is standing at the counter.
 
-### Key Architectural Constraints & Business Principles
-* **Single Center Scope:** Multi-tenant architecture is not supported; all operations pertain to a single center entity.
-* **Center Roles (web back-office):** five web roles, each with a fixed set of screens (`src/constants/role-access.ts`) — no finer permissions inside a role.
-  * `admin` — everything; manages the accounts of all center staff (center manager, curriculum designer, staff, teachers, parents).
-  * `center_manager` (Quản lý trung tâm) — CRUD staff / parents / teachers; CRUD curriculum and schedule fixed-weekday classes; assigns teachers to existing fixed classes; business dashboard (tuition, student / teacher / staff counts).
-  * `curriculum_designer` (Thiết kế giáo trình) — designs the Math / Physics / Chemistry / Biology curriculum from the textbooks: 1 session = 1 lesson, plus 1 monthly test per month.
-  * `staff` (Nhân viên) — registers students, collects tuition, changes a student's schedule, arranges make-up sessions, withdraws students, creates long-term leave.
-  * `teacher` — takes attendance (which drives the teacher's work-credit), creates homework, grades with AI; the teaching schedule is fixed by the center (teachers do not supply availability and cannot decline a session).
-* **Account Hierarchy:** There are **no separate Student accounts**. Only Parent accounts exist.
-  * `1 Parent Account` = Unique Login Email + Password, created by the parent on the mobile app.
-  * `1 Parent Account` can manage `N Child Profiles` (Student Records), also created by the parent on mobile.
-  * Students submit assignments through their parent's active login session.
-* **No Direct Online Payment Integration:**
-  * Staff handle all course enrollments at the center or by phone, only for a parent and child profile that already exist on the app.
-  * Cash and Bank Transfers are collected offline. Payments are recorded only upon explicit Staff confirmation (`Confirm Payment`).
-  * Integrations with online payment gateways or thermal receipt printers are strictly excluded.
-* **No Parent Activation Link:** parents self-register on mobile, so there is no activation link / code / token and no `pending_link` state. Centers never create, view, or reset a parent's password. (Web staff accounts are still created through an emailed one-time invitation.)
-* **AI Delegation & Human-in-the-Loop:**
-  * AI evaluation (grading/feedback) strictly produces a **draft state**.
-  * AI-generated content is **never automatically published** to parents or students without Teacher review and approval.
-* **Notifications:**
-  * Email is the sole automated communication channel. SMS integrations are excluded.
+## B. Attendance (Giáo viên)
+Teacher marks `present | absent | made_up | excused` per session → attendance rate recalculates immediately → email to parent → **also now an input to teacher compensation** (payroll logic TBD with backend).
 
----
+## C. Makeup class / schedule changes (owned by Nhân viên)
+Parent reports an absence → staff marks `absent` → finds a replacement session (same program + lesson, future, has capacity) → assigns → attended → original becomes `made_up`; no-show → stays `absent`. Permanent schedule changes and long-term leave follow the same staff ownership.
 
-## 2. Table of Contents
-1. [Workflow A: Student Registration & Payment](#workflow-a-student-registration--payment)
-2. [Workflow B: Class Creation & Automatic Session Generation](#workflow-b-class-creation--automatic-session-generation)
-3. [Workflow C: Attendance Tracking & Automated Email Alerts](#workflow-c-attendance-tracking--automated-email-alerts)
-4. [Workflow D: Single-Session Absence & Make-up Class Scheduling](#workflow-d-single-session-absence--make-up-class-scheduling)
-5. [Workflow E: Single-Session Swap (Pre-Absence Rescheduling)](#workflow-e-single-session-swap-pre-absence-rescheduling)
-6. [Workflow F: Permanent Schedule Change (Class Transfer)](#workflow-f-permanent-schedule-change-class-transfer)
-7. [Workflow G: Extended Leave of Absence (Temporary Suspension)](#workflow-g-extended-leave-of-absence-temporary-suspension)
-8. [Workflow H: Single-Subject Withdrawal & Complete Withdrawal](#workflow-h-single-subject-withdrawal--complete-withdrawal)
-9. [Workflow I: AI-Assisted Assignment Evaluation](#workflow-i-ai-assisted-assignment-evaluation)
-10. [Workflow J: AI Performance Aggregation & Report Export](#workflow-j-ai-performance-aggregation--report-export)
+## D. Curriculum content (Thiết kế giáo trình)
+Designs each subject's lesson sequence from the textbook, sets the 1-lesson-per-session / 1-test-per-month cadence. Does not touch class scheduling or rooms.
 
----
+## E. Class creation (Quản lý trung tâm)
+Choose subject + grade + program + room + fixed schedule, assign a teacher to an existing fixed class slot.
 
-## Workflow A: Student Registration & Payment
+## F. AI grading (Giáo viên)
+Child submits (via parent's session) → AI scores it as a suggestion → teacher reviews/edits → approves → only then does the parent/child see it. AI never auto-publishes.
 
-One flow only. The center builds the supply side first (curriculum → fixed-schedule classes); the parent builds the demand side on the mobile app (account → child profile); staff then joins them.
-
-### Actors:
-Curriculum Designer / Center Manager (curriculum + classes, beforehand), Parent (mobile), Staff (or Admin), EduGrade Core Platform.
-
-### Preconditions:
-* A curriculum (`Program` + `Lesson`s) exists and a class with a fixed weekly schedule has been created from it.
-* The parent has registered a Parent Account on the mobile app and created the child's `StudentProfile` — the profile **must exist beforehand**.
-* The parent has agreed on the class by phone or in person ("registers according to the center's schedule").
-
-### Flow Diagram:
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Staff as Staff
-    participant System as EduGrade Platform
-    participant Email as Email Service
-    actor Parent as Parent (mobile)
-
-    Staff->>System: Enter the parent's Gmail
-    System->>Staff: Show the parent + their child profiles (none found → tell the parent to register / create the child on the app first)
-    Staff->>System: Pick the child → Grade → Subject → Class (fixed schedule; overlap with the child's existing classes is warned)
-    Staff->>System: Set Month Duration (1–12); review Fee
-    Staff->>System: Collect Funds (Offline) & Click "Confirm Payment"
-    Note over System: Atomic Transaction Begins
-    System->>System: Create Payment Record (STATUS: SUCCEEDED)
-    System->>System: Create Enrollment Record attached to the chosen child (STATUS: ACTIVE)
-    System->>Staff: Render Digital Receipt on UI (with Print button)
-    System->>Email: Dispatch Email (Receipt + Class Schedule)
-    Note over System: Atomic Transaction Ends
-    Email-->>Parent: Deliver Email Notification
-    Parent->>System: Sees the new class on the child's schedule in the app
-```
-
-There is no activation link, code or `PENDING_LINK` state. A staff member never creates a parent or a child on the web; a center manager can only edit / lock / soft-delete parents.
+## G. Reports (Giáo viên)
+Picks class/student + date range → system aggregates scores + attendance → AI compiles → exports Excel/PDF. Teacher-only, never auto-sent to parents.

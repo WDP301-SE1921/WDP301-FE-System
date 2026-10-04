@@ -3,12 +3,12 @@ import { BUSINESS_RULES } from "@/constants/business-rules"
 import { VALIDATION_MSG } from "@/constants/messages/validation"
 
 /**
- * Luồng đăng ký duy nhất theo `.claude/skills/enrollment-flow`: nhân viên tra Gmail phụ
+ * Luồng đăng ký duy nhất theo `.claude/skills/enrollment-flow`: nhân viên tra email phụ
  * huynh → chọn hồ sơ con (phụ huynh đã tạo sẵn trên mobile) → khối → môn → lớp → thu tiền.
  * Web không tạo phụ huynh hay hồ sơ con.
  */
 export const enrollmentSchema = z.object({
-  // Bước 1 — chọn phụ huynh (tìm theo Gmail / SĐT bằng ParentPicker)
+  // Bước 1 — chọn phụ huynh từ kết quả tìm email.
   parentAccountId: z.string().min(1, VALIDATION_MSG.PARENT_LOOKUP_REQUIRED),
 
   // Bước 2 — hồ sơ con của phụ huynh

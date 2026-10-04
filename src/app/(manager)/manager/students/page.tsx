@@ -4,12 +4,15 @@ import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets"
 import { PageContainer } from "@/components/shared/layout/page-container"
 import { STUDENT_MSG } from "@/constants/messages/events/student"
 import { StudentsView } from "@/features/students/components/students-view"
+import { RegistrationParentLookupView } from "@/features/registration-flow/components/parent-lookup-view"
+import { getServerRole } from "@/lib/auth/server-role"
 
 export const metadata: Metadata = {
   title: STUDENT_MSG.LIST_TITLE,
 }
 
-export default function StudentsPage() {
+export default async function StudentsPage() {
+  const role = await getServerRole()
   // nuqs dùng `useSearchParams()` nên phải có Suspense khi prerender tĩnh.
   return (
     <Suspense
@@ -19,7 +22,7 @@ export default function StudentsPage() {
         </PageContainer>
       }
     >
-      <StudentsView />
+      {role === "staff" || role === "center_manager" ? <RegistrationParentLookupView students /> : <StudentsView />}
     </Suspense>
   )
 }
