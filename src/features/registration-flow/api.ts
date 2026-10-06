@@ -6,7 +6,9 @@ import type {
   RegistrationOrder,
   RegistrationProgram,
   RegistrationReceipt,
+  RegistrationBill,
 } from "@/types/backend";
+import { registrationBillSchema } from "@/lib/validators/registration-bill";
 import {
   parentSearchSchema,
   parentSuggestionsSchema,
@@ -79,9 +81,12 @@ export const registrationApi = {
   programs: () => allPages<RegistrationProgram>("programs"),
   classes: (filters: Record<string, string> = {}) =>
     allPages<RegistrationClass>("classes", filters),
-  draft: (input: RegistrationInput) =>
+  class: (id: string) =>
+    apiRequest<RegistrationClass>(`classes/${encodeURIComponent(id)}`),
+  draft: (input: RegistrationInput, key?: string) =>
     apiRequest<RegistrationOrder>("registrations", {
       method: "POST",
+      idempotencyKey: key,
       body: {
         targetStudentId: input.targetStudentId,
         classId: input.classId,
@@ -91,6 +96,20 @@ export const registrationApi = {
     }),
   get: (id: string) =>
     apiRequest<RegistrationOrder>(`registrations/${encodeURIComponent(id)}`),
+  bill: async (id: string, signal?: AbortSignal): Promise<RegistrationBill> => {
+    const data = await apiRequest<unknown>(
+      `registrations/${encodeURIComponent(id)}/bill`,
+      { signal },
+    );
+    const parsed = registrationBillSchema.safeParse(data);
+    if (!parsed.success || parsed.data.registrationId !== id)
+      throw new ApiError(
+        "INVALID_API_RESPONSE",
+        "Máy chủ trả bill không hợp lệ. Vui lòng tải lại trước khi thu tiền.",
+        502,
+      );
+    return parsed.data;
+  },
   cancel: (id: string) =>
     apiRequest<RegistrationOrder>(
       `registrations/${encodeURIComponent(id)}/cancel`,

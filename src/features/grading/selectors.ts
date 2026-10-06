@@ -11,7 +11,7 @@ import type { StudentProfile } from "@/types/student"
  * Selectors cho domain Chấm bài AI: bài nộp theo bài tập (PROMPT T5C), hàng đợi
  * chấm bài (PROMPT T6/T6C) và chấm bài chi tiết (PROMPT T6B). Cross-feature import
  * từ `features/assignments/selectors.ts` là tiền lệ đã có trong repo (vd
- * `features/enrollments` dùng lại `features/payments/selectors.ts`).
+ * `features/dashboard` dùng lại `features/payments/selectors.ts`).
  */
 
 // ---- T5C — Bài nộp theo bài tập ----

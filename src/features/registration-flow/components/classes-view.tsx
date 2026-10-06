@@ -1,19 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, useQueryState } from "nuqs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { ROUTES } from "@/constants/routes";
+import { useCurrentRole } from "@/hooks/use-current-role";
 import { registrationApi } from "../api";
 import { money, scheduleText } from "../calendar";
 import { ApiFeedback } from "./api-feedback";
 
 export function RegistrationClassesView() {
+  const router = useRouter();
+  const role = useCurrentRole();
+  const isStaff = role === "staff";
   const query = useQuery({
     queryKey: ["registration-classes", "all"],
     queryFn: () => registrationApi.classes(),
@@ -36,14 +42,20 @@ export function RegistrationClassesView() {
     <PageContainer>
       <PageHeader
         title="Lớp học và lịch tuần"
-        description="Chuẩn bị lớp, học phí, giáo viên và lịch cố định trước khi nhận đăng ký."
+        description={
+          isStaff
+            ? "Chọn lớp để đăng ký học cho học sinh có hồ sơ trên ứng dụng."
+            : "Chuẩn bị lớp, học phí, giáo viên và lịch cố định trước khi nhận đăng ký."
+        }
         actions={
-          <Link
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-            href={ROUTES.MANAGER.CLASS_NEW}
-          >
-            Tạo lớp học
-          </Link>
+          role === "center_manager" && (
+            <Link
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              href={ROUTES.MANAGER.CLASS_NEW}
+            >
+              Tạo lớp học
+            </Link>
+          )
         }
       />
       <Input
@@ -80,12 +92,47 @@ export function RegistrationClassesView() {
               <p className="text-xs text-muted-foreground">
                 {item.teacherId ? "Đã gán giáo viên" : "Chưa gán giáo viên"}
               </p>
-              <Link
-                className="inline-block rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
-                href={ROUTES.MANAGER.CLASS_DETAIL(item.id)}
-              >
-                Cấu hình lớp / gán giáo viên
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                {isStaff ? (
+                  <Button
+                    disabled={!item.isOpen || !item.weeklySchedules.length}
+                    onClick={() =>
+                      router.push(
+                        ROUTES.STAFF.ENROLLMENT_NEW_FOR({ classId: item.id }),
+                      )
+                    }
+                  >
+                    Thêm học sinh vào lớp
+                  </Button>
+                ) : (
+                  role === "center_manager" && (
+                    <Button
+                      variant="outline"
+                      render={
+                        <Link href={ROUTES.MANAGER.CLASS_DETAIL(item.id)} />
+                      }
+                    >
+                      Cấu hình lớp / gán giáo viên
+                    </Button>
+                  )
+                )}
+                {(isStaff || role === "center_manager") && (
+                  <Button
+                    variant="outline"
+                    render={
+                      <Link
+                        href={
+                          isStaff
+                            ? `${ROUTES.STAFF.SCHEDULE}?${new URLSearchParams({ classId: item.id })}`
+                            : ROUTES.MANAGER.CLASS_SESSIONS(item.id)
+                        }
+                      />
+                    }
+                  >
+                    Buổi học / giáo trình
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

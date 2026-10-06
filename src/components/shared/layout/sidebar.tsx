@@ -1,31 +1,29 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "cn"
-import { getNavMenu, type MenuBadgeCounts } from "@/constants/menu"
-import type { WebRole } from "@/constants/roles"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
-import * as Icons from "@hugeicons/core-free-icons"
+import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "cn";
+import { getNavMenu, type MenuBadgeCounts } from "@/constants/menu";
+import type { WebRole } from "@/constants/roles";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import * as Icons from "@hugeicons/core-free-icons";
 
 export interface SidebarProps {
-  role: WebRole
-  collapsed?: boolean
-  onToggleCollapse?: () => void
+  role: WebRole;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   /** Số thật của badge menu, key theo `badgeKey` khai báo trong constants/menu.ts */
-  badgeCounts?: MenuBadgeCounts
-  className?: string
+  badgeCounts?: MenuBadgeCounts;
+  className?: string;
 }
 
-
-
 function SidebarIcon({ name }: { name: string }) {
-  const allIcons = Icons as unknown as Record<string, IconSvgElement>
-  const icon = allIcons[name] ?? allIcons["HelpCircleIcon"]
-  return <HugeiconsIcon icon={icon} className="size-5 shrink-0" />
+  const allIcons = Icons as unknown as Record<string, IconSvgElement>;
+  const icon = allIcons[name] ?? allIcons["HelpCircleIcon"];
+  return <HugeiconsIcon icon={icon} className="size-5 shrink-0" />;
 }
 
 function Sidebar({
@@ -35,8 +33,8 @@ function Sidebar({
   badgeCounts,
   className,
 }: SidebarProps) {
-  const pathname = usePathname()
-  const menuGroups = getNavMenu(role)
+  const pathname = usePathname();
+  const menuGroups = getNavMenu(role);
 
   return (
     <aside
@@ -45,7 +43,7 @@ function Sidebar({
       className={cn(
         "relative flex h-screen flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-300 select-none",
         collapsed ? "w-16" : "w-64",
-        className
+        className,
       )}
     >
       {/* Brand Header */}
@@ -91,21 +89,27 @@ function Sidebar({
             )}
             <nav className="space-y-1">
               {group.items.map((item) => {
-                const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
-                const badgeCount = item.badgeKey ? badgeCounts?.[item.badgeKey] : undefined
-                const hasBadge = typeof badgeCount === "number" && badgeCount > 0
+                const isActive =
+                  pathname === item.href ||
+                  pathname?.startsWith(item.href + "/");
+                const badgeCount = item.badgeKey
+                  ? badgeCounts?.[item.badgeKey]
+                  : undefined;
+                const hasBadge =
+                  typeof badgeCount === "number" && badgeCount > 0;
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     title={collapsed ? item.title : undefined}
                     className={cn(
                       "flex h-10 items-center gap-3 rounded-2xl px-3 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-sm font-semibold"
                         : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                      collapsed && "justify-center px-0"
+                      collapsed && "justify-center px-0",
                     )}
                   >
                     <SidebarIcon name={item.iconName} />
@@ -121,14 +125,14 @@ function Sidebar({
                       </Badge>
                     )}
                   </Link>
-                )
+                );
               })}
             </nav>
           </div>
         ))}
       </div>
     </aside>
-  )
+  );
 }
 
-export { Sidebar }
+export { Sidebar };

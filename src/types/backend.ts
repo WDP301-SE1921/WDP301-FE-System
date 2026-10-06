@@ -82,6 +82,10 @@ export interface RegistrationClass {
   isOpen: boolean;
   weeklySchedules: WeeklySchedule[];
   _count?: { enrollments: number };
+  availableSeats?: number;
+  isEligible?: boolean;
+  ineligibleReason?: string | null;
+  ineligibleMessage?: string | null;
 }
 export interface RegistrationOrder {
   id: string;
@@ -127,4 +131,35 @@ export interface RegistrationReceipt {
   enrollment: { id: string; status: string };
   quotedAmount: number;
   currency: string;
+}
+export interface RegistrationBill {
+  billNumber: string;
+  registrationId: string;
+  status: "UNPAID" | "PAID" | "CANCELLED";
+  issuedAt: string;
+  parent: { displayName: string | null; email: string; phone: string | null };
+  student: { id: string | null; fullName: string; grade: number };
+  class: {
+    id: string;
+    name: string;
+    subject: string;
+    grade: number;
+    schedules: WeeklySchedule[];
+  };
+  term: {
+    packageMonths: number;
+    startDate: string | null;
+    endDate: string | null;
+  };
+  pricing: {
+    monthlyFee: string;
+    packageMonths: number;
+    total: string;
+    currency: "VND";
+  };
+  payment: {
+    receiptNumber: string;
+    paidAmount: string;
+    confirmedAt: string;
+  } | null;
 }

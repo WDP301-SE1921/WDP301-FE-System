@@ -140,14 +140,33 @@
 }
 
 @media print {
-  body:has([data-registration-receipt]) * {
+  body[data-registration-print="bill"] *,
+  body:has([data-registration-bill]):not(:has([data-registration-receipt])) * {
     visibility: hidden;
   }
-  [data-registration-receipt],
-  [data-registration-receipt] * {
+  body[data-registration-print="bill"] [data-registration-bill],
+  body[data-registration-print="bill"] [data-registration-bill] *,
+  body:not(:has([data-registration-receipt])) [data-registration-bill],
+  body:not(:has([data-registration-receipt])) [data-registration-bill] * {
     visibility: visible !important;
   }
-  [data-registration-receipt] {
+  body[data-registration-print="bill"] [data-registration-bill],
+  body:not(:has([data-registration-receipt])) [data-registration-bill] {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    border: none;
+    box-shadow: none;
+  }
+  body:not([data-registration-print="bill"]):has([data-registration-receipt])
+    * {
+    visibility: hidden;
+  }
+  body:not([data-registration-print="bill"]) [data-registration-receipt],
+  body:not([data-registration-print="bill"]) [data-registration-receipt] * {
+    visibility: visible !important;
+  }
+  body:not([data-registration-print="bill"]) [data-registration-receipt] {
     position: absolute;
     inset: 0;
     height: auto;

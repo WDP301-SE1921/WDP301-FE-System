@@ -1,5 +1,11 @@
 # Tích hợp đăng nhập và đăng ký học trên web
 
+Cập nhật API bill 06/10/2026: wizard và `/staff/payments` đã đọc `GET /registrations/:id/bill` thật, dùng giá snapshot và popup xác nhận `POST /registrations/:id/confirm-payment` với receiptNumber/Idempotency-Key. Chưa có API lưu phương thức/thời gian thu/mã ngân hàng; các yêu cầu BE và kết quả kiểm thử ở [BILL_PAYMENT_API_INTEGRATION.md](BILL_PAYMENT_API_INTEGRATION.md).
+
+Cập nhật 06/10/2026: đã nối giáo trình/sinh lịch và màn nhân viên thêm học sinh từ lớp, xem [CURRICULUM_API_INTEGRATION.md](CURRICULUM_API_INTEGRATION.md). BE hiện đã có `GET /parents/search` và kiểm tra lớp theo kỳ; các ghi chú “API chưa có” bên dưới là trạng thái tại ngày đối chiếu cũ.
+
+Cập nhật kiểm thử 06/10/2026: BE đã khởi chạy với Docker MySQL sau chuẩn bị dependency/migration đã có; 33 e2e registration đạt. Timeline các bước đã bỏ khung viền. Proxy/restore giữ cookie khi BE trả 429; sidebar tắt prefetch để giảm các lần kiểm tra phiên không cần thiết. Bill/popup thu tiền theo phương thức và bảng thu chi mới là phần chuẩn bị FE, chưa nối metadata vào API cũ; contract và ảnh tại [BILL_PAYMENT_API_CONTRACT.md](BILL_PAYMENT_API_CONTRACT.md).
+
 Ngày đối chiếu: 03/10/2026. Chỉ thay đổi `WDP301-FE-System`; đọc controller, DTO và service trong BE cùng `FEATURE_PROGRESS.md`, `EDUGRADE_BACKEND_FLOW.md`, `PARENT_REGISTRATION_API_GUIDE.md`.
 
 ## Khởi chạy
@@ -13,19 +19,19 @@ Ngày đối chiếu: 03/10/2026. Chỉ thay đổi `WDP301-FE-System`; đọc c
 
 ## Các màn đã nối API thật
 
-| Màn | Role | API/hành vi |
-| --- | --- | --- |
-| /login, hết phiên, đăng xuất | Các role web mà BE hỗ trợ | POST /auth/login, POST /auth/refresh, GET /auth/me, POST /auth/logout |
-| /register | Public, phụ huynh tự đăng ký | POST /auth/register với email/password; tiếp tục quản lý con trên app, không tạo phiên web phụ huynh |
-| /staff/enrollments/new | STAFF | Tìm email debounce 400 ms từ 2 ký tự → chọn tài khoản → lookup con → chọn lớp → tạo draft → xác nhận học phí → Enrollment/biên lai |
-| /staff/payments | STAFF | GET /registrations/:id, GET /registrations/:id/receipt; tiếp tục draft |
-| /staff/parents, /staff/students | STAFF | Lookup email đầy đủ, xem phụ huynh/con và mở wizard đã điền email/hồ sơ |
-| /staff/profile | STAFF | GET /auth/me |
-| /manager/dashboard | MANAGER | Danh sách lớp thật và lối tắt quản lý |
-| /manager/parents, /manager/students | MANAGER | GET /parents/lookup, tra cứu hồ sơ; không có nút thu tiền |
-| /manager/catalog | MANAGER | GET/POST /programs |
-| /manager/classes, /new, /:id | MANAGER | GET/POST /classes, PATCH /classes/:id, POST /classes/:id/schedules |
-| /manager/profile | MANAGER | GET /auth/me |
+| Màn                                 | Role                         | API/hành vi                                                                                                                        |
+| ----------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| /login, hết phiên, đăng xuất        | Các role web mà BE hỗ trợ    | POST /auth/login, POST /auth/refresh, GET /auth/me, POST /auth/logout                                                              |
+| /register                           | Public, phụ huynh tự đăng ký | POST /auth/register với email/password; tiếp tục quản lý con trên app, không tạo phiên web phụ huynh                               |
+| /staff/enrollments/new              | STAFF                        | Tìm email debounce 400 ms từ 2 ký tự → chọn tài khoản → lookup con → chọn lớp → tạo draft → xác nhận học phí → Enrollment/biên lai |
+| /staff/payments                     | STAFF                        | GET /registrations/:id, GET /registrations/:id/receipt; tiếp tục draft                                                             |
+| /staff/parents, /staff/students     | STAFF                        | Lookup email đầy đủ, xem phụ huynh/con và mở wizard đã điền email/hồ sơ                                                            |
+| /staff/profile                      | STAFF                        | GET /auth/me                                                                                                                       |
+| /manager/dashboard                  | MANAGER                      | Danh sách lớp thật và lối tắt quản lý                                                                                              |
+| /manager/parents, /manager/students | MANAGER                      | GET /parents/lookup, tra cứu hồ sơ; không có nút thu tiền                                                                          |
+| /manager/catalog                    | MANAGER                      | GET/POST /programs                                                                                                                 |
+| /manager/classes, /new, /:id        | MANAGER                      | GET/POST /classes, PATCH /classes/:id, POST /classes/:id/schedules                                                                 |
+| /manager/profile                    | MANAGER                      | GET /auth/me                                                                                                                       |
 
 **API gợi ý chưa có trong BE hiện tại.** FE đã chuẩn bị GET /parents/search?email=<chuỗi>&limit=10, dùng AbortSignal hủy tìm kiếm cũ, chỉ hiển thị kết quả cho chuỗi hiện tại và yêu cầu chọn tài khoản. Xem mục 0 trong BE_FIX_REQUESTS.md để triển khai contract. Khi chưa có endpoint, FE báo rõ giới hạn; nhập email đầy đủ vẫn tìm được tài khoản qua lookup. Không giả lập gợi ý từ dữ liệu mock.
 

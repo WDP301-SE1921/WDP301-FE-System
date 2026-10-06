@@ -39,6 +39,9 @@ export const ROUTES = {
 
     CATALOG: "/manager/catalog",
     CATALOG_PROGRAM_DETAIL: (id: string) => `/manager/catalog/programs/${id}`,
+    CURRICULUM: "/manager/curriculum",
+    CURRICULUM_UNIT: (id: string) => `/manager/curriculum/${id}`,
+    CLASS_SESSIONS: (id: string) => `/manager/classes/${id}/sessions`,
 
     EMAIL_LOGS: "/manager/notifications/emails",
     SEND_NOTIFICATION: "/manager/notifications/send",
@@ -55,11 +58,13 @@ export const ROUTES = {
       parentId?: string;
       studentId?: string;
       email?: string;
+      classId?: string;
     }) => {
       const query = new URLSearchParams();
       if (params.parentId) query.set("parentId", params.parentId);
       if (params.studentId) query.set("studentId", params.studentId);
       if (params.email) query.set("email", params.email);
+      if (params.classId) query.set("classId", params.classId);
       const queryString = query.toString();
       return queryString
         ? `/staff/enrollments/new?${queryString}`
@@ -71,6 +76,8 @@ export const ROUTES = {
     PARENTS: "/staff/parents",
     STUDENTS: "/staff/students",
     PROFILE: "/staff/profile",
+    CLASSES: "/staff/classes",
+    SCHEDULE: "/staff/schedule",
   },
   TEACHER: {
     DASHBOARD: "/teacher/dashboard",

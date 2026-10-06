@@ -4,11 +4,10 @@ import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,6 +23,7 @@ import { WizardLayout } from "@/components/shared/workflows/wizard-layout";
 import { toast } from "@/components/ui/toast";
 import { ROUTES } from "@/constants/routes";
 import { useCurrentUser } from "@/hooks/use-current-role";
+import { ApiError } from "@/lib/api/client";
 import { registrationApi } from "../api";
 import {
   addCalendarMonths,
@@ -35,18 +35,16 @@ import {
   scheduleText,
   todayInVietnam,
 } from "../calendar";
+import { registrationSchema, type RegistrationInput } from "../schemas";
 import {
-  registrationSchema,
-  type RegistrationInput,
-} from "../schemas";
-import {
-  getPaymentAttempt,
-  readPaymentAttempt,
   rememberRegistration,
+  getDraftAttempt,
+  clearDraftAttempt,
 } from "../storage";
-import { ApiFeedback, FieldError, SELECT_CLASS } from "./api-feedback";
+import { ApiFeedback, FieldError } from "./api-feedback";
 import { RegistrationReceipt } from "./registration-receipt";
 import { ParentEmailSearch } from "./parent-email-search";
+import { RegistrationBillPanel } from "@/features/billing/components/registration-bill-panel";
 
 const STEPS = [
   { id: "parent", label: "Phụ huynh", description: "Tìm và chọn tài khoản" },
@@ -54,7 +52,7 @@ const STEPS = [
   {
     id: "class",
     label: "Lớp & kỳ học",
-    description: "Môn, lớp, ngày và gói tháng",
+    description: "Chọn lớp đúng khối và kỳ học",
   },
   {
     id: "payment",
@@ -65,7 +63,6 @@ const STEPS = [
 ];
 const EMPTY: RegistrationInput = {
   targetStudentId: "",
-  subject: "",
   classId: "",
   startDate: "",
   packageMonths: 3,
@@ -86,8 +83,18 @@ export function RegistrationWizard() {
     "registrationId",
     parseAsString,
   );
-  const [emailParam, setEmailParam] = useQueryState("email", parseAsString.withDefault(""));
+  const [emailParam, setEmailParam] = useQueryState(
+    "email",
+    parseAsString.withDefault(""),
+  );
   const [studentIdParam] = useQueryState("studentId", parseAsString);
+  const [classIdParam] = useQueryState("classId", parseAsString);
+  const requestedClass = useQuery({
+    queryKey: ["registration-class", classIdParam],
+    queryFn: () => registrationApi.class(classIdParam!),
+    enabled: !!classIdParam,
+    retry: false,
+  });
   const form = useForm<RegistrationInput>({
     resolver: zodResolver(registrationSchema),
     defaultValues: EMPTY,
@@ -104,27 +111,27 @@ export function RegistrationWizard() {
       (child) => child.status === "ACTIVE",
     ) ?? [];
   const child = students.find((entry) => entry.id === values.targetStudentId);
-  const programs = useQuery({
-    queryKey: ["registration-programs"],
-    queryFn: registrationApi.programs,
-    enabled: !!child,
-    retry: false,
-  });
-  const subjects = [
-    ...new Set(
-      programs.data
-        ?.filter((program) => program.grade === child?.grade)
-        .map((program) => program.subject) ?? [],
-    ),
-  ];
   const classes = useQuery({
-    queryKey: ["registration-classes", child?.id, values.subject],
+    queryKey: [
+      "registration-classes",
+      child?.id,
+      values.startDate,
+      values.packageMonths,
+    ],
     queryFn: () =>
       registrationApi.classes({
         studentId: child!.id,
-        subject: values.subject,
+        ...(/^\d{4}-\d{2}-\d{2}$/.test(values.startDate) &&
+        values.packageMonths >= 1 &&
+        values.packageMonths <= 12 &&
+        Number.isInteger(values.packageMonths)
+          ? {
+              startDate: values.startDate,
+              packageMonths: String(values.packageMonths),
+            }
+          : {}),
       }),
-    enabled: !!child && !!values.subject,
+    enabled: !!child,
     retry: false,
   });
   const selectedClass = classes.data?.find(
@@ -144,35 +151,41 @@ export function RegistrationWizard() {
     retry: false,
   });
   const draft = useMutation({
-    mutationFn: registrationApi.draft,
+    mutationFn: (input: RegistrationInput) => {
+      if (!user) throw new Error("Vui lòng đăng nhập trước khi đăng ký.");
+      const key = getDraftAttempt(user.id, {
+        targetStudentId: input.targetStudentId,
+        classId: input.classId,
+        startDate: input.startDate,
+        packageMonths: input.packageMonths,
+      });
+      return registrationApi.draft(input, key);
+    },
     retry: false,
   });
   const cancel = useMutation({
     mutationFn: registrationApi.cancel,
     retry: false,
   });
-  const confirm = useMutation({
-    mutationFn: async () => {
-      if (!user || !registrationId)
-        throw new Error(
-          "Vui lòng đăng nhập và mở bản nháp trước khi thu tiền.",
-        );
-      const attempt = getPaymentAttempt(
-        user.id,
-        registrationId,
-        form.getValues("receiptNumber"),
-      );
-      return registrationApi.confirm(registrationId, attempt.key, attempt.body);
-    },
-    retry: false,
-  });
-  const attempt =
-    user && registrationId ? readPaymentAttempt(user.id, registrationId) : null;
-  const isBusy =
-    lookup.isPending ||
-    draft.isPending ||
-    cancel.isPending ||
-    confirm.isPending;
+  const isBusy = lookup.isPending || draft.isPending || cancel.isPending;
+  function selectStudent(student: { id: string; grade: number }) {
+    const classroom = requestedClass.data;
+    const preselect =
+      classroom?.program.grade === student.grade &&
+      classroom.isOpen &&
+      classroom.weeklySchedules.length > 0;
+    form.reset({
+      ...EMPTY,
+      targetStudentId: student.id,
+      ...(preselect
+        ? {
+            classId: classroom.id,
+            startDate: nextStudyDate(classroom.weeklySchedules),
+          }
+        : {}),
+    });
+    draft.reset();
+  }
   let step = Math.min(2, Math.max(0, requestedStep));
   if (!parentReady) step = 0;
   else if (step > 1 && !child) step = 1;
@@ -203,7 +216,15 @@ export function RegistrationWizard() {
       const preselected = result.parentProfile?.students.find(
         (item) => item.id === studentIdParam && item.status === "ACTIVE",
       );
-      if (preselected) form.setValue("targetStudentId", preselected.id);
+      if (preselected) selectStudent(preselected);
+      if (
+        result.status === "ACTIVE" &&
+        result.emailVerifiedAt &&
+        result.parentProfile?.students.some(
+          (student) => student.status === "ACTIVE",
+        )
+      )
+        await setStep(1);
     } catch {
       /* Inline API feedback. */
     } finally {
@@ -233,7 +254,6 @@ export function RegistrationWizard() {
       if (
         !(await form.trigger([
           "targetStudentId",
-          "subject",
           "classId",
           "startDate",
           "packageMonths",
@@ -243,6 +263,7 @@ export function RegistrationWizard() {
       if (
         !selectedClass?.isOpen ||
         !selectedClass.weeklySchedules.length ||
+        selectedClass.isEligible === false ||
         selectedClass.program.grade !== child?.grade
       ) {
         form.setError("classId", {
@@ -266,6 +287,7 @@ export function RegistrationWizard() {
         const result = await draft.mutateAsync(form.getValues());
         queryClient.setQueryData(["registration", result.id], result);
         await setRegistrationId(result.id);
+        clearDraftAttempt(user.id);
         try {
           rememberRegistration(user.id, result.id);
         } catch {
@@ -280,28 +302,6 @@ export function RegistrationWizard() {
       }
       return;
     }
-    if (step === 3 && currentOrder?.status === "DRAFT") {
-      if (!(await form.trigger("receiptNumber")) || !values.hasReceivedPayment)
-        return;
-      try {
-        const result = await confirm.mutateAsync();
-        queryClient.setQueryData(
-          ["registration-receipt", registrationId],
-          result,
-        );
-        queryClient.setQueryData(["registration", registrationId], {
-          ...currentOrder,
-          status: "COMPLETED",
-        });
-        await queryClient.invalidateQueries({
-          queryKey: ["registration-classes"],
-        });
-        await setStep(4);
-        toast.success("Đã xác nhận học phí và ghi danh cho con.");
-      } catch {
-        /* Keep the stored key and body for manual retry. */
-      }
-    }
   }
   async function editDraft() {
     if (!registrationId || !currentOrder || busy.current) return;
@@ -312,7 +312,6 @@ export function RegistrationWizard() {
       await setRegistrationId(null);
       form.setValue("hasReceivedPayment", false);
       form.setValue("receiptNumber", "");
-      confirm.reset();
       draft.reset();
       cancel.reset();
       await setStep(child ? 2 : 0);
@@ -327,7 +326,6 @@ export function RegistrationWizard() {
     form.reset(EMPTY);
     lookup.reset();
     draft.reset();
-    confirm.reset();
     cancel.reset();
     await setRegistrationId(null);
     await setStep(0);
@@ -348,6 +346,10 @@ export function RegistrationWizard() {
         title="Đăng ký học cho con"
         description="Phụ huynh chuẩn bị tài khoản và hồ sơ con trên ứng dụng. Nhân viên đăng ký học tại quầy."
       />
+      <ApiFeedback
+        error={requestedClass.error}
+        retry={() => void requestedClass.refetch()}
+      />
       <WizardLayout
         steps={STEPS}
         currentStep={step}
@@ -355,7 +357,7 @@ export function RegistrationWizard() {
           if (!registrationId && index <= step && !isBusy) void setStep(index);
         }}
         summaryPanel={
-          step === 4 ? undefined : (
+          step >= 3 ? undefined : (
             <div className="space-y-4">
               <h3 className="font-semibold">Thông tin đăng ký</h3>
               <dl className="space-y-3 text-sm">
@@ -449,26 +451,20 @@ export function RegistrationWizard() {
                     Hủy nháp / chọn lại
                   </Button>
                 )}
-                <Button
-                  onClick={next}
-                  isLoading={draft.isPending || confirm.isPending}
-                  disabled={
-                    isBusy ||
-                    !user ||
-                    (step === 0 && (!parentReady || !students.length)) ||
-                    (step === 3 &&
-                      (currentOrder?.status !== "DRAFT" ||
-                        !values.hasReceivedPayment))
-                  }
-                >
-                  {step === 2
-                    ? "Lập bản nháp"
-                    : step === 3
-                      ? attempt
-                        ? "Thử lại xác nhận thu tiền"
-                        : "Xác nhận đã thu đủ tiền"
-                      : "Tiếp tục"}
-                </Button>
+                {step < 3 && (
+                  <Button
+                    onClick={next}
+                    isLoading={draft.isPending}
+                    disabled={
+                      isBusy ||
+                      !user ||
+                      (step === 0 && (!parentReady || !students.length)) ||
+                      (step === 2 && classes.isFetching)
+                    }
+                  >
+                    {step === 2 ? "Lập bản nháp" : "Tiếp tục"}
+                  </Button>
+                )}
               </div>
             </div>
           )
@@ -527,7 +523,7 @@ export function RegistrationWizard() {
             <CardHeader>
               <CardTitle>Chọn hồ sơ con</CardTitle>
               <CardDescription>
-                Khối học lấy từ hồ sơ con do phụ huynh tạo.
+                {parent?.email} · Khối học lấy từ hồ sơ con do phụ huynh tạo.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -541,9 +537,9 @@ export function RegistrationWizard() {
                     name="child"
                     value={student.id}
                     checked={values.targetStudentId === student.id}
+                    disabled={!!classIdParam && requestedClass.isPending}
                     onChange={() => {
-                      form.reset({ ...EMPTY, targetStudentId: student.id });
-                      draft.reset();
+                      selectStudent(student);
                     }}
                   />
                   <span>
@@ -570,49 +566,16 @@ export function RegistrationWizard() {
             <CardHeader>
               <CardTitle>Chọn lớp và kỳ học</CardTitle>
               <CardDescription>
-                Khối {child?.grade} · Học phí tính theo số tháng dương lịch.
+                {child?.fullName} · Khối {child?.grade} · Chọn lớp phụ huynh
+                muốn đăng ký. Học phí tính theo số tháng dương lịch.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <ApiFeedback
-                error={programs.error}
-                retry={() => void programs.refetch()}
-              />
-              <div className="space-y-2">
-                <Label htmlFor="registration-subject">Môn học</Label>
-                <select
-                  id="registration-subject"
-                  className={SELECT_CLASS}
-                  value={values.subject}
-                  disabled={programs.isPending}
-                  onChange={(event) => {
-                    form.setValue("subject", event.target.value);
-                    form.setValue("classId", "");
-                    form.setValue("startDate", "");
-                    form.clearErrors();
-                    draft.reset();
-                  }}
-                >
-                  <option value="">
-                    {programs.isPending ? "Đang tải môn học…" : "Chọn môn học"}
-                  </option>
-                  {subjects.map((subject) => (
-                    <option key={subject}>{subject}</option>
-                  ))}
-                </select>
-                <FieldError message={form.formState.errors.subject?.message} />
-              </div>
-              {programs.isSuccess && !subjects.length && (
-                <p className="text-sm text-muted-foreground">
-                  Chưa có chương trình cho khối này. Quản lý cần tạo chương
-                  trình và lớp trước.
-                </p>
-              )}
-              <ApiFeedback
                 error={classes.error}
                 retry={() => void classes.refetch()}
               />
-              {values.subject && classes.isPending && (
+              {classes.isPending && (
                 <p className="text-sm text-muted-foreground">
                   Đang tải lớp học…
                 </p>
@@ -621,7 +584,9 @@ export function RegistrationWizard() {
                 ?.filter((item) => item.program.grade === child?.grade)
                 .map((item) => {
                   const eligible =
-                    item.isOpen && item.weeklySchedules.length > 0;
+                    item.isOpen &&
+                    item.weeklySchedules.length > 0 &&
+                    item.isEligible !== false;
                   return (
                     <label
                       key={item.id}
@@ -632,12 +597,21 @@ export function RegistrationWizard() {
                         type="radio"
                         name="class"
                         checked={values.classId === item.id}
-                        disabled={!eligible}
+                        disabled={
+                          !eligible &&
+                          item.ineligibleReason !== "INVALID_START_DATE"
+                        }
                         onChange={() => {
                           form.setValue("classId", item.id);
                           form.setValue(
                             "startDate",
-                            nextStudyDate(item.weeklySchedules),
+                            values.startDate &&
+                              item.weeklySchedules.some(
+                                (slot) =>
+                                  slot.weekday === isoWeekday(values.startDate),
+                              )
+                              ? values.startDate
+                              : nextStudyDate(item.weeklySchedules),
                           );
                           form.clearErrors();
                           draft.reset();
@@ -645,6 +619,9 @@ export function RegistrationWizard() {
                       />
                       <span className="flex-1 space-y-1">
                         <span className="block font-medium">{item.name}</span>
+                        <span className="block text-sm">
+                          {item.program.subject} · Khối {item.program.grade}
+                        </span>
                         <span className="block text-sm text-muted-foreground">
                           {scheduleText(item.weeklySchedules) ||
                             "Chưa có lịch tuần"}
@@ -653,16 +630,38 @@ export function RegistrationWizard() {
                           {money(item.monthlyFee)}/tháng · Sức chứa{" "}
                           {item.capacity} học sinh
                         </span>
+                        {item.availableSeats !== undefined && (
+                          <span className="block text-sm">
+                            Còn {item.availableSeats} chỗ trong kỳ đã chọn
+                          </span>
+                        )}
+                        {item.isEligible === false && (
+                          <span className="block text-sm text-destructive">
+                            {
+                              new ApiError(
+                                item.ineligibleReason ?? "CLASS_UNAVAILABLE",
+                                item.ineligibleMessage ||
+                                  "Lớp không phù hợp với học sinh hoặc kỳ học này.",
+                                409,
+                              ).message
+                            }
+                          </span>
+                        )}
                       </span>
                       <Badge variant={eligible ? "success" : "secondary"}>
-                        {eligible ? "Mở đăng ký" : "Chưa mở"}
+                        {eligible
+                          ? "Mở đăng ký"
+                          : item.isEligible === false
+                            ? "Không phù hợp"
+                            : "Chưa mở"}
                       </Badge>
                     </label>
                   );
                 })}
               {classes.isSuccess && !classes.data.length && (
                 <p className="text-sm text-muted-foreground">
-                  Chưa có lớp cho môn và khối đã chọn.
+                  Chưa có lớp cho khối {child?.grade}. Quản lý cần tạo lớp và
+                  lịch học trước.
                 </p>
               )}
               <FieldError message={form.formState.errors.classId?.message} />
@@ -701,107 +700,24 @@ export function RegistrationWizard() {
             </CardContent>
           </Card>
         )}
-        {step === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Xác nhận thu học phí offline</CardTitle>
-              <CardDescription>
-                Số tiền được chốt bởi máy chủ trong bản nháp.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {order.isPending && <p>Đang tải bản nháp…</p>}
-              <ApiFeedback
-                error={order.error}
-                retry={() => void order.refetch()}
-              />
-              {currentOrder?.status === "DRAFT" && (
-                <>
-                  <p className="text-2xl font-semibold text-primary">
-                    {money(currentOrder.quotedAmount)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Gói {currentOrder.packageMonths} tháng · Hết kỳ trước ngày{" "}
-                    {displayDate(currentOrder.endDate)}
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="registration-receipt-number">
-                      Số biên lai (không bắt buộc)
-                    </Label>
-                    <Input
-                      id="registration-receipt-number"
-                      placeholder="Để trống để tự sinh số biên lai"
-                      disabled={!!attempt || isBusy}
-                      value={
-                        attempt
-                          ? (attempt.body.receiptNumber ?? "")
-                          : values.receiptNumber
-                      }
-                      onChange={(event) =>
-                        form.setValue("receiptNumber", event.target.value)
-                      }
-                    />
-                    <FieldError
-                      message={form.formState.errors.receiptNumber?.message}
-                    />
-                  </div>
-                  <div className="flex items-start gap-3 rounded-xl bg-muted p-4">
-                    <Controller
-                      control={form.control}
-                      name="hasReceivedPayment"
-                      render={({ field }) => (
-                        <Checkbox
-                          id="registration-received"
-                          checked={field.value}
-                          disabled={isBusy}
-                          onCheckedChange={(value) =>
-                            field.onChange(value === true)
-                          }
-                        />
-                      )}
-                    />
-                    <Label
-                      htmlFor="registration-received"
-                      className="leading-relaxed"
-                    >
-                      Tôi đã nhận đủ {money(currentOrder.quotedAmount)} học phí
-                      offline cho đăng ký này.
-                    </Label>
-                  </div>
-                  {attempt && (
-                    <p className="text-sm text-muted-foreground">
-                      Yêu cầu xác nhận đã được lưu. Khi thử lại, hệ thống giữ
-                      nguyên số biên lai và khóa giao dịch.
-                    </p>
-                  )}
-                </>
-              )}
-              {currentOrder &&
-                currentOrder.status !== "DRAFT" &&
-                currentOrder.status !== "COMPLETED" && (
-                  <div className="space-y-3">
-                    <p>
-                      Đăng ký ở trạng thái {currentOrder.status}, không thể xác
-                      nhận thu tiền.
-                    </p>
-                    <Button variant="outline" onClick={startNew}>
-                      Tạo đăng ký mới
-                    </Button>
-                  </div>
-                )}
-              <ApiFeedback error={confirm.error} />
-              <ApiFeedback error={cancel.error} />
-              {currentOrder && (
-                <Button
-                  variant="ghost"
-                  disabled={isBusy}
-                  onClick={() => void order.refetch()}
-                >
-                  Kiểm tra lại trạng thái đăng ký
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+        {step === 3 && registrationId && (
+          <div className="space-y-4">
+            <ApiFeedback
+              error={order.error}
+              retry={() => void order.refetch()}
+            />
+            <RegistrationBillPanel
+              key={registrationId}
+              registrationId={registrationId}
+              onPaid={async () => {
+                await setStep(4);
+              }}
+            />
+            <ApiFeedback error={cancel.error} />
+            {order.data?.status === "CANCELLED" && (
+              <Button onClick={startNew}>Tạo đăng ký mới</Button>
+            )}
+          </div>
         )}
         {step === 4 && (
           <div className="space-y-5">

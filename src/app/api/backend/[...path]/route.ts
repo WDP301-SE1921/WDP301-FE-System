@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { loginSchema, registerParentSchema } from "@/lib/validators/auth";
 import { parentSearchSchema } from "@/features/registration-flow/schemas";
 import { ROLE_HOME_ROUTE } from "@/constants/role-access";
+import { academicRoles } from "@/lib/api/backend-permissions";
 import {
   authorizedBackendFetch,
   backendError,
@@ -21,13 +22,16 @@ export const runtime = "nodejs";
 const ALLOWED = [
   {
     method: "GET",
-    path: /^(auth\/me|parents\/(lookup|search)|programs|classes|registrations\/[^/]+(?:\/receipt)?)$/,
+    path: /^(auth\/me|parents\/(lookup|search)|programs|classes(?:\/[^/]+)?|registrations\/[^/]+(?:\/(receipt|bill))?|academic\/(?:curriculum-units(?:\/[^/]+)?|scheduled-sessions))$/,
   },
   {
     method: "POST",
-    path: /^(auth\/(login|logout|register)|programs|classes|classes\/[^/]+\/schedules|registrations(?:\/[^/]+\/(cancel|confirm-payment))?)$/,
+    path: /^(auth\/(login|logout|register)|programs|classes|classes\/[^/]+\/schedules|registrations(?:\/[^/]+\/(cancel|confirm-payment))?|academic\/(?:curriculum-units(?:\/[^/]+\/(?:lessons|monthly-tests|approve|revisions))?|classes\/[^/]+\/(?:session-preview|session-generations)))$/,
   },
-  { method: "PATCH", path: /^classes\/[^/]+$/ },
+  {
+    method: "PATCH",
+    path: /^(classes\/[^/]+|academic\/curriculum-units\/[^/]+(?:\/lessons\/[^/]+)?)$/,
+  },
 ];
 async function handle(
   request: NextRequest,
@@ -127,6 +131,17 @@ async function handle(
           400,
           "VALIDATION_ERROR",
           "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
+        );
+    }
+    const permittedRoles = academicRoles(request.method, path);
+    if (permittedRoles) {
+      const session = await authorizedBackendFetch(request, "auth/me");
+      const user = webUser(await readBackend<BackendUser>(session.response));
+      if (!permittedRoles.includes(user.role))
+        throw backendError(
+          403,
+          "FORBIDDEN",
+          "Tài khoản không có quyền dùng API giáo trình này.",
         );
     }
     const init: RequestInit = { method: request.method };

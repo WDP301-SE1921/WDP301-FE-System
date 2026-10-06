@@ -43,6 +43,14 @@ export async function proxy(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store");
     return response;
   } catch (error) {
+    if (error instanceof BackendRequestError && error.status === 429)
+      return new NextResponse(
+        "Thao tác quá nhiều lần. Vui lòng tải lại trang sau một phút.",
+        {
+          status: 429,
+          headers: { "Retry-After": "60", "Cache-Control": "no-store" },
+        },
+      );
     if (
       error instanceof BackendRequestError &&
       error.status === 401 &&

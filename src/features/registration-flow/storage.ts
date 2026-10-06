@@ -6,6 +6,33 @@ export interface RegistrationHistoryEntry {
   id: string;
   createdAt: string;
 }
+export function getDraftAttempt(
+  userId: string,
+  body: {
+    targetStudentId: string;
+    classId: string;
+    startDate: string;
+    packageMonths: number;
+  },
+): string {
+  const key = `edugrade:registration-draft:${userId}`;
+  const fingerprint = JSON.stringify(body);
+  const raw = sessionStorage.getItem(key);
+  const stored = raw ? JSON.parse(raw) : null;
+  if (
+    stored?.fingerprint === fingerprint &&
+    typeof stored.key === "string" &&
+    stored.key
+  )
+    return stored.key;
+  const attempt = { key: crypto.randomUUID(), fingerprint };
+  sessionStorage.setItem(key, JSON.stringify(attempt));
+  return attempt.key;
+}
+
+export function clearDraftAttempt(userId: string) {
+  sessionStorage.removeItem(`edugrade:registration-draft:${userId}`);
+}
 function storageKey(userId: string) {
   return `edugrade:registrations:${userId}`;
 }
@@ -44,22 +71,26 @@ export function readPaymentAttempt(
   userId: string,
   id: string,
 ): PaymentAttempt | null {
-  try {
-    const attempt = JSON.parse(
-      sessionStorage.getItem(`${storageKey(userId)}:${id}:payment`) ?? "null",
+  const attempt = JSON.parse(
+    sessionStorage.getItem(`${storageKey(userId)}:${id}:payment`) ?? "null",
+  );
+  if (attempt === null) return null;
+  if (!(
+    attempt &&
+    typeof attempt.key === "string" &&
+    attempt.key.length > 0 &&
+    attempt.body &&
+    typeof attempt.body === "object" &&
+    !Array.isArray(attempt.body) &&
+    Object.keys(attempt.body).every((field) => field === "receiptNumber") &&
+    (attempt.body.receiptNumber === undefined ||
+      (typeof attempt.body.receiptNumber === "string" &&
+        attempt.body.receiptNumber.length <= 191))
+  ))
+    throw new Error(
+      "Không đọc được thao tác thu tiền đã lưu. Kiểm tra lại bill trước khi tiếp tục.",
     );
-    return attempt &&
-      typeof attempt.key === "string" &&
-      attempt.key.length > 0 &&
-      attempt.body &&
-      typeof attempt.body === "object" &&
-      (attempt.body.receiptNumber === undefined ||
-        typeof attempt.body.receiptNumber === "string")
-      ? attempt
-      : null;
-  } catch {
-    return null;
-  }
+  return attempt;
 }
 export function getPaymentAttempt(
   userId: string,

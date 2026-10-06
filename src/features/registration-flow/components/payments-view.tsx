@@ -10,7 +10,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -24,9 +23,9 @@ import { useCurrentUser } from "@/hooks/use-current-role";
 import { ROUTES } from "@/constants/routes";
 import { registrationApi } from "../api";
 import { recentRegistrations, rememberRegistration } from "../storage";
-import { money } from "../calendar";
 import { ApiFeedback, FieldError } from "./api-feedback";
 import { RegistrationReceipt } from "./registration-receipt";
+import { RegistrationBillPanel } from "@/features/billing/components/registration-bill-panel";
 
 const idSchema = z.object({
   id: z
@@ -116,48 +115,24 @@ export function RegistrationPaymentsView() {
       <ApiFeedback error={order.error} retry={() => void order.refetch()} />
       {registrationId && order.isPending && <p>Đang tải đăng ký…</p>}
       {order.data && (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap justify-between gap-3">
-              <CardTitle>
-                {order.data.studentFullName} · {order.data.class.name}
-              </CardTitle>
-              <Badge
-                variant={
-                  order.data.status === "COMPLETED"
-                    ? "success"
-                    : order.data.status === "DRAFT"
-                      ? "warning"
-                      : "secondary"
-                }
-              >
-                {order.data.status === "COMPLETED"
-                  ? "Đã thu tiền"
-                  : order.data.status === "DRAFT"
-                    ? "Bản nháp"
-                    : "Đã hủy"}
-              </Badge>
-            </div>
-            <CardDescription>
-              {order.data.parentEmail} · {money(order.data.quotedAmount)}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {order.data.status === "DRAFT" && (
+        <RegistrationBillPanel
+          key={order.data.id}
+          registrationId={order.data.id}
+        />
+      )}
+      {order.data?.status === "DRAFT" && (
+        <div>
+          <Button
+            variant="outline"
+            render={
               <Link
-                className="inline-block rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground"
                 href={`${ROUTES.STAFF.ENROLLMENT_NEW}?${new URLSearchParams({ registrationId: order.data.id })}`}
-              >
-                Tiếp tục thu học phí
-              </Link>
-            )}
-            {order.data.status === "CANCELLED" && (
-              <p className="text-sm text-muted-foreground">
-                Bản nháp đã hủy; không thể thu học phí.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+              />
+            }
+          >
+            Mở đăng ký để chọn lại lớp hoặc hủy bill
+          </Button>
+        </div>
       )}
       <ApiFeedback error={receipt.error} retry={() => void receipt.refetch()} />
       {receipt.data && order.data?.status === "COMPLETED" && (

@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
     const user = webUser(await readBackend<BackendUser>(upstream));
     const returnTo = request.nextUrl.searchParams.get("returnTo") ?? "";
     let destination = ROLE_HOME_ROUTE[user.role];
-    if (/^\/(manager|staff|teacher)\//.test(returnTo) && !returnTo.includes("\\")) {
+    if (
+      /^\/(manager|staff|teacher)\//.test(returnTo) &&
+      !returnTo.includes("\\")
+    ) {
       const target = new URL(returnTo, request.url);
       if (canAccessPath(user.role, target.pathname))
         destination = target.pathname + target.search;
@@ -42,6 +45,14 @@ export async function GET(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store");
     return response;
   } catch (error) {
+    if (error instanceof BackendRequestError && error.status === 429)
+      return new NextResponse(
+        "Thao tác quá nhiều lần. Vui lòng tải lại trang sau một phút.",
+        {
+          status: 429,
+          headers: { "Retry-After": "60", "Cache-Control": "no-store" },
+        },
+      );
     if (error instanceof BackendRequestError && error.status >= 500)
       return new NextResponse(
         "Không kết nối được máy chủ. Vui lòng tải lại trang sau.",

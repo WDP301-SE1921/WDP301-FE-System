@@ -17,7 +17,6 @@ export const parentSuggestionsSchema = z.array(
 );
 export const registrationSchema = z.object({
   targetStudentId: z.string().min(1, "Chọn hồ sơ con."),
-  subject: z.string().min(1, "Chọn môn học."),
   classId: z.string().min(1, "Chọn lớp học."),
   startDate: z.iso.date("Chọn ngày bắt đầu hợp lệ."),
   packageMonths: z

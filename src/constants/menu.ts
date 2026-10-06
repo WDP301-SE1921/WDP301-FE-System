@@ -165,6 +165,12 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     groupTitle: "DANH MỤC ĐÀO TẠO",
     items: [
       {
+        title: "Giáo trình",
+        href: ROUTES.MANAGER.CURRICULUM,
+        iconName: "LibraryIcon",
+        area: AREA.CATALOG,
+      },
+      {
         title: "Danh mục",
         href: ROUTES.MANAGER.CATALOG,
         iconName: "LibraryIcon",
@@ -210,6 +216,23 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
 ];
 
 export const MENU_STAFF: MenuGroup[] = [
+  {
+    groupTitle: "LỚP HỌC & LỊCH",
+    items: [
+      {
+        title: "Lớp học / thêm học sinh",
+        href: ROUTES.STAFF.CLASSES,
+        iconName: "SchoolIcon",
+        area: AREA.CLASSES,
+      },
+      {
+        title: "Buổi học",
+        href: ROUTES.STAFF.SCHEDULE,
+        iconName: "Calendar03Icon",
+        area: AREA.SCHEDULE,
+      },
+    ],
+  },
   {
     groupTitle: "ĐĂNG KÝ & THU HỌC PHÍ",
     items: [

@@ -1,5 +1,7 @@
 "use client";
 
+import { printRegistrationDocument } from "../print";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { displayDate, money, scheduleText, termLabel } from "../calendar";
@@ -9,7 +11,10 @@ export function RegistrationReceipt({ receipt }: { receipt: ReceiptData }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end print:hidden">
-        <Button variant="outline" onClick={() => window.print()}>
+        <Button
+          variant="outline"
+          onClick={() => printRegistrationDocument("receipt")}
+        >
           In biên lai
         </Button>
       </div>
