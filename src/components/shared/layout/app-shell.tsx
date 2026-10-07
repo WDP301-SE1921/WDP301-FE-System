@@ -33,7 +33,7 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
   return (
     <div data-slot="app-shell" className="flex min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="sticky top-0 hidden h-dvh shrink-0 self-start lg:block">
         <Sidebar
           role={role}
           collapsed={collapsed}

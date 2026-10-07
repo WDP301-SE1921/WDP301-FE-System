@@ -9,6 +9,7 @@ import {
   type ScheduleSummary,
 } from "@/features/schedule/selectors"
 import type { CalendarEvent } from "@/components/shared/calendar/schedule-calendar"
+import { yesterdayInVietnam } from "@/lib/calendar-date"
 
 export interface ScheduleData {
   events: CalendarEvent[]
@@ -16,13 +17,16 @@ export interface ScheduleData {
 }
 
 /** Chữ ký hook giữ nguyên khi nối backend — chỉ đổi `queryFn`. */
-export function useSchedule(filters: ScheduleFilters) {
+export function useSchedule(
+  filters: ScheduleFilters,
+  date = yesterdayInVietnam(),
+) {
   return useQuery<ScheduleData>({
-    queryKey: ["schedule", filters],
+    queryKey: ["schedule", filters, date],
     queryFn: () =>
       mockQuery(() => {
         const events = getCalendarEvents(filters)
-        return { events, summary: getScheduleSummary(events) }
+        return { events, summary: getScheduleSummary(events, date) }
       }),
   })
 }

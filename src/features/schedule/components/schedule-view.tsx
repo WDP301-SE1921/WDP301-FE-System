@@ -33,7 +33,12 @@ import { ROUTES } from "@/constants/routes"
 import { SUBJECT_MAP } from "@/constants/subjects"
 import { useRoleAccess } from "@/hooks/use-current-role"
 import { MOCK_SUBJECTS } from "@/mocks/data/catalog"
-import { getRoomOptions, getTeacherOptions } from "@/features/classes/selectors"
+import {
+  getClassRows,
+  getRoomOptions,
+  getTeacherOptions,
+} from "@/features/classes/selectors"
+import { isCalendarDate, yesterdayInVietnam } from "@/lib/calendar-date"
 import { getSessionDetail } from "@/features/schedule/selectors"
 import { useSchedule } from "@/features/schedule/hooks/use-schedule"
 
@@ -45,7 +50,7 @@ const SUBJECT_ITEMS: Record<string, string> = {
     MOCK_SUBJECTS.map((subject) => [
       subject.id,
       SUBJECT_MAP[subject.code]?.name ?? subject.name,
-    ])
+    ]),
   ),
 }
 
@@ -53,14 +58,37 @@ function ScheduleView() {
   const router = useRouter()
   const { canAccess } = useRoleAccess()
 
-  const [teacher, setTeacher] = useQueryState("teacher", parseAsString.withDefault(ALL_VALUE))
-  const [subject, setSubject] = useQueryState("subject", parseAsString.withDefault(ALL_VALUE))
-  const [room, setRoom] = useQueryState("room", parseAsString.withDefault(ALL_VALUE))
-  const [view, setView] = useQueryState("view", parseAsString.withDefault("week"))
-  const [groupBy, setGroupBy] = useQueryState("groupBy", parseAsString.withDefault("time"))
+  const [teacher, setTeacher] = useQueryState(
+    "teacher",
+    parseAsString.withDefault(ALL_VALUE),
+  )
+  const [subject, setSubject] = useQueryState(
+    "subject",
+    parseAsString.withDefault(ALL_VALUE),
+  )
+  const [room, setRoom] = useQueryState(
+    "room",
+    parseAsString.withDefault(ALL_VALUE),
+  )
+  const [classId, setClassId] = useQueryState(
+    "classId",
+    parseAsString.withDefault(ALL_VALUE),
+  )
+  const [date, setDate] = useQueryState(
+    "date",
+    parseAsString.withDefault(yesterdayInVietnam()),
+  )
+  const [view, setView] = useQueryState(
+    "view",
+    parseAsString.withDefault("week"),
+  )
+  const [groupBy, setGroupBy] = useQueryState(
+    "groupBy",
+    parseAsString.withDefault("time"),
+  )
   const [selectedSessionId, setSelectedSessionId] = useQueryState(
     "session",
-    parseAsString.withDefault("")
+    parseAsString.withDefault(""),
   )
 
   const teacherItems = React.useMemo<Record<string, string>>(
@@ -68,30 +96,44 @@ function ScheduleView() {
       [ALL_VALUE]: SCHEDULE_MSG.FILTER_ALL_TEACHERS,
       ...Object.fromEntries(getTeacherOptions().map((o) => [o.value, o.label])),
     }),
-    []
+    [],
   )
   const roomItems = React.useMemo<Record<string, string>>(
     () => ({
       [ALL_VALUE]: SCHEDULE_MSG.FILTER_ALL_ROOMS,
       ...Object.fromEntries(getRoomOptions().map((item) => [item, item])),
     }),
-    []
+    [],
   )
+  const classItems = React.useMemo<Record<string, string>>(
+    () => ({
+      [ALL_VALUE]: SCHEDULE_MSG.FILTER_ALL_CLASSES,
+      ...Object.fromEntries(
+        getClassRows().map(({ classRecord }) => [
+          classRecord.id,
+          classRecord.name,
+        ]),
+      ),
+    }),
+    [],
+  )
+  const selectedDate = isCalendarDate(date) ? date : yesterdayInVietnam()
 
   const filters = React.useMemo(
     () => ({
       teacherId: teacher === ALL_VALUE ? undefined : teacher,
       subjectId: subject === ALL_VALUE ? undefined : subject,
       room: room === ALL_VALUE ? undefined : room,
+      classId: classId === ALL_VALUE ? undefined : classId,
     }),
-    [teacher, subject, room]
+    [teacher, subject, room, classId],
   )
 
-  const schedule = useSchedule(filters)
+  const schedule = useSchedule(filters, selectedDate)
 
   const sessionDetail = React.useMemo(
     () => (selectedSessionId ? getSessionDetail(selectedSessionId) : null),
-    [selectedSessionId]
+    [selectedSessionId],
   )
 
   return (
@@ -131,6 +173,12 @@ function ScheduleView() {
       <Card className="gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <FilterSelect
+            items={classItems}
+            value={classId}
+            width="w-44"
+            onChange={setClassId}
+          />
+          <FilterSelect
             items={teacherItems}
             value={teacher}
             width="w-44"
@@ -142,18 +190,25 @@ function ScheduleView() {
             width="w-40"
             onChange={setSubject}
           />
-          <FilterSelect items={roomItems} value={room} width="w-40" onChange={setRoom} />
+          <FilterSelect
+            items={roomItems}
+            value={room}
+            width="w-40"
+            onChange={setRoom}
+          />
 
           {schedule.data && (
             <div className="ml-auto flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="rounded-full">
-                {SCHEDULE_MSG.TOTAL_SESSIONS(schedule.data.summary.weekSessionCount)}
+                {SCHEDULE_MSG.TOTAL_SESSIONS(
+                  schedule.data.summary.weekSessionCount,
+                )}
               </Badge>
               {schedule.data.summary.needsCoordination > 0 && (
                 <Badge variant="danger" className="rounded-full">
                   <HugeiconsIcon icon={Alert01Icon} className="size-3" />
                   {SCHEDULE_MSG.NEEDS_COORDINATION(
-                    schedule.data.summary.needsCoordination
+                    schedule.data.summary.needsCoordination,
                   )}
                 </Badge>
               )}
@@ -176,10 +231,14 @@ function ScheduleView() {
           {schedule.data && (
             <ScheduleCalendar
               events={schedule.data.events}
+              date={selectedDate}
+              onDateChange={(next) => void setDate(next)}
               view={view as CalendarViewMode}
               onViewChange={(next) => setView(next === "week" ? null : next)}
               groupBy={groupBy as CalendarGroupBy}
-              onGroupByChange={(next) => setGroupBy(next === "time" ? null : next)}
+              onGroupByChange={(next) =>
+                setGroupBy(next === "time" ? null : next)
+              }
               onEventClick={(event) => setSelectedSessionId(event.id)}
             />
           )}
@@ -207,11 +266,16 @@ function ScheduleView() {
                 absentStudents: sessionDetail.absentStudents,
                 // Điểm danh là việc của giáo viên (`/teacher/*`), không có nút này ở khu back-office.
                 // Hai lối tắt dưới chỉ hiện với role vào được màn đích (admin, quản lý trung tâm).
-                onRequestReschedule: canAccess(ROUTES.MANAGER.TEACHER_SUBSTITUTES)
+                onRequestReschedule: canAccess(
+                  ROUTES.MANAGER.TEACHER_SUBSTITUTES,
+                )
                   ? () => router.push(ROUTES.MANAGER.TEACHER_SUBSTITUTES)
                   : undefined,
                 onViewClassDetail: canAccess(ROUTES.MANAGER.CLASSES)
-                  ? () => router.push(ROUTES.MANAGER.CLASS_DETAIL(sessionDetail.classId))
+                  ? () =>
+                      router.push(
+                        ROUTES.MANAGER.CLASS_DETAIL(sessionDetail.classId),
+                      )
                   : undefined,
               }
             : null
@@ -236,7 +300,9 @@ function FilterSelect({
     <Select
       items={items}
       value={value}
-      onValueChange={(next) => onChange(next === ALL_VALUE ? null : String(next))}
+      onValueChange={(next) =>
+        onChange(next === ALL_VALUE ? null : String(next))
+      }
     >
       <SelectTrigger className={`${width} rounded-xl`}>
         <SelectValue placeholder={items[ALL_VALUE]} />

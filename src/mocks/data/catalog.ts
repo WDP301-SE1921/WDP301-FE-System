@@ -7,6 +7,7 @@ import {
   getTestMonth,
 } from "@/mocks/data/session-schedule"
 import { MockError } from "@/mocks/utils/mock-query"
+import { todayInVietnam, yesterdayInVietnam } from "@/lib/calendar-date"
 import type {
   ClassRecord,
   ClassSession,
@@ -481,18 +482,14 @@ export const MOCK_ROOMS: Room[] = [
   { id: "room-301", name: "P.301", capacity: 15, isActive: false },
 ]
 
-/**
- * Ngày "hôm nay" cố định của bộ mock (Thứ 4) — chọn ngày này để 3 lớp Toán 8A,
- * Hóa 9B và Lý 7A cùng có buổi, khớp nội dung Dashboard trong docs mà vẫn giữ
- * đúng lịch cố định "T2 - T4 - T6" của Toán 8A ở PROMPT 8C.
- */
-export const MOCK_TODAY = "2026-09-16"
+/** Ngày hiện tại theo múi giờ Việt Nam để lịch mẫu không bị lỗi thời. */
+export const MOCK_TODAY = todayInVietnam()
 
 /** "Bây giờ" của bộ mock — dùng cho mọi dấu thời gian sinh ra lúc chạy để khớp `MOCK_TODAY`. */
 export const MOCK_NOW = `${MOCK_TODAY}T09:00:00`
 
-/** Ngày khai giảng chung của kỳ học trong bộ mock (Thứ 2). */
-const TERM_START = "2026-08-03"
+/** Lịch mẫu bắt đầu từ hôm qua; từng lớp vẫn học đúng lịch cố định. */
+const TERM_START = yesterdayInVietnam()
 
 /**
  * Sinh toàn bộ buổi học của một lớp từ lịch cố định (bộ sinh dùng chung với tạo lớp mới ở

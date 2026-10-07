@@ -22,7 +22,7 @@ export const runtime = "nodejs";
 const ALLOWED = [
   {
     method: "GET",
-    path: /^(auth\/me|parents\/(lookup|search)|programs|classes(?:\/[^/]+)?|registrations\/[^/]+(?:\/(receipt|bill))?|academic\/(?:curriculum-units(?:\/[^/]+)?|scheduled-sessions))$/,
+    path: /^(auth\/me|parents(?:\/(lookup|search))?|students|programs|classes(?:\/[^/]+)?|registrations\/[^/]+(?:\/(receipt|bill))?|academic\/(?:curriculum-units(?:\/[^/]+)?|scheduled-sessions))$/,
   },
   {
     method: "POST",
@@ -133,7 +133,10 @@ async function handle(
           "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
         );
     }
-    const permittedRoles = academicRoles(request.method, path);
+    const permittedRoles =
+      path === "parents" || path === "students"
+        ? (["center_manager", "staff"] as const)
+        : academicRoles(request.method, path);
     if (permittedRoles) {
       const session = await authorizedBackendFetch(request, "auth/me");
       const user = webUser(await readBackend<BackendUser>(session.response));
@@ -141,7 +144,7 @@ async function handle(
         throw backendError(
           403,
           "FORBIDDEN",
-          "Tài khoản không có quyền dùng API giáo trình này.",
+          "Tài khoản không có quyền truy cập dữ liệu này.",
         );
     }
     const init: RequestInit = { method: request.method };

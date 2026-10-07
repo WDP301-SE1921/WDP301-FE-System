@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
+import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ import { WizardLayout } from "@/components/shared/workflows/wizard-layout";
 import { toast } from "@/components/ui/toast";
 import { ROUTES } from "@/constants/routes";
 import { useCurrentUser } from "@/hooks/use-current-role";
-import { ApiError } from "@/lib/api/client";
 import { registrationApi } from "../api";
 import {
   addCalendarMonths,
@@ -43,8 +42,15 @@ import {
 } from "../storage";
 import { ApiFeedback, FieldError } from "./api-feedback";
 import { RegistrationReceipt } from "./registration-receipt";
+import { RegistrationClassPicker } from "./registration-class-picker";
 import { ParentEmailSearch } from "./parent-email-search";
 import { RegistrationBillPanel } from "@/features/billing/components/registration-bill-panel";
+import type { AuthUser } from "@/types/auth";
+import {
+  clearRegistrationProgress,
+  readRegistrationProgress,
+  saveRegistrationProgress,
+} from "../progress";
 
 const STEPS = [
   { id: "parent", label: "Phụ huynh", description: "Tìm và chọn tài khoản" },
@@ -71,24 +77,59 @@ const EMPTY: RegistrationInput = {
 };
 
 export function RegistrationWizard() {
-  const router = useRouter();
   const user = useCurrentUser();
+  // Storage is read only after auth hydrates; another operator gets a separate form.
+  if (!user) {
+    return (
+      <PageContainer>
+        <PageHeader title="Đăng ký học cho con" />
+        <p role="status">Đang tải tiến trình đăng ký…</p>
+      </PageContainer>
+    );
+  }
+  return <RegistrationWizardForm key={user.id} user={user} />;
+}
+
+function RegistrationWizardForm({ user }: { user: AuthUser }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const busy = useRef(false);
-  const [requestedStep, setStep] = useQueryState(
-    "step",
-    parseAsInteger.withDefault(0),
+  const suppressProgress = useRef(false);
+  const warnedStorage = useRef(false);
+  const [initial] = useState(() => {
+    const saved = readRegistrationProgress(user.id);
+    const linkedOrder = new URLSearchParams(window.location.search).get(
+      "registrationId",
+    );
+    // Viewing another bill must not replace an unfinished registration.
+    const ownsProgress =
+      !saved || !linkedOrder || linkedOrder === saved.registrationId;
+    return { saved: ownsProgress ? saved : null, ownsProgress };
+  });
+  const [ownsProgress, setOwnsProgress] = useState(initial.ownsProgress);
+  const [selectedParentEmail, setSelectedParentEmail] = useState(
+    initial.saved?.parentEmail ?? "",
   );
-  const [registrationId, setRegistrationId] = useQueryState(
-    "registrationId",
-    parseAsString,
-  );
-  const [emailParam, setEmailParam] = useQueryState(
-    "email",
-    parseAsString.withDefault(""),
-  );
-  const [studentIdParam] = useQueryState("studentId", parseAsString);
-  const [classIdParam] = useQueryState("classId", parseAsString);
+  const [params, setParams] = useQueryStates({
+    step: parseAsInteger.withDefault(initial.saved?.step ?? 0),
+    registrationId: parseAsString.withDefault(
+      initial.saved?.registrationId ?? "",
+    ),
+    email: parseAsString.withDefault(initial.saved?.email ?? ""),
+    studentId: parseAsString,
+    classId: parseAsString,
+  });
+  const {
+    step: requestedStep,
+    email: emailParam,
+    studentId: studentIdParam,
+    classId: classIdParam,
+  } = params;
+  const registrationId = params.registrationId || null;
+  const setStep = (step: number) => setParams({ step });
+  const setRegistrationId = (id: string | null) =>
+    setParams({ registrationId: id ?? "" });
+  const setEmailParam = (email: string) => setParams({ email });
   const requestedClass = useQuery({
     queryKey: ["registration-class", classIdParam],
     queryFn: () => registrationApi.class(classIdParam!),
@@ -97,14 +138,27 @@ export function RegistrationWizard() {
   });
   const form = useForm<RegistrationInput>({
     resolver: zodResolver(registrationSchema),
-    defaultValues: EMPTY,
+    defaultValues: initial.saved
+      ? {
+          ...initial.saved.values,
+          packageMonths: initial.saved.values.packageMonths ?? Number.NaN,
+        }
+      : EMPTY,
   });
   const values = useWatch({ control: form.control }) as RegistrationInput;
   const lookup = useMutation({
     mutationFn: (email: string) => registrationApi.lookup(email),
     retry: false,
   });
-  const parent = lookup.data;
+  const restoredParent = useQuery({
+    queryKey: ["registration-parent", selectedParentEmail],
+    queryFn: ({ signal }) =>
+      registrationApi.lookup(selectedParentEmail, signal),
+    enabled: !!selectedParentEmail,
+    retry: false,
+    staleTime: 0,
+  });
+  const parent = selectedParentEmail ? restoredParent.data : undefined;
   const parentReady = parent?.status === "ACTIVE" && !!parent.emailVerifiedAt;
   const students =
     parent?.parentProfile?.students.filter(
@@ -137,6 +191,8 @@ export function RegistrationWizard() {
   const selectedClass = classes.data?.find(
     (item) => item.id === values.classId,
   );
+  const gradeClasses =
+    classes.data?.filter((item) => item.program.grade === child?.grade) ?? [];
   const order = useQuery({
     queryKey: ["registration", registrationId],
     queryFn: () => registrationApi.get(registrationId!),
@@ -168,7 +224,65 @@ export function RegistrationWizard() {
     retry: false,
   });
   const isBusy = lookup.isPending || draft.isPending || cancel.isPending;
+  useEffect(() => {
+    function persist(input = form.getValues()) {
+      if (!ownsProgress) return;
+      const empty =
+        !emailParam &&
+        !selectedParentEmail &&
+        !registrationId &&
+        !input.targetStudentId;
+      if (
+        suppressProgress.current ||
+        empty ||
+        order.data?.status === "COMPLETED" ||
+        order.data?.status === "CANCELLED"
+      ) {
+        clearRegistrationProgress(user.id);
+        return;
+      }
+      const saved = saveRegistrationProgress(user.id, {
+        version: 1,
+        step: Math.min(4, Math.max(0, requestedStep)),
+        email: emailParam,
+        parentEmail: selectedParentEmail,
+        registrationId,
+        values: {
+          ...input,
+          packageMonths: Number.isFinite(input.packageMonths)
+            ? input.packageMonths
+            : null,
+        },
+      });
+      if (!saved && !warnedStorage.current) {
+        warnedStorage.current = true;
+        toast.warning(
+          "Trình duyệt không cho lưu tiến trình. Dữ liệu vẫn được giữ khi chuyển mục, nhưng có thể mất khi tải lại trang.",
+        );
+      }
+    }
+    persist();
+    const unsubscribe = form.subscribe({
+      formState: { values: true },
+      callback: ({ values }) => persist(values),
+    });
+    return () => {
+      persist();
+      unsubscribe();
+    };
+  }, [
+    form,
+    ownsProgress,
+    user.id,
+    emailParam,
+    selectedParentEmail,
+    registrationId,
+    requestedStep,
+    order.data?.status,
+  ]);
+
   function selectStudent(student: { id: string; grade: number }) {
+    if (student.id === form.getValues("targetStudentId")) return;
     const classroom = requestedClass.data;
     const preselect =
       classroom?.program.grade === student.grade &&
@@ -187,8 +301,9 @@ export function RegistrationWizard() {
     draft.reset();
   }
   let step = Math.min(2, Math.max(0, requestedStep));
-  if (!parentReady) step = 0;
-  else if (step > 1 && !child) step = 1;
+  if (!parentReady && (!selectedParentEmail || restoredParent.isSuccess))
+    step = 0;
+  else if (parentReady && step > 1 && !child) step = 1;
   if (registrationId) step = order.data?.status === "COMPLETED" ? 4 : 3;
   const currentOrder = order.data;
   const quote =
@@ -208,11 +323,14 @@ export function RegistrationWizard() {
   async function handleLookup(input: { email: string }) {
     if (busy.current) return;
     busy.current = true;
-    form.reset(EMPTY);
     lookup.reset();
     try {
       await setEmailParam(input.email);
       const result = await lookup.mutateAsync(input.email);
+      suppressProgress.current = false;
+      queryClient.setQueryData(["registration-parent", result.email], result);
+      if (result.email !== selectedParentEmail) form.reset(EMPTY);
+      setSelectedParentEmail(result.email);
       const preselected = result.parentProfile?.students.find(
         (item) => item.id === studentIdParam && item.status === "ACTIVE",
       );
@@ -323,12 +441,38 @@ export function RegistrationWizard() {
     }
   }
   async function startNew() {
+    suppressProgress.current = true;
+    clearRegistrationProgress(user.id);
+    clearDraftAttempt(user.id);
+    await setParams({
+      step: 0,
+      registrationId: "",
+      email: "",
+      studentId: null,
+      classId: null,
+    });
+    setSelectedParentEmail("");
     form.reset(EMPTY);
     lookup.reset();
     draft.reset();
     cancel.reset();
-    await setRegistrationId(null);
-    await setStep(0);
+    setOwnsProgress(true);
+  }
+  async function cancelRegistration() {
+    if (busy.current || isBusy) return;
+    busy.current = true;
+    try {
+      if (registrationId && currentOrder?.status !== "CANCELLED") {
+        const result = await cancel.mutateAsync(registrationId);
+        queryClient.setQueryData(["registration", registrationId], result);
+      }
+      await startNew();
+      toast.success("Đã hủy đăng ký và xóa tiến trình đã lưu.");
+    } catch {
+      // Retain all selections until the server confirms cancellation.
+    } finally {
+      busy.current = false;
+    }
   }
   const parentWarning =
     parent &&
@@ -350,6 +494,7 @@ export function RegistrationWizard() {
         error={requestedClass.error}
         retry={() => void requestedClass.refetch()}
       />
+      <ApiFeedback error={cancel.error} />
       <WizardLayout
         steps={STEPS}
         currentStep={step}
@@ -429,9 +574,16 @@ export function RegistrationWizard() {
                 disabled={isBusy}
                 onClick={() => router.push(ROUTES.STAFF.PAYMENTS)}
               >
-                {registrationId ? "Lưu và tiếp tục sau" : "Đóng"}
+                Lưu và tiếp tục sau
               </Button>
               <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="ghost"
+                  disabled={isBusy || (!!registrationId && !currentOrder)}
+                  onClick={cancelRegistration}
+                >
+                  Hủy đăng ký
+                </Button>
                 {step > 0 && step < 3 && (
                   <Button
                     variant="outline"
@@ -458,6 +610,7 @@ export function RegistrationWizard() {
                     disabled={
                       isBusy ||
                       !user ||
+                      (!!selectedParentEmail && !parent) ||
                       (step === 0 && (!parentReady || !students.length)) ||
                       (step === 2 && classes.isFetching)
                     }
@@ -470,7 +623,31 @@ export function RegistrationWizard() {
           )
         }
       >
-        {step === 0 && (
+        {selectedParentEmail && !parent && !registrationId && (
+          <Card>
+            <CardContent className="space-y-3 py-6">
+              {restoredParent.isPending && (
+                <p role="status">Đang khôi phục thông tin đăng ký…</p>
+              )}
+              <ApiFeedback
+                error={restoredParent.error}
+                retry={() => void restoredParent.refetch()}
+              />
+              {restoredParent.isError && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedParentEmail("");
+                    void setStep(0);
+                  }}
+                >
+                  Chọn lại phụ huynh
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        {step === 0 && (!selectedParentEmail || parent || registrationId) && (
           <Card>
             <CardHeader>
               <CardTitle>Tra cứu phụ huynh</CardTitle>
@@ -484,7 +661,9 @@ export function RegistrationWizard() {
                 value={emailParam}
                 disabled={lookup.isPending}
                 onChange={(email) => {
+                  suppressProgress.current = false;
                   void setEmailParam(email);
+                  setSelectedParentEmail("");
                   lookup.reset();
                   form.reset(EMPTY);
                 }}
@@ -518,7 +697,7 @@ export function RegistrationWizard() {
             </CardContent>
           </Card>
         )}
-        {step === 1 && (
+        {step === 1 && parent && (
           <Card>
             <CardHeader>
               <CardTitle>Chọn hồ sơ con</CardTitle>
@@ -561,7 +740,7 @@ export function RegistrationWizard() {
             </CardContent>
           </Card>
         )}
-        {step === 2 && (
+        {step === 2 && parent && (
           <Card>
             <CardHeader>
               <CardTitle>Chọn lớp và kỳ học</CardTitle>
@@ -580,85 +759,29 @@ export function RegistrationWizard() {
                   Đang tải lớp học…
                 </p>
               )}
-              {classes.data
-                ?.filter((item) => item.program.grade === child?.grade)
-                .map((item) => {
-                  const eligible =
-                    item.isOpen &&
-                    item.weeklySchedules.length > 0 &&
-                    item.isEligible !== false;
-                  return (
-                    <label
-                      key={item.id}
-                      className={`flex items-start gap-3 rounded-xl border p-4 ${values.classId === item.id ? "border-primary bg-primary/5" : "border-border"} ${eligible ? "cursor-pointer" : "opacity-60"}`}
-                    >
-                      <input
-                        className="mt-1"
-                        type="radio"
-                        name="class"
-                        checked={values.classId === item.id}
-                        disabled={
-                          !eligible &&
-                          item.ineligibleReason !== "INVALID_START_DATE"
-                        }
-                        onChange={() => {
-                          form.setValue("classId", item.id);
-                          form.setValue(
-                            "startDate",
-                            values.startDate &&
-                              item.weeklySchedules.some(
-                                (slot) =>
-                                  slot.weekday === isoWeekday(values.startDate),
-                              )
-                              ? values.startDate
-                              : nextStudyDate(item.weeklySchedules),
-                          );
-                          form.clearErrors();
-                          draft.reset();
-                        }}
-                      />
-                      <span className="flex-1 space-y-1">
-                        <span className="block font-medium">{item.name}</span>
-                        <span className="block text-sm">
-                          {item.program.subject} · Khối {item.program.grade}
-                        </span>
-                        <span className="block text-sm text-muted-foreground">
-                          {scheduleText(item.weeklySchedules) ||
-                            "Chưa có lịch tuần"}
-                        </span>
-                        <span className="block text-sm">
-                          {money(item.monthlyFee)}/tháng · Sức chứa{" "}
-                          {item.capacity} học sinh
-                        </span>
-                        {item.availableSeats !== undefined && (
-                          <span className="block text-sm">
-                            Còn {item.availableSeats} chỗ trong kỳ đã chọn
-                          </span>
-                        )}
-                        {item.isEligible === false && (
-                          <span className="block text-sm text-destructive">
-                            {
-                              new ApiError(
-                                item.ineligibleReason ?? "CLASS_UNAVAILABLE",
-                                item.ineligibleMessage ||
-                                  "Lớp không phù hợp với học sinh hoặc kỳ học này.",
-                                409,
-                              ).message
-                            }
-                          </span>
-                        )}
-                      </span>
-                      <Badge variant={eligible ? "success" : "secondary"}>
-                        {eligible
-                          ? "Mở đăng ký"
-                          : item.isEligible === false
-                            ? "Không phù hợp"
-                            : "Chưa mở"}
-                      </Badge>
-                    </label>
-                  );
-                })}
-              {classes.isSuccess && !classes.data.length && (
+              {classes.isSuccess && gradeClasses.length > 0 && (
+                <RegistrationClassPicker
+                  key={child?.id}
+                  classes={gradeClasses}
+                  selectedClassId={values.classId}
+                  onSelect={(item) => {
+                    form.setValue("classId", item.id);
+                    form.setValue(
+                      "startDate",
+                      values.startDate &&
+                        item.weeklySchedules.some(
+                          (slot) =>
+                            slot.weekday === isoWeekday(values.startDate),
+                        )
+                        ? values.startDate
+                        : nextStudyDate(item.weeklySchedules),
+                    );
+                    form.clearErrors();
+                    draft.reset();
+                  }}
+                />
+              )}
+              {classes.isSuccess && !gradeClasses.length && (
                 <p className="text-sm text-muted-foreground">
                   Chưa có lớp cho khối {child?.grade}. Quản lý cần tạo lớp và
                   lịch học trước.
@@ -679,7 +802,9 @@ export function RegistrationWizard() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="registration-months">Gói học (tháng)</Label>
+                  <Label htmlFor="registration-months">
+                    Đóng học phí (tháng)
+                  </Label>
                   <Input
                     id="registration-months"
                     type="number"
@@ -709,11 +834,18 @@ export function RegistrationWizard() {
             <RegistrationBillPanel
               key={registrationId}
               registrationId={registrationId}
+              paymentDraft={{
+                receiptNumber: values.receiptNumber,
+                hasReceivedPayment: values.hasReceivedPayment,
+              }}
+              onPaymentDraftChange={(input) => {
+                form.setValue("receiptNumber", input.receiptNumber);
+                form.setValue("hasReceivedPayment", input.hasReceivedPayment);
+              }}
               onPaid={async () => {
                 await setStep(4);
               }}
             />
-            <ApiFeedback error={cancel.error} />
             {order.data?.status === "CANCELLED" && (
               <Button onClick={startNew}>Tạo đăng ký mới</Button>
             )}

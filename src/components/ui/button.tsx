@@ -59,15 +59,20 @@ function Button({
   rightIcon,
   children,
   disabled,
+  render,
+  nativeButton,
   ...props
 }: ButtonProps) {
   const isIconOnly = size?.toString().startsWith("icon")
+  const resolvedNativeButton = nativeButton ?? (render ? false : undefined)
 
   return (
     <ButtonPrimitive
       data-slot="button"
       disabled={disabled || isLoading}
       className={cn(buttonVariants({ variant, size, className }))}
+      render={render}
+      nativeButton={resolvedNativeButton}
       {...props}
     >
       {isLoading ? (

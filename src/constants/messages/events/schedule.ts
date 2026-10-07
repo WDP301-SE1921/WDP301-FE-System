@@ -17,6 +17,7 @@ export const SCHEDULE_MSG = {
   FILTER_ALL_TEACHERS: "Tất cả giáo viên",
   FILTER_ALL_SUBJECTS: "Tất cả môn",
   FILTER_ALL_ROOMS: "Tất cả phòng",
+  FILTER_ALL_CLASSES: "Tất cả lớp",
   FILTER_ALL_GRADES: "Tất cả khối",
 
   TOTAL_SESSIONS: (count: number) => `Tổng cộng: ${count} buổi trong tuần`,
@@ -31,7 +32,8 @@ export const SCHEDULE_MSG = {
   DRAWER_OPEN_CLASS: "Mở lớp & Điểm danh",
 
   EMPTY_TITLE: "Không có buổi học nào",
-  EMPTY_DESC: "Không có buổi học nào khớp bộ lọc hiện tại. Thử đổi giáo viên, môn hoặc phòng.",
+  EMPTY_DESC:
+    "Không có buổi học nào khớp bộ lọc hiện tại. Thử đổi lớp, giáo viên, môn hoặc phòng.",
 
   EXPORT_SUCCESS: "Đã xuất lịch biểu",
   ADD_SESSION_SUCCESS: "Đã thêm buổi học",

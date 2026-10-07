@@ -10,13 +10,18 @@ import type { RegistrationReceipt, RegistrationOrder } from "@/types/backend";
 import { ApiError } from "@/lib/api/client";
 import { RegistrationBillCard } from "./registration-bill-card";
 import { OfflinePaymentDialog } from "./offline-payment-dialog";
+import type { OfflineConfirmationInput } from "@/lib/validators/registration-bill";
 
 export function RegistrationBillPanel({
   registrationId,
   onPaid,
+  paymentDraft,
+  onPaymentDraftChange,
 }: {
   registrationId: string;
   onPaid?: (receipt: RegistrationReceipt) => Promise<void>;
+  paymentDraft?: OfflineConfirmationInput;
+  onPaymentDraftChange?: (values: OfflineConfirmationInput) => void;
 }) {
   const user = useCurrentUser();
   const queryClient = useQueryClient();
@@ -42,6 +47,8 @@ export function RegistrationBillPanel({
           key={`${user.id}:${registrationId}`}
           bill={bill.data}
           operatorId={user.id}
+          defaultValues={paymentDraft}
+          onValuesChange={onPaymentDraftChange}
           onClose={() => setOpen(false)}
           onConfirm={async (attempt) => {
             const receipt = await registrationApi.confirm(

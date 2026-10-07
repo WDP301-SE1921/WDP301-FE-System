@@ -1,5 +1,10 @@
-import { RegistrationParentLookupView } from "@/features/registration-flow/components/parent-lookup-view";
-export const metadata = { title: "Tra cứu hồ sơ con" };
+import { Suspense } from "react";
+import { RegistrationStudentsView } from "@/features/registration-flow/components/directory-list-view";
+export const metadata = { title: "Hồ sơ con" };
 export default function StaffStudentsPage() {
-  return <RegistrationParentLookupView students />;
+  return (
+    <Suspense fallback={<p className="p-6">Đang tải hồ sơ con…</p>}>
+      <RegistrationStudentsView />
+    </Suspense>
+  );
 }

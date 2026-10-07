@@ -36,18 +36,32 @@ import { getSessionDetail } from "@/features/schedule/selectors"
 import { useSchedule } from "@/features/schedule/hooks/use-schedule"
 import { ReportAbsenceDialog } from "@/features/schedule/components/report-absence-dialog"
 import { useMyPendingAbsenceSessionIds } from "@/features/work-credits/hooks/use-work-credits"
+import { isCalendarDate, yesterdayInVietnam } from "@/lib/calendar-date"
 
 const ALL_VALUE = "all"
 
 function TeacherScheduleView() {
   const router = useRouter()
 
-  const [classId, setClassId] = useQueryState("classId", parseAsString.withDefault(ALL_VALUE))
-  const [view, setView] = useQueryState("view", parseAsString.withDefault("week"))
-  const [groupBy, setGroupBy] = useQueryState("groupBy", parseAsString.withDefault("time"))
+  const [classId, setClassId] = useQueryState(
+    "classId",
+    parseAsString.withDefault(ALL_VALUE),
+  )
+  const [date, setDate] = useQueryState(
+    "date",
+    parseAsString.withDefault(yesterdayInVietnam()),
+  )
+  const [view, setView] = useQueryState(
+    "view",
+    parseAsString.withDefault("week"),
+  )
+  const [groupBy, setGroupBy] = useQueryState(
+    "groupBy",
+    parseAsString.withDefault("time"),
+  )
   const [selectedSessionId, setSelectedSessionId] = useQueryState(
     "session",
-    parseAsString.withDefault("")
+    parseAsString.withDefault(""),
   )
 
   const classItems = React.useMemo<Record<string, string>>(
@@ -57,10 +71,10 @@ function TeacherScheduleView() {
         getClassRows({ teacherId: CURRENT_TEACHER_ID }).map((row) => [
           row.classRecord.id,
           row.classRecord.name,
-        ])
+        ]),
       ),
     }),
-    []
+    [],
   )
 
   const filters = React.useMemo(
@@ -68,22 +82,30 @@ function TeacherScheduleView() {
       teacherId: CURRENT_TEACHER_ID,
       classId: classId === ALL_VALUE ? undefined : classId,
     }),
-    [classId]
+    [classId],
   )
 
-  const schedule = useSchedule(filters)
+  const selectedDate = isCalendarDate(date) ? date : yesterdayInVietnam()
+  const schedule = useSchedule(filters, selectedDate)
   const pendingAbsenceIds = useMyPendingAbsenceSessionIds(CURRENT_TEACHER_ID)
-  const [reportSessionId, setReportSessionId] = React.useState<string | null>(null)
+  const [reportSessionId, setReportSessionId] = React.useState<string | null>(
+    null,
+  )
 
   const sessionDetail = React.useMemo(
     () => (selectedSessionId ? getSessionDetail(selectedSessionId) : null),
-    [selectedSessionId]
+    [selectedSessionId],
   )
 
   const reportSessionDetail = React.useMemo(() => {
     const detail = reportSessionId ? getSessionDetail(reportSessionId) : null
     return detail
-      ? { id: detail.id, title: detail.title, date: detail.date, time: detail.time }
+      ? {
+          id: detail.id,
+          title: detail.title,
+          date: detail.date,
+          time: detail.time,
+        }
       : null
   }, [reportSessionId])
 
@@ -100,7 +122,9 @@ function TeacherScheduleView() {
 
       <Alert variant="info">
         <HugeiconsIcon icon={InformationCircleIcon} />
-        <AlertDescription>{TEACHER_ABSENCE_MSG.SCHEDULE_FIXED_NOTE}</AlertDescription>
+        <AlertDescription>
+          {TEACHER_ABSENCE_MSG.SCHEDULE_FIXED_NOTE}
+        </AlertDescription>
       </Alert>
 
       <Card className="gap-4">
@@ -127,13 +151,15 @@ function TeacherScheduleView() {
           {schedule.data && (
             <div className="ml-auto flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="rounded-full">
-                {SCHEDULE_MSG.TOTAL_SESSIONS(schedule.data.summary.weekSessionCount)}
+                {SCHEDULE_MSG.TOTAL_SESSIONS(
+                  schedule.data.summary.weekSessionCount,
+                )}
               </Badge>
               {schedule.data.summary.needsCoordination > 0 && (
                 <Badge variant="danger" className="rounded-full">
                   <HugeiconsIcon icon={Alert01Icon} className="size-3" />
                   {SCHEDULE_MSG.NEEDS_COORDINATION(
-                    schedule.data.summary.needsCoordination
+                    schedule.data.summary.needsCoordination,
                   )}
                 </Badge>
               )}
@@ -156,10 +182,14 @@ function TeacherScheduleView() {
           {schedule.data && (
             <ScheduleCalendar
               events={schedule.data.events}
+              date={selectedDate}
+              onDateChange={(next) => void setDate(next)}
               view={view as CalendarViewMode}
               onViewChange={(next) => setView(next === "week" ? null : next)}
               groupBy={groupBy as CalendarGroupBy}
-              onGroupByChange={(next) => setGroupBy(next === "time" ? null : next)}
+              onGroupByChange={(next) =>
+                setGroupBy(next === "time" ? null : next)
+              }
               onEventClick={(event) => setSelectedSessionId(event.id)}
             />
           )}
@@ -186,9 +216,13 @@ function TeacherScheduleView() {
                 attendedCount: sessionDetail.attendedCount,
                 absentStudents: sessionDetail.absentStudents,
                 onTakeAttendance: () =>
-                  router.push(ROUTES.TEACHER.ATTENDANCE_SESSION(sessionDetail.id)),
+                  router.push(
+                    ROUTES.TEACHER.ATTENDANCE_SESSION(sessionDetail.id),
+                  ),
                 onViewClassDetail: () =>
-                  router.push(ROUTES.TEACHER.CLASS_DETAIL(sessionDetail.classId)),
+                  router.push(
+                    ROUTES.TEACHER.CLASS_DETAIL(sessionDetail.classId),
+                  ),
                 // Chỉ báo nghỉ được buổi của mình chưa diễn ra, chưa điểm danh, chưa hủy, chưa báo.
                 notice: pendingAbsenceIds.data?.includes(sessionDetail.id)
                   ? TEACHER_ABSENCE_MSG.REPORTED_BADGE

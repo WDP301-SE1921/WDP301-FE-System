@@ -2,6 +2,10 @@ import { apiRequest, ApiError } from "@/lib/api/client";
 import type {
   ParentLookup,
   ParentSuggestion,
+  PaginatedList,
+  DirectoryListFilters,
+  ParentListItem,
+  StudentListItem,
   RegistrationClass,
   RegistrationOrder,
   RegistrationProgram,
@@ -29,7 +33,22 @@ async function allPages<T>(path: string, filters: Record<string, string> = {}) {
     if (batch.length < 100) return rows;
   }
 }
+function directoryPage<T>(
+  path: "parents" | "students",
+  filters: DirectoryListFilters,
+  signal?: AbortSignal,
+) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
+  return apiRequest<PaginatedList<T>>(`${path}?${query}`, { signal });
+}
 export const registrationApi = {
+  parents: (filters: DirectoryListFilters, signal?: AbortSignal) =>
+    directoryPage<ParentListItem>("parents", filters, signal),
+  students: (filters: DirectoryListFilters, signal?: AbortSignal) =>
+    directoryPage<StudentListItem>("students", filters, signal),
   searchParents: async (
     email: string,
     signal?: AbortSignal,

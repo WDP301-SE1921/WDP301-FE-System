@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -37,11 +37,15 @@ export function OfflinePaymentDialog({
   operatorId,
   onClose,
   onConfirm,
+  defaultValues,
+  onValuesChange,
 }: {
   bill: RegistrationBill;
   operatorId: string;
   onClose: () => void;
   onConfirm: (attempt: PaymentAttempt) => Promise<void>;
+  defaultValues?: OfflineConfirmationInput;
+  onValuesChange?: (values: OfflineConfirmationInput) => void;
 }) {
   const lock = useRef(false);
   const [restored] = useState(() => {
@@ -59,8 +63,10 @@ export function OfflinePaymentDialog({
   const form = useForm<OfflineConfirmationInput>({
     resolver: zodResolver(offlineConfirmationSchema),
     defaultValues: {
-      receiptNumber: restored.attempt?.body.receiptNumber ?? "",
-      hasReceivedPayment: false,
+      receiptNumber: restored.attempt
+        ? (restored.attempt.body.receiptNumber ?? "")
+        : (defaultValues?.receiptNumber ?? ""),
+      hasReceivedPayment: defaultValues?.hasReceivedPayment ?? false,
     },
   });
   const verified = useWatch({
@@ -68,6 +74,12 @@ export function OfflinePaymentDialog({
     name: "hasReceivedPayment",
   });
   const pending = form.formState.isSubmitting;
+  useEffect(() => {
+    return form.subscribe({
+      formState: { values: true },
+      callback: ({ values }) => onValuesChange?.(values),
+    });
+  }, [form, onValuesChange]);
   async function confirm(input: OfflineConfirmationInput) {
     if (lock.current || restored.error || bill.status !== "UNPAID") return;
     lock.current = true;

@@ -4,7 +4,7 @@ import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets"
 import { PageContainer } from "@/components/shared/layout/page-container"
 import { STUDENT_MSG } from "@/constants/messages/events/student"
 import { StudentsView } from "@/features/students/components/students-view"
-import { RegistrationParentLookupView } from "@/features/registration-flow/components/parent-lookup-view"
+import { RegistrationStudentsView } from "@/features/registration-flow/components/directory-list-view"
 import { getServerRole } from "@/lib/auth/server-role"
 
 export const metadata: Metadata = {
@@ -22,7 +22,11 @@ export default async function StudentsPage() {
         </PageContainer>
       }
     >
-      {role === "staff" || role === "center_manager" ? <RegistrationParentLookupView students /> : <StudentsView />}
+      {role === "staff" || role === "center_manager" ? (
+        <RegistrationStudentsView />
+      ) : (
+        <StudentsView />
+      )}
     </Suspense>
   )
 }

@@ -41,13 +41,13 @@ function Sidebar({
       data-slot="sidebar"
       data-collapsed={collapsed}
       className={cn(
-        "relative flex h-screen flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-300 select-none",
+        "relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-300 select-none",
         collapsed ? "w-16" : "w-64",
         className,
       )}
     >
       {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
+      <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-extrabold text-base shadow-sm">
             EG
@@ -79,7 +79,7 @@ function Sidebar({
       </div>
 
       {/* Navigation List */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-6">
         {menuGroups.map((group, idx) => (
           <div key={group.groupTitle || idx} className="space-y-1.5">
             {!collapsed && group.groupTitle && (

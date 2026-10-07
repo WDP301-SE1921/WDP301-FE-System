@@ -7,13 +7,18 @@ import { Button } from "@/components/ui/button"
 import { DEBOUNCE } from "@/constants/ui"
 import { ACTION_LABEL } from "@/constants/messages"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon, FilterIcon, Cancel01Icon } from "@hugeicons/core-free-icons"
+import {
+  Search01Icon,
+  FilterIcon,
+  Cancel01Icon,
+} from "@hugeicons/core-free-icons"
 
 export interface FilterBarProps {
   searchPlaceholder?: string
   searchParamKey?: string
   children?: React.ReactNode
   onClearFilters?: () => void
+  onSearchChange?: (search: string) => void
   showClearButton?: boolean
   className?: string
 }
@@ -23,12 +28,13 @@ function FilterBar({
   searchParamKey = "search",
   children,
   onClearFilters,
+  onSearchChange,
   showClearButton = true,
   className,
 }: FilterBarProps) {
   const [querySearch, setQuerySearch] = useQueryState(
     searchParamKey,
-    parseAsString.withDefault("")
+    parseAsString.withDefault(""),
   )
   const [inputValue, setInputValue] = React.useState(querySearch)
   const [prevQuerySearch, setPrevQuerySearch] = React.useState(querySearch)
@@ -45,11 +51,12 @@ function FilterBar({
     const timer = setTimeout(() => {
       if (inputValue !== querySearch) {
         setQuerySearch(inputValue || null)
+        onSearchChange?.(inputValue)
       }
     }, DEBOUNCE.SEARCH)
 
     return () => clearTimeout(timer)
-  }, [inputValue, querySearch, setQuerySearch])
+  }, [inputValue, querySearch, setQuerySearch, onSearchChange])
 
   const handleClear = () => {
     setInputValue("")
@@ -70,7 +77,9 @@ function FilterBar({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={searchPlaceholder}
-            prefixIcon={<HugeiconsIcon icon={Search01Icon} className="size-4" />}
+            prefixIcon={
+              <HugeiconsIcon icon={Search01Icon} className="size-4" />
+            }
             suffixIcon={
               inputValue ? (
                 <button

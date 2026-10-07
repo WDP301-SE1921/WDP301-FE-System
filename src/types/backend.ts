@@ -59,6 +59,34 @@ export interface ParentSuggestion {
   displayName: string | null;
   status: "ACTIVE" | "DISABLED";
 }
+export interface PaginatedList<T> {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+}
+export interface DirectoryListFilters {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: string;
+  grade?: number;
+  parentUserId?: string;
+}
+export interface ParentListItem extends BackendUser {
+  createdAt: string;
+  parentProfile: {
+    id: string;
+    phone: string | null;
+    _count: { students: number };
+  } | null;
+}
+export interface StudentListItem extends StudentProfile {
+  parentProfile: {
+    phone: string | null;
+    user: { id: string; email: string; displayName: string | null };
+  };
+}
 export interface RegistrationProgram {
   id: string;
   name: string;
