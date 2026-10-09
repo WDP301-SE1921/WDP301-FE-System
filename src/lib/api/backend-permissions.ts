@@ -1,15 +1,141 @@
 import type { WebRole } from "@/constants/roles";
 
-/** Quyền tại BFF cho các API giáo trình; BE vẫn kiểm tra quyền và sở hữu dữ liệu. */
+const manager = ["center_manager"] as const;
+const designer = ["curriculum_designer"] as const;
+const contentReaders = [
+  "center_manager",
+  "curriculum_designer",
+  "teacher",
+] as const;
+const sessionReaders = ["center_manager", "staff", "teacher"] as const;
+const catalogReaders = [...sessionReaders, "curriculum_designer"] as const;
+
+// BE also enforces ownership and state; unmatched method/path pairs are denied.
+const rules: {
+  method: string;
+  path: RegExp;
+  roles: readonly WebRole[] | null;
+}[] = [
+  { method: "GET", path: /^auth\/me$/, roles: null },
+  { method: "POST", path: /^auth\/(login|logout|register)$/, roles: null },
+  {
+    method: "GET",
+    path: /^parents\/search$|^registrations\/[^/]+(?:\/(bill|receipt))?$/,
+    roles: ["staff"],
+  },
+  {
+    method: "POST",
+    path: /^registrations(?:\/[^/]+\/(cancel|confirm-payment))?$/,
+    roles: ["staff"],
+  },
+  {
+    method: "GET",
+    path: /^parents(?:\/lookup)?$|^students$/,
+    roles: ["center_manager", "staff"],
+  },
+  {
+    method: "GET",
+    path: /^(subjects|programs)(?:\/[^/]+)?$/,
+    roles: catalogReaders,
+  },
+  { method: "POST", path: /^(subjects|programs|classes)$/, roles: manager },
+  {
+    method: "PATCH",
+    path: /^(subjects|programs|classes)\/[^/]+$/,
+    roles: manager,
+  },
+  {
+    method: "DELETE",
+    path: /^(subjects|programs|classes)\/[^/]+$/,
+    roles: manager,
+  },
+  {
+    method: "GET",
+    path: /^teachers(?:\/[^/]+)?$/,
+    roles: ["center_manager", "staff"],
+  },
+  {
+    method: "GET",
+    path: /^classes(?:\/[^/]+(?:\/schedules)?)?$/,
+    roles: sessionReaders,
+  },
+  { method: "POST", path: /^classes\/[^/]+\/schedules$/, roles: manager },
+  { method: "PUT", path: /^classes\/[^/]+\/schedules$/, roles: manager },
+  {
+    method: "PATCH",
+    path: /^classes\/[^/]+\/schedules\/[^/]+$/,
+    roles: manager,
+  },
+  {
+    method: "DELETE",
+    path: /^classes\/[^/]+\/schedules\/[^/]+$/,
+    roles: manager,
+  },
+  {
+    method: "GET",
+    path: /^academic\/curriculum-units(?:\/[^/]+)?$/,
+    roles: contentReaders,
+  },
+  {
+    method: "POST",
+    path: /^academic\/curriculum-units\/[^/]+\/validation$/,
+    roles: contentReaders,
+  },
+  {
+    method: "POST",
+    path: /^academic\/curriculum-units(?:\/[^/]+\/(lessons|monthly-tests|submit|revisions|import-preview|import-commit))?$/,
+    roles: designer,
+  },
+  {
+    method: "PATCH",
+    path: /^academic\/curriculum-units\/[^/]+(?:\/lessons\/[^/]+)?$/,
+    roles: designer,
+  },
+  {
+    method: "PUT",
+    path: /^academic\/curriculum-units\/[^/]+\/lesson-order$/,
+    roles: designer,
+  },
+  {
+    method: "DELETE",
+    path: /^academic\/curriculum-units\/[^/]+\/lessons\/[^/]+$/,
+    roles: designer,
+  },
+  {
+    method: "DELETE",
+    path: /^academic\/curriculum-units\/[^/]+$/,
+    roles: [...manager, ...designer],
+  },
+  {
+    method: "POST",
+    path: /^academic\/curriculum-units\/[^/]+\/(approve|request-changes)$/,
+    roles: manager,
+  },
+  {
+    method: "POST",
+    path: /^academic\/classes\/[^/]+\/(session-preview|session-generations)$/,
+    roles: manager,
+  },
+  {
+    method: "GET",
+    path: /^academic\/(scheduled-sessions(?:\/[^/]+)?|classes\/[^/]+\/session-generations|session-generations\/[^/]+)$/,
+    roles: sessionReaders,
+  },
+  {
+    method: "POST",
+    path: /^academic\/sessions\/[^/]+\/(reschedule-preview|reschedule|cancel)$/,
+    roles: manager,
+  },
+];
+
+export function backendRule(method: string, path: string) {
+  return rules.find((rule) => rule.method === method && rule.path.test(path));
+}
 export function academicRoles(
   method: string,
   path: string,
 ): readonly WebRole[] | null {
-  if (!path.startsWith("academic/")) return null;
-  if (method === "GET")
-    return path === "academic/scheduled-sessions"
-      ? ["center_manager", "staff", "teacher"]
-      : ["center_manager", "curriculum_designer", "teacher"];
-  if (/\/approve$|^academic\/classes\//.test(path)) return ["center_manager"];
-  return ["curriculum_designer"];
+  return path.startsWith("academic/")
+    ? (backendRule(method, path)?.roles ?? null)
+    : null;
 }

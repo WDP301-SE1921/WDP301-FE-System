@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { ScheduledSessionsView } from "@/features/curriculum/components/sessions-view";
+import { AcademicCalendarView } from "@/features/curriculum/components/calendar-view";
 
 export default function StaffSchedulePage() {
   return (
     <Suspense fallback={<p>Đang tải buổi học…</p>}>
-      <ScheduledSessionsView />
+      <AcademicCalendarView />
     </Suspense>
   );
 }

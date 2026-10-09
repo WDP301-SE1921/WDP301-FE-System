@@ -59,7 +59,12 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
       ...init,
       cache: "no-store",
       signal: AbortSignal.timeout(25_000),
-      headers: { "Content-Type": "application/json", ...init.headers },
+      headers: {
+        ...(init.body instanceof FormData
+          ? {}
+          : { "Content-Type": "application/json" }),
+        ...init.headers,
+      },
     });
   } catch {
     throw backendError(

@@ -6,11 +6,11 @@ export type StatusVariant =
   | "warning"
   | "info"
   | "neutral"
-  | "outline"
+  | "outline";
 
 export interface StatusConfig {
-  label: string
-  variant: StatusVariant
+  label: string;
+  variant: StatusVariant;
 }
 
 export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
@@ -69,6 +69,12 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     active: { label: "Đang dạy", variant: "success" },
     on_leave: { label: "Nghỉ phép", variant: "warning" },
     inactive: { label: "Ngừng hợp tác", variant: "danger" },
+  },
+  curriculum: {
+    DRAFT: { label: "Bản nháp", variant: "secondary" },
+    PENDING_REVIEW: { label: "Chờ duyệt", variant: "warning" },
+    APPROVED: { label: "Đã duyệt", variant: "success" },
+    ARCHIVED: { label: "Đã lưu trữ", variant: "neutral" },
   },
   session: {
     scheduled: { label: "Sắp diễn ra", variant: "info" },
@@ -134,4 +140,4 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     reviewed: { label: "Đã duyệt - Chưa công bố", variant: "info" },
     published: { label: "Đã công bố", variant: "success" },
   },
-}
+};

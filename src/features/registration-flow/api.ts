@@ -11,6 +11,8 @@ import type {
   RegistrationProgram,
   RegistrationReceipt,
   RegistrationBill,
+  AcademicSubject,
+  AcademicTeacher,
 } from "@/types/backend";
 import { registrationBillSchema } from "@/lib/validators/registration-bill";
 import {
@@ -20,7 +22,11 @@ import {
   type RegistrationInput,
 } from "./schemas";
 
-async function allPages<T>(path: string, filters: Record<string, string> = {}) {
+async function allPages<T>(
+  path: string,
+  filters: Record<string, string> = {},
+  signal?: AbortSignal,
+) {
   const rows: T[] = [];
   for (let page = 1; ; page++) {
     const query = new URLSearchParams({
@@ -28,7 +34,7 @@ async function allPages<T>(path: string, filters: Record<string, string> = {}) {
       page: String(page),
       limit: "100",
     });
-    const batch = await apiRequest<T[]>(`${path}?${query}`);
+    const batch = await apiRequest<T[]>(`${path}?${query}`, { signal });
     rows.push(...batch);
     if (batch.length < 100) return rows;
   }
@@ -98,10 +104,62 @@ export const registrationApi = {
       { signal },
     ),
   programs: () => allPages<RegistrationProgram>("programs"),
+  programsFiltered: (filters: Record<string, string>, signal?: AbortSignal) =>
+    allPages<RegistrationProgram>("programs", filters, signal),
+  program: (id: string, signal?: AbortSignal) =>
+    apiRequest<RegistrationProgram>(`programs/${encodeURIComponent(id)}`, {
+      signal,
+    }),
+  subjects: (search = "", signal?: AbortSignal) =>
+    apiRequest<AcademicSubject[]>(
+      `subjects?${new URLSearchParams({ search })}`,
+      { signal },
+    ),
+  teachers: async (signal?: AbortSignal) => {
+    const items: AcademicTeacher[] = [];
+    for (let page = 1; ; page++) {
+      const batch = await apiRequest<PaginatedList<AcademicTeacher>>(
+        `teachers?status=ACTIVE&limit=100&page=${page}`,
+        { signal },
+      );
+      items.push(...batch.items);
+      if (page * batch.limit >= batch.total) return { ...batch, items };
+    }
+  },
   classes: (filters: Record<string, string> = {}) =>
     allPages<RegistrationClass>("classes", filters),
-  class: (id: string) =>
-    apiRequest<RegistrationClass>(`classes/${encodeURIComponent(id)}`),
+  class: (id: string, page = 1, signal?: AbortSignal) =>
+    apiRequest<RegistrationClass>(
+      `classes/${encodeURIComponent(id)}?${new URLSearchParams({ page: String(page), limit: "20" })}`,
+      { signal },
+    ),
+  schedules: (id: string, signal?: AbortSignal) =>
+    apiRequest<RegistrationClass["weeklySchedules"]>(
+      `classes/${encodeURIComponent(id)}/schedules`,
+      { signal },
+    ),
+  saveSchedules: (
+    id: string,
+    body: { schedules: RegistrationClass["weeklySchedules"] },
+  ) =>
+    apiRequest<RegistrationClass>(
+      `classes/${encodeURIComponent(id)}/schedules`,
+      { method: "PUT", body },
+    ),
+  updateSchedule: (
+    id: string,
+    scheduleId: string,
+    body: Omit<RegistrationClass["weeklySchedules"][number], "id">,
+  ) =>
+    apiRequest<unknown>(
+      `classes/${encodeURIComponent(id)}/schedules/${encodeURIComponent(scheduleId)}`,
+      { method: "PATCH", body },
+    ),
+  deleteSchedule: (id: string, scheduleId: string) =>
+    apiRequest<unknown>(
+      `classes/${encodeURIComponent(id)}/schedules/${encodeURIComponent(scheduleId)}`,
+      { method: "DELETE" },
+    ),
   draft: (input: RegistrationInput, key?: string) =>
     apiRequest<RegistrationOrder>("registrations", {
       method: "POST",

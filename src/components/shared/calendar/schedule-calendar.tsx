@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SessionBlock, type SessionStatus } from "./session-block"
-import { HugeiconsIcon } from "@hugeicons/react"
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SessionBlock, type SessionStatus } from "./session-block";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Calendar01Icon,
   Location01Icon,
   Clock01Icon,
-} from "@hugeicons/core-free-icons"
-import { cn } from "cn"
+} from "@hugeicons/core-free-icons";
+import { cn } from "cn";
 import {
   addCalendarDays,
   calendarDateLabel,
@@ -20,40 +20,41 @@ import {
   isCalendarDate,
   todayInVietnam,
   yesterdayInVietnam,
-} from "@/lib/calendar-date"
+} from "@/lib/calendar-date";
 
 export interface CalendarEvent {
-  id: string
-  title: string
-  subject: string // "MATH" | "PHYS" | "CHEM" | "BIOL"
-  date: string // YYYY-MM-DD
-  time: string // e.g. "18:00 - 19:30"
-  startHour?: number // e.g. 18
-  room?: string
-  teacherName?: string
-  status?: SessionStatus
-  totalStudents?: number
-  attendedCount?: number
-  absentStudents?: Array<{ id: string; name: string; reason?: string }>
+  id: string;
+  title: string;
+  subject: string; // "MATH" | "PHYS" | "CHEM" | "BIOL"
+  date: string; // YYYY-MM-DD
+  time: string; // e.g. "18:00 - 19:30"
+  startHour?: number; // e.g. 18
+  room?: string;
+  teacherName?: string;
+  status?: SessionStatus;
+  totalStudents?: number;
+  attendedCount?: number;
+  absentStudents?: Array<{ id: string; name: string; reason?: string }>;
 }
 
-export type CalendarViewMode = "day" | "week"
-export type CalendarGroupBy = "time" | "room"
+export type CalendarViewMode = "day" | "week";
+export type CalendarGroupBy = "time" | "room";
 
 export interface ScheduleCalendarProps {
-  events: CalendarEvent[]
-  date?: string
-  onDateChange?: (date: string) => void
-  view?: CalendarViewMode
-  onViewChange?: (view: CalendarViewMode) => void
-  groupBy?: CalendarGroupBy
-  onGroupByChange?: (groupBy: CalendarGroupBy) => void
-  onEventClick?: (event: CalendarEvent) => void
-  onDateSelect?: (dateStr: string) => void
-  className?: string
+  events: CalendarEvent[];
+  date?: string;
+  onDateChange?: (date: string) => void;
+  view?: CalendarViewMode;
+  onViewChange?: (view: CalendarViewMode) => void;
+  groupBy?: CalendarGroupBy;
+  onGroupByChange?: (groupBy: CalendarGroupBy) => void;
+  onEventClick?: (event: CalendarEvent) => void;
+  onDateSelect?: (dateStr: string) => void;
+  className?: string;
+  showGroupBy?: boolean;
 }
 
-const SAMPLE_ROOMS = ["P.101", "P.102", "P.201", "P.202", "P.301"]
+const SAMPLE_ROOMS = ["P.101", "P.102", "P.201", "P.202", "P.301"];
 
 /**
  * Schedule Calendar component for Managers and Teachers.
@@ -70,47 +71,48 @@ function ScheduleCalendar({
   onEventClick,
   onDateSelect,
   className,
+  showGroupBy = true,
 }: ScheduleCalendarProps) {
   const [internalView, setInternalView] =
-    React.useState<CalendarViewMode>("week")
+    React.useState<CalendarViewMode>("week");
   const [internalGroupBy, setInternalGroupBy] =
-    React.useState<CalendarGroupBy>("time")
-  const [internalDate, setInternalDate] = React.useState(yesterdayInVietnam)
+    React.useState<CalendarGroupBy>("time");
+  const [internalDate, setInternalDate] = React.useState(yesterdayInVietnam);
 
-  const currentView = controlledView ?? internalView
-  const currentGroupBy = controlledGroupBy ?? internalGroupBy
-  const requestedDate = controlledDate ?? internalDate
+  const currentView = controlledView ?? internalView;
+  const currentGroupBy = controlledGroupBy ?? internalGroupBy;
+  const requestedDate = controlledDate ?? internalDate;
   const currentDate = isCalendarDate(requestedDate)
     ? requestedDate
-    : yesterdayInVietnam()
-  const today = todayInVietnam()
-  const weekStart = calendarWeekStart(currentDate)
-  const weekEnd = addCalendarDays(weekStart, 6)
+    : yesterdayInVietnam();
+  const today = todayInVietnam();
+  const weekStart = calendarWeekStart(currentDate);
+  const weekEnd = addCalendarDays(weekStart, 6);
 
   const handleDateChange = (date: string) => {
-    setInternalDate(date)
-    onDateChange?.(date)
-  }
+    setInternalDate(date);
+    onDateChange?.(date);
+  };
 
   const handleViewChange = (v: CalendarViewMode) => {
-    setInternalView(v)
-    onViewChange?.(v)
-  }
+    setInternalView(v);
+    onViewChange?.(v);
+  };
 
   const handleGroupByChange = (g: CalendarGroupBy) => {
-    setInternalGroupBy(g)
-    onGroupByChange?.(g)
-  }
+    setInternalGroupBy(g);
+    onGroupByChange?.(g);
+  };
 
   const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const dateStr = addCalendarDays(weekStart, index)
+    const dateStr = addCalendarDays(weekStart, index);
     return {
       dayName: index === 6 ? "Chủ nhật" : `Thứ ${index + 2}`,
       dateStr,
       displayDate: calendarDateLabel(dateStr, false),
       isToday: dateStr === today,
-    }
-  })
+    };
+  });
 
   const visibleEvents = events
     .filter((event) =>
@@ -120,7 +122,7 @@ function ScheduleCalendar({
     )
     .sort(
       (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
-    )
+    );
 
   // Extract unique rooms from events or fallback to default room list
   const roomList = Array.from(
@@ -130,7 +132,7 @@ function ScheduleCalendar({
         .filter((r): r is string => Boolean(r)),
       ...SAMPLE_ROOMS,
     ]),
-  )
+  );
 
   return (
     <div
@@ -193,34 +195,36 @@ function ScheduleCalendar({
           </div>
 
           {/* GroupBy Switcher (Thời gian | Phòng) */}
-          <div className="flex items-center gap-1.5 border-l border-border pl-3">
-            <span className="text-xs text-muted-foreground font-medium">
-              Xem theo:
-            </span>
-            <Tabs
-              value={currentGroupBy}
-              onValueChange={(val) =>
-                handleGroupByChange(val as CalendarGroupBy)
-              }
-            >
-              <TabsList className="h-8 p-0.5 rounded-full bg-muted/60">
-                <TabsTrigger
-                  value="time"
-                  className="h-7 rounded-full text-xs px-2.5 gap-1"
-                >
-                  <HugeiconsIcon icon={Clock01Icon} className="size-3" />
-                  Thời gian
-                </TabsTrigger>
-                <TabsTrigger
-                  value="room"
-                  className="h-7 rounded-full text-xs px-2.5 gap-1"
-                >
-                  <HugeiconsIcon icon={Location01Icon} className="size-3" />
-                  Phòng
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          {showGroupBy && (
+            <div className="flex items-center gap-1.5 border-l border-border pl-3">
+              <span className="text-xs text-muted-foreground font-medium">
+                Xem theo:
+              </span>
+              <Tabs
+                value={currentGroupBy}
+                onValueChange={(val) =>
+                  handleGroupByChange(val as CalendarGroupBy)
+                }
+              >
+                <TabsList className="h-8 p-0.5 rounded-full bg-muted/60">
+                  <TabsTrigger
+                    value="time"
+                    className="h-7 rounded-full text-xs px-2.5 gap-1"
+                  >
+                    <HugeiconsIcon icon={Clock01Icon} className="size-3" />
+                    Thời gian
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="room"
+                    className="h-7 rounded-full text-xs px-2.5 gap-1"
+                  >
+                    <HugeiconsIcon icon={Location01Icon} className="size-3" />
+                    Phòng
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
 
           {/* View Mode Switcher (Ngày | Tuần) */}
           <div className="flex items-center gap-1.5 border-l border-border pl-3">
@@ -255,7 +259,7 @@ function ScheduleCalendar({
             {roomList.map((room) => {
               const roomEvents = visibleEvents.filter(
                 (e) => e.room === room || (!e.room && room === "P.101"),
-              )
+              );
 
               return (
                 <div
@@ -292,7 +296,7 @@ function ScheduleCalendar({
                     )}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -303,7 +307,7 @@ function ScheduleCalendar({
             {weekDays.map((day) => {
               const dayEvents = visibleEvents.filter(
                 (e) => e.date === day.dateStr,
-              )
+              );
 
               return (
                 <div
@@ -319,9 +323,9 @@ function ScheduleCalendar({
                     type="button"
                     aria-label={`Xem lịch ngày ${calendarDateLabel(day.dateStr)}`}
                     onClick={() => {
-                      handleDateChange(day.dateStr)
-                      handleViewChange("day")
-                      onDateSelect?.(day.dateStr)
+                      handleDateChange(day.dateStr);
+                      handleViewChange("day");
+                      onDateSelect?.(day.dateStr);
                     }}
                     className="flex cursor-pointer items-center justify-between rounded-lg pb-2 mb-2 border-b border-border/40 focus-visible:outline-2 focus-visible:outline-ring"
                   >
@@ -357,7 +361,7 @@ function ScheduleCalendar({
                     )}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -387,7 +391,7 @@ function ScheduleCalendar({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export { ScheduleCalendar }
+export { ScheduleCalendar };

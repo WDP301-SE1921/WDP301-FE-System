@@ -92,6 +92,31 @@ export interface RegistrationProgram {
   name: string;
   subject: string;
   grade: number;
+  subjectId?: string | null;
+  isActive?: boolean;
+  subjectRecord?: AcademicSubject | null;
+  classes?: { id: string; name: string; isActive: boolean; isOpen: boolean }[];
+  curriculumUnits?: {
+    id: string;
+    title: string;
+    version: number;
+    status: string;
+    fromDate: string;
+    toDate: string;
+  }[];
+}
+export interface AcademicSubject {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  _count?: { programs: number };
+}
+export interface AcademicTeacher {
+  id: string;
+  displayName: string | null;
+  email: string;
+  status: "ACTIVE" | "DISABLED";
 }
 export interface WeeklySchedule {
   id?: string;
@@ -108,6 +133,16 @@ export interface RegistrationClass {
   capacity: number;
   monthlyFee: number | string;
   isOpen: boolean;
+  isActive?: boolean;
+  scheduleLocked?: boolean;
+  teacher?: Pick<AcademicTeacher, "id" | "displayName" | "email"> | null;
+  enrollments?: PaginatedList<{
+    id: string;
+    status: string;
+    startDate: string | null;
+    endDate: string | null;
+    studentProfile: { id: string; fullName: string; grade: number };
+  }>;
   weeklySchedules: WeeklySchedule[];
   _count?: { enrollments: number };
   availableSeats?: number;

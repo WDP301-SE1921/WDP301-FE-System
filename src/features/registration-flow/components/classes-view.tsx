@@ -73,7 +73,11 @@ export function RegistrationClassesView() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <CardTitle>{item.name}</CardTitle>
                 <Badge variant={item.isOpen ? "success" : "secondary"}>
-                  {item.isOpen ? "Mở đăng ký" : "Đóng đăng ký"}
+                  {item.isActive === false
+                    ? "Ngừng hoạt động"
+                    : item.isOpen
+                      ? "Mở đăng ký"
+                      : "Đóng đăng ký"}
                 </Badge>
               </div>
             </CardHeader>
@@ -95,7 +99,11 @@ export function RegistrationClassesView() {
               <div className="flex flex-wrap gap-2">
                 {isStaff ? (
                   <Button
-                    disabled={!item.isOpen || !item.weeklySchedules.length}
+                    disabled={
+                      item.isActive === false ||
+                      !item.isOpen ||
+                      !item.weeklySchedules.length
+                    }
                     onClick={() =>
                       router.push(
                         ROUTES.STAFF.ENROLLMENT_NEW_FOR({ classId: item.id }),

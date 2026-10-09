@@ -139,6 +139,14 @@
   }
 }
 
+/* Base UI positioners create a stacking context above modal dialogs. */
+@layer components {
+  [data-slot="select-portal"]
+    > [role="presentation"]:has(> [data-slot="select-content"]) {
+    @apply z-60;
+  }
+}
+
 @media print {
   body[data-registration-print="bill"] *,
   body:has([data-registration-bill]):not(:has([data-registration-receipt])) * {

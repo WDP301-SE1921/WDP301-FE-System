@@ -19,6 +19,7 @@ import {
   FieldError,
 } from "@/components/shared/feedback/api-feedback";
 import { ApiError } from "@/lib/api/client";
+import { useCurrentTime } from "@/hooks/use-current-time";
 import {
   scheduleRangeSchema,
   type ScheduleRangeInput,
@@ -44,6 +45,7 @@ export function SessionGenerator({
   classNames: Record<string, string>;
 }) {
   const client = useQueryClient();
+  const now = useCurrentTime();
   const units = useCurriculumUnits(classroom.programId);
   const lock = useRef(false);
   const [restored] = useState(() => {
@@ -91,6 +93,13 @@ export function SessionGenerator({
       void client.invalidateQueries({
         queryKey: curriculumKeys.sessions(classroom.id),
       });
+      void client.invalidateQueries({ queryKey: ["academic-calendar"] });
+      void client.invalidateQueries({
+        queryKey: ["academic-generations", classroom.id],
+      });
+      void client.invalidateQueries({
+        queryKey: ["registration-class", classroom.id],
+      });
     },
     onError: (error) => {
       if (
@@ -110,7 +119,8 @@ export function SessionGenerator({
     !!preview.data &&
     values.curriculumUnitId === preview.variables?.curriculumUnitId &&
     values.fromDate === preview.variables?.fromDate &&
-    values.toDate === preview.variables?.toDate;
+    values.toDate === preview.variables?.toDate &&
+    Date.parse(preview.data.expiresAt) > now;
   const conflicts =
     preview.data?.slots.some((slot) => slot.conflicts.length) ?? false;
   const busy = preview.isPending || generate.isPending;
@@ -128,7 +138,9 @@ export function SessionGenerator({
       return;
     lock.current = true;
     try {
-      await generate.mutateAsync(input);
+      await generate.mutateAsync(
+        attempt?.body ?? { ...input, previewId: preview.data!.previewId },
+      );
     } catch {
       /* API feedback retains the operation for a manual retry. */
     } finally {
@@ -189,7 +201,7 @@ export function SessionGenerator({
           />
           {units.isSuccess && !approved.length && (
             <p className="text-sm text-muted-foreground">
-              Chưa có học phần đã duyệt cho môn và khối của lớp này.
+              Chưa có học phần đã duyệt cho khóa học của lớp này.
             </p>
           )}
         </div>

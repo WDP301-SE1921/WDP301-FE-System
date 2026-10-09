@@ -21,6 +21,9 @@ import { curriculumApi } from "../api";
 import { curriculumKeys } from "../hooks/use-curriculum";
 import { sessionTime } from "../session-format";
 import { SessionGenerator } from "./session-generator";
+import { SessionDetailSheet } from "./session-detail-sheet";
+import { GenerationHistory } from "./generation-history";
+import { Button } from "@/components/ui/button";
 
 const STATUS = {
   SCHEDULED: "Đã lên lịch",
@@ -35,6 +38,10 @@ export function ScheduledSessionsView({
 }) {
   const role = useCurrentRole();
   const user = useCurrentUser();
+  const [sessionId, setSessionId] = useQueryState(
+    "session",
+    parseAsString.withDefault(""),
+  );
   const [selectedId, setSelectedId] = useQueryState(
     "classId",
     parseAsString.withDefault(""),
@@ -45,7 +52,13 @@ export function ScheduledSessionsView({
     retry: false,
   });
   const classId = fixedClassId ?? selectedId;
-  const classroom = classes.data?.find((item) => item.id === classId);
+  const detail = useQuery({
+    queryKey: ["registration-class", classId],
+    queryFn: ({ signal }) => registrationApi.class(classId, 1, signal),
+    enabled: !!classId,
+    retry: false,
+  });
+  const classroom = detail.data;
   const sessions = useQuery({
     queryKey: curriculumKeys.sessions(classId),
     queryFn: ({ signal }) => curriculumApi.sessions(classId, signal),
@@ -59,6 +72,7 @@ export function ScheduledSessionsView({
         description="Xem các buổi học đã sinh. Giờ học hiển thị theo giờ Việt Nam."
       />
       <ApiFeedback error={classes.error} retry={() => void classes.refetch()} />
+      <ApiFeedback error={detail.error} retry={() => void detail.refetch()} />
       {!fixedClassId && (
         <div className="space-y-2">
           <Label htmlFor="sessions-class">Lớp học</Label>
@@ -87,11 +101,10 @@ export function ScheduledSessionsView({
         </div>
       )}
       {classes.isPending && <p>Đang tải lớp học…</p>}
-      {fixedClassId && classes.isSuccess && !classroom && (
-        <p role="alert">Không tìm thấy lớp học.</p>
-      )}
+      {classId && detail.isPending && <p>Đang tải chi tiết lớp…</p>}
       {classroom && (
         <>
+          {role === "center_manager" && <GenerationHistory classId={classId} />}
           {role === "center_manager" && user && (
             <Card>
               <CardHeader>
@@ -139,6 +152,12 @@ export function ScheduledSessionsView({
                     ? ` · Kiểm tra tháng ${session.lesson.monthKey}`
                     : ""}
                 </p>
+                <Button
+                  variant="outline"
+                  onClick={() => void setSessionId(session.id)}
+                >
+                  Chi tiết buổi học
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -148,6 +167,13 @@ export function ScheduledSessionsView({
             </p>
           )}
         </>
+      )}
+      {sessionId && (
+        <SessionDetailSheet
+          key={sessionId}
+          id={sessionId}
+          onClose={() => void setSessionId(null)}
+        />
       )}
     </PageContainer>
   );

@@ -48,7 +48,12 @@ export function LessonForm({
     },
   });
   const save = useCurriculumMutation(async (input: CurriculumLessonInput) => {
-    const result = await curriculumApi.lesson(unit.id, input, lesson?.id);
+    const result = await curriculumApi.lesson(
+      unit.id,
+      input,
+      lesson?.id,
+      unit.revision,
+    );
     onSaved();
     return result;
   });
@@ -107,7 +112,11 @@ export function MonthlyTestForm({
     },
   });
   const save = useCurriculumMutation(async (input: MonthlyTestInput) => {
-    const result = await curriculumApi.monthlyTest(unit.id, input);
+    const result = await curriculumApi.monthlyTest(
+      unit.id,
+      input,
+      unit.revision,
+    );
     onSaved();
     return result;
   });

@@ -1,0 +1,14 @@
+import { z } from "zod";
+export const academicSubjectSchema = z.object({
+  code: z.string().trim().min(1, "Nhập mã môn.").max(64),
+  name: z.string().trim().min(1, "Nhập tên môn.").max(191),
+  isActive: z.boolean(),
+});
+export const academicProgramSchema = z.object({
+  name: z.string().trim().min(1, "Nhập tên khóa học.").max(255),
+  subjectId: z.string().min(1, "Chọn môn học."),
+  grade: z.number().int().min(6).max(9),
+  isActive: z.boolean(),
+});
+export type AcademicSubjectInput = z.infer<typeof academicSubjectSchema>;
+export type AcademicProgramInput = z.infer<typeof academicProgramSchema>;

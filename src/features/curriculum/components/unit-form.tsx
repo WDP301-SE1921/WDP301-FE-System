@@ -51,7 +51,7 @@ export function UnitForm({
   });
   const save = useCurriculumMutation(async (input: CurriculumUnitInput) => {
     const result = unit
-      ? await curriculumApi.update(unit.id, input)
+      ? await curriculumApi.update(unit.id, input, unit.revision)
       : await curriculumApi.create(input);
     onSaved(result.id);
     return result;
@@ -77,7 +77,7 @@ export function UnitForm({
               disabled={!!unit || programs.isPending || save.isPending}
             >
               <SelectTrigger id="unit-program">
-                <SelectValue placeholder="Chọn môn và khối" />
+                <SelectValue placeholder="Chọn khóa học" />
               </SelectTrigger>
               <SelectContent>
                 {programs.data?.map((program) => (

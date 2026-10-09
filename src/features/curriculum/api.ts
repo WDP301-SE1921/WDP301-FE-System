@@ -8,6 +8,14 @@ import {
   type CurriculumLessonInput,
   type MonthlyTestInput,
   type ScheduleRangeInput,
+  importCommitSchema,
+  reviewReasonSchema,
+  lessonOrderSchema,
+  sessionRescheduleSchema,
+  sessionCancelSchema,
+  type ImportCommitInput,
+  type SessionRescheduleInput,
+  type SessionCancelInput,
 } from "@/lib/validators/curriculum";
 import type {
   CurriculumUnit,
@@ -16,7 +24,13 @@ import type {
   SessionPreview,
   SessionGeneration,
   ScheduledSession,
+  ScheduledSessionDetail,
+  SessionMutationResult,
+  CurriculumFilters,
+  CurriculumValidation,
+  ImportPreview,
 } from "@/types/curriculum";
+import type { PaginatedList } from "@/types/backend";
 
 const unitsPath = "academic/curriculum-units";
 const unitPath = (id: string) => `${unitsPath}/${encodeURIComponent(id)}`;
@@ -35,25 +49,69 @@ export const curriculumApi = {
       method: "POST",
       body: curriculumUnitSchema.parse(input),
     }),
-  update: (id: string, input: CurriculumUnitInput) => {
+  unitPage: async (filters: CurriculumFilters, signal?: AbortSignal) => {
+    const query = new URLSearchParams({
+      paginated: "true",
+      page: String(filters.page ?? 1),
+      limit: String(filters.limit ?? 20),
+    });
+    for (const [key, value] of Object.entries(filters))
+      if (value !== undefined && value !== "") query.set(key, String(value));
+    const data = await apiRequest<
+      PaginatedList<CurriculumUnit> | CurriculumUnit[]
+    >(`${unitsPath}?${query}`, { signal });
+    return Array.isArray(data)
+      ? {
+          items: data,
+          page: filters.page ?? 1,
+          limit: filters.limit ?? 20,
+          total: data.length,
+        }
+      : data;
+  },
+  update: (
+    id: string,
+    input: CurriculumUnitInput,
+    expectedRevision?: number,
+  ) => {
     const { title, fromDate, toDate } = curriculumUnitSchema.parse(input);
     return apiRequest<CurriculumUnitDetail>(unitPath(id), {
       method: "PATCH",
-      body: { title, fromDate, toDate },
+      body: {
+        title,
+        fromDate,
+        toDate,
+        ...(expectedRevision === undefined ? {} : { expectedRevision }),
+      },
     });
   },
-  lesson: (id: string, input: CurriculumLessonInput, lessonId?: string) =>
+  lesson: (
+    id: string,
+    input: CurriculumLessonInput,
+    lessonId?: string,
+    expectedRevision?: number,
+  ) =>
     apiRequest<CurriculumLesson>(
       `${unitPath(id)}/lessons${lessonId ? `/${encodeURIComponent(lessonId)}` : ""}`,
       {
         method: lessonId ? "PATCH" : "POST",
-        body: curriculumLessonSchema.parse(input),
+        body: {
+          ...curriculumLessonSchema.parse(input),
+          ...(expectedRevision === undefined ? {} : { expectedRevision }),
+        },
       },
     ),
-  monthlyTest: (id: string, input: MonthlyTestInput) =>
+  monthlyTest: (
+    id: string,
+    input: MonthlyTestInput,
+    expectedRevision?: number,
+  ) =>
     apiRequest<CurriculumLesson>(`${unitPath(id)}/monthly-tests`, {
       method: "POST",
-      body: monthlyTestSchema.parse(input),
+      body: {
+        ...monthlyTestSchema.parse(input),
+        ...(expectedRevision === undefined ? {} : { expectedRevision }),
+      },
     }),
   approve: (id: string) =>
     apiRequest<CurriculumUnitDetail>(`${unitPath(id)}/approve`, {
@@ -77,11 +135,98 @@ export const curriculumApi = {
         idempotencyKey: key,
       },
     ),
-  sessions: async (classId: string, signal?: AbortSignal) => {
+  validation: (id: string) =>
+    apiRequest<CurriculumValidation>(`${unitPath(id)}/validation`, {
+      method: "POST",
+    }),
+  submit: (id: string) =>
+    apiRequest<CurriculumUnitDetail>(`${unitPath(id)}/submit`, {
+      method: "POST",
+    }),
+  requestChanges: (id: string, reason: string) =>
+    apiRequest<CurriculumUnit>(`${unitPath(id)}/request-changes`, {
+      method: "POST",
+      body: reviewReasonSchema.parse({ reason }),
+    }),
+  remove: (id: string) =>
+    apiRequest<CurriculumUnit | { id: string; deleted: true }>(unitPath(id), {
+      method: "DELETE",
+    }),
+  removeLesson: (id: string, lessonId: string) =>
+    apiRequest<unknown>(
+      `${unitPath(id)}/lessons/${encodeURIComponent(lessonId)}`,
+      { method: "DELETE" },
+    ),
+  reorder: (id: string, orderedLessonIds: string[], expectedRevision: number) =>
+    apiRequest<unknown>(`${unitPath(id)}/lesson-order`, {
+      method: "PUT",
+      body: lessonOrderSchema.parse({ orderedLessonIds, expectedRevision }),
+    }),
+  importPreview: (id: string, file: File, mode: "APPEND" | "REPLACE") => {
+    const body = new FormData();
+    body.set("file", file);
+    body.set("mode", mode);
+    return apiRequest<ImportPreview>(`${unitPath(id)}/import-preview`, {
+      method: "POST",
+      body,
+    });
+  },
+  importCommit: (id: string, input: ImportCommitInput, key: string) =>
+    apiRequest<{ unitId: string; revision: number; createdCount: number }>(
+      `${unitPath(id)}/import-commit`,
+      {
+        method: "POST",
+        body: importCommitSchema.parse(input),
+        idempotencyKey: key,
+      },
+    ),
+  generations: (classId: string, signal?: AbortSignal) =>
+    apiRequest<SessionGeneration[]>(
+      `academic/classes/${encodeURIComponent(classId)}/session-generations`,
+      { signal },
+    ),
+  generation: (id: string, signal?: AbortSignal) =>
+    apiRequest<SessionGeneration>(
+      `academic/session-generations/${encodeURIComponent(id)}`,
+      { signal },
+    ),
+  session: (id: string, signal?: AbortSignal) =>
+    apiRequest<ScheduledSessionDetail>(
+      `academic/scheduled-sessions/${encodeURIComponent(id)}`,
+      { signal },
+    ),
+  reschedulePreview: (id: string, input: SessionRescheduleInput) =>
+    apiRequest<{ sessionId: string; conflicts: unknown[] }>(
+      `academic/sessions/${encodeURIComponent(id)}/reschedule-preview`,
+      { method: "POST", body: sessionRescheduleSchema.parse(input) },
+    ),
+  reschedule: (id: string, input: SessionRescheduleInput, key: string) =>
+    apiRequest<SessionMutationResult>(
+      `academic/sessions/${encodeURIComponent(id)}/reschedule`,
+      {
+        method: "POST",
+        body: sessionRescheduleSchema.parse(input),
+        idempotencyKey: key,
+      },
+    ),
+  cancelSession: (id: string, input: SessionCancelInput, key: string) =>
+    apiRequest<SessionMutationResult>(
+      `academic/sessions/${encodeURIComponent(id)}/cancel`,
+      {
+        method: "POST",
+        body: sessionCancelSchema.parse(input),
+        idempotencyKey: key,
+      },
+    ),
+  sessions: async (
+    classId: string,
+    signal?: AbortSignal,
+    range: { fromDate?: string; toDate?: string } = {},
+  ) => {
     const rows: ScheduledSession[] = [];
     for (let page = 1; ; page++) {
       const batch = await apiRequest<ScheduledSession[]>(
-        `academic/scheduled-sessions?${new URLSearchParams({ classId, page: String(page), limit: "100" })}`,
+        `academic/scheduled-sessions?${new URLSearchParams({ ...(classId ? { classId } : {}), ...range, page: String(page), limit: "100" })}`,
         { signal },
       );
       rows.push(...batch);

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { curriculumApi } from "../api";
+import type { CurriculumFilters } from "@/types/curriculum";
 
 export const curriculumKeys = {
   all: ["curriculum"] as const,
@@ -22,6 +23,13 @@ export function useCurriculumUnit(id: string) {
   return useQuery({
     queryKey: curriculumKeys.unit(id),
     queryFn: ({ signal }) => curriculumApi.unit(id, signal),
+    retry: false,
+  });
+}
+export function useCurriculumUnitPage(filters: CurriculumFilters) {
+  return useQuery({
+    queryKey: ["curriculum", "units", filters],
+    queryFn: ({ signal }) => curriculumApi.unitPage(filters, signal),
     retry: false,
   });
 }

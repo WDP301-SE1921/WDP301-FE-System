@@ -1,5 +1,7 @@
 # Decisions
 
+- **2026-10-09** — Web Academic dùng contract hiện tại của BE: Subject → Program → Class/CurriculumUnit theo đúng programId; Designer validation/submit, Manager review, rồi preview/generate lịch. Lịch manager/staff/teacher và lớp teacher dùng API thật. BFF có whitelist method/path/role và multipart; thao tác import/generate/reschedule/cancel lưu nguyên body/key theo user và đối tượng trước request. Chi tiết tại `docs/ACADEMIC_API_INTEGRATION.md`.
+
 - **2026-09** — Single-tenant scope: the whole system serves exactly one education center. No multi-tenant/Center model, no tenant isolation logic.
 - **2026-09** — Account model is parent-only: one login account belongs to a parent, who holds one or more `StudentProfile` children. There is no separate student login, ever.
 - **2026-09** — Parent role is Mobile-only per the latest spec (Web + Mobile for manager/teacher, Mobile for parent) — don't build a parent web UI unless this changes.

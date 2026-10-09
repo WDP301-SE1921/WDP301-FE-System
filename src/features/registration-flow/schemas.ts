@@ -47,7 +47,7 @@ const scheduleSchema = z
     path: ["endTime"],
   });
 export const schedulesSchema = z
-  .object({ schedules: z.array(scheduleSchema).min(1).max(14) })
+  .object({ schedules: z.array(scheduleSchema).max(14) })
   .superRefine(({ schedules }, context) => {
     schedules.forEach((slot, index) => {
       if (

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { loginSchema, registerParentSchema } from "@/lib/validators/auth";
 import { parentSearchSchema } from "@/features/registration-flow/schemas";
 import { ROLE_HOME_ROUTE } from "@/constants/role-access";
-import { academicRoles } from "@/lib/api/backend-permissions";
+import { backendRule } from "@/lib/api/backend-permissions";
 import {
   authorizedBackendFetch,
   backendError,
@@ -19,20 +19,6 @@ import {
 import type { BackendAuth, BackendUser } from "@/types/backend";
 
 export const runtime = "nodejs";
-const ALLOWED = [
-  {
-    method: "GET",
-    path: /^(auth\/me|parents(?:\/(lookup|search))?|students|programs|classes(?:\/[^/]+)?|registrations\/[^/]+(?:\/(receipt|bill))?|academic\/(?:curriculum-units(?:\/[^/]+)?|scheduled-sessions))$/,
-  },
-  {
-    method: "POST",
-    path: /^(auth\/(login|logout|register)|programs|classes|classes\/[^/]+\/schedules|registrations(?:\/[^/]+\/(cancel|confirm-payment))?|academic\/(?:curriculum-units(?:\/[^/]+\/(?:lessons|monthly-tests|approve|revisions))?|classes\/[^/]+\/(?:session-preview|session-generations)))$/,
-  },
-  {
-    method: "PATCH",
-    path: /^(classes\/[^/]+|academic\/curriculum-units\/[^/]+(?:\/lessons\/[^/]+)?)$/,
-  },
-];
 async function handle(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
@@ -42,12 +28,8 @@ async function handle(
     if (segments.some((part) => !/^[a-zA-Z0-9_-]+$/.test(part)))
       throw backendError(404, "NOT_FOUND", "API không được hỗ trợ.");
     const path = segments.join("/");
-    if (
-      !ALLOWED.some(
-        (item) => item.method === request.method && item.path.test(path),
-      )
-    )
-      throw backendError(404, "NOT_FOUND", "API không được hỗ trợ.");
+    const rule = backendRule(request.method, path);
+    if (!rule) throw backendError(404, "NOT_FOUND", "API không được hỗ trợ.");
     if (request.method !== "GET") {
       if (!isSameOriginRequest(request))
         throw backendError(403, "FORBIDDEN", "Nguồn yêu cầu không hợp lệ.");
@@ -112,31 +94,7 @@ async function handle(
       response.headers.set("Cache-Control", "no-store");
       return response;
     }
-    if (/^registrations(?:\/|$)|^parents\/search$/.test(path)) {
-      const session = await authorizedBackendFetch(request, "auth/me");
-      const user = webUser(await readBackend<BackendUser>(session.response));
-      if (user.role !== "staff")
-        throw backendError(
-          403,
-          "FORBIDDEN",
-          "Chỉ nhân viên được đăng ký và xác nhận học phí.",
-        );
-      if (
-        path === "parents/search" &&
-        !parentSearchSchema.safeParse({
-          email: request.nextUrl.searchParams.get("email"),
-        }).success
-      )
-        throw backendError(
-          400,
-          "VALIDATION_ERROR",
-          "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
-        );
-    }
-    const permittedRoles =
-      path === "parents" || path === "students"
-        ? (["center_manager", "staff"] as const)
-        : academicRoles(request.method, path);
+    const permittedRoles = rule.roles;
     if (permittedRoles) {
       const session = await authorizedBackendFetch(request, "auth/me");
       const user = webUser(await readBackend<BackendUser>(session.response));
@@ -148,7 +106,37 @@ async function handle(
         );
     }
     const init: RequestInit = { method: request.method };
-    if (request.method !== "GET") init.body = await request.text();
+    if (
+      path === "parents/search" &&
+      !parentSearchSchema.safeParse({
+        email: request.nextUrl.searchParams.get("email"),
+      }).success
+    )
+      throw backendError(
+        400,
+        "VALIDATION_ERROR",
+        "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
+      );
+    if (path.endsWith("/import-preview")) {
+      const data = await request.formData();
+      const file = data.get("file");
+      const mode = data.get("mode");
+      if (
+        !(file instanceof File) ||
+        !file.size ||
+        file.size > 5 * 1024 * 1024 ||
+        !["APPEND", "REPLACE"].includes(String(mode)) ||
+        data.getAll("file").length !== 1 ||
+        data.getAll("mode").length !== 1 ||
+        [...data.keys()].some((field) => field !== "file" && field !== "mode")
+      )
+        throw backendError(
+          400,
+          "VALIDATION_ERROR",
+          "Chọn file CSV tối đa 5 MiB và chế độ nhập hợp lệ.",
+        );
+      init.body = data;
+    } else if (request.method !== "GET") init.body = await request.text();
     const key = request.headers.get("idempotency-key");
     if (key) init.headers = { "Idempotency-Key": key };
     const { response: upstream, renewed } = await authorizedBackendFetch(
@@ -196,4 +184,10 @@ async function handle(
     return response;
   }
 }
-export { handle as GET, handle as POST, handle as PATCH };
+export {
+  handle as GET,
+  handle as POST,
+  handle as PATCH,
+  handle as PUT,
+  handle as DELETE,
+};

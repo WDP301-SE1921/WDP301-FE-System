@@ -1,5 +1,7 @@
 # Nối API giáo trình và nhân viên thêm học sinh vào lớp
 
+Contract Academic mới ngày 09/10/2026, gồm Subject/Program, review, CSV, lịch thật và đổi/hủy buổi, được cập nhật tại [ACADEMIC_API_INTEGRATION.md](ACADEMIC_API_INTEGRATION.md). Các kết quả bên dưới là lịch sử tích hợp ngày 06/10.
+
 Ngày: 06/10/2026. Đã đọc `CLAUDE.md`, `AGENTS.md`, `.claude/rules`, memory và `CURRICULUM_SCHEDULING_API.md`; đối chiếu controller, DTO, service và Prisma của BE.
 
 ## Các sửa đổi FE đã báo trước

@@ -3,11 +3,47 @@ import { emitSessionExpired } from "@/lib/auth-events";
 import type { ApiEnvelope } from "@/types/backend";
 
 const ERROR_TEXT: Record<string, string> = {
+  SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",
+  SUBJECT_IN_USE: "Môn đã có giáo trình. Không thể đổi tên môn.",
+  SUBJECT_INACTIVE: "Môn học đã ngừng sử dụng.",
+  PROGRAM_INACTIVE: "Khóa học đã ngừng sử dụng.",
+  PROGRAM_IN_USE: "Khóa đã có dữ liệu. Không thể đổi môn hoặc khối.",
+  CLASS_IN_USE:
+    "Lớp đã có dữ liệu. Xử lý các ghi danh và buổi học trước khi ngừng sử dụng.",
+  CLASS_INACTIVE: "Lớp đã ngừng hoạt động.",
+  REVISION_CONFLICT:
+    "Dữ liệu đã được người khác sửa. Tải lại để xem phiên bản mới rồi thực hiện lại.",
+  PREVIEW_STALE:
+    "Lịch xem trước đã hết hạn hoặc cấu hình đã thay đổi. Xem trước lại trước khi sinh lịch.",
+  IMPORT_PREVIEW_STALE:
+    "Bản xem trước CSV đã hết hạn hoặc nháp đã thay đổi. Chọn file và xem trước lại.",
+  UNIT_NOT_PENDING: "Học phần phải được gửi duyệt trước khi quản lý xem xét.",
+  EMPTY_CURRICULUM: "Thêm ít nhất một bài học trước khi gửi duyệt.",
+  UNIT_IN_USE:
+    "Học phần có dữ liệu liên quan nên chưa thể xóa hoặc thay toàn bộ bài.",
+  LESSON_IN_USE: "Bài học có dữ liệu liên quan nên chưa thể xóa.",
+  CSV_INVALID:
+    "File CSV không hợp lệ. Kiểm tra header, số cột và định dạng UTF-8.",
+  SESSION_NOT_FOUND: "Không tìm thấy buổi học.",
+  SESSION_LOCKED: "Chỉ đổi hoặc hủy buổi đã lên lịch ở tương lai.",
+  INVALID_SESSION_TIME: "Giờ mới phải ở tương lai và kết thúc sau giờ bắt đầu.",
+  MONTH_CHANGE_NOT_SUPPORTED:
+    "Chọn ngày trong cùng tháng với buổi học ban đầu.",
+  SESSION_ORDER_CONFLICT:
+    "Giờ mới làm thay đổi thứ tự bài. Chọn giờ giữa buổi trước và buổi kế tiếp.",
+  PARTICIPANT_OUTSIDE_TERM:
+    "Giờ mới nằm ngoài kỳ học hoặc thời gian học tại lớp của học viên.",
+  SESSION_HAS_DEPENDENCIES:
+    "Xử lý điểm danh và đơn nghỉ liên quan trước khi đổi hoặc hủy buổi.",
+  MAKEUP_BOOKING_EXISTS:
+    "Xử lý các lịch học bù liên quan trước khi đổi hoặc hủy buổi.",
   BILL_NOT_FOUND: "Không tìm thấy bill. Kiểm tra lại mã đăng ký.",
-  BILL_CLASS_CHANGED: "Thông tin hoặc lịch lớp đã thay đổi sau khi lập bill. Hủy bản nháp này và lập bill mới trước khi thu tiền.",
+  BILL_CLASS_CHANGED:
+    "Thông tin hoặc lịch lớp đã thay đổi sau khi lập bill. Hủy bản nháp này và lập bill mới trước khi thu tiền.",
   UNIT_NOT_FOUND: "Không tìm thấy học phần. Vui lòng tải lại danh sách.",
   PROGRAM_NOT_FOUND: "Không tìm thấy chương trình đào tạo.",
-  UNIT_LOCKED: "Học phần đã duyệt. Tạo phiên bản nháp mới để chỉnh sửa.",
+  UNIT_LOCKED:
+    "Chỉ sửa bản nháp của bạn. Học phần đã duyệt cần tạo phiên bản nháp mới.",
   UNIT_NOT_APPROVED: "Học phần chưa được quản lý duyệt.",
   LESSON_NOT_FOUND: "Không tìm thấy bài học trong học phần.",
   LESSON_NOT_APPROVED: "Nội dung bài học chưa được duyệt.",
@@ -16,7 +52,7 @@ const ERROR_TEXT: Record<string, string> = {
   MISSING_MONTHLY_TEST: "Cần soạn kiểm tra cho mỗi tháng có lịch học.",
   NO_SCHEDULED_CLASS:
     "Chưa có lớp cùng môn và khối với lịch tuần để duyệt học phần.",
-  CURRICULUM_MISMATCH: "Học phần phải cùng môn và khối với lớp.",
+  CURRICULUM_MISMATCH: "Học phần phải thuộc đúng khóa học của lớp.",
   RANGE_OUTSIDE_UNIT: "Khoảng sinh lịch phải nằm trong khoảng học phần.",
   NO_SESSIONS: "Không có buổi học theo lịch tuần trong khoảng ngày đã chọn.",
   SCHEDULE_CONFLICT:
@@ -25,7 +61,7 @@ const ERROR_TEXT: Record<string, string> = {
   DATE_RANGE_TOO_LONG: "Khoảng ngày tối đa 366 ngày.",
   TEST_OUTSIDE_UNIT: "Tháng kiểm tra phải nằm trong khoảng học phần.",
   IDEMPOTENCY_CONFLICT:
-    "Khóa sinh lịch đã dùng với nội dung khác. Đọc lại thao tác đã lưu.",
+    "Khóa thao tác đã dùng với nội dung khác. Đọc lại thao tác đã lưu.",
   IDEMPOTENCY_KEY_REQUIRED: "Thiếu khóa xác nhận thao tác. Vui lòng thử lại.",
   IDEMPOTENCY_KEY_CONFLICT:
     "Khóa thao tác đã dùng với yêu cầu khác. Kiểm tra lại bản nháp hoặc biên lai.",
@@ -54,7 +90,7 @@ const ERROR_TEXT: Record<string, string> = {
   STUDENT_SCHEDULE_CONFLICT:
     "Lịch lớp trùng với lớp khác của con trong kỳ học.",
   CLASS_SCHEDULE_LOCKED:
-    "Lớp đã có ghi danh hoặc buổi học tương lai. Không thể sửa lịch tuần.",
+    "Lớp đã có ghi danh, học viên chuyển vào hoặc buổi học đã sinh. Không thể sửa lịch tuần.",
   CLASS_TEACHER_LOCKED:
     "Lớp đã có buổi học tương lai. Không thể đổi giáo viên.",
   CLASS_SCHEDULE_CONFLICT: "Các khung giờ trong lịch tuần bị trùng nhau.",
@@ -86,12 +122,11 @@ export class ApiError extends Error {
 const client = axios.create({
   baseURL: "/api/backend",
   timeout: 60_000,
-  headers: { "Content-Type": "application/json" },
 });
 export async function apiRequest<T>(
   path: string,
   options: {
-    method?: "GET" | "POST" | "PATCH";
+    method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
     body?: unknown;
     idempotencyKey?: string;
     signal?: AbortSignal;
@@ -103,9 +138,13 @@ export async function apiRequest<T>(
       method: options.method ?? "GET",
       data: options.body,
       signal: options.signal,
-      headers: options.idempotencyKey
-        ? { "Idempotency-Key": options.idempotencyKey }
-        : undefined,
+      headers: {
+        "Content-Type":
+          options.body instanceof FormData ? undefined : "application/json",
+        ...(options.idempotencyKey
+          ? { "Idempotency-Key": options.idempotencyKey }
+          : {}),
+      },
     });
     if (!response.data.success || response.data.data === undefined)
       throw new ApiError(

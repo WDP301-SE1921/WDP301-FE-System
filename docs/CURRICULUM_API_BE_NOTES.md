@@ -1,5 +1,7 @@
 # Đối chiếu BE cho giáo trình và ghi danh
 
+Cập nhật 09/10/2026: đã nối flow Academic mới và sửa khóa PUT lịch tuần theo enrollmentPlacement, thêm scheduleLocked ở chi tiết lớp. DB ứng dụng local vẫn chưa áp dụng migration 20261008000000_academic_flow; nghiệm thu trên DB riêng. Xem [ACADEMIC_API_INTEGRATION.md](ACADEMIC_API_INTEGRATION.md). Phần dưới ghi nhận đợt triển khai ngày 06/10.
+
 Ngày kiểm tra: 06/10/2026. Tích hợp FE; chuẩn bị cấu hình BE theo yêu cầu chạy kiểm thử. Chưa sửa controller/service nghiệp vụ BE.
 
 ## Chuẩn bị BE đã được cho phép (06/10/2026)

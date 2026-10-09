@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CATALOG_MSG } from "@/constants/messages/events/catalog";
 import { Suspense } from "react";
-import { CurriculumUnitsView } from "@/features/curriculum/components/units-view";
+import { AcademicProgramDetailView } from "@/features/registration-flow/components/program-detail-view";
 
 export const metadata: Metadata = {
   title: CATALOG_MSG.TAB_PROGRAMS,
@@ -15,7 +15,7 @@ export default async function ProgramDetailPage({
   const { id } = await params;
   return (
     <Suspense fallback={<p>Đang tải giáo trình…</p>}>
-      <CurriculumUnitsView programId={id} />
+      <AcademicProgramDetailView programId={id} />
     </Suspense>
   );
 }

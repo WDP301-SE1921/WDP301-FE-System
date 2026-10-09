@@ -1,44 +1,44 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { SUBJECT_MAP, FALLBACK_SUBJECT } from "@/constants/subjects"
-import { Badge } from "@/components/ui/badge"
-import { HugeiconsIcon } from "@hugeicons/react"
+import * as React from "react";
+import { SUBJECT_MAP, FALLBACK_SUBJECT } from "@/constants/subjects";
+import { Badge } from "@/components/ui/badge";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Clock01Icon,
   Location01Icon,
   UserIcon,
-} from "@hugeicons/core-free-icons"
-import { cn } from "cn"
+} from "@hugeicons/core-free-icons";
+import { cn } from "cn";
 
 export type SessionStatus =
-  "SCHEDULED" | "COMPLETED" | "CANCELLED" | "SUBSTITUTE"
+  "SCHEDULED" | "COMPLETED" | "CANCELLED" | "SUBSTITUTE";
 
 export interface SessionBlockProps {
-  id: string
-  title: string
-  subject: string // e.g. "MATH", "PHYS", "CHEM", "BIOL"
-  time: string
-  room?: string
-  teacherName?: string
-  status?: SessionStatus
-  onClick?: () => void
-  compact?: boolean
-  className?: string
+  id: string;
+  title: string;
+  subject: string; // e.g. "MATH", "PHYS", "CHEM", "BIOL"
+  time: string;
+  room?: string;
+  teacherName?: string;
+  status?: SessionStatus;
+  onClick?: () => void;
+  compact?: boolean;
+  className?: string;
 }
 
 const STATUS_CONFIG: Record<
   SessionStatus,
   {
-    label: string
-    variant: "default" | "secondary" | "success" | "danger" | "warning"
+    label: string;
+    variant: "default" | "secondary" | "success" | "danger" | "warning";
   }
 > = {
   SCHEDULED: { label: "Sắp diễn ra", variant: "default" },
   COMPLETED: { label: "Đã xong", variant: "success" },
   CANCELLED: { label: "Đã hủy", variant: "danger" },
   SUBSTITUTE: { label: "Dạy thay", variant: "warning" },
-}
+};
 
 /**
  * Class session card block rendered within ScheduleCalendar cells.
@@ -55,8 +55,8 @@ function SessionBlock({
   compact = false,
   className,
 }: SessionBlockProps) {
-  const subjectConfig = SUBJECT_MAP[subject] ?? FALLBACK_SUBJECT
-  const statusMeta = STATUS_CONFIG[status]
+  const subjectConfig = SUBJECT_MAP[subject] ?? FALLBACK_SUBJECT;
+  const statusMeta = STATUS_CONFIG[status];
 
   return (
     <button
@@ -76,7 +76,7 @@ function SessionBlock({
             variant={subjectConfig.badgeVariant}
             className="text-[10px] px-1.5 py-0 h-4 shrink-0 font-medium"
           >
-            {subjectConfig.name}
+            {SUBJECT_MAP[subject]?.name ?? (subject || FALLBACK_SUBJECT.name)}
           </Badge>
           <Badge
             variant={statusMeta.variant}
@@ -120,7 +120,7 @@ function SessionBlock({
         )}
       </div>
     </button>
-  )
+  );
 }
 
-export { SessionBlock }
+export { SessionBlock };
