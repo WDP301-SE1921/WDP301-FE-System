@@ -39,6 +39,10 @@ This document provides core project instructions, architectural boundaries, code
   * `src/components/shared/`: Cross-cutting dynamic UI components (`ChildSwitcher`, `<StatusBadge />`, `<EmptyState />`, `<LoadingSkeleton />`, `<ErrorState />`)[cite: 1].
   * Use `cn()` from `@/lib/utils` when merging dynamic class names[cite: 1].
 
+* **UI/UX Work:**
+  * Use the `ui-ux-pro-max` skill for UX, layout, accessibility and responsive guidance, together with the project skills (`shared-ui`, `attendance-rules`, `enrollment-flow`) when relevant.
+  * The project design system always wins over the skill's suggestions: `.claude/rules/ui.md`, existing tokens, Shadcn (Maia preset), `src/components/ui/` and `src/components/shared/`. Do NOT introduce a new color palette, font or UI library from the skill.
+
 * **Forms:**[cite: 1]
   * Must use `react-hook-form` paired with Zod validation schemas imported from `src/lib/validators/`. Hand-rolled `useState` form management is prohibited[cite: 1].
 

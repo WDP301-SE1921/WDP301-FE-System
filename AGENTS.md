@@ -37,7 +37,9 @@ Next.js (App Router) frontend for an education-center management platform (WDP30
 Full breakdown: `docs/architecture.md`.
 
 ## Design system
-Every corner is rounded — no sharp corners anywhere (buttons, cards, images, inputs, icons). Full rules: `.claude/rules/design.md`.
+Every corner is rounded — no sharp corners anywhere (buttons, cards, images, inputs, icons). Full rules: `.claude/rules/ui.md`.
+
+For UI work, use the `ui-ux-pro-max` skill for UX, layout, accessibility and responsive guidance, together with the project skills in `.agents/skills/` (e.g. `shared-ui`). The project design system always wins over the skill's suggestions: `.claude/rules/ui.md`, existing tokens, Shadcn (Maia preset) and `src/components/ui` + `src/components/shared`. Don't introduce a new color palette, font or UI library from the skill.
 
 ## Git
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`.
