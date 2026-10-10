@@ -176,6 +176,12 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
         iconName: "LibraryIcon",
         area: AREA.CATALOG,
       },
+      {
+        title: "Phản hồi giáo trình",
+        href: ROUTES.MANAGER.CURRICULUM_FEEDBACK,
+        iconName: "AssignmentsIcon",
+        area: AREA.CATALOG,
+      },
     ],
   },
   {
@@ -216,6 +222,41 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
 ];
 
 export const MENU_STAFF: MenuGroup[] = [
+  {
+    groupTitle: "NGHỈ HỌC & XẾP LỚP",
+    items: [
+      {
+        title: "Nghỉ học và học bù",
+        href: ROUTES.STAFF.MAKEUP,
+        iconName: "CalendarCheckIn01Icon",
+        area: AREA.ABSENCES,
+      },
+      {
+        title: "Đổi một buổi học",
+        href: ROUTES.STAFF.SWAP_SESSION,
+        iconName: "Exchange01Icon",
+        area: AREA.ABSENCES,
+      },
+      {
+        title: "Đổi lớp và lịch cố định",
+        href: ROUTES.STAFF.CHANGE_CLASS,
+        iconName: "RepeatIcon",
+        area: AREA.ABSENCES,
+      },
+      {
+        title: "Nghỉ dài hạn",
+        href: ROUTES.STAFF.LONG_LEAVE,
+        iconName: "CalendarBlock01Icon",
+        area: AREA.ABSENCES,
+      },
+      {
+        title: "Nghỉ môn / Nghỉ hẳn",
+        href: ROUTES.STAFF.WITHDRAW,
+        iconName: "UserRemove01Icon",
+        area: AREA.ABSENCES,
+      },
+    ],
+  },
   {
     groupTitle: "LỚP HỌC & LỊCH",
     items: [
@@ -337,6 +378,12 @@ export const MENU_TEACHER: MenuGroup[] = [
         title: "Báo cáo",
         href: ROUTES.TEACHER.REPORTS,
         iconName: "Analytics01Icon",
+        area: AREA.TEACHER_PORTAL,
+      },
+      {
+        title: "Phản hồi giáo trình",
+        href: ROUTES.TEACHER.FEEDBACK,
+        iconName: "AssignmentsIcon",
         area: AREA.TEACHER_PORTAL,
       },
     ],

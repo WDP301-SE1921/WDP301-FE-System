@@ -40,6 +40,7 @@ export const ROUTES = {
     CATALOG: "/manager/catalog",
     CATALOG_PROGRAM_DETAIL: (id: string) => `/manager/catalog/programs/${id}`,
     CURRICULUM: "/manager/curriculum",
+    CURRICULUM_FEEDBACK: "/manager/curriculum/feedback",
     CURRICULUM_UNIT: (id: string) => `/manager/curriculum/${id}`,
     CLASS_SESSIONS: (id: string) => `/manager/classes/${id}/sessions`,
 
@@ -75,6 +76,12 @@ export const ROUTES = {
 
     PARENTS: "/staff/parents",
     STUDENTS: "/staff/students",
+    STUDENT_DETAIL: (id: string) => `/staff/students/${id}`,
+    MAKEUP: "/staff/absences/makeup",
+    SWAP_SESSION: "/staff/absences/swap",
+    CHANGE_CLASS: "/staff/absences/change-class",
+    LONG_LEAVE: "/staff/absences/long-leave",
+    WITHDRAW: "/staff/absences/withdraw",
     PROFILE: "/staff/profile",
     CLASSES: "/staff/classes",
     SCHEDULE: "/staff/schedule",
@@ -100,6 +107,7 @@ export const ROUTES = {
       `/teacher/grading/${submissionId}`,
 
     REPORTS: "/teacher/reports",
+    FEEDBACK: "/teacher/feedback",
 
     PROFILE: "/teacher/profile",
   },

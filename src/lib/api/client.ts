@@ -3,6 +3,65 @@ import { emitSessionExpired } from "@/lib/auth-events";
 import type { ApiEnvelope } from "@/types/backend";
 
 const ERROR_TEXT: Record<string, string> = {
+  RESOURCE_CONFLICT:
+    "Dữ liệu đã thay đổi hoặc thao tác đã tồn tại. Tải lại để kiểm tra; lịch học bù đã hủy cần chọn buổi thay thế khác.",
+  SESSION_NOT_FINISHED: "Chỉ chốt điểm danh sau khi buổi học kết thúc.",
+  MAKEUP_LOCKED:
+    "Chỉ hủy lịch học bù chưa hoàn tất và buổi thay thế còn đang lên lịch.",
+  RESOURCE_NOT_FOUND:
+    "Dữ liệu không còn tồn tại. Tải lại danh sách để kiểm tra.",
+  ACCOUNT_EMAIL_EXISTS:
+    "Email đã có tài khoản. Chọn email khác hoặc mở tài khoản hiện có.",
+  INVALID_SESSION:
+    "Buổi nghỉ cần danh sách học viên đã được giáo viên chuẩn bị và vẫn đang lên lịch.",
+  OUTSIDE_ENROLLMENT: "Ngày đã chọn nằm ngoài kỳ học đang có hiệu lực.",
+  ENROLLMENT_ENDED: "Ghi danh đã kết thúc. Tải lại trạng thái trước khi xử lý.",
+  LEAVE_OVERLAP: "Khoảng nghỉ trùng với một đơn đã duyệt.",
+  LEAVE_HAS_ACTIVITY: "Đơn nghỉ đã có hoạt động lịch sử nên chưa thể hủy.",
+  INVALID_LEAVE_STATE: "Đơn nghỉ đã được xử lý. Tải lại trạng thái.",
+  INVALID_MAKEUP_SOURCE:
+    "Buổi gốc chưa đủ điều kiện học bù hoặc đã có lịch học bù.",
+  INVALID_MAKEUP_TARGET:
+    "Chọn buổi tương lai đang lên lịch với đúng bài học của buổi gốc.",
+  ABSENCE_NOT_APPROVED:
+    "Ghi nhận hoặc duyệt nghỉ một buổi trước khi xếp buổi thay thế.",
+  TARGET_DURING_LEAVE: "Buổi học bù nằm trong khoảng nghỉ đã duyệt.",
+  SESSION_FULL: "Buổi học đã đủ sĩ số. Chọn buổi khác.",
+  INCOMPLETE_ATTENDANCE: "Chọn kết quả cho toàn bộ học viên trước khi chốt.",
+  EXCUSED_REQUIRES_LEAVE:
+    "Trạng thái nghỉ được phép phải khớp đơn nghỉ đã duyệt.",
+  MAKEUP_SOURCE_ABSENT: "Học viên đã xếp học bù phải được ghi vắng ở buổi gốc.",
+  INVALID_TRANSFER_DATE:
+    "Ngày chuyển lớp phải ở tương lai và nằm trong kỳ học.",
+  INVALID_TRANSFER_CLASS:
+    "Lớp mới phải mở đăng ký, cùng khóa học và cùng học phí.",
+  TRANSFER_ALREADY_SCHEDULED: "Đã có một lần chuyển lớp sau ngày đã chọn.",
+  TRANSFER_HAS_MAKEUPS: "Hủy các lịch học bù đang chờ trước khi chuyển lớp.",
+  TRANSFER_LESSON_GAP:
+    "Lớp mới chưa có đủ buổi cho các bài còn lại. Liên hệ quản lý để chuẩn bị lịch.",
+  TRANSFER_SESSION_FULL: "Một buổi tương lai của lớp mới đã đủ sĩ số.",
+  TRANSFER_MAKEUP_CONFLICT:
+    "Buổi ở lớp mới đang có lịch học bù của học viên này.",
+  FUTURE_CLASS_FULL:
+    "Lớp sẽ đủ sĩ số khi các lần chuyển đã lên lịch có hiệu lực.",
+  ASSIGNMENT_LOCKED: "Chỉ sửa bài tập nháp trong cùng lớp.",
+  INVALID_ASSIGNMENT_STATE:
+    "Bài tập đã đổi trạng thái. Tải lại trước khi thực hiện.",
+  INVALID_RECIPIENTS:
+    "Chọn học sinh đang trong kỳ học của lớp; mỗi con chỉ được chọn một ghi danh.",
+  INVALID_DUE_DATE: "Hạn nộp phải ở tương lai.",
+  INVALID_SUBMISSION_WINDOW: "Hạn nộp hoặc số lần nộp mới không hợp lệ.",
+  ANSWERS_ALREADY_VISIBLE: "Đáp án đã công bố nên không thể mở lại nhận bài.",
+  ASSIGNMENT_NOT_CLOSED: "Đóng nhận bài trước khi công bố đáp án.",
+  ESSAY_REQUIRES_REVIEW:
+    "Bài có câu tự luận cần giáo viên chấm tay hoặc kiểm tra đề xuất AI.",
+  INVALID_SCORES:
+    "Điểm phải đủ từng câu, không trùng và không vượt điểm tối đa.",
+  INVALID_GRADE_STATE: "Chỉ duyệt phiên bản điểm đang ở bản nháp.",
+  GRADE_NOT_APPROVED: "Giáo viên phải duyệt bản chấm trước khi công bố.",
+  AI_ATTACHMENTS_UNSUPPORTED:
+    "Bài có file đính kèm cần giáo viên kiểm tra và chấm tay.",
+  INVALID_REPORT_RANGE: "Khoảng báo cáo phải hợp lệ và tối đa 366 ngày.",
   SUBJECT_NOT_FOUND: "Không tìm thấy môn học.",
   SUBJECT_IN_USE: "Môn đã có giáo trình. Không thể đổi tên môn.",
   SUBJECT_INACTIVE: "Môn học đã ngừng sử dụng.",
@@ -179,4 +238,50 @@ export function apiErrorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "Không thể hoàn tất thao tác. Vui lòng thử lại.";
+}
+export async function downloadReport(id: string, format: "xlsx" | "pdf") {
+  try {
+    const response = await client.get<Blob>(
+      `academic/reports/${encodeURIComponent(id)}/download?format=${format}`,
+      { responseType: "blob" },
+    );
+    if (
+      String(response.headers["content-type"] ?? "").includes(
+        "application/json",
+      )
+    )
+      throw new ApiError(
+        "INVALID_API_RESPONSE",
+        "Máy chủ không trả file báo cáo.",
+        502,
+      );
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `report-${id}.${format}`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    if (axios.isAxiosError<Blob>(error)) {
+      const envelope =
+        error.response?.data instanceof Blob
+          ? await error.response.data.text().then((value) => {
+              try {
+                return JSON.parse(value) as ApiEnvelope<never>;
+              } catch {
+                return undefined;
+              }
+            })
+          : undefined;
+      const failure = new ApiError(
+        envelope?.error?.code ?? "DOWNLOAD_FAILED",
+        envelope?.error?.message ?? "Không tải được báo cáo. Vui lòng thử lại.",
+        error.response?.status ?? 0,
+        envelope?.error?.requestId,
+      );
+      if (failure.status === 401) emitSessionExpired();
+      throw failure;
+    }
+    throw error;
+  }
 }

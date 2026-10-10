@@ -1,28 +1,14 @@
-import { Suspense } from "react"
-import type { Metadata } from "next"
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets"
-import { PageContainer } from "@/components/shared/layout/page-container"
-import { SYSTEM_MSG } from "@/constants/messages/events/system"
-import { ProfileView } from "@/features/system/components/profile-view"
-import { AccountProfile } from "@/features/auth/components/account-profile"
-import { getServerRole } from "@/lib/auth/server-role"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { AccountProfile } from "@/features/auth/components/account-profile";
 
-export const metadata: Metadata = {
-  title: SYSTEM_MSG.PROFILE_TITLE,
-}
+export const metadata: Metadata = { title: "Tài khoản" };
 
-export default async function ProfilePage() {
-  const role = await getServerRole()
-  // nuqs dùng `useSearchParams()` nên phải có Suspense khi prerender tĩnh.
+export default function Page() {
   return (
-    <Suspense
-      fallback={
-        <PageContainer>
-          <SkeletonDetailHeader />
-        </PageContainer>
-      }
-    >
-      {role === "staff" || role === "center_manager" ? <AccountProfile /> : <ProfileView />}
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <AccountProfile />
     </Suspense>
-  )
+  );
 }

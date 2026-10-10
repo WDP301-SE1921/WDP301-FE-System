@@ -126,6 +126,15 @@ const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
     header: "Thao tác",
     cell: ({ row: { original: parent } }) => (
       <div className="flex flex-wrap gap-2">
+        {!isStaff && (
+          <Button
+            size="sm"
+            variant="outline"
+            render={<Link href={ROUTES.MANAGER.PARENT_DETAIL(parent.id)} />}
+          >
+            Xem tài khoản
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -208,30 +217,44 @@ const studentColumns = (
       </Badge>
     ),
   },
-  ...(isStaff
-    ? [
-        {
-          id: "actions",
-          header: "Thao tác",
-          cell: ({ row: { original: child } }) =>
-            child.status === "ACTIVE" && (
-              <Button
-                size="sm"
-                render={
-                  <Link
-                    href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
-                      email: child.parentProfile.user.email,
-                      studentId: child.id,
-                    })}
-                  />
-                }
-              >
-                Đăng ký học
-              </Button>
-            ),
-        } satisfies LegacyColumnDef<StudentListItem>,
-      ]
-    : []),
+  {
+    id: "actions",
+    header: "Thao tác",
+    cell: ({ row: { original: child } }) => (
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          render={
+            <Link
+              href={
+                isStaff
+                  ? ROUTES.STAFF.STUDENT_DETAIL(child.id)
+                  : ROUTES.MANAGER.STUDENT_DETAIL(child.id)
+              }
+            />
+          }
+        >
+          Xem ghi danh
+        </Button>
+        {isStaff && child.status === "ACTIVE" && (
+          <Button
+            size="sm"
+            render={
+              <Link
+                href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
+                  email: child.parentProfile.user.email,
+                  studentId: child.id,
+                })}
+              />
+            }
+          >
+            Đăng ký học
+          </Button>
+        )}
+      </div>
+    ),
+  },
 ];
 
 export function RegistrationParentsView() {

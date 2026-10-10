@@ -150,11 +150,18 @@ async function handle(
         success: true,
         data: webUser(await readBackend<BackendUser>(upstream)),
       });
-    else
-      response = new NextResponse(await upstream.text(), {
-        status: upstream.status,
-        headers: { "Content-Type": "application/json" },
+    else {
+      const headers = new Headers({
+        "Content-Type":
+          upstream.headers.get("content-type") ?? "application/json",
       });
+      const disposition = upstream.headers.get("content-disposition");
+      if (disposition) headers.set("Content-Disposition", disposition);
+      response = new NextResponse(await upstream.arrayBuffer(), {
+        status: upstream.status,
+        headers,
+      });
+    }
     if (renewed)
       setSessionCookies(
         response,

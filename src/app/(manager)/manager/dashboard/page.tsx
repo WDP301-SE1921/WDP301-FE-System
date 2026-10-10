@@ -1,21 +1,14 @@
-import type { Metadata } from "next"
-import { redirect } from "next/navigation"
-import { DASHBOARD_MSG } from "@/constants/messages/events/dashboard"
-import { ROLE_HOME_ROUTE } from "@/constants/role-access"
-import { ROUTES } from "@/constants/routes"
-import { DashboardView } from "@/features/dashboard/components/dashboard-view"
-import { RegistrationDashboardView } from "@/features/registration-flow/components/dashboard-view"
-import { getServerRole } from "@/lib/auth/server-role"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { LiveManagerDashboard } from "@/features/dashboard/components/live-manager-dashboard";
 
-export const metadata: Metadata = {
-  title: DASHBOARD_MSG.TITLE,
-}
+export const metadata: Metadata = { title: "Tổng quan trung tâm" };
 
-export default async function DashboardPage() {
-  const role = await getServerRole()
-  if (!role) redirect(ROUTES.AUTH.LOGIN)
-  // Vai trò không có dashboard (vd thiết kế giáo trình) về trang chủ riêng.
-  if (ROLE_HOME_ROUTE[role] !== ROUTES.MANAGER.DASHBOARD) redirect(ROLE_HOME_ROUTE[role])
-
-  return role === "staff" || role === "center_manager" ? <RegistrationDashboardView manager={role === "center_manager"} /> : <DashboardView role={role} />
+export default function Page() {
+  return (
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <LiveManagerDashboard />
+    </Suspense>
+  );
 }

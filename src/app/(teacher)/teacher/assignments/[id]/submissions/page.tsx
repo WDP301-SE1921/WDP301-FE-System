@@ -1,29 +1,19 @@
-import { Suspense } from "react"
-import type { Metadata } from "next"
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets"
-import { PageContainer } from "@/components/shared/layout/page-container"
-import { ASSIGNMENT_MSG } from "@/constants/messages/events/assignment"
-import { AssignmentSubmissionsView } from "@/features/assignments/components/assignment-submissions-view"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { LiveAssignmentSubmissions } from "@/features/assignments/components/live-assignments-view";
 
-export const metadata: Metadata = { title: ASSIGNMENT_MSG.LIST_TITLE }
+export const metadata: Metadata = { title: "Bài nộp và giao bài" };
 
-export default async function TeacherAssignmentSubmissionsPage({
+export default async function Page({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = await params
-
-  // nuqs (`?status=`) dùng useSearchParams() nên phải có Suspense khi prerender.
+  const { id } = await params;
   return (
-    <Suspense
-      fallback={
-        <PageContainer>
-          <SkeletonDetailHeader />
-        </PageContainer>
-      }
-    >
-      <AssignmentSubmissionsView assignmentId={id} />
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <LiveAssignmentSubmissions id={id} />
     </Suspense>
-  )
+  );
 }

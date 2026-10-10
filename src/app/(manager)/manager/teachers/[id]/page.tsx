@@ -1,31 +1,19 @@
-import { Suspense } from "react"
-import type { Metadata } from "next"
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets"
-import { PageContainer } from "@/components/shared/layout/page-container"
-import { TEACHER_MSG } from "@/constants/messages/events/teacher"
-import { TeacherDetailView } from "@/features/teachers/components/teacher-detail-view"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { AccountDetailView } from "@/features/directory/components/accounts-view";
 
-export const metadata: Metadata = {
-  title: TEACHER_MSG.LIST_TITLE,
-}
+export const metadata: Metadata = { title: "Tài khoản giáo viên" };
 
-export default async function TeacherDetailPage({
+export default async function Page({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = await params
-
-  // nuqs (`?tab=`) dùng `useSearchParams()` nên phải có Suspense khi prerender.
+  const { id } = await params;
   return (
-    <Suspense
-      fallback={
-        <PageContainer>
-          <SkeletonDetailHeader />
-        </PageContainer>
-      }
-    >
-      <TeacherDetailView teacherId={id} />
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <AccountDetailView kind="teachers" id={id} />
     </Suspense>
-  )
+  );
 }

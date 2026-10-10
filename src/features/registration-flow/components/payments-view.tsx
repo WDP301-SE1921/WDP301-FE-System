@@ -26,6 +26,7 @@ import { recentRegistrations, rememberRegistration } from "../storage";
 import { ApiFeedback, FieldError } from "./api-feedback";
 import { RegistrationReceipt } from "./registration-receipt";
 import { RegistrationBillPanel } from "@/features/billing/components/registration-bill-panel";
+import { LivePaymentHistory } from "@/features/directory/components/payment-history";
 
 const idSchema = z.object({
   id: z
@@ -86,7 +87,13 @@ export function RegistrationPaymentsView() {
     <PageContainer>
       <PageHeader
         title="Đăng ký và biên lai học phí"
-        description="Tra cứu đăng ký bằng mã hoặc tiếp tục các bản nháp đã mở trong phiên làm việc này."
+        description="Danh sách đăng ký và thanh toán tại trung tâm. Tra cứu mã để mở bill hoặc biên lai."
+      />
+      <LivePaymentHistory
+        onOpen={(id) => {
+          form.setValue("id", id);
+          void setRegistrationId(id);
+        }}
       />
       <Card>
         <CardHeader>

@@ -1,9 +1,14 @@
-import type { Metadata } from "next"
-import { ASSIGNMENT_MSG } from "@/constants/messages/events/assignment"
-import { AssignmentFormView } from "@/features/assignments/components/assignment-form-view"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { LiveAssignmentEditor } from "@/features/assignments/components/live-assignment-editor";
 
-export const metadata: Metadata = { title: ASSIGNMENT_MSG.CREATE_TITLE }
+export const metadata: Metadata = { title: "Tạo bài tập" };
 
-export default function TeacherAssignmentNewPage() {
-  return <AssignmentFormView />
+export default function Page() {
+  return (
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <LiveAssignmentEditor />
+    </Suspense>
+  );
 }

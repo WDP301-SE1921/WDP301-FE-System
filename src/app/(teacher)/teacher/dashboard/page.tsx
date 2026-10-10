@@ -1,9 +1,14 @@
-import type { Metadata } from "next"
-import { TEACHER_DASHBOARD_MSG } from "@/constants/messages/events/teacher-portal"
-import { TeacherDashboardView } from "@/features/dashboard/components/teacher-dashboard-view"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { LiveTeacherDashboard } from "@/features/dashboard/components/live-teacher-dashboard";
 
-export const metadata: Metadata = { title: TEACHER_DASHBOARD_MSG.TITLE }
+export const metadata: Metadata = { title: "Tổng quan giảng dạy" };
 
-export default function TeacherDashboardPage() {
-  return <TeacherDashboardView />
+export default function Page() {
+  return (
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <LiveTeacherDashboard />
+    </Suspense>
+  );
 }

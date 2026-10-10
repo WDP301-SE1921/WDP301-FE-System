@@ -1,15 +1,19 @@
-import type { Metadata } from "next"
-import { ASSIGNMENT_MSG } from "@/constants/messages/events/assignment"
-import { AssignmentFormView } from "@/features/assignments/components/assignment-form-view"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { LiveAssignmentEditor } from "@/features/assignments/components/live-assignment-editor";
 
-export const metadata: Metadata = { title: ASSIGNMENT_MSG.EDIT_TITLE }
+export const metadata: Metadata = { title: "Sửa bài tập" };
 
-export default async function TeacherAssignmentEditPage({
+export default async function Page({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = await params
-
-  return <AssignmentFormView assignmentId={id} />
+  const { id } = await params;
+  return (
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <LiveAssignmentEditor id={id} />
+    </Suspense>
+  );
 }

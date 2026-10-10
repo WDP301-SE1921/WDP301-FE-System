@@ -1,17 +1,19 @@
-import type { Metadata } from "next"
-import { TEACHER_ATTENDANCE_MSG } from "@/constants/messages/events/teacher-portal"
-import { AttendanceSessionView } from "@/features/attendance/components/attendance-session-view"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { LiveAttendanceSession } from "@/features/attendance/components/live-attendance-view";
 
-export const metadata: Metadata = {
-  title: TEACHER_ATTENDANCE_MSG.LIST_TITLE,
-}
+export const metadata: Metadata = { title: "Điểm danh buổi học" };
 
-export default async function TeacherAttendanceSessionPage({
+export default async function Page({
   params,
 }: {
-  params: Promise<{ sessionId: string }>
+  params: Promise<{ sessionId: string }>;
 }) {
-  const { sessionId } = await params
-
-  return <AttendanceSessionView sessionId={sessionId} />
+  const { sessionId } = await params;
+  return (
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <LiveAttendanceSession sessionId={sessionId} />
+    </Suspense>
+  );
 }

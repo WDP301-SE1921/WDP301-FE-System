@@ -1,24 +1,14 @@
-import { Suspense } from "react"
-import type { Metadata } from "next"
-import { PageContainer } from "@/components/shared/layout/page-container"
-import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets"
-import { GRADING_MSG } from "@/constants/messages/events/grading"
-import { GradingQueueView } from "@/features/grading/components/grading-queue-view"
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
+import { LiveGradingQueue } from "@/features/grading/components/live-grading-view";
 
-export const metadata: Metadata = { title: GRADING_MSG.QUEUE_TITLE }
+export const metadata: Metadata = { title: "Chấm bài" };
 
-export default function TeacherGradingQueuePage() {
-  // nuqs (`?status=`, `?classId=`, `?assignmentId=`) dùng useSearchParams() nên phải
-  // có Suspense khi prerender.
+export default function Page() {
   return (
-    <Suspense
-      fallback={
-        <PageContainer>
-          <SkeletonTable rows={6} />
-        </PageContainer>
-      }
-    >
-      <GradingQueueView />
+    <Suspense fallback={<SkeletonDetailHeader />}>
+      <LiveGradingQueue />
     </Suspense>
-  )
+  );
 }
