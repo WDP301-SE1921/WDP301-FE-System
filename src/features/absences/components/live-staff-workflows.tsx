@@ -125,7 +125,7 @@ export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
         )}
       {studentId && (mode === "makeup" || mode === "swap") && (
         <MakeupPanel
-          key={studentId}
+          key={`makeup-${studentId}`}
           studentId={studentId}
           enrollments={enrollments.data ?? []}
         />
@@ -216,7 +216,9 @@ export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
           </CardContent>
         </Card>
       )}
-      {studentId && <LeaveHistory key={studentId} studentId={studentId} />}
+      {studentId && (
+        <LeaveHistory key={`leave-history-${studentId}`} studentId={studentId} />
+      )}
     </PageContainer>
   );
 }
