@@ -37,7 +37,7 @@ const ERROR_TEXT: Record<string, string> = {
   INVITATION_INVALID: "Mã mời không hợp lệ, đã dùng hoặc đã hết hạn.",
   INVITATION_NOT_FOUND: "Không tìm thấy lời mời.",
   INVITATION_NOT_ACCEPTED: "Người được mời chưa hoàn tất thông tin.",
-  INVITATION_LOCKED: "Chỉ thu hồi lời mời chưa được sử dụng.",
+  INVITATION_LOCKED: "Chỉ gửi lại hoặc thu hồi lời mời chưa được sử dụng.",
   AUTH_CURRENT_PASSWORD_INVALID: "Mật khẩu hiện tại không đúng.",
   AUTH_INVALID_RESET_TOKEN: "Mã đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.",
   PROFILE_PHONE_NOT_ALLOWED: "Chỉ hồ sơ phụ huynh có số điện thoại.",
@@ -46,6 +46,9 @@ const ERROR_TEXT: Record<string, string> = {
   EMAIL_NOT_CONFIGURED: "Máy chủ chưa cấu hình gửi email.",
   EMAIL_DELIVERY_BUSY: "Email đang được gửi. Tải lại sau ít phút.",
   EMAIL_DELIVERY_NOT_FOUND: "Không tìm thấy email.",
+  EMAIL_DELIVERY_FAILED:
+    "Gửi email không thành công. Xem lịch sử email để kiểm tra và thử lại.",
+  TEACHER_INVITATION_REQUIRED: "Tạo giáo viên qua lời mời và duyệt tài khoản.",
   OUTSIDE_ENROLLMENT: "Ngày đã chọn nằm ngoài kỳ học đang có hiệu lực.",
   ENROLLMENT_ENDED: "Ghi danh đã kết thúc. Tải lại trạng thái trước khi xử lý.",
   LEAVE_OVERLAP: "Khoảng nghỉ trùng với một đơn đã duyệt.",

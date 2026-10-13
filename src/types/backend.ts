@@ -136,6 +136,15 @@ export interface RegistrationClass {
   isActive?: boolean;
   scheduleLocked?: boolean;
   roomId?: string | null;
+  room?: {
+    id: string;
+    name: string;
+    capacity: number;
+    isActive: boolean;
+  } | null;
+  rosterCount?: number;
+  pendingTeacher?: Pick<AcademicTeacher, "id" | "displayName" | "email"> | null;
+  pendingTeacherFrom?: string | null;
   /** Set when the assigned teacher confirmed ("set cứng") the weekly schedule. */
   scheduleConfirmedAt?: string | null;
   rosterAt?: string;

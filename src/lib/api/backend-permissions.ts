@@ -21,7 +21,7 @@ const rules: {
 }[] = [
   { method: "GET", path: /^dashboard$/, roles: manager },
   { method: "GET", path: /^staff(?:\/[^/]+)?$/, roles: manager },
-  { method: "POST", path: /^(staff|teachers)$/, roles: manager },
+  { method: "POST", path: /^staff$/, roles: manager },
   {
     method: "PATCH",
     path: /^(staff|teachers|parents)\/[^/]+$/,
@@ -131,7 +131,7 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^(teacher|manager)-invitations$|^account-invitations\/[^/]+\/(review|revoke)$/,
+    path: /^(teacher|manager)-invitations$|^account-invitations\/[^/]+\/(review|revoke|resend)$/,
     roles: manager,
   },
   {

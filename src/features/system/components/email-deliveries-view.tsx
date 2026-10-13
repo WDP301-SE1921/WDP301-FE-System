@@ -29,16 +29,39 @@ const STATUS: Record<
 };
 const EVENT_TEXT: Record<string, string> = {
   PAYMENT_CONFIRMED: "Xác nhận thanh toán",
+  ATTENDANCE_FINALIZED: "Kết quả điểm danh",
+  LEAVE_REQUESTED: "Yêu cầu nghỉ học",
+  LEAVE_DECIDED: "Duyệt yêu cầu nghỉ",
+  LEAVE_CANCELLED: "Hủy yêu cầu nghỉ",
+  LEAVE_ENDED_EARLY: "Kết thúc nghỉ sớm",
+  MAKEUP_BOOKED: "Đặt học bù",
+  MAKEUP_CANCELLED: "Hủy học bù",
+  MAKEUP_RESCHEDULED: "Đổi buổi học bù",
+  ENROLLMENT_TRANSFERRED: "Chuyển lớp",
+  ENROLLMENT_ENDED: "Kết thúc môn học",
+  STUDENT_STUDY_ENDED: "Nghỉ học tại trung tâm",
+  ACCOUNT_INVITATION: "Lời mời tài khoản",
+  EMAIL_VERIFICATION: "Xác minh email",
+  PASSWORD_RESET: "Đặt lại mật khẩu",
+  ANNOUNCEMENT: "Thông báo lớp",
+  TUITION_REMINDER: "Nhắc gia hạn học phí",
 };
 
 /**
  * Persisted email deliveries (BE outbox) with automatic retry and a manual retry.
- * Announcements sent from "Gửi thông báo" are delivered directly and are not listed here.
+ * Gom ca thong bao lop, loi moi va email tai khoan trong outbox cua BE.
  */
 export function EmailDeliveriesView() {
   const [page] = useQueryState("page", parseAsInteger.withDefault(1));
-  const query = useLiveQuery(["email-deliveries", page], (signal) =>
-    academicApi.emailDeliveries(Math.max(1, page), PAGE_SIZE, signal),
+  const query = useLiveQuery(
+    ["email-deliveries", page],
+    (signal) =>
+      academicApi.emailDeliveries(Math.max(1, page), PAGE_SIZE, signal),
+    true,
+    (value) =>
+      value.items.some(
+        (email) => email.status === "PENDING" || email.status === "PROCESSING",
+      ),
   );
   const retry = useLiveCommand();
   return (
@@ -48,7 +71,7 @@ export function EmailDeliveriesView() {
         description="Email nghiệp vụ được lưu và tự gửi lại khi lỗi. Có thể gửi lại thủ công khi chưa hết số lần thử."
       />
       {retry.error instanceof ApiError && retry.error.status >= 500 ? (
-        // BE currently answers an SMTP rejection with a 500; the attempt is still recorded.
+        // BE da luu lan thu truoc khi tra loi gui email.
         <p role="alert" className="text-sm text-destructive">
           Gửi lại không thành công. Xem lỗi gần nhất của email trong danh sách.
         </p>

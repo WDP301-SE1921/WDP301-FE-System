@@ -1,5 +1,7 @@
 # Gửi BE: lỗi và phần còn thiếu sau khi Web nối API của BE `5ec1729`
 
+> Cập nhật tích hợp: BE `d1ce7dc` đã trả contract sửa các mục handoff. Web đã cập nhật tương ứng và kiểm thử lại local/Docker; xem [BE_HANDOFF_INTEGRATION_2026-10-13.md](BE_HANDOFF_INTEGRATION_2026-10-13.md). Nội dung dưới đây giữ nguyên làm mốc audit trước khi BE sửa, không phải danh sách lỗi đang tồn tại.
+
 Ngày cập nhật: **13/10/2026**. Mốc đối chiếu: **BE `5ec1729`** (PR #7), **Web nhánh `dev` sau `99d8645`**.
 
 Tài liệu này tiếp nối [BE_HANDOFF_REMAINING_GAPS.md](BE_HANDOFF_REMAINING_GAPS.md). Các mục dưới đây được xác nhận bằng đọc source BE và chạy thử Web với BE thật (MySQL biệt lập). Web **không sửa BE**; BE tự sửa và trả lại contract. Đã chốt với người dùng ngày 13/10: **không dùng phân quyền con cho Quản lý** (mọi Quản lý có đủ tính năng của role) và **chuyển lớp vẫn bắt buộc cùng học phí**.
@@ -109,11 +111,11 @@ Tài liệu này tiếp nối [BE_HANDOFF_REMAINING_GAPS.md](BE_HANDOFF_REMAININ
 
 ## 3. Nghiệp vụ SRS còn thiếu ở BE
 
-| Mã | SRS | Còn thiếu |
-| --- | --- | --- |
-| S1 | §3.6, §3.7, §3.8, §3.11, §4.7, §5.9 #32, §6.3–6.8 | Mới chỉ email **xác nhận thanh toán** đi qua outbox. Chưa có email điểm danh, nghỉ một buổi/nghỉ dài hạn, học bù, đổi lớp, nghỉ môn/nghỉ hẳn, lời mời. Email thanh toán thiếu **môn và lịch học** và đang viết tiếng Anh. Thông báo/nhắc học phí gửi trực tiếp, không lưu lịch sử gửi. |
-| S2 | §3.1 | Mời/duyệt Giáo viên chưa gửi email (BE-25). `POST /teachers` tạo trực tiếp vẫn bỏ qua bước duyệt; cần chốt có giữ đường này không. |
-| S3 | §3.4, §9 | Tính công Giáo viên từ điểm danh: chưa có đặc tả, giữ nguyên chưa làm. |
+| Mã  | SRS                                               | Còn thiếu                                                                                                                                                                                                                                                                              |
+| --- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1  | §3.6, §3.7, §3.8, §3.11, §4.7, §5.9 #32, §6.3–6.8 | Mới chỉ email **xác nhận thanh toán** đi qua outbox. Chưa có email điểm danh, nghỉ một buổi/nghỉ dài hạn, học bù, đổi lớp, nghỉ môn/nghỉ hẳn, lời mời. Email thanh toán thiếu **môn và lịch học** và đang viết tiếng Anh. Thông báo/nhắc học phí gửi trực tiếp, không lưu lịch sử gửi. |
+| S2  | §3.1                                              | Mời/duyệt Giáo viên chưa gửi email (BE-25). `POST /teachers` tạo trực tiếp vẫn bỏ qua bước duyệt; cần chốt có giữ đường này không.                                                                                                                                                     |
+| S3  | §3.4, §9                                          | Tính công Giáo viên từ điểm danh: chưa có đặc tả, giữ nguyên chưa làm.                                                                                                                                                                                                                 |
 
 Đã đúng theo SRS (không cần đổi): tài khoản Phụ huynh/hồ sơ con (§5.2–5.3), công thức chuyên cần (§5.5), quy tắc học bù (§5.6), nghỉ dài hạn tự `EXCUSED` (§5.8), cho học lại dùng hồ sơ cũ (§5.9 #33), thanh toán chặn trùng (§5.10), AI chỉ đề xuất (§5.12), báo cáo (§5.13), lịch sử thay đổi (§5.14), ma trận quyền theo role (§8).
 

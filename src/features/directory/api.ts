@@ -61,7 +61,7 @@ export const directoryApi = {
     }),
   account: (kind: "staff" | "teachers", id: string, signal?: AbortSignal) =>
     apiRequest<BackendUser>(`${kind}/${encodeURIComponent(id)}`, { signal }),
-  createAccount: (kind: "staff" | "teachers", body: unknown) =>
+  createAccount: (kind: "staff", body: unknown) =>
     apiRequest<BackendUser>(kind, {
       method: "POST",
       body: accountCreateSchema.parse(body),
@@ -144,6 +144,11 @@ export const directoryApi = {
   revokeInvitation: (id: string) =>
     apiRequest<AccountInvitation>(
       `account-invitations/${encodeURIComponent(id)}/revoke`,
+      { method: "POST" },
+    ),
+  resendInvitation: (id: string) =>
+    apiRequest<AccountInvitation>(
+      `account-invitations/${encodeURIComponent(id)}/resend`,
       { method: "POST" },
     ),
   auditLogs: (filters: DirectoryFilters, signal?: AbortSignal) =>

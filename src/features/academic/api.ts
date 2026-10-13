@@ -20,6 +20,7 @@ import type {
   MakeupRecord,
   MakeupSource,
   ReportRecord,
+  QueuedEmailResult,
   SessionParticipant,
   SubmissionRecord,
   SubstituteCandidate,
@@ -113,15 +114,9 @@ export async function readDirectoryPages<T>(
 }
 const itemPath = (collection: string, id: string) =>
   `academic/${collection}/${encodeURIComponent(id)}`;
-/**
- * Attendance summary bounds for whole local (UTC+7) days. BE parses a bare YYYY-MM-DD as
- * 00:00 UTC, which would drop the evening sessions of the last day, so send exact instants.
- */
+/** BE hieu ngay YYYY-MM-DD la ca ngay theo UTC+7. */
 export function attendanceRange(fromDate: string, toDate: string) {
-  return {
-    fromDate: `${fromDate}T00:00:00.000+07:00`,
-    toDate: `${toDate}T23:59:59.999+07:00`,
-  };
+  return { fromDate, toDate };
 }
 const command = <T = unknown>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: "POST", body });
@@ -304,15 +299,12 @@ export const academicApi = {
       announcementSchema.parse(body),
     ),
   sendAnnouncement: (id: string) =>
-    command<{
-      results: { email: string; sent: boolean }[];
-      automaticRetry: boolean;
-    }>(`${itemPath("announcements", id)}/send-email`),
+    command<QueuedEmailResult>(`${itemPath("announcements", id)}/send-email`),
   reminders: (body: unknown) =>
-    command<{
-      results: { email: string; sent: boolean }[];
-      automaticRetry: boolean;
-    }>("academic/tuition-reminders/send-email", reminderSchema.parse(body)),
+    command<QueuedEmailResult>(
+      "academic/tuition-reminders/send-email",
+      reminderSchema.parse(body),
+    ),
 };
 export function currentEnrollmentClass(
   enrollment: Pick<EnrollmentRecord, "classId" | "placements">,

@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
+import { ROUTES } from "@/constants/routes";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
@@ -23,13 +25,13 @@ export function LiveAnnouncementsView() {
     return { announcements, classes };
   });
   const [deliveries, setDeliveries] = useState<
-    { email: string; sent: boolean }[] | null
+    { email: string; queued: boolean }[] | null
   >(null);
   return (
     <PageContainer>
       <PageHeader
         title="Thông báo và nhắc học phí"
-        description="Gửi email đến phụ huynh của lớp đang học và xem kết quả gửi."
+        description="Xếp email đến phụ huynh vào hàng đợi và theo dõi trạng thái trong lịch sử email."
       />
       <AsyncBoundary
         isLoading={data.isPending}
@@ -136,25 +138,30 @@ export function LiveAnnouncementsView() {
       {deliveries && (
         <Card>
           <CardHeader>
-            <CardTitle>Kết quả lần gửi vừa thực hiện</CardTitle>
+            <CardTitle>Kết quả xếp hàng email</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <p role="status">
-              Đã gửi: {deliveries.filter((item) => item.sent).length} · Thất
-              bại: {deliveries.filter((item) => !item.sent).length}
+              Đã xếp hàng: {deliveries.filter((item) => item.queued).length}
             </p>
-            {deliveries.map((item) => (
-              <p key={item.email} className="break-all">
-                {item.email} · {item.sent ? "Đã gửi" : "Gửi thất bại"}
+            {deliveries.map((item, index) => (
+              <p key={`${item.email}-${index}`} className="break-all">
+                {item.email} · {item.queued ? "Đã xếp hàng" : "Chưa xếp hàng"}
               </p>
             ))}
             {!deliveries.length && (
               <p>Không có phụ huynh đủ điều kiện nhận email.</p>
             )}
             <p className="text-sm text-muted-foreground">
-              Kết quả được hiển thị cho lần gửi này. Các email lỗi chưa được tự
-              động gửi lại.
+              Hệ thống sẽ gửi email và tự thử lại khi lỗi. Trạng thái đã gửi
+              hoặc thất bại được cập nhật trong lịch sử email.
             </p>
+            <Link
+              className="text-sm underline"
+              href={ROUTES.MANAGER.EMAIL_LOGS}
+            >
+              Xem lịch sử email
+            </Link>
           </CardContent>
         </Card>
       )}

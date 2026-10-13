@@ -186,6 +186,16 @@ export interface AttendanceSummary {
   counts: AttendanceCounts;
   attendancePercent: number | null;
   history: AttendanceHistoryRow[];
+  students: {
+    studentId: string;
+    fullName: string;
+    counts: AttendanceCounts;
+    attendancePercent: number | null;
+  }[];
+}
+export interface QueuedEmailResult {
+  results: { email: string; queued: boolean }[];
+  automaticRetry: boolean;
 }
 export interface EmailDelivery {
   id: string;
@@ -225,7 +235,12 @@ export interface AccountInvitation {
   reviewedAt: string | null;
   reviewNote: string | null;
   createdAt: string;
-  /** Returned once by POST; BE does not email the invitation yet. */
+  acceptedUser?: {
+    id: string;
+    displayName: string | null;
+    email: string;
+  } | null;
+  /** Chi tra mot lan khi tao; BE cung xep email moi vao outbox. */
   acceptanceToken?: string;
 }
 export interface RoomRecord {

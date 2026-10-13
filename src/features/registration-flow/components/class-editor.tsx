@@ -44,6 +44,7 @@ import { ApiFeedback, FieldError } from "./api-feedback";
 import { ApiForm } from "@/components/shared/forms/api-form";
 import { displayMoment } from "@/features/academic/components/live-fields";
 import {
+  confirmationSchema,
   localDateTimeSchema,
   reasonSchema,
   requiredId,
@@ -796,12 +797,50 @@ function TeacherAssignmentCard({
         <CardTitle>Đổi giáo viên từ ngày hiệu lực</CardTitle>
         <CardDescription>
           Các buổi đang lên lịch từ thời điểm hiệu lực chuyển cho giáo viên mới;
-          buổi trước đó giữ giáo viên cũ. Giáo viên phụ trách lớp được cập nhật
-          ngay khi lưu.
+          buổi trước đó giữ giáo viên cũ. Giáo viên hiện tại tiếp tục phụ trách
+          lớp đến thời điểm hiệu lực.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {classroom.pendingTeacher && classroom.pendingTeacherFrom && (
+          <div className="mb-4 space-y-3 rounded-2xl border border-border p-4">
+            <p className="text-sm">
+              Phân công chờ:{" "}
+              {classroom.pendingTeacher.displayName ??
+                classroom.pendingTeacher.email}
+              {" · "}Hiệu lực từ {displayMoment(classroom.pendingTeacherFrom)}
+            </p>
+            <ApiForm
+              schema={confirmationSchema.extend({
+                reason: reasonSchema.shape.reason,
+              })}
+              defaults={{ confirmed: false, reason: "" }}
+              fields={[
+                {
+                  name: "reason",
+                  label: "Lý do hủy phân công chờ",
+                  type: "textarea",
+                },
+                {
+                  name: "confirmed",
+                  label: "Xác nhận giữ giáo viên hiện tại",
+                  type: "checkbox",
+                },
+              ]}
+              submitLabel="Hủy phân công chờ"
+              successMessage="Đã hủy phân công chờ."
+              onSubmit={(value) =>
+                registrationApi.assignTeacher(classroom.id, {
+                  teacherId: classroom.teacherId,
+                  effectiveAt: new Date().toISOString(),
+                  reason: value.reason,
+                })
+              }
+            />
+          </div>
+        )}
         <ApiForm
+          key={`${classroom.teacherId}-${classroom.pendingTeacherFrom ?? "none"}`}
           schema={teacherAssignmentFormSchema}
           fields={[
             {
@@ -821,7 +860,7 @@ function TeacherAssignmentCard({
             { name: "reason", label: "Lý do", type: "textarea" },
           ]}
           submitLabel="Đổi giáo viên"
-          successMessage="Đã đổi giáo viên cho lớp."
+          successMessage="Đã lưu phân công giáo viên theo ngày hiệu lực."
           onSubmit={(value) =>
             registrationApi.assignTeacher(classroom.id, {
               ...value,

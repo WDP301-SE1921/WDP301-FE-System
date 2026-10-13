@@ -34,8 +34,7 @@ const STATUS: Record<
 };
 
 /**
- * Invite → the person accepts with the link → a manager approves. BE does not email the
- * invitation yet, so the one-time link is shown to the inviter right after creation.
+ * Moi → nhan link qua email → hoan tat thong tin → quan ly duyet.
  */
 export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
   const [page] = useQueryState("page", parseAsInteger.withDefault(1));
@@ -69,7 +68,7 @@ export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
               },
             ]}
             submitLabel="Tạo lời mời"
-            successMessage={false}
+            successMessage="Đã tạo lời mời và xếp email vào hàng đợi."
             onSubmit={(value) => directoryApi.invite(kind, value)}
             onSuccess={(result) => setCreated(result as AccountInvitation)}
           />
@@ -90,6 +89,11 @@ export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
               key={invitation.id}
               invitation={invitation}
               now={now}
+              onResent={() =>
+                setCreated((previous) =>
+                  previous?.id === invitation.id ? null : previous,
+                )
+              }
             />
           ))}
         </div>
@@ -110,8 +114,8 @@ function InvitationLink({ invitation }: { invitation: AccountInvitation }) {
       <p className="font-medium">Link mời cho {invitation.email}</p>
       <p className="text-sm text-muted-foreground">
         Link chỉ hiển thị một lần và hết hạn lúc{" "}
-        {displayMoment(invitation.expiresAt)}. Gửi cho người được mời qua kênh
-        liên lạc của trung tâm.
+        {displayMoment(invitation.expiresAt)}. Email mời đã được xếp hàng gửi;
+        có thể dùng link này để gửi qua kênh liên lạc của trung tâm.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Input readOnly value={link} aria-label="Link mời" />
@@ -139,9 +143,11 @@ function InvitationLink({ invitation }: { invitation: AccountInvitation }) {
 function InvitationCard({
   invitation,
   now,
+  onResent,
 }: {
   invitation: AccountInvitation;
   now: number;
+  onResent: () => void;
 }) {
   const expired =
     invitation.status === "INVITED" && Date.parse(invitation.expiresAt) <= now;
@@ -159,10 +165,17 @@ function InvitationCard({
         {invitation.acceptedAt && (
           <p>Người nhận hoàn tất lúc {displayMoment(invitation.acceptedAt)}</p>
         )}
+        {invitation.acceptedUser && (
+          <p>
+            Người nhận:{" "}
+            {invitation.acceptedUser.displayName ??
+              invitation.acceptedUser.email}
+          </p>
+        )}
         {invitation.reviewNote && <p>Ghi chú: {invitation.reviewNote}</p>}
         {expired && (
           <p className="text-muted-foreground">
-            Lời mời đã hết hạn. Tạo lời mời mới cho email này nếu cần.
+            Lời mời đã hết hạn. Gửi lại để tạo link mới có hiệu lực 48 giờ.
           </p>
         )}
         {invitation.status === "ACCEPTED" && (
@@ -197,7 +210,24 @@ function InvitationCard({
             ))}
           </div>
         )}
-        {invitation.status === "INVITED" && !expired && (
+        {invitation.status === "INVITED" && (
+          <ApiForm
+            schema={confirmationSchema}
+            defaults={{ confirmed: false }}
+            fields={[
+              {
+                name: "confirmed",
+                label: "Xác nhận gửi lại; link cũ sẽ hết hiệu lực",
+                type: "checkbox",
+              },
+            ]}
+            submitLabel="Gửi lại lời mời"
+            successMessage="Đã xếp email mời mới vào hàng đợi. Link cũ đã hết hiệu lực."
+            onSubmit={() => directoryApi.resendInvitation(invitation.id)}
+            onSuccess={onResent}
+          />
+        )}
+        {invitation.status === "INVITED" && (
           <ApiForm
             schema={confirmationSchema}
             defaults={{ confirmed: false }}

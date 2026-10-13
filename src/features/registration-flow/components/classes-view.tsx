@@ -93,6 +93,11 @@ export function RegistrationClassesView() {
                 {money(item.monthlyFee)}/tháng · Sức chứa {item.capacity} học
                 sinh
               </p>
+              <p className="text-sm">
+                Phòng: {item.room?.name ?? "Chưa gán phòng"}
+                {item.rosterCount !== undefined &&
+                  ` · ${item.rosterCount} học sinh đang học`}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {item.teacherId ? "Đã gán giáo viên" : "Chưa gán giáo viên"}
               </p>

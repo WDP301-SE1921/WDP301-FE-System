@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ROUTES } from "@/constants/routes";
 import {
   accountCreateSchema,
   accountUpdateSchema,
@@ -106,30 +107,39 @@ export function AccountsView({ kind }: { kind: "staff" | "teachers" }) {
           Sau
         </Button>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Tạo tài khoản {title.toLowerCase()}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ApiForm
-            schema={accountCreateSchema}
-            defaults={{ email: "", displayName: "", password: "" }}
-            fields={[
-              { name: "displayName", label: "Họ tên" },
-              { name: "email", label: "Email", type: "email" },
-              {
-                name: "password",
-                label: "Mật khẩu ban đầu",
-                type: "password",
-                description:
-                  "Ít nhất 8 ký tự. Cung cấp mật khẩu cho người nhận qua kênh riêng.",
-              },
-            ]}
-            submitLabel="Tạo tài khoản"
-            onSubmit={(value) => directoryApi.createAccount(kind, value)}
-          />
-        </CardContent>
-      </Card>
+      {kind === "staff" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tạo tài khoản {title.toLowerCase()}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ApiForm
+              schema={accountCreateSchema}
+              defaults={{ email: "", displayName: "", password: "" }}
+              fields={[
+                { name: "displayName", label: "Họ tên" },
+                { name: "email", label: "Email", type: "email" },
+                {
+                  name: "password",
+                  label: "Mật khẩu ban đầu",
+                  type: "password",
+                  description:
+                    "Ít nhất 8 ký tự. Cung cấp mật khẩu cho người nhận qua kênh riêng.",
+                },
+              ]}
+              submitLabel="Tạo tài khoản"
+              onSubmit={(value) => directoryApi.createAccount("staff", value)}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        <Button
+          variant="outline"
+          render={<Link href={ROUTES.MANAGER.TEACHER_INVITATIONS} />}
+        >
+          Mời và duyệt giáo viên
+        </Button>
+      )}
     </PageContainer>
   );
 }
