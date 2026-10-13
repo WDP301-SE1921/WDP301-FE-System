@@ -9,14 +9,20 @@ import { Label } from "@/components/ui/label";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { directoryApi } from "@/features/directory/api";
 import { money, todayInVietnam } from "@/features/registration-flow/calendar";
+import { dateRangeSchema } from "@/lib/validators/web-workflows";
 export function LiveManagerDashboard() {
   const today = todayInVietnam();
   const [{ fromDate, toDate }, setRange] = useQueryStates({
     fromDate: parseAsString.withDefault(`${today.slice(0, 8)}01`),
     toDate: parseAsString.withDefault(today),
   });
-  const data = useLiveQuery(["manager-dashboard", fromDate, toDate], (signal) =>
-    directoryApi.dashboard({ fromDate, toDate }, signal),
+  const range = dateRangeSchema.safeParse({ fromDate, toDate });
+  const rangeError = range.success ? undefined : range.error.issues[0]?.message;
+  // A cleared or reversed range would only return INVALID_DATE_RANGE from BE.
+  const data = useLiveQuery(
+    ["manager-dashboard", fromDate, toDate],
+    (signal) => directoryApi.dashboard({ fromDate, toDate }, signal),
+    range.success,
   );
   const values = data.data
     ? [
@@ -56,11 +62,22 @@ export function LiveManagerDashboard() {
             type="date"
             value={toDate}
             onChange={(event) => void setRange({ toDate: event.target.value })}
+            aria-invalid={!!rangeError}
+            aria-describedby={rangeError ? "dashboard-range-error" : undefined}
           />
         </div>
       </div>
+      {rangeError && (
+        <p
+          id="dashboard-range-error"
+          role="alert"
+          className="text-sm text-destructive"
+        >
+          {rangeError}
+        </p>
+      )}
       <AsyncBoundary
-        isLoading={data.isPending}
+        isLoading={range.success && data.isPending}
         isError={data.isError}
         error={data.error}
         onRetry={() => void data.refetch()}

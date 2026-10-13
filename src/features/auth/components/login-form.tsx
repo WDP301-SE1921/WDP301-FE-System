@@ -31,7 +31,7 @@ import { toast } from "@/components/ui/toast"
 import { AUTH_MSG } from "@/constants/messages/events/auth"
 import { ROUTES } from "@/constants/routes"
 import { loginSchema, type LoginInput } from "@/lib/validators/auth"
-import { apiErrorMessage } from "@/lib/api/client"
+import { ApiError, apiErrorMessage } from "@/lib/api/client"
 import { useLogin } from "@/features/auth/hooks/use-login"
 
 const FIELD_ID = {
@@ -43,6 +43,7 @@ const FIELD_ID = {
 function LoginForm() {
   const router = useRouter()
   const login = useLogin()
+  const isSubmitting = React.useRef(false)
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false)
 
   const {
@@ -57,13 +58,19 @@ function LoginForm() {
 
   const submitError = login.error ? apiErrorMessage(login.error) : null
 
-  function onSubmit(values: LoginInput) {
-    login.mutate(values, {
-      onSuccess: (result) => {
-        toast.success(AUTH_MSG.LOGIN_SUCCESS)
-        router.replace(result.redirectTo)
-      },
-    })
+  async function onSubmit(values: LoginInput) {
+    // A second click/Enter can arrive before the disabled button re-renders.
+    if (isSubmitting.current) return
+    isSubmitting.current = true
+    try {
+      const result = await login.mutateAsync(values)
+      toast.success(AUTH_MSG.LOGIN_SUCCESS)
+      router.replace(result.redirectTo)
+    } catch {
+      /* Shown from login.error. */
+    } finally {
+      isSubmitting.current = false
+    }
   }
 
   return (
@@ -79,11 +86,20 @@ function LoginForm() {
             <Alert variant="destructive">
               <HugeiconsIcon icon={AlertCircleIcon} />
               <AlertTitle>{submitError}</AlertTitle>
-              <AlertDescription>{AUTH_MSG.SUPPORT_CONTACT}</AlertDescription>
+              <AlertDescription>
+                {login.error instanceof ApiError && login.error.requestId && (
+                  <p>Mã yêu cầu: {login.error.requestId}</p>
+                )}
+                <p>{AUTH_MSG.SUPPORT_CONTACT}</p>
+              </AlertDescription>
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+          <form
+            onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+            className="space-y-5"
+            noValidate
+          >
             <div className="space-y-2">
               <Label htmlFor={FIELD_ID.EMAIL} required>
                 {AUTH_MSG.EMAIL_LABEL}

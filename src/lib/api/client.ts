@@ -197,6 +197,68 @@ const ERROR_TEXT: Record<string, string> = {
   VALIDATION_ERROR: "Dữ liệu chưa hợp lệ. Kiểm tra lại các trường đã nhập.",
   INTERNAL_ERROR:
     "Máy chủ gặp lỗi. Vui lòng thử lại và cung cấp mã yêu cầu nếu cần hỗ trợ.",
+  // Mã BE chưa có câu tiếng Việt theo ma trận lỗi QA_FE_TEST_REPORT.md (13/10/2026).
+  HTTP_ERROR:
+    "Máy chủ từ chối yêu cầu. Tải lại trang rồi thử lại; nếu vẫn lỗi, gửi mã yêu cầu cho quản trị.",
+  INVALID_REFERENCE:
+    "Dữ liệu liên kết không còn tồn tại. Tải lại trang rồi chọn lại.",
+  INVALID_FILTER: "Bộ lọc không hợp lệ. Chọn lại điều kiện lọc.",
+  ACCOUNT_NOT_FOUND: "Không tìm thấy tài khoản. Tải lại danh sách.",
+  PARENT_PROFILE_NOT_FOUND: "Không tìm thấy hồ sơ phụ huynh của tài khoản này.",
+  AUTH_INVALID_EMAIL_TOKEN: "Mã xác minh email không hợp lệ hoặc đã hết hạn.",
+  ACCOUNT_TOKEN_INVALID:
+    "Mã trong email đã được thay bằng mã mới hoặc đã hết hạn. Gửi lại lời mời để tạo email mới.",
+  TOO_MANY_RECIPIENTS:
+    "Quá nhiều người nhận trong một lần gửi. Chia nhỏ danh sách rồi gửi lại.",
+  INVALID_REMINDER_RANGE: "Khoảng ngày nhắc học phí không hợp lệ.",
+  REQUEST_DECIDED: "Yêu cầu đã được xử lý trước đó. Tải lại trạng thái.",
+  INVALID_LEAVE: "Đơn nghỉ không hợp lệ. Kiểm tra loại nghỉ, ngày và buổi học.",
+  ENROLLMENT_NOT_FOUND: "Không tìm thấy ghi danh. Tải lại danh sách.",
+  INVALID_REGISTRATION:
+    "Thông tin đăng ký không hợp lệ. Tải lại đăng ký và kiểm tra lại.",
+  STUDENT_GRADE_LOCKED: "Hồ sơ con đã có đăng ký học nên không thể đổi khối.",
+  STUDENT_ID_REQUIRED: "Chọn học sinh.",
+  SUBJECT_REQUIRED: "Chọn môn học.",
+  SUBJECT_MISMATCH: "Khóa học hoặc lớp không cùng môn đã chọn.",
+  SCHEDULE_NOT_FOUND: "Không tìm thấy lịch tuần của lớp. Tải lại lớp.",
+  ROOM_SCHEDULE_CONFLICT:
+    "Phòng đã có buổi khác trùng giờ. Chọn phòng hoặc giờ khác.",
+  ROSTER_MAKEUP_CONFLICT:
+    "Học viên đang có lịch học bù liên quan đến buổi này. Xử lý lịch học bù trước.",
+  GENERATION_NOT_FOUND: "Không tìm thấy đợt sinh lịch. Tải lại lịch sử sinh lịch.",
+  INVALID_DESIGNER:
+    "Người soạn phải là tài khoản Thiết kế giáo trình đang hoạt động.",
+  INVALID_LESSON: "Bài học không hợp lệ hoặc không thuộc khóa học đã chọn.",
+  INVALID_LESSON_ORDER: "Thứ tự bài học phải liên tục và không trùng.",
+  INVALID_RESOLUTION:
+    "Cách xử lý phản hồi không hợp lệ. Tải lại phản hồi rồi thử lại.",
+  CSV_REQUIRED: "Chọn file CSV để nhập.",
+  INVALID_IMPORT: "Dữ liệu nhập không hợp lệ. Chọn file và xem trước lại.",
+  INVALID_IMPORT_MODE: "Chế độ nhập CSV phải là thêm vào hoặc thay toàn bộ.",
+  INVALID_KIND: "Loại nội dung phải là bài học hoặc kiểm tra tháng.",
+  INVALID_TITLE: "Tên nội dung bắt buộc, tối đa 255 ký tự.",
+  INVALID_CONTENT: "Nội dung bắt buộc, tối đa 50.000 ký tự.",
+  INVALID_SEQUENCE: "Số thứ tự bài phải liên tục theo chế độ nhập.",
+  INVALID_MONTH: "Tháng kiểm tra phải nằm trong học phần và không trùng.",
+  INVALID_ANSWER_KEY: "Đáp án đúng của câu hỏi không hợp lệ. Kiểm tra lại đề.",
+  RUBRIC_REQUIRED: "Câu tự luận cần có tiêu chí chấm.",
+  INVALID_CHOICE: "Lựa chọn trắc nghiệm không hợp lệ.",
+  INVALID_ANSWERS: "Bài làm thiếu hoặc sai định dạng câu trả lời.",
+  ATTEMPTS_EXHAUSTED: "Đã hết số lần nộp của bài tập này.",
+  INVALID_FILES: "Danh sách file đính kèm không hợp lệ.",
+  INVALID_FILE_SIZE: "File vượt dung lượng cho phép.",
+  INVALID_FILE_TYPE: "Định dạng file không được hỗ trợ.",
+  INVALID_AI_RESULT:
+    "AI trả về kết quả chấm không hợp lệ. Chấm tay hoặc chạy chấm AI lại.",
+  INVALID_AI_REPORT:
+    "AI trả về nhận xét báo cáo không hợp lệ. Tạo lại báo cáo sau ít phút.",
+  INVALID_FORMAT: "Chỉ tải báo cáo dạng PDF hoặc XLSX.",
+  INVALID_REPORT_SNAPSHOT: "Dữ liệu báo cáo đã lưu không đọc được. Tạo lại báo cáo.",
+  REPORTS_NOT_FOUND: "Không tìm thấy báo cáo. Tải lại danh sách báo cáo.",
+  REPORT_TOO_LARGE: "Báo cáo quá lớn. Thu hẹp khoảng ngày hoặc số học sinh.",
+  INVALID_ANALYTICS_RANGE: "Khoảng ngày thống kê không hợp lệ.",
+  ANALYTICS_TOO_LARGE:
+    "Dữ liệu thống kê quá lớn. Thu hẹp khoảng ngày hoặc bộ lọc.",
 };
 export class ApiError extends Error {
   constructor(

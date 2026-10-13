@@ -50,10 +50,42 @@ export function backendError(status: number, code: string, message: string) {
     error: { code, message },
   });
 }
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "[::1]"]);
+let hasLoggedConfigProblem = false;
+function backendBaseUrl() {
+  return (process.env.BACKEND_API_URL ?? "http://localhost:3000/api/v1").replace(
+    /\/$/,
+    "",
+  );
+}
+/**
+ * Web and Nest both default to port 3000. When BACKEND_API_URL points back at this web server,
+ * every BFF call gets a Next HTML 404 instead of the API, so report it instead of sending the request.
+ */
+export function backendConfigProblem(webPort = process.env.PORT) {
+  let url: URL;
+  try {
+    url = new URL(backendBaseUrl());
+  } catch {
+    return `BACKEND_API_URL không phải URL hợp lệ: ${process.env.BACKEND_API_URL}`;
+  }
+  const port = url.port || (url.protocol === "https:" ? "443" : "80");
+  if (webPort && port === webPort && LOOPBACK_HOSTS.has(url.hostname))
+    return `BACKEND_API_URL=${url.origin} trỏ vào chính web đang chạy ở cổng ${webPort}. Chạy BE ở cổng khác hoặc chạy web ở cổng khác (vd. npm run dev -- -p 3001).`;
+  return undefined;
+}
 export async function backendFetch(path: string, init: RequestInit = {}) {
-  const base = (
-    process.env.BACKEND_API_URL ?? "http://localhost:3000/api/v1"
-  ).replace(/\/$/, "");
+  const problem = backendConfigProblem();
+  if (problem) {
+    if (!hasLoggedConfigProblem) console.error(`[BFF] ${problem}`);
+    hasLoggedConfigProblem = true;
+    throw backendError(
+      502,
+      "BACKEND_MISCONFIGURED",
+      "Web chưa cấu hình đúng địa chỉ máy chủ API. Vui lòng báo quản trị hệ thống.",
+    );
+  }
+  const base = backendBaseUrl();
   try {
     return await fetch(`${base}/${path}`, {
       ...init,
@@ -79,6 +111,9 @@ export async function readBackend<T>(response: Response): Promise<T> {
   try {
     body = await response.json();
   } catch {
+    console.error(
+      `[BFF] ${response.url} trả HTTP ${response.status} với "${response.headers.get("content-type") ?? "không rõ"}" thay vì JSON. Kiểm tra BACKEND_API_URL.`,
+    );
     throw backendError(
       502,
       "INVALID_API_RESPONSE",
