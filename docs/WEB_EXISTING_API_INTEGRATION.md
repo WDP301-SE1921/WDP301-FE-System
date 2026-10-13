@@ -1,6 +1,38 @@
 # Web: tích hợp API BE hiện có
 
-Cập nhật 10/10/2026. Chỉ sửa WDP301-FE-System; không sửa BE/Mobile. [Audit theo SRS](API_GAP_BY_ROLE_SRS.md) ghi trạng thái trước lượt này.
+Cập nhật 13/10/2026 (nối API mới của BE `5ec1729`); bản 10/10/2026 ở bên dưới. Chỉ sửa WDP301-FE-System; không sửa BE/Mobile. [Audit theo SRS](API_GAP_BY_ROLE_SRS.md) ghi trạng thái trước lượt 10/10. Lỗi BE còn lại và yêu cầu gửi BE: [BE_HANDOFF_2026-10-13.md](BE_HANDOFF_2026-10-13.md).
+
+## Cập nhật 13/10/2026 — API mới của BE `5ec1729`
+
+| Role | Màn hình | API |
+| --- | --- | --- |
+| Staff | /staff/absences/makeup, swap | Buổi thay thế theo `eligible`, `availableSeats`, `reasonCodes` (buổi không đặt được hiện lý do); đặt lại buổi đã hủy; POST /academic/makeups/:id/reschedule |
+| Staff | /staff/absences/long-leave | POST /academic/leaves/:id/end-early (ngày đi học lại `YYYY-MM-DD`, từ hôm nay, trong kỳ nghỉ) |
+| Staff | Hồ sơ đã nghỉ hẳn (mọi màn nghỉ học) | POST /academic/students/:id/reactivate, sau đó dẫn sang đăng ký lớp mới |
+| Manager | /manager/rooms (mới) | GET/POST /rooms, PATCH /rooms/:id |
+| Manager | /manager/classes/:id | `roomId` khi tạo/sửa lớp; POST /classes/:id/teacher-assignments; PUT /classes/:id/schedule-confirmation `{ confirmed: false, reason }` |
+| Manager | /manager/teachers/invitations | GET/POST /teacher-invitations; POST /account-invitations/:id/review, /revoke |
+| Manager | /manager/system/managers (mới) | GET /managers; GET/POST /manager-invitations (không có phân quyền con) |
+| Manager | /manager/teachers/substitutes | GET scheduled-sessions; GET /academic/sessions/:id/substitute-candidates; POST /substitutions (kèm `expectedRevision`) |
+| Manager, Staff | /manager/notifications/emails | GET /academic/email-deliveries; POST /academic/email-deliveries/:id/retry |
+| Manager | /manager/system/audit-logs | GET /audit-logs (lọc đối tượng, hành động, khoảng ngày) |
+| Teacher | /teacher/classes/:id | PUT /classes/:id/schedule-confirmation `{ confirmed: true }`; tab Chuyên cần: GET /academic/classes/:id/attendance-summary |
+| Mọi role Web | Tài khoản | PATCH /auth/me (họ tên), POST /auth/change-password |
+| Công khai | /forgot-password, /reset-password (mới), /accept-invitation (mới) | POST /auth/forgot-password, /auth/reset-password, /account-invitations/accept |
+
+Thay đổi hành vi so với bản 10/10:
+
+- Bỏ việc tự loại các buổi từng đặt khỏi danh sách học bù: BE đã cho đặt lại buổi đã hủy (BE-04). Web chỉ cho chọn buổi BE báo `eligible`; số chỗ là ảnh chụp, BE kiểm tra lại khi xác nhận.
+- Nghỉ một buổi không còn cần giáo viên chuẩn bị danh sách trước (BE-03).
+- Danh sách học viên ở chi tiết lớp là danh sách tại thời điểm xem, đã tính chuyển lớp (BE-02).
+- Màn Điểm danh không gửi truy vấn khi khoảng ngày bị ngược (trước đây BE trả 400).
+- Chuyên cần gửi mốc giờ `+07:00` để không mất buổi tối ngày cuối, và cộng theo học sinh từ `effectiveStatus` của BE (BE-23).
+- Đổi mật khẩu: BE trả 401 khi sai mật khẩu hiện tại. BFF kiểm phiên trước rồi đổi thành 400 `AUTH_CURRENT_PASSWORD_INVALID`, không đăng xuất người dùng (BE-21).
+- Lời mời: BE chưa gửi email, nên Quản lý nhận link `/accept-invitation?token=…` một lần sau khi tạo.
+- Đổi giáo viên: màn ghi rõ hành vi hiện tại của BE, tức giáo viên phụ trách lớp được đổi ngay khi lưu (BE-19).
+- Quản lý trung tâm có thêm quyền vào màn Nhật ký hệ thống và Phòng học (`role-access.ts`).
+
+## Bản 10/10/2026
 
 ## Các màn đã nối
 
@@ -42,10 +74,10 @@ AI thành công chỉ trả đề xuất: Teacher chủ động đưa vào bản
 - Mutation parse Zod, loại field UI/actor giả; datetime đổi UTC+7 sang UTC. Có pending/error và xác nhận ở thao tác chốt/công bố/kết thúc. Không tự retry mutation.
 - Đọc đủ trang của list Academic. Queue bài nộp ghép theo assignment, tối đa 4 assignment song song vì BE chưa có endpoint tổng hợp.
 - Binary download giữ bytes/content-type/content-disposition qua BFF; lỗi JSON download được hiển thị như lỗi API.
-- Nghỉ một buổi yêu cầu roster do Teacher chuẩn bị trước. Web hướng dẫn điều kiện này, không tạo roster bằng quyền Staff.
+- ~~Nghỉ một buổi yêu cầu roster do Teacher chuẩn bị trước.~~ Đã bỏ từ 13/10 (BE-03).
 - BE kiểm tra cùng bài/kỳ học/sĩ số/trùng lịch/placement. Web không suy diễn chỗ trống từ participant hiện tại; không tự chỉnh bill sau chuyển lớp.
-- BE giữ khóa participant sau hủy booking, nên chưa đặt lại được cùng buổi cho cùng ghi danh. Web loại buổi đã từng đặt khỏi lựa chọn và yêu cầu chọn buổi thay thế khác.
-- Chưa có API: học lại INACTIVE, rooms, invitation/duyệt Teacher, thêm Manager, dạy thay/đổi giáo viên từ ngày hiệu lực, đóng bảo lưu sớm, đổi booking trực tiếp, lịch sử/retry email và đổi/quên mật khẩu. Màn liên quan hiển thị chưa hỗ trợ.
+- ~~Web loại buổi đã từng đặt khỏi lựa chọn học bù.~~ Đã bỏ từ 13/10 (BE-04).
+- ~~Chưa có API: học lại, rooms, invitation, thêm Manager, dạy thay, đổi giáo viên, đóng bảo lưu sớm, đổi booking, lịch sử email, đổi/quên mật khẩu.~~ Đã nối từ 13/10 (xem bảng phía trên).
 - Kết quả email SENT/FAILED là lần gửi vừa thực hiện. Lưu announcement không có nghĩa đã gửi. BE chưa có email tự động bền vững cho confirm/attendance/workflows.
 - DB chạy ứng dụng cần migration Academic hiện có. Lượt này không tự migrate DB ứng dụng; kiểm thử dùng MySQL biệt lập.
 
