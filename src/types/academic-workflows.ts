@@ -62,12 +62,15 @@ export interface MakeupSource {
     class: { id: string; name: string };
   };
 }
+/** Eligibility and seats come from the same BE check as booking; it is a snapshot, not a hold. */
 export interface MakeupCandidate {
   id: string;
   startsAt: string;
   endsAt: string;
   class: { name: string; capacity: number };
-  _count: { participants: number };
+  eligible: boolean;
+  availableSeats: number;
+  reasonCodes: string[];
 }
 export interface MakeupRecord {
   id: string;
@@ -161,6 +164,80 @@ export interface AnnouncementRecord {
   title: string;
   content: string;
   createdAt: string;
+}
+export interface AttendanceHistoryRow {
+  id: string;
+  attendance: SessionParticipant["attendance"];
+  enrollmentId: string;
+  enrollment: { studentProfile: { id: string; fullName: string } | null };
+  session: { id: string; classId: string; startsAt: string; endsAt: string };
+  effectiveStatus: "PRESENT" | "ABSENT" | "MADE_UP" | "EXCUSED";
+}
+export interface AttendanceCounts {
+  present: number;
+  absent: number;
+  madeUp: number;
+  excused: number;
+  required: number;
+  attended: number;
+}
+export interface AttendanceSummary {
+  range: { from: string | null; to: string | null };
+  counts: AttendanceCounts;
+  attendancePercent: number | null;
+  history: AttendanceHistoryRow[];
+}
+export interface EmailDelivery {
+  id: string;
+  eventType: string;
+  recipient: string;
+  subject: string;
+  status: "PENDING" | "PROCESSING" | "SENT" | "FAILED";
+  attemptCount: number;
+  maxAttempts: number;
+  nextAttemptAt: string;
+  lastError: string | null;
+  createdAt: string;
+  sentAt: string | null;
+}
+export interface AuditLogRecord {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  beforeData: unknown;
+  afterData: unknown;
+  createdAt: string;
+  actor: {
+    id: string;
+    email: string;
+    displayName: string | null;
+    role: string;
+  } | null;
+}
+export interface AccountInvitation {
+  id: string;
+  email: string;
+  role: "TEACHER" | "MANAGER";
+  status: "INVITED" | "ACCEPTED" | "APPROVED" | "REJECTED" | "REVOKED";
+  expiresAt: string;
+  acceptedAt: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  createdAt: string;
+  /** Returned once by POST; BE does not email the invitation yet. */
+  acceptanceToken?: string;
+}
+export interface RoomRecord {
+  id: string;
+  name: string;
+  capacity: number;
+  isActive: boolean;
+}
+export interface SubstituteCandidate {
+  id: string;
+  email: string;
+  displayName: string | null;
 }
 export interface StudentSchedule {
   enrollmentId: string;

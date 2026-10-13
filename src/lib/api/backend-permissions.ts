@@ -11,6 +11,7 @@ const sessionReaders = ["center_manager", "staff", "teacher"] as const;
 const catalogReaders = [...sessionReaders, "curriculum_designer"] as const;
 const staff = ["staff"] as const;
 const teacher = ["teacher"] as const;
+const managerOrStaff = ["center_manager", "staff"] as const;
 
 // BE also enforces ownership and state; unmatched method/path pairs are denied.
 const rules: {
@@ -76,8 +77,62 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^academic\/students\/[^/]+\/end-study$/,
+    path: /^academic\/students\/[^/]+\/(end-study|reactivate)$/,
     roles: staff,
+  },
+  {
+    method: "POST",
+    path: /^academic\/leaves\/[^/]+\/end-early$|^academic\/makeups\/[^/]+\/reschedule$/,
+    roles: staff,
+  },
+  {
+    method: "GET",
+    path: /^academic\/email-deliveries$/,
+    roles: managerOrStaff,
+  },
+  {
+    method: "POST",
+    path: /^academic\/email-deliveries\/[^/]+\/retry$/,
+    roles: managerOrStaff,
+  },
+  {
+    method: "GET",
+    path: /^academic\/classes\/[^/]+\/attendance-summary$/,
+    roles: teacher,
+  },
+  {
+    method: "GET",
+    path: /^academic\/sessions\/[^/]+\/substitute-candidates$/,
+    roles: manager,
+  },
+  {
+    method: "POST",
+    path: /^academic\/sessions\/[^/]+\/substitutions$/,
+    roles: manager,
+  },
+  { method: "GET", path: /^rooms$/, roles: sessionReaders },
+  { method: "POST", path: /^rooms$/, roles: manager },
+  { method: "PATCH", path: /^rooms\/[^/]+$/, roles: manager },
+  {
+    method: "POST",
+    path: /^classes\/[^/]+\/teacher-assignments$/,
+    roles: manager,
+  },
+  {
+    // Teacher confirms ("set cứng"); manager may only unlock (BE checks which).
+    method: "PUT",
+    path: /^classes\/[^/]+\/schedule-confirmation$/,
+    roles: [...manager, ...teacher],
+  },
+  {
+    method: "GET",
+    path: /^(managers|audit-logs|teacher-invitations|manager-invitations)$/,
+    roles: manager,
+  },
+  {
+    method: "POST",
+    path: /^(teacher|manager)-invitations$|^account-invitations\/[^/]+\/(review|revoke)$/,
+    roles: manager,
   },
   {
     method: "GET",
@@ -134,7 +189,14 @@ const rules: {
     roles: manager,
   },
   { method: "GET", path: /^auth\/me$/, roles: null },
-  { method: "POST", path: /^auth\/(login|logout|register)$/, roles: null },
+  { method: "PATCH", path: /^auth\/me$/, roles: null },
+  {
+    method: "POST",
+    path: /^auth\/(login|logout|register|change-password|forgot-password|reset-password)$/,
+    roles: null,
+  },
+  // Public: the invited person has no session yet.
+  { method: "POST", path: /^account-invitations\/accept$/, roles: null },
   {
     method: "GET",
     path: /^parents\/search$|^registrations\/[^/]+(?:\/(bill|receipt))?$/,

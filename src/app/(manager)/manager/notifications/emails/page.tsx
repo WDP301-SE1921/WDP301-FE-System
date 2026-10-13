@@ -1,13 +1,22 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { UnavailableFeature } from "@/components/shared/feedback/unavailable-feature";
+import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets";
+import { PageContainer } from "@/components/shared/layout/page-container";
+import { EmailDeliveriesView } from "@/features/system/components/email-deliveries-view";
+
 export const metadata: Metadata = { title: "Lịch sử email" };
+
 export default function Page() {
+  // Filters and pagination live in the URL (nuqs), which needs Suspense when prerendering.
   return (
-    <UnavailableFeature
-      title="Lịch sử email"
-      description="Lịch sử email chưa được hỗ trợ. Kết quả gửi được hiển thị tại màn hình thông báo."
-      href="/manager/notifications/send"
-      actionLabel="Gửi thông báo"
-    />
+    <Suspense
+      fallback={
+        <PageContainer>
+          <SkeletonTable />
+        </PageContainer>
+      }
+    >
+      <EmailDeliveriesView />
+    </Suspense>
   );
 }

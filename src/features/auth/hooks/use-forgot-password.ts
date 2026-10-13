@@ -1,15 +1,18 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { accountApi } from "@/features/auth/api";
 import type { ForgotPasswordInput } from "@/lib/validators/auth";
 
-/** Gửi link đặt lại mật khẩu. Đổi `mutationFn` khi có endpoint thật. */
+/**
+ * BE always answers "accepted" (it never reveals whether the email exists) and mails a
+ * one-time reset code valid for 30 minutes.
+ */
 export function useForgotPassword() {
   return useMutation<{ email: string }, Error, ForgotPasswordInput>({
-    mutationFn: async () => {
-      throw new Error(
-        "Chức năng khôi phục mật khẩu chưa được hỗ trợ. Liên hệ quản lý trung tâm.",
-      );
+    mutationFn: async (values) => {
+      await accountApi.forgotPassword(values);
+      return { email: values.email.trim().toLowerCase() };
     },
   });
 }

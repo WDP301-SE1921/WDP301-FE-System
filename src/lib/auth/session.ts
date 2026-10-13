@@ -12,6 +12,14 @@ export function persistSession(user: AuthUser, rememberMe: boolean) {
   window.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
 }
 
+/** Refresh the saved profile (e.g. a new display name) in whichever storage holds it. */
+export function updateStoredUser(user: AuthUser) {
+  persistSession(
+    user,
+    window.localStorage.getItem(STORAGE_KEYS.USER_PROFILE) !== null,
+  );
+}
+
 export function clearSession() {
   document.cookie = `${STORAGE_KEYS.ROLE_COOKIE}=; path=/; max-age=0`;
   window.localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);

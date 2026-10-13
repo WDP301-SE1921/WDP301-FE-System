@@ -182,6 +182,12 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
         iconName: "AssignmentsIcon",
         area: AREA.CATALOG,
       },
+      {
+        title: "Phòng học",
+        href: ROUTES.MANAGER.ROOMS,
+        iconName: "Door01Icon",
+        area: AREA.ROOMS,
+      },
     ],
   },
   {
@@ -209,6 +215,12 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
         title: "Nhân sự trung tâm",
         href: ROUTES.MANAGER.STAFF_ACCOUNTS,
         iconName: "UserSettings01Icon",
+        area: AREA.STAFF_ACCOUNTS,
+      },
+      {
+        title: "Quản lý trung tâm",
+        href: ROUTES.MANAGER.MANAGERS,
+        iconName: "UserGroupIcon",
         area: AREA.STAFF_ACCOUNTS,
       },
       {

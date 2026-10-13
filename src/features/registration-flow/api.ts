@@ -14,7 +14,14 @@ import type {
   AcademicSubject,
   AcademicTeacher,
 } from "@/types/backend";
+import type { RoomRecord } from "@/types/academic-workflows";
 import { registrationBillSchema } from "@/lib/validators/registration-bill";
+import {
+  roomSchema,
+  roomUpdateSchema,
+  scheduleUnlockSchema,
+  teacherAssignmentSchema,
+} from "@/lib/validators/web-workflows";
 import {
   parentSearchSchema,
   parentSuggestionsSchema,
@@ -132,6 +139,33 @@ export const registrationApi = {
     apiRequest<RegistrationClass>(
       `classes/${encodeURIComponent(id)}?${new URLSearchParams({ page: String(page), limit: "20" })}`,
       { signal },
+    ),
+  rooms: (signal?: AbortSignal) =>
+    apiRequest<RoomRecord[]>("rooms", { signal }),
+  createRoom: (body: unknown) =>
+    apiRequest<RoomRecord>("rooms", {
+      method: "POST",
+      body: roomSchema.parse(body),
+    }),
+  updateRoom: (id: string, body: unknown) =>
+    apiRequest<RoomRecord>(`rooms/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: roomUpdateSchema.parse(body),
+    }),
+  assignTeacher: (id: string, body: unknown) =>
+    apiRequest<RegistrationClass>(
+      `classes/${encodeURIComponent(id)}/teacher-assignments`,
+      { method: "POST", body: teacherAssignmentSchema.parse(body) },
+    ),
+  confirmSchedule: (id: string) =>
+    apiRequest<RegistrationClass>(
+      `classes/${encodeURIComponent(id)}/schedule-confirmation`,
+      { method: "PUT", body: { confirmed: true } },
+    ),
+  unlockSchedule: (id: string, body: unknown) =>
+    apiRequest<RegistrationClass>(
+      `classes/${encodeURIComponent(id)}/schedule-confirmation`,
+      { method: "PUT", body: scheduleUnlockSchema.parse(body) },
     ),
   schedules: (id: string, signal?: AbortSignal) =>
     apiRequest<RegistrationClass["weeklySchedules"]>(

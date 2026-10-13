@@ -1,6 +1,9 @@
 "use client";
+import Link from "next/link";
+import { useState } from "react";
 import { z } from "zod";
 import { parseAsString, useQueryState, useQueryStates } from "nuqs";
+import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
@@ -9,11 +12,7 @@ import { ApiForm } from "@/components/shared/forms/api-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
-import {
-  academicApi,
-  availableMakeupCandidates,
-  currentEnrollmentClass,
-} from "@/features/academic/api";
+import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
 import { directoryApi } from "@/features/directory/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import {
@@ -24,9 +23,12 @@ import {
 import {
   confirmationSchema,
   dateSchema,
+  endLeaveEarlySchema,
   localDateTimeSchema,
   reasonSchema,
   requiredId,
+  rescheduleMakeupSchema,
+  todayLocalDate,
   vietnamDateTime,
 } from "@/lib/validators/web-workflows";
 import {
@@ -34,7 +36,14 @@ import {
   displayMoment,
   STATUS_TEXT,
 } from "@/features/academic/components/live-fields";
-import type { EnrollmentRecord } from "@/types/academic-workflows";
+import { ROUTES } from "@/constants/routes";
+import type {
+  EnrollmentRecord,
+  LeaveRecord,
+  MakeupCandidate,
+  MakeupRecord,
+} from "@/types/academic-workflows";
+import type { StudentListItem } from "@/types/backend";
 
 const pauseFormSchema = z
   .object({
@@ -206,18 +215,14 @@ export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
           </CardContent>
         </Card>
       )}
-      {student?.status === "INACTIVE" && (
-        <Card>
-          <CardContent className="pt-6">
-            <p>
-              Hồ sơ đã ngừng học. Chức năng khôi phục hồ sơ để học lại chưa sẵn
-              sàng; hãy liên hệ quản lý trung tâm.
-            </p>
-          </CardContent>
-        </Card>
+      {student && (
+        <ReactivatePanel key={`reactivate-${student.id}`} student={student} />
       )}
       {studentId && (
-        <LeaveHistory key={`leave-history-${studentId}`} studentId={studentId} />
+        <LeaveHistory
+          key={`leave-history-${studentId}`}
+          studentId={studentId}
+        />
       )}
     </PageContainer>
   );
@@ -322,14 +327,9 @@ function MakeupPanel({
     selectedIds.has(item.original.enrollmentId),
   );
   const selectedSource = sources.data?.find((item) => item.id === sourceId);
-  const available =
-    selectedSource && bookings.data
-      ? availableMakeupCandidates(
-          candidates.data ?? [],
-          bookings.data,
-          selectedSource.enrollmentId,
-        )
-      : [];
+  // BE evaluates each target with the same rules as booking (term, leave, conflict, seats).
+  const available = (candidates.data ?? []).filter((item) => item.eligible);
+  const blocked = (candidates.data ?? []).filter((item) => !item.eligible);
   return (
     <>
       <Card>
@@ -346,7 +346,7 @@ function MakeupPanel({
             emptyProps={{
               title: "Chưa có buổi đủ điều kiện học bù",
               description:
-                "Buổi nghỉ cần có danh sách học viên và được ghi nhận trước khi xếp học bù.",
+                "Ghi nhận nghỉ một buổi ở thẻ phía trên, hoặc chờ giáo viên chốt vắng, rồi xếp học bù.",
             }}
           >
             <LiveSelect
@@ -363,28 +363,44 @@ function MakeupPanel({
           </AsyncBoundary>
           {!!selectedSource && (
             <AsyncBoundary
-              isLoading={candidates.isPending || bookings.isPending}
-              isError={candidates.isError || bookings.isError}
-              error={candidates.error ?? bookings.error}
-              onRetry={() => {
-                void candidates.refetch();
-                void bookings.refetch();
-              }}
+              isLoading={candidates.isPending}
+              isError={candidates.isError}
+              error={candidates.error}
+              onRetry={() => void candidates.refetch()}
               data={available}
-              emptyProps={{ title: "Chưa có buổi thay thế" }}
+              emptyProps={{
+                title: "Chưa có buổi thay thế còn đủ điều kiện",
+                description:
+                  "Cần buổi cùng bài, chưa diễn ra, còn chỗ và không trùng lịch của học viên.",
+              }}
             >
               <LiveSelect
                 label="Buổi thay thế"
                 value={targetSessionId}
                 options={available.map((item) => ({
                   value: item.id,
-                  label: `${item.class.name} · ${displayMoment(item.startsAt)} · Sức chứa ${item.class.capacity}`,
+                  label: candidateLabel(item),
                 }))}
                 onChange={(value) =>
                   void setSelection({ targetSessionId: value })
                 }
               />
             </AsyncBoundary>
+          )}
+          {!!selectedSource && !!blocked.length && (
+            <div className="space-y-2 rounded-2xl border border-border p-4 text-sm">
+              <p className="font-medium">Buổi cùng bài không xếp được</p>
+              <ul className="space-y-1 text-muted-foreground">
+                {blocked.map((item) => (
+                  <li key={item.id}>
+                    {item.class.name} · {displayMoment(item.startsAt)}:{" "}
+                    {item.reasonCodes
+                      .map((code) => MAKEUP_REASON_TEXT[code] ?? code)
+                      .join("; ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {!!targetSessionId &&
             available.some((item) => item.id === targetSessionId) && (
@@ -412,7 +428,8 @@ function MakeupPanel({
               />
             )}
           <p className="text-sm text-muted-foreground">
-            Chỗ trống, kỳ học và trùng lịch được kiểm tra khi xác nhận.
+            Số chỗ trống là ảnh chụp lúc tải; hệ thống kiểm tra lại khi xác
+            nhận.
           </p>
         </CardContent>
       </Card>
@@ -437,6 +454,9 @@ function MakeupPanel({
                 >
                   <p>{displayMoment(booking.replacement.session.startsAt)}</p>
                   <Badge>{STATUS_TEXT[booking.status]}</Badge>
+                  {booking.status === "BOOKED" && (
+                    <RescheduleMakeup booking={booking} />
+                  )}
                   {booking.status === "BOOKED" && (
                     <ApiForm
                       schema={confirmationSchema}
@@ -581,6 +601,11 @@ function LeaveHistory({ studentId }: { studentId: string }) {
                     ))}
                   </div>
                 )}
+                {leave.status === "APPROVED" &&
+                  leave.kind === "PERIOD_PAUSE" &&
+                  dateOnly(leave.toDate) >= todayLocalDate() && (
+                    <EndLeaveEarly leave={leave} />
+                  )}
                 {(leave.status === "PENDING" ||
                   leave.status === "APPROVED") && (
                   <ApiForm
@@ -602,6 +627,162 @@ function LeaveHistory({ studentId }: { studentId: string }) {
           </div>
         </AsyncBoundary>
         <ApiFeedback error={leaves.error} />
+      </CardContent>
+    </Card>
+  );
+}
+const MAKEUP_REASON_TEXT: Record<string, string> = {
+  INVALID_MAKEUP_SOURCE: "buổi gốc không còn hợp lệ",
+  INVALID_MAKEUP_TARGET: "buổi không còn mở để học bù",
+  OUTSIDE_ENROLLMENT: "ngoài kỳ học của ghi danh",
+  ABSENCE_NOT_APPROVED: "buổi nghỉ chưa được duyệt",
+  TARGET_DURING_LEAVE: "trong thời gian nghỉ đã duyệt",
+  STUDENT_SCHEDULE_CONFLICT: "trùng lịch học khác của con",
+  SESSION_FULL: "đã đủ sĩ số",
+};
+function candidateLabel(item: MakeupCandidate) {
+  return `${item.class.name} · ${displayMoment(item.startsAt)} · Còn ${item.availableSeats} chỗ`;
+}
+function RescheduleMakeup({ booking }: { booking: MakeupRecord }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const candidates = useLiveQuery(
+    ["makeup-candidates", booking.originalParticipantId],
+    (signal) =>
+      academicApi.makeupCandidates(booking.originalParticipantId, signal),
+    isOpen,
+  );
+  const options = (candidates.data ?? []).filter(
+    (item) => item.eligible && item.id !== booking.replacement.session.id,
+  );
+  if (!isOpen)
+    return (
+      <Button type="button" variant="outline" onClick={() => setIsOpen(true)}>
+        Đổi sang buổi khác
+      </Button>
+    );
+  return (
+    <div className="space-y-3 rounded-2xl border border-border p-4">
+      <p className="font-medium">Đổi buổi học bù</p>
+      <AsyncBoundary
+        isLoading={candidates.isPending}
+        isError={candidates.isError}
+        error={candidates.error}
+        onRetry={() => void candidates.refetch()}
+        data={options}
+        emptyProps={{ title: "Chưa có buổi khác còn đủ điều kiện" }}
+      >
+        <ApiForm
+          schema={rescheduleMakeupSchema}
+          fields={[
+            {
+              name: "targetSessionId",
+              label: "Buổi mới",
+              type: "select",
+              options: options.map((item) => ({
+                value: item.id,
+                label: candidateLabel(item),
+              })),
+            },
+            { name: "reason", label: "Lý do đổi", type: "textarea" },
+          ]}
+          submitLabel="Đổi buổi học bù"
+          onSubmit={(value) => academicApi.rescheduleMakeup(booking.id, value)}
+          onSuccess={() => setIsOpen(false)}
+        />
+      </AsyncBoundary>
+      <p className="text-sm text-muted-foreground">
+        Chỗ cũ chỉ được trả khi đổi thành công.
+      </p>
+      <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+        Đóng
+      </Button>
+    </div>
+  );
+}
+function EndLeaveEarly({ leave }: { leave: LeaveRecord }) {
+  const fromDate = dateOnly(leave.fromDate);
+  const toDate = dateOnly(leave.toDate);
+  const schema = endLeaveEarlySchema.refine(
+    (value) => value.effectiveDate > fromDate && value.effectiveDate <= toDate,
+    {
+      path: ["effectiveDate"],
+      message: "Chọn ngày sau ngày bắt đầu và không quá ngày kết thúc kỳ nghỉ.",
+    },
+  );
+  return (
+    <div className="space-y-3 rounded-2xl border border-border p-4">
+      <p className="font-medium">Kết thúc nghỉ sớm</p>
+      <p className="text-sm text-muted-foreground">
+        Từ ngày đi học lại, các buổi được mở để điểm danh bình thường; các buổi
+        trước đó vẫn tính nghỉ có phép.
+      </p>
+      <ApiForm
+        schema={schema}
+        defaults={{
+          effectiveDate: todayLocalDate() > fromDate ? todayLocalDate() : "",
+        }}
+        fields={[
+          { name: "effectiveDate", label: "Ngày đi học lại", type: "date" },
+          { name: "reason", label: "Lý do", type: "textarea" },
+        ]}
+        submitLabel="Kết thúc nghỉ sớm"
+        onSubmit={(value) => academicApi.endLeaveEarly(leave.id, value)}
+      />
+    </div>
+  );
+}
+function ReactivatePanel({ student }: { student: StudentListItem }) {
+  // Set when this panel sends the command: once the list reloads with ACTIVE we show the
+  // next step (the form unmounts before a per-call onSuccess could run).
+  const [hasRequested, setHasRequested] = useState(false);
+  if (student.status !== "INACTIVE" && !hasRequested) return null;
+  if (student.status !== "INACTIVE")
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Đã mở lại hồ sơ {student.fullName}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Tạo đăng ký và xác nhận thanh toán để có ghi danh mới.
+          </p>
+          <Button
+            render={
+              <Link
+                href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
+                  email: student.parentProfile.user.email,
+                  studentId: student.id,
+                })}
+              />
+            }
+          >
+            Đăng ký lớp mới
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Cho {student.fullName} học lại</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Hồ sơ đã ngừng học. Cho học lại sẽ dùng lại hồ sơ cũ, giữ nguyên lịch
+          sử học tập và thanh toán; các ghi danh cũ không được mở lại.
+        </p>
+        <ApiForm
+          schema={reasonSchema}
+          fields={[
+            { name: "reason", label: "Lý do cho học lại", type: "textarea" },
+          ]}
+          submitLabel="Cho học lại"
+          successMessage={false}
+          onSubmit={(value) => {
+            setHasRequested(true);
+            return academicApi.reactivateStudent(student.id, value);
+          }}
+        />
       </CardContent>
     </Card>
   );

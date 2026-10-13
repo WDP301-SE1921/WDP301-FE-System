@@ -21,19 +21,35 @@ export const AUTH_MSG = {
 
   // ---------- Quên mật khẩu ----------
   FORGOT_TITLE: "Quên mật khẩu",
-  FORGOT_DESC: "Nhập email để nhận link đặt lại mật khẩu",
+  FORGOT_DESC: "Nhập email để nhận mã đặt lại mật khẩu",
   FORGOT_BRAND_DESC:
     "Hệ thống bảo mật đa lớp giúp khôi phục tài khoản nhân sự nhanh chóng, tránh gián đoạn các ca học và sổ điểm danh.",
   FORGOT_ILLUSTRATION_BADGE: "Bảo mật tài khoản một cổng",
   FORGOT_ILLUSTRATION_TITLE: "Khôi phục quyền truy cập nhanh",
-  FORGOT_ILLUSTRATION_DESC: `Link đặt lại mật khẩu có thời hạn ${BUSINESS_RULES.PASSWORD_RESET_EXPIRY_MINUTES} phút và chỉ gửi tới email chính thức.`,
+  FORGOT_ILLUSTRATION_DESC: `Mã đặt lại mật khẩu có thời hạn ${BUSINESS_RULES.PASSWORD_RESET_EXPIRY_MINUTES} phút và chỉ gửi tới email chính thức.`,
   FORGOT_EMAIL_LABEL: "Email tài khoản đã đăng ký",
   FORGOT_EMAIL_HINT: "Nhập chính xác email bạn dùng để đăng nhập trung tâm.",
-  FORGOT_SUBMIT: "Gửi link đặt lại mật khẩu",
-  FORGOT_RESUBMIT: "Gửi lại link đặt lại mật khẩu",
-  FORGOT_SENT_TITLE: (email: string) => `Đã gửi email đặt lại mật khẩu tới ${email}`,
-  FORGOT_SENT_DESC: `Vui lòng kiểm tra hộp thư đến (hoặc hòm thư rác) và làm theo hướng dẫn để thiết lập mật khẩu mới trong vòng ${BUSINESS_RULES.PASSWORD_RESET_EXPIRY_MINUTES} phút.`,
+  FORGOT_SUBMIT: "Gửi mã đặt lại mật khẩu",
+  FORGOT_RESUBMIT: "Gửi lại mã đặt lại mật khẩu",
+  FORGOT_SENT_TITLE: (email: string) =>
+    `Nếu ${email} có tài khoản, mã đặt lại mật khẩu đã được gửi`,
+  FORGOT_SENT_DESC: `Kiểm tra hộp thư đến (hoặc hòm thư rác), sao chép mã trong email và đặt mật khẩu mới trong vòng ${BUSINESS_RULES.PASSWORD_RESET_EXPIRY_MINUTES} phút.`,
+  FORGOT_GO_RESET: "Nhập mã và đặt mật khẩu mới",
   FORGOT_EMAIL_NOT_FOUND: "Email này chưa được đăng ký trong hệ thống",
+
+  // ---------- Đặt lại mật khẩu ----------
+  RESET_TITLE: "Đặt lại mật khẩu",
+  RESET_DESC: "Dán mã nhận trong email và chọn mật khẩu mới.",
+  RESET_SUCCESS: "Đã đặt mật khẩu mới",
+  RESET_SUCCESS_DESC:
+    "Các phiên đăng nhập cũ đã được đăng xuất. Đăng nhập lại bằng mật khẩu mới.",
+
+  // ---------- Nhận lời mời ----------
+  INVITE_TITLE: "Nhận lời mời tham gia trung tâm",
+  INVITE_DESC: "Đặt họ tên và mật khẩu cho tài khoản được mời.",
+  INVITE_SUCCESS: "Đã gửi thông tin tài khoản",
+  INVITE_SUCCESS_DESC:
+    "Tài khoản đang chờ quản lý trung tâm duyệt. Bạn đăng nhập được sau khi được duyệt.",
 
   // ---------- Phụ huynh tự đăng ký ----------
   REGISTER_TITLE: "Đăng ký tài khoản phụ huynh",

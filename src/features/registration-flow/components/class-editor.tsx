@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,15 @@ import {
   type SchedulesInput,
 } from "../schemas";
 import { ApiFeedback, FieldError } from "./api-feedback";
+import { ApiForm } from "@/components/shared/forms/api-form";
+import { displayMoment } from "@/features/academic/components/live-fields";
+import {
+  localDateTimeSchema,
+  reasonSchema,
+  requiredId,
+  vietnamDateTime,
+} from "@/lib/validators/web-workflows";
+import type { RoomRecord } from "@/types/academic-workflows";
 import type {
   AcademicTeacher,
   RegistrationClass,
@@ -61,6 +71,11 @@ export function RegistrationClassEditor({ classId }: { classId?: string }) {
   const teachers = useQuery({
     queryKey: ["academic-teachers", "active"],
     queryFn: ({ signal }) => registrationApi.teachers(signal),
+    retry: false,
+  });
+  const rooms = useQuery({
+    queryKey: ["registration-rooms"],
+    queryFn: ({ signal }) => registrationApi.rooms(signal),
     retry: false,
   });
   const detail = useQuery({
@@ -89,6 +104,7 @@ export function RegistrationClassEditor({ classId }: { classId?: string }) {
         error={teachers.error}
         retry={() => void teachers.refetch()}
       />
+      <ApiFeedback error={rooms.error} retry={() => void rooms.refetch()} />
       <AsyncBoundary
         isLoading={programs.isPending || (!!classId && detail.isPending)}
         isError={programs.isError || detail.isError}
@@ -109,16 +125,22 @@ export function RegistrationClassEditor({ classId }: { classId?: string }) {
                       classroom.teacherId,
                       classroom.capacity,
                       classroom.monthlyFee,
+                      classroom.roomId,
                     ])
                   : "new"
               }
               classroom={classroom}
               programs={programs.data ?? []}
               teachers={teachers.data?.items ?? []}
+              rooms={rooms.data ?? []}
               initialProgramId={programId}
             />
             {classroom && (
               <>
+                <TeacherAssignmentCard
+                  classroom={classroom}
+                  teachers={teachers.data?.items ?? []}
+                />
                 <ClassSchedules classroom={classroom} />
                 <ClassRoster
                   roster={classroom.enrollments}
@@ -137,11 +159,13 @@ function ClassDetailsForm({
   classroom,
   programs,
   teachers,
+  rooms,
   initialProgramId,
 }: {
   classroom?: RegistrationClass;
   programs: RegistrationProgram[];
   teachers: AcademicTeacher[];
+  rooms: RoomRecord[];
   initialProgramId: string;
 }) {
   const router = useRouter(),
@@ -153,6 +177,7 @@ function ClassDetailsForm({
       programId: classroom?.programId ?? initialProgramId,
       name: classroom?.name ?? "",
       teacherId: classroom?.teacherId ?? "",
+      roomId: classroom?.roomId ?? "",
       capacity: classroom?.capacity ?? 20,
       monthlyFee: Number(classroom?.monthlyFee ?? 0),
     },
@@ -163,17 +188,30 @@ function ClassDetailsForm({
     void qc.invalidateQueries({ queryKey: ["academic-program"] });
   };
   const save = useMutation({
-    mutationFn: ({ programId, teacherId, ...fields }: RegistrationClassInput) =>
+    mutationFn: ({
+      programId,
+      teacherId,
+      roomId,
+      ...fields
+    }: RegistrationClassInput) =>
       apiRequest<RegistrationClass>(
         classroom ? "classes/" + classroom.id : "classes",
         {
           method: classroom ? "PATCH" : "POST",
           body: classroom
-            ? { ...fields, teacherId: teacherId || null }
+            ? {
+                ...fields,
+                teacherId: teacherId || null,
+                // Send the room only when it changes: BE re-validates the chosen room.
+                ...((roomId || null) !== (classroom.roomId ?? null)
+                  ? { roomId: roomId || null }
+                  : {}),
+              }
             : {
                 ...fields,
                 programId,
                 ...(teacherId ? { teacherId } : {}),
+                ...(roomId ? { roomId } : {}),
                 isOpen: false,
               },
         },
@@ -204,6 +242,10 @@ function ClassDetailsForm({
     },
   });
   const busy = save.isPending || state.isPending || remove.isPending;
+  // Inactive rooms stay listed only when the class already uses them.
+  const roomChoices = rooms.filter(
+    (room) => room.isActive || room.id === classroom?.roomId,
+  );
   const choices = programs.filter(
     (p) => p.isActive !== false || p.id === classroom?.programId,
   );
@@ -351,7 +393,44 @@ function ClassDetailsForm({
               />
               <FieldError message={form.formState.errors.teacherId?.message} />
               <p className="text-xs text-muted-foreground">
-                Lớp có buổi học tương lai sẽ khóa đổi giáo viên.
+                Lớp đã có buổi học sắp tới: dùng mục “Đổi giáo viên từ ngày hiệu
+                lực” bên dưới.
+              </p>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="class-room">Phòng học</Label>
+              <Controller
+                control={form.control}
+                name="roomId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || "none"}
+                    items={[
+                      { value: "none", label: "Chưa chọn phòng" },
+                      ...roomChoices.map((room) => ({
+                        value: room.id,
+                        label: roomLabel(room),
+                      })),
+                    ]}
+                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger id="class-room">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Chưa chọn phòng</SelectItem>
+                      {roomChoices.map((room) => (
+                        <SelectItem key={room.id} value={room.id}>
+                          {roomLabel(room)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <p className="text-xs text-muted-foreground">
+                Sức chứa phòng phải từ sĩ số lớp trở lên. Buổi học sinh mới dùng
+                phòng của lớp.
               </p>
             </div>
           </div>
@@ -515,11 +594,35 @@ function ClassSchedulesForm({
         <CardTitle>Lịch cố định hằng tuần</CardTitle>
         <CardDescription>
           {locked
-            ? "Lịch tuần đã khóa vì có ghi danh, học viên chuyển vào hoặc buổi học đã sinh."
+            ? classroom.scheduleConfirmedAt
+              ? "Lịch tuần đã khóa: giáo viên đã xác nhận lịch, hoặc lớp có ghi danh / buổi học đã sinh."
+              : "Lịch tuần đã khóa vì có ghi danh, học viên chuyển vào hoặc buổi học đã sinh."
             : "Giờ Việt Nam. Lưu toàn bộ lịch hoặc cập nhật từng khung giờ."}
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {classroom.scheduleConfirmedAt && (
+          <div className="mb-4 space-y-3 rounded-2xl border border-border p-4">
+            <p className="text-sm">
+              Giáo viên đã xác nhận lịch cố định lúc{" "}
+              {displayMoment(classroom.scheduleConfirmedAt)}. Mở khóa để sửa
+              lịch tuần; giáo viên cần xác nhận lại sau khi sửa.
+            </p>
+            <ApiForm
+              schema={reasonSchema}
+              fields={[
+                { name: "reason", label: "Lý do mở khóa", type: "textarea" },
+              ]}
+              submitLabel="Mở khóa xác nhận lịch"
+              onSubmit={(value) =>
+                registrationApi.unlockSchedule(classroom.id, {
+                  confirmed: false,
+                  reason: value.reason,
+                })
+              }
+            />
+          </div>
+        )}
         <form
           className="space-y-4"
           noValidate
@@ -663,6 +766,68 @@ function ClassSchedulesForm({
               /* API feedback */
             }
           }}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+function roomLabel(room: RoomRecord) {
+  return `${room.name} · ${room.capacity} chỗ${room.isActive ? "" : " (ngừng sử dụng)"}`;
+}
+const teacherAssignmentFormSchema = z.object({
+  teacherId: requiredId,
+  effectiveAt: localDateTimeSchema,
+  reason: reasonSchema.shape.reason,
+});
+/** SRS §3.1, §5.4: the manager changes the class teacher from an effective time. */
+function TeacherAssignmentCard({
+  classroom,
+  teachers,
+}: {
+  classroom: RegistrationClass;
+  teachers: AcademicTeacher[];
+}) {
+  const options = teachers.filter(
+    (teacher) => teacher.id !== classroom.teacherId,
+  );
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Đổi giáo viên từ ngày hiệu lực</CardTitle>
+        <CardDescription>
+          Các buổi đang lên lịch từ thời điểm hiệu lực chuyển cho giáo viên mới;
+          buổi trước đó giữ giáo viên cũ. Giáo viên phụ trách lớp được cập nhật
+          ngay khi lưu.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ApiForm
+          schema={teacherAssignmentFormSchema}
+          fields={[
+            {
+              name: "teacherId",
+              label: "Giáo viên mới",
+              type: "select",
+              options: options.map((teacher) => ({
+                value: teacher.id,
+                label: teacher.displayName ?? teacher.email,
+              })),
+            },
+            {
+              name: "effectiveAt",
+              label: "Hiệu lực từ (giờ Việt Nam)",
+              type: "datetime-local",
+            },
+            { name: "reason", label: "Lý do", type: "textarea" },
+          ]}
+          submitLabel="Đổi giáo viên"
+          successMessage="Đã đổi giáo viên cho lớp."
+          onSubmit={(value) =>
+            registrationApi.assignTeacher(classroom.id, {
+              ...value,
+              effectiveAt: vietnamDateTime(String(value.effectiveAt)),
+            })
+          }
         />
       </CardContent>
     </Card>

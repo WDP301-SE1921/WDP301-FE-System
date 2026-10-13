@@ -135,6 +135,10 @@ export interface RegistrationClass {
   isOpen: boolean;
   isActive?: boolean;
   scheduleLocked?: boolean;
+  roomId?: string | null;
+  /** Set when the assigned teacher confirmed ("set cứng") the weekly schedule. */
+  scheduleConfirmedAt?: string | null;
+  rosterAt?: string;
   teacher?: Pick<AcademicTeacher, "id" | "displayName" | "email"> | null;
   enrollments?: PaginatedList<{
     id: string;

@@ -8,7 +8,9 @@ import type {
   AnnouncementRecord,
   AssignmentDetail,
   AssignmentSummary,
+  AttendanceSummary,
   CurriculumFeedbackRecord,
+  EmailDelivery,
   EnrollmentRecord,
   GradeReview,
   GradingJob,
@@ -20,20 +22,25 @@ import type {
   ReportRecord,
   SessionParticipant,
   SubmissionRecord,
+  SubstituteCandidate,
 } from "@/types/academic-workflows";
 import {
   announcementSchema,
   assignmentSchema,
   attendanceSchema,
+  endLeaveEarlySchema,
   feedbackSchema,
   gradeSchema,
   leaveSchema,
   makeupSchema,
+  reasonSchema,
   recipientsSchema,
   reminderSchema,
   reportSchema,
+  rescheduleMakeupSchema,
   resolveFeedbackSchema,
   submissionWindowSchema,
+  substitutionSchema,
   transferSchema,
 } from "@/lib/validators/web-workflows";
 
@@ -106,18 +113,15 @@ export async function readDirectoryPages<T>(
 }
 const itemPath = (collection: string, id: string) =>
   `academic/${collection}/${encodeURIComponent(id)}`;
-export function availableMakeupCandidates(
-  candidates: MakeupCandidate[],
-  bookings: MakeupRecord[],
-  enrollmentId: string,
-) {
-  // BE keeps the participant unique key after cancellation; that enrollment cannot rebook the same target.
-  const previousTargets = new Set(
-    bookings
-      .filter((booking) => booking.original.enrollmentId === enrollmentId)
-      .map((booking) => booking.replacement.session.id),
-  );
-  return candidates.filter((candidate) => !previousTargets.has(candidate.id));
+/**
+ * Attendance summary bounds for whole local (UTC+7) days. BE parses a bare YYYY-MM-DD as
+ * 00:00 UTC, which would drop the evening sessions of the last day, so send exact instants.
+ */
+export function attendanceRange(fromDate: string, toDate: string) {
+  return {
+    fromDate: `${fromDate}T00:00:00.000+07:00`,
+    toDate: `${toDate}T23:59:59.999+07:00`,
+  };
 }
 const command = <T = unknown>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: "POST", body });
@@ -176,6 +180,16 @@ export const academicApi = {
   bookMakeup: (body: unknown) =>
     command<MakeupRecord>("academic/makeups", makeupSchema.parse(body)),
   cancelMakeup: (id: string) => command(`${itemPath("makeups", id)}/cancel`),
+  rescheduleMakeup: (id: string, body: unknown) =>
+    command<MakeupRecord>(
+      `${itemPath("makeups", id)}/reschedule`,
+      rescheduleMakeupSchema.parse(body),
+    ),
+  endLeaveEarly: (id: string, body: unknown) =>
+    command<LeaveRecord>(
+      `${itemPath("leaves", id)}/end-early`,
+      endLeaveEarlySchema.parse(body),
+    ),
   transfer: (id: string, body: unknown) =>
     command(
       `${itemPath("enrollments", id)}/transfer`,
@@ -183,6 +197,37 @@ export const academicApi = {
     ),
   endEnrollment: (id: string) => command(`${itemPath("enrollments", id)}/end`),
   endStudent: (id: string) => command(`${itemPath("students", id)}/end-study`),
+  reactivateStudent: (id: string, body: unknown) =>
+    command(`${itemPath("students", id)}/reactivate`, reasonSchema.parse(body)),
+  attendanceSummary: (
+    classId: string,
+    range: { fromDate: string; toDate: string },
+    signal?: AbortSignal,
+  ) =>
+    apiRequest<AttendanceSummary>(
+      queryPath(
+        `${itemPath("classes", classId)}/attendance-summary`,
+        attendanceRange(range.fromDate, range.toDate),
+      ),
+      { signal },
+    ),
+  emailDeliveries: (page: number, limit: number, signal?: AbortSignal) =>
+    apiRequest<PaginatedList<EmailDelivery>>(
+      queryPath("academic/email-deliveries", { page, limit }),
+      { signal },
+    ),
+  retryEmail: (id: string) =>
+    command<EmailDelivery>(`${itemPath("email-deliveries", id)}/retry`),
+  substituteCandidates: (sessionId: string, signal?: AbortSignal) =>
+    apiRequest<SubstituteCandidate[]>(
+      `${itemPath("sessions", sessionId)}/substitute-candidates`,
+      { signal },
+    ),
+  substitute: (sessionId: string, body: unknown) =>
+    command(
+      `${itemPath("sessions", sessionId)}/substitutions`,
+      substitutionSchema.parse(body),
+    ),
   assignments: (signal?: AbortSignal) =>
     readArrayPages<AssignmentSummary>("academic/assignments", {}, signal),
   assignment: (id: string, signal?: AbortSignal) =>

@@ -61,8 +61,8 @@ export function ClassRoster({
           </p>
         )}
         <p className="my-3 text-xs text-muted-foreground">
-          Danh sách ghi danh gốc tại lớp. Học viên chuyển lớp được xác định theo
-          từng buổi học.
+          Học viên đang học tại lớp ở thời điểm xem, đã tính các lần chuyển lớp
+          có hiệu lực.
         </p>
         <TablePagination
           totalItems={roster.total}

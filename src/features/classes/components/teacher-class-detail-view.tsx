@@ -16,6 +16,10 @@ import { sessionTime } from "@/features/curriculum/session-format";
 import { vietnamLocalInput } from "@/features/curriculum/session-contract";
 import { scheduleText } from "@/features/registration-flow/calendar";
 import { ROUTES } from "@/constants/routes";
+import { ApiForm } from "@/components/shared/forms/api-form";
+import { displayMoment } from "@/features/academic/components/live-fields";
+import { confirmationSchema } from "@/lib/validators/web-workflows";
+import { ClassAttendanceSummary } from "./class-attendance-summary";
 export function TeacherClassDetailView({ classId }: { classId: string }) {
   const [page, setPage] = useQueryState(
     "rosterPage",
@@ -74,10 +78,12 @@ export function TeacherClassDetailView({ classId }: { classId: string }) {
         <TabsList>
           <TabsTrigger value="overview">Tổng quan</TabsTrigger>
           <TabsTrigger value="students">Học sinh</TabsTrigger>
+          <TabsTrigger value="attendance">Chuyên cần</TabsTrigger>
           <TabsTrigger value="sessions">Buổi học</TabsTrigger>
           <TabsTrigger value="curriculum">Giáo trình</TabsTrigger>
         </TabsList>
       </Tabs>
+      {tab === "attendance" && <ClassAttendanceSummary classId={classId} />}
       <AsyncBoundary
         isLoading={detail.isPending}
         isError={detail.isError}
@@ -96,6 +102,33 @@ export function TeacherClassDetailView({ classId }: { classId: string }) {
                 {c.teacher?.displayName ?? c.teacher?.email ?? "Chưa có tên"}
               </p>
               <p>Sức chứa: {c.capacity} học sinh</p>
+              {c.scheduleConfirmedAt ? (
+                <p className="text-sm text-muted-foreground">
+                  Bạn đã xác nhận lịch cố định lúc{" "}
+                  {displayMoment(c.scheduleConfirmedAt)}. Lịch tuần đã khóa;
+                  quản lý trung tâm mở khóa nếu cần thay đổi.
+                </p>
+              ) : (
+                c.weeklySchedules.length > 0 && (
+                  <div className="space-y-2 rounded-2xl border border-border p-4">
+                    <p className="font-medium">Xác nhận lịch cố định</p>
+                    <ApiForm
+                      schema={confirmationSchema}
+                      defaults={{ confirmed: false }}
+                      fields={[
+                        {
+                          name: "confirmed",
+                          label: `Tôi xác nhận dạy theo lịch: ${scheduleText(c.weeklySchedules)}`,
+                          type: "checkbox",
+                        },
+                      ]}
+                      submitLabel="Xác nhận lịch"
+                      successMessage="Đã xác nhận lịch cố định."
+                      onSubmit={() => registrationApi.confirmSchedule(classId)}
+                    />
+                  </div>
+                )
+              )}
               <Button
                 variant="outline"
                 render={

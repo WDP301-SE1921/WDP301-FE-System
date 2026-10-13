@@ -1,13 +1,22 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { UnavailableFeature } from "@/components/shared/feedback/unavailable-feature";
+import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets";
+import { PageContainer } from "@/components/shared/layout/page-container";
+import { LiveSubstitutesView } from "@/features/teachers/components/live-substitutes-view";
+
 export const metadata: Metadata = { title: "Dạy thay" };
+
 export default function Page() {
+  // Filters and pagination live in the URL (nuqs), which needs Suspense when prerendering.
   return (
-    <UnavailableFeature
-      title="Dạy thay"
-      description="Chức năng phân công dạy thay chưa được hỗ trợ."
-      href="/manager/teachers"
-      actionLabel="Xem giáo viên"
-    />
+    <Suspense
+      fallback={
+        <PageContainer>
+          <SkeletonTable />
+        </PageContainer>
+      }
+    >
+      <LiveSubstitutesView />
+    </Suspense>
   );
 }

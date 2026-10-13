@@ -6,6 +6,8 @@ export const ROUTES = {
   AUTH: {
     LOGIN: "/login",
     FORGOT_PASSWORD: "/forgot-password",
+    RESET_PASSWORD: "/reset-password",
+    ACCEPT_INVITATION: "/accept-invitation",
     REGISTER: "/register",
   },
   MANAGER: {
@@ -39,6 +41,7 @@ export const ROUTES = {
 
     CATALOG: "/manager/catalog",
     CATALOG_PROGRAM_DETAIL: (id: string) => `/manager/catalog/programs/${id}`,
+    ROOMS: "/manager/rooms",
     CURRICULUM: "/manager/curriculum",
     CURRICULUM_FEEDBACK: "/manager/curriculum/feedback",
     CURRICULUM_UNIT: (id: string) => `/manager/curriculum/${id}`,
@@ -48,6 +51,7 @@ export const ROUTES = {
     SEND_NOTIFICATION: "/manager/notifications/send",
 
     STAFF_ACCOUNTS: "/manager/system/staff",
+    MANAGERS: "/manager/system/managers",
     AUDIT_LOGS: "/manager/system/audit-logs",
 
     PROFILE: "/manager/profile",

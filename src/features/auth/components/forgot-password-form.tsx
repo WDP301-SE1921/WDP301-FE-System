@@ -63,7 +63,15 @@ function ForgotPasswordForm() {
           <Alert variant="success">
             <HugeiconsIcon icon={Mail01Icon} />
             <AlertTitle>{AUTH_MSG.FORGOT_SENT_TITLE(sentToEmail)}</AlertTitle>
-            <AlertDescription>{AUTH_MSG.FORGOT_SENT_DESC}</AlertDescription>
+            <AlertDescription className="space-y-2">
+              <p>{AUTH_MSG.FORGOT_SENT_DESC}</p>
+              <Link
+                href={ROUTES.AUTH.RESET_PASSWORD}
+                className="font-medium text-primary underline"
+              >
+                {AUTH_MSG.FORGOT_GO_RESET}
+              </Link>
+            </AlertDescription>
           </Alert>
         )}
 

@@ -2,7 +2,9 @@ import { apiRequest, ApiError } from "@/lib/api/client";
 import {
   accountCreateSchema,
   accountUpdateSchema,
+  invitationSchema,
   parentUpdateSchema,
+  reviewInvitationSchema,
 } from "@/lib/validators/web-workflows";
 import { queryPath, readDirectoryPages } from "@/features/academic/api";
 import type {
@@ -13,9 +15,14 @@ import type {
   StudentListItem,
 } from "@/types/backend";
 import type {
+  AccountInvitation,
+  AuditLogRecord,
   EnrollmentRecord,
   StudentSchedule,
 } from "@/types/academic-workflows";
+
+/** Path prefix of the invitation endpoints: `/teacher-invitations`, `/manager-invitations`. */
+export type InvitationKind = "teacher" | "manager";
 
 export interface DashboardRecord {
   range: { fromDate: string; toDate: string };
@@ -109,6 +116,39 @@ export const directoryApi = {
   payments: (filters: DirectoryFilters, signal?: AbortSignal) =>
     apiRequest<PaginatedList<PaymentRecord> & { totalAmount: string }>(
       queryPath("payments", filters),
+      { signal },
+    ),
+  managers: (filters: DirectoryFilters, signal?: AbortSignal) =>
+    apiRequest<PaginatedList<BackendUser>>(queryPath("managers", filters), {
+      signal,
+    }),
+  invitations: (
+    kind: InvitationKind,
+    filters: DirectoryFilters,
+    signal?: AbortSignal,
+  ) =>
+    apiRequest<PaginatedList<AccountInvitation>>(
+      queryPath(`${kind}-invitations`, filters),
+      { signal },
+    ),
+  invite: (kind: InvitationKind, body: unknown) =>
+    apiRequest<AccountInvitation>(`${kind}-invitations`, {
+      method: "POST",
+      body: invitationSchema.parse(body),
+    }),
+  reviewInvitation: (id: string, body: unknown) =>
+    apiRequest<AccountInvitation>(
+      `account-invitations/${encodeURIComponent(id)}/review`,
+      { method: "POST", body: reviewInvitationSchema.parse(body) },
+    ),
+  revokeInvitation: (id: string) =>
+    apiRequest<AccountInvitation>(
+      `account-invitations/${encodeURIComponent(id)}/revoke`,
+      { method: "POST" },
+    ),
+  auditLogs: (filters: DirectoryFilters, signal?: AbortSignal) =>
+    apiRequest<PaginatedList<AuditLogRecord>>(
+      queryPath("audit-logs", filters),
       { signal },
     ),
 };

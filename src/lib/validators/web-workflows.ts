@@ -70,6 +70,53 @@ export const makeupSchema = z.object({
   originalParticipantId: requiredId,
   targetSessionId: requiredId,
 });
+/** Today's calendar date at the center (UTC+7). */
+export function todayLocalDate() {
+  return new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+}
+export const endLeaveEarlySchema = z.object({
+  effectiveDate: dateSchema.refine(
+    (value) => value >= todayLocalDate(),
+    "Ngày đi học lại phải từ hôm nay trở đi.",
+  ),
+  reason: requiredText(2000),
+});
+export const rescheduleMakeupSchema = z.object({
+  targetSessionId: requiredId,
+  reason: requiredText(2000),
+});
+export const substitutionSchema = z.object({
+  teacherId: requiredId,
+  expectedRevision: z.number().int().min(1),
+  reason: requiredText(2000),
+});
+export const roomSchema = z.object({
+  name: requiredText(191),
+  capacity: z.coerce
+    .number({ error: "Nhập sức chứa." })
+    .int("Sức chứa là số nguyên.")
+    .min(1, "Sức chứa ít nhất 1.")
+    .max(10000),
+});
+export const roomUpdateSchema = roomSchema
+  .partial()
+  .extend({ isActive: z.boolean().optional() });
+export const teacherAssignmentSchema = z.object({
+  teacherId: requiredId,
+  effectiveAt: z.iso.datetime({ offset: true }),
+  reason: requiredText(2000),
+});
+export const scheduleUnlockSchema = z.object({
+  confirmed: z.literal(false),
+  reason: requiredText(2000),
+});
+export const invitationSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Email không hợp lệ.").max(255),
+});
+export const reviewInvitationSchema = z.object({
+  decision: z.enum(["APPROVE", "REJECT"]),
+  note: z.string().trim().max(2000).optional(),
+});
 export const transferSchema = z.object({
   targetClassId: requiredId,
   effectiveAt: z.iso.datetime({ offset: true }),

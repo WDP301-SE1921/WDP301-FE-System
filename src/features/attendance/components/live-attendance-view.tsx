@@ -29,6 +29,7 @@ import {
 import {
   attendanceSchema,
   confirmationSchema,
+  dateRangeSchema,
 } from "@/lib/validators/web-workflows";
 import { todayInVietnam } from "@/features/registration-flow/calendar";
 import type { SessionParticipant } from "@/types/academic-workflows";
@@ -49,9 +50,13 @@ export function LiveAttendanceList() {
     ),
     toDate: parseAsString.withDefault(today),
   });
+  const range = dateRangeSchema.safeParse({ fromDate, toDate });
+  const rangeError = range.success ? undefined : range.error.issues[0]?.message;
+  // Only query a valid range; a reversed range would just return a 400 while typing.
   const sessions = useLiveQuery(
     ["attendance-list", fromDate, toDate],
     (signal) => academicApi.sessions({ fromDate, toDate }, signal),
+    range.success,
   );
   return (
     <PageContainer>
@@ -78,11 +83,22 @@ export function LiveAttendanceList() {
             type="date"
             value={toDate}
             onChange={(event) => void setRange({ toDate: event.target.value })}
+            aria-invalid={!!rangeError}
+            aria-describedby={rangeError ? "attendance-range-error" : undefined}
           />
         </div>
       </div>
+      {rangeError && (
+        <p
+          id="attendance-range-error"
+          role="alert"
+          className="text-sm text-destructive"
+        >
+          {rangeError}
+        </p>
+      )}
       <AsyncBoundary
-        isLoading={sessions.isPending}
+        isLoading={range.success && sessions.isPending}
         isError={sessions.isError}
         error={sessions.error}
         onRetry={() => void sessions.refetch()}

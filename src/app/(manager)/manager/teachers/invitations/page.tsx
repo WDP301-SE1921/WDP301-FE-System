@@ -1,13 +1,22 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { UnavailableFeature } from "@/components/shared/feedback/unavailable-feature";
+import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets";
+import { PageContainer } from "@/components/shared/layout/page-container";
+import { TeacherInvitationsView } from "@/features/directory/components/managers-view";
+
 export const metadata: Metadata = { title: "Mời giáo viên" };
+
 export default function Page() {
+  // Filters and pagination live in the URL (nuqs), which needs Suspense when prerendering.
   return (
-    <UnavailableFeature
-      title="Mời giáo viên"
-      description="Chức năng lời mời chưa được hỗ trợ. Quản lý có thể tạo tài khoản giáo viên trực tiếp."
-      href="/manager/teachers"
-      actionLabel="Tạo tài khoản giáo viên"
-    />
+    <Suspense
+      fallback={
+        <PageContainer>
+          <SkeletonTable />
+        </PageContainer>
+      }
+    >
+      <TeacherInvitationsView />
+    </Suspense>
   );
 }

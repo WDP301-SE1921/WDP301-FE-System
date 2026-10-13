@@ -4,7 +4,7 @@ import type { ApiEnvelope } from "@/types/backend";
 
 const ERROR_TEXT: Record<string, string> = {
   RESOURCE_CONFLICT:
-    "Dữ liệu đã thay đổi hoặc thao tác đã tồn tại. Tải lại để kiểm tra; lịch học bù đã hủy cần chọn buổi thay thế khác.",
+    "Dữ liệu đã thay đổi hoặc thao tác đã tồn tại. Tải lại để kiểm tra trước khi thực hiện lại.",
   SESSION_NOT_FINISHED: "Chỉ chốt điểm danh sau khi buổi học kết thúc.",
   MAKEUP_LOCKED:
     "Chỉ hủy lịch học bù chưa hoàn tất và buổi thay thế còn đang lên lịch.",
@@ -13,7 +13,39 @@ const ERROR_TEXT: Record<string, string> = {
   ACCOUNT_EMAIL_EXISTS:
     "Email đã có tài khoản. Chọn email khác hoặc mở tài khoản hiện có.",
   INVALID_SESSION:
-    "Buổi nghỉ cần danh sách học viên đã được giáo viên chuẩn bị và vẫn đang lên lịch.",
+    "Chọn buổi đang lên lịch thuộc lớp và kỳ học hiện tại của học viên.",
+  INVALID_LEAVE_DATE: "Ngày nghỉ phải trùng ngày của buổi học đã chọn.",
+  MAKEUP_TARGET_OCCUPIED:
+    "Học viên đã có chỗ ở buổi này. Chọn buổi thay thế khác.",
+  SAME_MAKEUP_TARGET: "Chọn buổi khác với buổi học bù hiện tại.",
+  STUDENT_HAS_ACTIVE_ENROLLMENT:
+    "Hồ sơ còn ghi danh chưa kết thúc. Kết thúc ghi danh trước khi cho học lại.",
+  STUDENT_NOT_FOUND: "Không tìm thấy hồ sơ học sinh.",
+  INVALID_EFFECTIVE_DATE: "Ngày hiệu lực không hợp lệ hoặc đã qua.",
+  INVALID_DATE: "Ngày không đúng định dạng.",
+  ATTENDANCE_TOO_LARGE: "Khoảng ngày quá dài. Hãy thu hẹp khoảng chuyên cần.",
+  ROOM_NOT_FOUND: "Không tìm thấy phòng học.",
+  INVALID_ROOM: "Phòng phải đang hoạt động.",
+  ROOM_CAPACITY_TOO_SMALL: "Sức chứa phòng nhỏ hơn sĩ số lớp.",
+  ROOM_IN_USE: "Phòng còn buổi học sắp tới nên chưa thể ngừng sử dụng.",
+  TEACHER_SCHEDULE_CONFLICT:
+    "Giáo viên đã có buổi khác trùng giờ. Chọn giáo viên khác.",
+  SCHEDULE_CONFIRMED:
+    "Giáo viên đã xác nhận lịch tuần. Mở khóa xác nhận trước khi sửa.",
+  REASON_REQUIRED: "Nhập lý do.",
+  INVITATION_EXISTS: "Email này đang có lời mời còn hiệu lực.",
+  INVITATION_INVALID: "Mã mời không hợp lệ, đã dùng hoặc đã hết hạn.",
+  INVITATION_NOT_FOUND: "Không tìm thấy lời mời.",
+  INVITATION_NOT_ACCEPTED: "Người được mời chưa hoàn tất thông tin.",
+  INVITATION_LOCKED: "Chỉ thu hồi lời mời chưa được sử dụng.",
+  AUTH_CURRENT_PASSWORD_INVALID: "Mật khẩu hiện tại không đúng.",
+  AUTH_INVALID_RESET_TOKEN: "Mã đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.",
+  PROFILE_PHONE_NOT_ALLOWED: "Chỉ hồ sơ phụ huynh có số điện thoại.",
+  EMAIL_ALREADY_SENT: "Email đã gửi thành công.",
+  EMAIL_RETRY_EXHAUSTED: "Đã hết số lần gửi lại cho email này.",
+  EMAIL_NOT_CONFIGURED: "Máy chủ chưa cấu hình gửi email.",
+  EMAIL_DELIVERY_BUSY: "Email đang được gửi. Tải lại sau ít phút.",
+  EMAIL_DELIVERY_NOT_FOUND: "Không tìm thấy email.",
   OUTSIDE_ENROLLMENT: "Ngày đã chọn nằm ngoài kỳ học đang có hiệu lực.",
   ENROLLMENT_ENDED: "Ghi danh đã kết thúc. Tải lại trạng thái trước khi xử lý.",
   LEAVE_OVERLAP: "Khoảng nghỉ trùng với một đơn đã duyệt.",

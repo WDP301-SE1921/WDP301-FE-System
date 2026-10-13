@@ -1,5 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { loginSchema, registerParentSchema } from "@/lib/validators/auth";
+import type { z } from "zod";
+import {
+  acceptInvitationPayloadSchema,
+  changePasswordPayloadSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  registerParentSchema,
+  resetPasswordPayloadSchema,
+} from "@/lib/validators/auth";
 import { parentSearchSchema } from "@/features/registration-flow/schemas";
 import { ROLE_HOME_ROUTE } from "@/constants/role-access";
 import { backendRule } from "@/lib/api/backend-permissions";
@@ -19,6 +27,11 @@ import {
 import type { BackendAuth, BackendUser } from "@/types/backend";
 
 export const runtime = "nodejs";
+const PUBLIC_COMMANDS: Record<string, z.ZodType | undefined> = {
+  "auth/forgot-password": forgotPasswordSchema,
+  "auth/reset-password": resetPasswordPayloadSchema,
+  "account-invitations/accept": acceptInvitationPayloadSchema,
+};
 async function handle(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
@@ -91,6 +104,80 @@ async function handle(
         data: { user, redirectTo: ROLE_HOME_ROUTE[user.role] },
       });
       setSessionCookies(response, auth, rememberMe);
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
+    const publicSchema = PUBLIC_COMMANDS[path];
+    if (publicSchema) {
+      // No session exists yet (forgot/reset password, accepting an invitation).
+      const parsed = publicSchema.safeParse(await request.json());
+      if (!parsed.success)
+        throw backendError(
+          400,
+          "VALIDATION_ERROR",
+          "Kiểm tra lại thông tin đã nhập.",
+        );
+      const upstream = await backendFetch(path, {
+        method: "POST",
+        body: JSON.stringify(parsed.data),
+      });
+      const response = new NextResponse(await upstream.arrayBuffer(), {
+        status: upstream.status,
+        headers: {
+          "Content-Type":
+            upstream.headers.get("content-type") ?? "application/json",
+          "Cache-Control": "no-store",
+        },
+      });
+      const retryAfter = upstream.headers.get("retry-after");
+      if (retryAfter) response.headers.set("Retry-After", retryAfter);
+      return response;
+    }
+    if (path === "auth/change-password") {
+      const parsed = changePasswordPayloadSchema.safeParse(
+        await request.json(),
+      );
+      if (!parsed.success)
+        throw backendError(
+          400,
+          "VALIDATION_ERROR",
+          "Kiểm tra lại mật khẩu đã nhập.",
+        );
+      // Resolve (and refresh) the session first: BE answers a wrong current password with
+      // 401, which must not be mistaken for an expired session or end the web login.
+      const session = await authorizedBackendFetch(request, "auth/me");
+      webUser(await readBackend<BackendUser>(session.response));
+      const access =
+        session.renewed?.tokens.accessToken ??
+        request.cookies.get(SESSION_COOKIES.ACCESS)?.value;
+      const upstream = await backendFetch(path, {
+        method: "POST",
+        body: JSON.stringify(parsed.data),
+        headers: { Authorization: `Bearer ${access ?? ""}` },
+      });
+      const response =
+        upstream.status === 401
+          ? NextResponse.json(
+              backendError(
+                400,
+                "AUTH_CURRENT_PASSWORD_INVALID",
+                "Mật khẩu hiện tại không đúng.",
+              ).body,
+              { status: 400 },
+            )
+          : new NextResponse(await upstream.arrayBuffer(), {
+              status: upstream.status,
+              headers: {
+                "Content-Type":
+                  upstream.headers.get("content-type") ?? "application/json",
+              },
+            });
+      if (session.renewed)
+        setSessionCookies(
+          response,
+          session.renewed,
+          request.cookies.get(SESSION_COOKIES.REMEMBER)?.value === "1",
+        );
       response.headers.set("Cache-Control", "no-store");
       return response;
     }

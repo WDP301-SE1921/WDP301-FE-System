@@ -74,5 +74,6 @@ export const registrationClassSchema = z.object({
   capacity: z.number().int().min(1).max(1000),
   monthlyFee: z.number().finite().min(0),
   teacherId: z.string().trim(),
+  roomId: z.string().trim(),
 });
 export type RegistrationClassInput = z.infer<typeof registrationClassSchema>;
