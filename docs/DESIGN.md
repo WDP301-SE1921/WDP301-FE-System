@@ -1,42 +1,17 @@
-# Design System — Education Center Landing/About Page
+# Design
 
-Applies to every component/page built in this project. Keep it consistent — don't drift in style when adding new sections or pages.
-
-## Overall Style
-Friendly Professional, classic — serious and trustworthy, but still warm and approachable.
-- Avoid overly childish/cartoonish styling.
-- Avoid a cold, gray, corporate look.
+Friendly Professional, classic — serious and trustworthy, but warm and approachable. Built for parents of middle/junior-high students who aren't especially tech-savvy: clarity and trust matter more than novelty.
 
 ## Colors
-- Primary: trustworthy blue `#2563EB` or green `#16A34A`
-- Accent: warm orange/yellow `#F59E0B` — used for CTA buttons and highlights
-- Light background as the base, generous whitespace
-- Do not use dark mode as the default
+- Primary: `#2563EB` (blue) or `#16A34A` (green)
+- Accent: `#F59E0B`
+- Light background, generous whitespace, no dark mode by default
 
 ## Typography
-- Clear, readable font with good Vietnamese diacritics support: Be Vietnam Pro, Inter, or Plus Jakarta Sans
-- Bold, clearly hierarchical headings; body text with enough contrast to read on mobile
+Be Vietnam Pro, Inter, or Plus Jakarta Sans — good Vietnamese diacritic support.
 
-## Border Radius — mandatory rule across the whole page
-No sharp/square corners anywhere. The larger the block, the larger the radius.
+## Border radius
+Every corner is rounded — logo, hero image, cards, buttons, inputs, icon containers. Larger block → larger radius. No sharp corners anywhere on the site. Full table of values: `.claude/rules/ui.md`.
 
-| Element | Suggested radius (Tailwind) |
-|---|---|
-| Logo | `rounded-full` or `rounded-2xl` |
-| Hero image | `rounded-3xl` |
-| Cards (subjects, teachers, testimonials) | `rounded-2xl`, consistent across all cards |
-| Contact block/section | `rounded-3xl` for the main container |
-| Input field | `rounded-xl` |
-| Button | `rounded-full` (pill) or `rounded-xl` |
-| Icon container (icon background) | `rounded-full` or `rounded-2xl` |
-
-Rule of thumb: minimum radius `rounded-xl`, never use `rounded-none`/`rounded-sm` anywhere on the page.
-
-## Component Stack
-- Next.js App Router + TypeScript
-- Shadcn UI + Tailwind CSS
-- Functional components only
-- Images: WebP, lazy loading
-
-## Target Audience
-Parents of middle/junior-high school students (grades 6–9) — not very tech-savvy, need to feel trust and clarity, no clutter. Prioritize the mobile experience.
+## Component library
+Shadcn UI, **Maia** preset — soft and rounded with generous spacing, which is the whole point of the border-radius rule above: Maia gives us the base, our rule keeps every *new* component consistent with it instead of drifting back to Shadcn's sharper defaults over time.

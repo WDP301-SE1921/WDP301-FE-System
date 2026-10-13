@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# test evidence screenshots (kept local, not committed)
+/docs/screenshots/
+
+# local test scripts and fixtures (kept local, not committed)
+/tests/

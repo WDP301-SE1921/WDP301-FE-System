@@ -1,24 +1,28 @@
 ---
 name: enrollment-flow
-description: Use when implementing or modifying any registration/enrollment screen or API call — new child, additional child, or additional subject — for the manager or parent role.
+description: Use when implementing or modifying staff registration/enrollment screens or API calls.
 user-invocable: false
 ---
 
 # Enrollment Flow
 
-Three distinct registration flows exist — implement the correct one, don't generalize into a single form.
+Registration and payment confirmation belong to **Nhân viên**, under `(staff)`.
+Managers prepare classes and schedules; they cannot confirm payments or use staff routes.
 
-## A1 — First child (new parent)
-Manager form fields: child name, parent phone, parent email, subject, class, months (1–12).
-On submit: create `Payment` → `Enrollment` (status: pending-link) → generate a one-time link (7-day expiry) → send email.
-Parent side: the link opens an account-creation form (email pre-filled, read-only) → parent sets a password → `StudentProfile` is created and linked to the `Enrollment` server-side.
+## Parent preparation
+- A1, first child: the parent downloads the app, registers with email/password and creates a child profile.
+- A2, another child: the parent creates another child profile under the same account in the app.
+- A3, another subject: reuse the existing child profile.
+- Staff never create parent credentials or child profiles on the parent's behalf.
 
-## A2 — Additional child (existing parent)
-Same manager form, but the email field is a lookup against existing parent accounts. If found, skip account creation entirely on the parent side — the link instead prompts login, then silently creates the new `StudentProfile`.
+## Shared staff flow
+1. Type part of the parent's email; debounce and show matching accounts after 1–2 characters.
+2. Explicitly select the correct account, then select one of its existing children.
+3. Select subject/grade/class from the class's fixed schedule; package length is 1–12 months.
+4. Calculate the fee and confirm only after receiving the full payment.
+5. Payment confirmation creates an Enrollment attached immediately to the chosen child.
+6. Show the receipt with a Print button; reuse the same receipt component.
 
-## A3 — Additional subject/class (existing child)
-Manager picks an existing `StudentProfile` from a searchable list (not a fresh name/email form) → subject + class + months only → new `Payment` + `Enrollment` attached to that profile. A link is still generated and emailed — don't skip this step even though the account and profile already exist.
-
-## Shared UI rules
-- Every flow ends on the same receipt screen (with a Print button) — reuse one `<Receipt />` component.
-- Every flow shows the generated activation link/code to the manager immediately on screen, not only via email.
+There is no invitation credential, link generation, claim step or further parent confirmation.
+Keep API field names aligned with the actual BE DTOs. If an endpoint is missing, document
+the required contract for BE; never present mock results as real accounts or payments.

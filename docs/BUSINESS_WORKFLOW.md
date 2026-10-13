@@ -1,84 +1,32 @@
-# EduGrade — System Workflow Specification
+# Business Workflow
 
----
+## Roles (5, up from the original 3)
+- **Quản lý trung tâm** (Web) — CRUD staff/teacher/parent records, dashboard (revenue, counts), creates classes (subject + grade + program + room + fixed schedule), assigns a teacher to an existing fixed class. The "admin: có tất cả" line in the spec describes this role's overall authority, not a separate 6th role.
+- **Thiết kế giáo trình** (Web, **new**) — authors per-subject curriculum content (Toán/Lý/Hóa/Sinh, based on textbooks), sets pacing: 1 lesson per session, 1 test per month.
+- **Nhân viên** (Web, **new**) — day-to-day admissions/operations: student registration (see A below), payment confirmation, schedule changes, makeup scheduling, permanent/long-term leave.
+- **Giáo viên** (Web — see platform note) — attendance (now also feeds teacher compensation), homework, AI-grading review/approval, reports, confirms the fixed schedule for an assigned class.
+- **Phụ huynh** (Mobile) — self-registers their own account and creates each child's `StudentProfile` themselves in the app. No separate student account.
 
-## 1. System Overview & Core Principles
+**Platform note:** the role list says "Giáo viên — Web" only; §1.3's own heading still says "(Web + Mobile)". Treated as Web-only here — flag if that's not intended.
 
-**EduGrade** is a specialized management system designed for a single tutoring center catering to Grades 6, 7, 8, and 9 in Mathematics, Physics, Chemistry, and Biology.
+## A. Registration + payment (no activation link — removed entirely)
+- **No account yet**: at the counter, staff tells the parent to download the app → parent self-registers (email + password) → parent creates the child's `StudentProfile` themselves. Staff isn't involved in this part.
+- **Shared step, every case**: staff types the parent's email into a debounced search (suggestions after 1–2 characters) → picks the account → sees that account's children → picks the right one → picks subject/class (against the class's fixed schedule) → confirms payment → `Enrollment` is created and attached immediately. No link, no extra parent confirmation — the parent is standing at the counter.
 
-### Key Architectural Constraints & Business Principles
-* **Single Center Scope:** Multi-tenant architecture is not supported; all operations pertain to a single center entity.
-* **Account Hierarchy:** There are **no separate Student accounts**. Only Parent accounts exist.
-  * `1 Parent Account` = Unique Login Email + Password.
-  * `1 Parent Account` can manage `N Child Profiles` (Student Records).
-  * Students submit assignments through their parent's active login session.
-* **No Direct Online Self-Registration or Payment Integration:**
-  * Managers handle all course enrollments offline/manually via phone or in-person.
-  * Cash and Bank Transfers are collected offline. Payments are recorded only upon explicit Manager confirmation (`Confirm Payment`).
-  * Integrations with online payment gateways or thermal receipt printers are strictly excluded.
-* **Link / Token Authentication:**
-  * Parents construct their account credentials via a secure single-use link/code (valid for 7 days) generated after payment confirmation.
-  * Managers never generate, view, or reset passwords for Parents.
-* **AI Delegation & Human-in-the-Loop:**
-  * AI evaluation (grading/feedback) strictly produces a **draft state**.
-  * AI-generated content is **never automatically published** to parents or students without Teacher review and approval.
-* **Notifications:**
-  * Email is the sole automated communication channel. SMS integrations are excluded.
+## B. Attendance (Giáo viên)
+Teacher marks `present | absent | made_up | excused` per session → attendance rate recalculates immediately → email to parent → **also now an input to teacher compensation** (payroll logic TBD with backend).
 
----
+## C. Makeup class / schedule changes (owned by Nhân viên)
+Parent reports an absence → staff marks `absent` → finds a replacement session (same program + lesson, future, has capacity) → assigns → attended → original becomes `made_up`; no-show → stays `absent`. Permanent schedule changes and long-term leave follow the same staff ownership.
 
-## 2. Table of Contents
-1. [Workflow A: Student Registration, Payment & Account Linking](#workflow-a-student-registration-payment--account-linking)
-   - [A1: First Child Registration (New Parent Account)](#a1-first-child-registration-new-parent-account)
-   - [A2: Subsequent Child Registration (Existing Parent Account)](#a2-subsequent-child-registration-existing-parent-account)
-   - [A3: Enrolling an Existing Child in Additional Courses/Classes](#a3-enrolling-an-existing-child-in-additional-coursesclasses)
-2. [Workflow B: Class Creation & Automatic Session Generation](#workflow-b-class-creation--automatic-session-generation)
-3. [Workflow C: Attendance Tracking & Automated Email Alerts](#workflow-c-attendance-tracking--automated-email-alerts)
-4. [Workflow D: Single-Session Absence & Make-up Class Scheduling](#workflow-d-single-session-absence--make-up-class-scheduling)
-5. [Workflow E: Single-Session Swap (Pre-Absence Rescheduling)](#workflow-e-single-session-swap-pre-absence-rescheduling)
-6. [Workflow F: Permanent Schedule Change (Class Transfer)](#workflow-f-permanent-schedule-change-class-transfer)
-7. [Workflow G: Extended Leave of Absence (Temporary Suspension)](#workflow-g-extended-leave-of-absence-temporary-suspension)
-8. [Workflow H: Single-Subject Withdrawal & Complete Withdrawal](#workflow-h-single-subject-withdrawal--complete-withdrawal)
-9. [Workflow I: AI-Assisted Assignment Evaluation](#workflow-i-ai-assisted-assignment-evaluation)
-10. [Workflow J: AI Performance Aggregation & Report Export](#workflow-j-ai-performance-aggregation--report-export)
+## D. Curriculum content (Thiết kế giáo trình)
+Designs each subject's lesson sequence from the textbook, sets the 1-lesson-per-session / 1-test-per-month cadence. Does not touch class scheduling or rooms.
 
----
+## E. Class creation (Quản lý trung tâm)
+Choose subject + grade + program + room + fixed schedule, assign a teacher to an existing fixed class slot.
 
-## Workflow A: Student Registration, Payment & Account Linking
+## F. AI grading (Giáo viên)
+Child submits (via parent's session) → AI scores it as a suggestion → teacher reviews/edits → approves → only then does the parent/child see it. AI never auto-publishes.
 
-### A1: First Child Registration (New Parent Account)
-
-#### Actors:
-Center Manager, EduGrade Core Platform, Parent.
-
-#### Preconditions:
-* Parent has no pre-existing account on EduGrade (email does not exist in the database).
-* In-person or telephone agreement for course selection has occurred offline.
-
-#### Flow Diagram:
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Manager as Center Manager
-    participant System as EduGrade Platform
-    participant Email as Email Service
-    actor Parent as Parent
-
-    Manager->>System: Input Child Info + Parent Email/Phone + Subject/Class + Month Duration (1–12)
-    System->>Manager: Calculate Fee & Render Confirmation Screen
-    Manager->>System: Collect Funds (Offline) & Click "Confirm Payment"
-    Note over System: Atomic Transaction Begins
-    System->>System: Create Payment Record (STATUS: COMPLETED)
-    System->>System: Create Enrollment Record (STATUS: PENDING_LINK)
-    System->>System: Generate One-Time Link/Code (Expires in 7 Days, Single-Use)
-    System->>Manager: Render Digital Receipt on UI (with Print button)
-    System->>Email: Dispatch Email (Receipt + Class Schedule + Unique Link/Code)
-    Note over System: Atomic Transaction Ends
-    Email-->>Parent: Deliver Email Notification
-    Parent->>System: Click Link / Enter Code on Web/Mobile Portal
-    System->>Parent: Present Account Creation Form (Set Password)
-    Parent->>System: Submit Password Form
-    System->>System: Create Parent Account (Email = Username)
-    System->>System: Create Child Profile & Bind to Parent Account
-    System->>System: Link Pending Enrollment to Child Profile (STATUS: ACTIVE)
-    System->>Parent: Confirm Link Success & Display Dashboard
+## G. Reports (Giáo viên)
+Picks class/student + date range → system aggregates scores + attendance → AI compiles → exports Excel/PDF. Teacher-only, never auto-sent to parents.
