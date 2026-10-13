@@ -11,7 +11,7 @@ Ngày đối chiếu: 03/10/2026. Chỉ thay đổi `WDP301-FE-System`; đọc c
 ## Khởi chạy
 
 1. BE cần chạy, apply migration `20261002000000_parent_registration_flow` và có tài khoản `STAFF`, `MANAGER` đang hoạt động. Web không tự tạo nhân sự hoặc sửa database BE.
-2. Sao chép `.env.example` thành `.env.local`. Đặt `BACKEND_API_URL=http://localhost:3000/api/v1`, hoặc địa chỉ API thực tế.
+2. Sao chép `.env.example` thành `.env.local`. Đặt `BACKEND_API_URL=http://localhost:3000/api/v1`, hoặc địa chỉ API thực tế. Web chạy ở cổng 3001 (`npm run dev`), BE giữ cổng 3000.
 3. Chạy `npm run dev -- --port 3001`. Không dùng cùng port với BE.
 4. Phụ huynh hoàn tất đăng ký, xác minh email và tạo hồ sơ con trên mobile. SMTP của BE phải có cấu hình để nhận token xác minh.
 
