@@ -31,7 +31,7 @@ import { toast } from "@/components/ui/toast"
 import { AUTH_MSG } from "@/constants/messages/events/auth"
 import { ROUTES } from "@/constants/routes"
 import { loginSchema, type LoginInput } from "@/lib/validators/auth"
-import { ApiError, apiErrorMessage } from "@/lib/api/client"
+import { apiErrorMessage } from "@/lib/api/client"
 import { useLogin } from "@/features/auth/hooks/use-login"
 
 const FIELD_ID = {
@@ -87,9 +87,6 @@ function LoginForm() {
               <HugeiconsIcon icon={AlertCircleIcon} />
               <AlertTitle>{submitError}</AlertTitle>
               <AlertDescription>
-                {login.error instanceof ApiError && login.error.requestId && (
-                  <p>Mã yêu cầu: {login.error.requestId}</p>
-                )}
                 <p>{AUTH_MSG.SUPPORT_CONTACT}</p>
               </AlertDescription>
             </Alert>
