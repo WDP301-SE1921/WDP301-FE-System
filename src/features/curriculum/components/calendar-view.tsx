@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -13,10 +14,7 @@ import {
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
-import {
-  ScheduleCalendar,
-  type CalendarEvent,
-} from "@/components/shared/calendar/schedule-calendar";
+import { ScheduleCalendar } from "@/components/shared/calendar/schedule-calendar";
 import {
   todayInVietnam,
   isCalendarDate,
@@ -29,6 +27,8 @@ import { registrationApi } from "@/features/registration-flow/api";
 import { curriculumApi } from "../api";
 import { vietnamLocalInput } from "../session-contract";
 import { SessionDetailSheet } from "./session-detail-sheet";
+import { ScheduleBoard } from "./schedule-board";
+import type { ScheduleBoardEvent } from "../schedule-board-data";
 export function AcademicCalendarView() {
   const role = useCurrentRole();
   const [classId, setClassId] = useQueryState(
@@ -61,13 +61,14 @@ export function AcademicCalendarView() {
       curriculumApi.sessions(classId, signal, { fromDate, toDate }),
     retry: false,
   });
-  const events: CalendarEvent[] =
+  const events: ScheduleBoardEvent[] =
     sessions.data?.map((session) => {
       const start = vietnamLocalInput(session.startsAt),
         end = vietnamLocalInput(session.endsAt);
       return {
         id: session.id,
         title: session.lesson?.title ?? session.class.name,
+        classLabel: session.class.name,
         subject: session.class.program.subject,
         date: start.slice(0, 10),
         time: start.slice(11) + " → " + end.slice(11),
@@ -101,26 +102,47 @@ export function AcademicCalendarView() {
           )
         }
       />
-      <Select
-        value={classId || "all"}
-        items={[
-          { value: "all", label: "Tất cả lớp" },
-          ...(classes.data ?? []).map((c) => ({ value: c.id, label: c.name })),
-        ]}
-        onValueChange={(v) => void setClassId(v === "all" ? null : String(v))}
-      >
-        <SelectTrigger aria-label="Lọc lịch theo lớp">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Tất cả lớp</SelectItem>
-          {classes.data?.map((c) => (
-            <SelectItem value={c.id} key={c.id}>
-              {c.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Select
+          value={classId || "all"}
+          items={[
+            { value: "all", label: "Tất cả lớp" },
+            ...(classes.data ?? []).map((c) => ({
+              value: c.id,
+              label: c.name,
+            })),
+          ]}
+          onValueChange={(v) => void setClassId(v === "all" ? null : String(v))}
+        >
+          <SelectTrigger
+            className="w-full sm:w-64"
+            aria-label="Lọc lịch theo lớp"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả lớp</SelectItem>
+            {classes.data?.map((c) => (
+              <SelectItem value={c.id} key={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Tabs
+          value={view === "board" ? "board" : view === "day" ? "day" : "week"}
+          onValueChange={(value) => {
+            if (value === "day" || value === "week" || value === "board")
+              void setView(value);
+          }}
+        >
+          <TabsList aria-label="Cách xem lịch học">
+            <TabsTrigger value="day">Ngày</TabsTrigger>
+            <TabsTrigger value="week">Tuần</TabsTrigger>
+            <TabsTrigger value="board">Kanban</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       <AsyncBoundary
         isLoading={classes.isPending}
         isError={classes.isError}
@@ -133,16 +155,26 @@ export function AcademicCalendarView() {
           error={sessions.error}
           onRetry={() => void sessions.refetch()}
         >
-          <ScheduleCalendar
-            events={events}
-            date={day}
-            onDateChange={(v) => void setDate(v)}
-            view={view === "day" ? "day" : "week"}
-            onViewChange={(v) => void setView(v)}
-            groupBy="time"
-            showGroupBy={false}
-            onEventClick={(event) => void setSelected(event.id)}
-          />
+          {view === "board" ? (
+            <ScheduleBoard
+              events={events}
+              date={day}
+              onDateChange={(value) => void setDate(value)}
+              onEventClick={(event) => void setSelected(event.id)}
+            />
+          ) : (
+            <ScheduleCalendar
+              events={events}
+              date={day}
+              onDateChange={(v) => void setDate(v)}
+              view={view === "day" ? "day" : "week"}
+              onViewChange={(v) => void setView(v)}
+              groupBy="time"
+              showGroupBy={false}
+              showViewSwitcher={false}
+              onEventClick={(event) => void setSelected(event.id)}
+            />
+          )}
         </AsyncBoundary>
       </AsyncBoundary>
       {selected && (

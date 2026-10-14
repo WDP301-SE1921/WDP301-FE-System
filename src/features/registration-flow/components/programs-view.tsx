@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -26,7 +27,10 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
-import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/shared/data-table/data-table";
 import { ConfirmDialog } from "@/components/shared/feedback/confirm-dialog";
 import {
   ApiFeedback,
@@ -113,14 +117,124 @@ export function RegistrationProgramsView() {
   const rows = programs.data ?? [];
   const size = Math.max(1, Math.min(100, pageSize)),
     start = (Math.max(1, page) - 1) * size;
+  const subjectColumns: DataTableColumn<AcademicSubject>[] = [
+    {
+      accessorKey: "name",
+      header: "Môn học",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.name}</span>
+      ),
+    },
+    { accessorKey: "code", header: "Mã môn" },
+    {
+      id: "programs",
+      header: "Khóa học",
+      cell: ({ row }) => row.original._count?.programs ?? 0,
+    },
+    {
+      id: "status",
+      header: "Trạng thái",
+      cell: ({ row }) => (
+        <StatusBadge
+          category="program"
+          status={row.original.isActive ? "active" : "inactive"}
+        />
+      ),
+    },
+    {
+      id: "actions",
+      header: "Thao tác",
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={`Sửa môn ${row.original.name}`}
+            onClick={() => setEditing(row.original)}
+          >
+            Sửa
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={`Xóa hoặc ngừng sử dụng môn ${row.original.name}`}
+            onClick={() => setDeleting(row.original)}
+          >
+            Xóa / Ngừng sử dụng
+          </Button>
+        </div>
+      ),
+    },
+  ];
+  const programColumns: DataTableColumn<RegistrationProgram>[] = [
+    {
+      accessorKey: "name",
+      header: "Khóa học",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.name}</span>
+      ),
+    },
+    { accessorKey: "subject", header: "Môn học" },
+    {
+      id: "grade",
+      header: "Khối",
+      cell: ({ row }) => `Khối ${row.original.grade}`,
+    },
+    {
+      id: "status",
+      header: "Trạng thái",
+      cell: ({ row }) => (
+        <StatusBadge
+          category="program"
+          status={row.original.isActive === false ? "inactive" : "active"}
+        />
+      ),
+    },
+    {
+      id: "actions",
+      header: "Thao tác",
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={`Xem khóa ${row.original.name}`}
+            render={
+              <Link
+                href={ROUTES.MANAGER.CATALOG_PROGRAM_DETAIL(row.original.id)}
+              />
+            }
+          >
+            Chi tiết
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={`Sửa khóa ${row.original.name}`}
+            onClick={() => setEditing(row.original)}
+          >
+            Sửa
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={`Xóa hoặc ngừng sử dụng khóa ${row.original.name}`}
+            onClick={() => setDeleting(row.original)}
+          >
+            Xóa / Ngừng sử dụng
+          </Button>
+        </div>
+      ),
+    },
+  ];
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Môn học và khóa học"
         description="Thiết lập môn, khóa học và các lớp áp dụng."
         actions={
           <Button onClick={() => setEditing("new")}>
-            {tab === "subjects" ? "Tạo môn học" : "Tạo chương trình"}
+            {tab === "subjects" ? "Tạo môn học" : "Tạo khóa học"}
           </Button>
         }
       />
@@ -138,160 +252,104 @@ export function RegistrationProgramsView() {
           <TabsTrigger value="programs">Khóa học</TabsTrigger>
         </TabsList>
       </Tabs>
-      <Input
-        aria-label="Tìm danh mục"
-        placeholder="Tìm theo tên…"
-        value={search}
-        onChange={(e) => {
-          void setSearch(e.target.value);
-          void setPage(1);
-        }}
-      />
-      {tab !== "subjects" && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Select
-            value={subjectId || "all"}
-            items={[
-              { value: "all", label: "Tất cả môn" },
-              ...(subjects.data ?? []).map((s) => ({
-                value: s.id,
-                label: s.name,
-              })),
-            ]}
-            onValueChange={(v) => {
-              void setSubjectId(v === "all" ? null : String(v));
-              void setPage(1);
-            }}
-          >
-            <SelectTrigger aria-label="Môn học">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả môn</SelectItem>
-              {subjects.data?.map((s) => (
-                <SelectItem value={s.id} key={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={grade || "all"}
-            items={[
-              { value: "all", label: "Tất cả khối" },
-              ...[6, 7, 8, 9].map((g) => ({
-                value: String(g),
-                label: "Khối " + g,
-              })),
-            ]}
-            onValueChange={(v) => {
-              void setGrade(v === "all" ? null : String(v));
-              void setPage(1);
-            }}
-          >
-            <SelectTrigger aria-label="Khối">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả khối</SelectItem>
-              {[6, 7, 8, 9].map((g) => (
-                <SelectItem key={g} value={String(g)}>
-                  Khối {g}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      <ApiFeedback error={remove.error} />
-      {tab === "subjects" ? (
-        <AsyncBoundary
-          isLoading={subjects.isPending}
-          isError={subjects.isError}
-          error={subjects.error}
-          onRetry={() => void subjects.refetch()}
-          data={subjects.data}
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            {subjects.data?.map((s) => (
-              <Card key={s.id}>
-                <CardHeader>
-                  <div className="flex justify-between gap-3">
-                    <CardTitle>{s.name}</CardTitle>
-                    <StatusBadge
-                      category="program"
-                      status={s.isActive ? "active" : "inactive"}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p>
-                    {s.code} · {s._count?.programs ?? 0} khóa học
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setEditing(s)}>
-                      Sửa
-                    </Button>
-                    <Button variant="ghost" onClick={() => setDeleting(s)}>
-                      Xóa / Ngừng sử dụng
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      <Card className="min-w-0">
+        <CardContent className="min-w-0 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <Input
+              aria-label="Tìm danh mục"
+              placeholder="Tìm theo tên…"
+              value={search}
+              onChange={(e) => {
+                void setSearch(e.target.value);
+                void setPage(1);
+              }}
+            />
+            {tab !== "subjects" && (
+              <>
+                <Select
+                  value={subjectId || "all"}
+                  items={[
+                    { value: "all", label: "Tất cả môn" },
+                    ...(subjects.data ?? []).map((s) => ({
+                      value: s.id,
+                      label: s.name,
+                    })),
+                  ]}
+                  onValueChange={(v) => {
+                    void setSubjectId(v === "all" ? null : String(v));
+                    void setPage(1);
+                  }}
+                >
+                  <SelectTrigger aria-label="Môn học">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả môn</SelectItem>
+                    {subjects.data?.map((s) => (
+                      <SelectItem value={s.id} key={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={grade || "all"}
+                  items={[
+                    { value: "all", label: "Tất cả khối" },
+                    ...[6, 7, 8, 9].map((g) => ({
+                      value: String(g),
+                      label: "Khối " + g,
+                    })),
+                  ]}
+                  onValueChange={(v) => {
+                    void setGrade(v === "all" ? null : String(v));
+                    void setPage(1);
+                  }}
+                >
+                  <SelectTrigger aria-label="Khối">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả khối</SelectItem>
+                    {[6, 7, 8, 9].map((g) => (
+                      <SelectItem key={g} value={String(g)}>
+                        Khối {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           </div>
-        </AsyncBoundary>
-      ) : (
-        <AsyncBoundary
-          isLoading={programs.isPending}
-          isError={programs.isError}
-          error={programs.error}
-          onRetry={() => void programs.refetch()}
-          data={rows}
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            {rows.slice(start, start + size).map((p) => (
-              <Card key={p.id}>
-                <CardHeader>
-                  <div className="flex justify-between gap-3">
-                    <CardTitle>{p.name}</CardTitle>
-                    <StatusBadge
-                      category="program"
-                      status={p.isActive === false ? "inactive" : "active"}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p>
-                    {p.subject} · Khối {p.grade}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      render={
-                        <Link
-                          href={ROUTES.MANAGER.CATALOG_PROGRAM_DETAIL(p.id)}
-                        />
-                      }
-                    >
-                      Chi tiết khóa
-                    </Button>
-                    <Button variant="outline" onClick={() => setEditing(p)}>
-                      Sửa
-                    </Button>
-                    <Button variant="ghost" onClick={() => setDeleting(p)}>
-                      Xóa / Ngừng sử dụng
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </AsyncBoundary>
-      )}
-      {tab !== "subjects" && programs.data && (
-        <TablePagination totalItems={rows.length} />
-      )}
+          <ApiFeedback error={remove.error} />
+          {tab === "subjects" ? (
+            <DataTable
+              columns={subjectColumns}
+              data={subjects.data ?? []}
+              isLoading={subjects.isPending}
+              isError={subjects.isError}
+              error={subjects.error}
+              onRetry={() => void subjects.refetch()}
+              emptyTitle="Chưa có môn học phù hợp"
+              emptyDescription="Thử tìm theo tên khác hoặc tạo môn học mới."
+            />
+          ) : (
+            <DataTable
+              columns={programColumns}
+              data={rows.slice(start, start + size)}
+              isLoading={programs.isPending}
+              isError={programs.isError}
+              error={programs.error}
+              onRetry={() => void programs.refetch()}
+              emptyTitle="Chưa có khóa học phù hợp"
+              emptyDescription="Thử đổi từ khóa, môn hoặc khối để xem danh sách."
+            />
+          )}
+          {tab !== "subjects" && programs.data && (
+            <TablePagination totalItems={rows.length} />
+          )}
+        </CardContent>
+      </Card>
       <Dialog
         open={!!editing}
         onOpenChange={(open) => {
@@ -303,6 +361,11 @@ export function RegistrationProgramsView() {
             <DialogTitle>
               {tab === "subjects" ? "Môn học" : "Khóa học"}
             </DialogTitle>
+            <DialogDescription>
+              {tab === "subjects"
+                ? "Cập nhật tên, mã môn và trạng thái sử dụng."
+                : "Chọn môn học, khối và tên khóa học."}
+            </DialogDescription>
           </DialogHeader>
           {editing &&
             (tab === "subjects" ? (
@@ -539,7 +602,7 @@ function ProgramForm({
         disabled={save.isPending || !choices.length}
         isLoading={save.isPending}
       >
-        {program ? "Lưu khóa học" : "Tạo chương trình"}
+        {program ? "Lưu khóa học" : "Tạo khóa học"}
       </Button>
     </form>
   );

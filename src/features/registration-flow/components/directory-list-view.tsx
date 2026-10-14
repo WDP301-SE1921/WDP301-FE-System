@@ -130,6 +130,7 @@ const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
           <Button
             size="sm"
             variant="outline"
+            aria-label={`Xem tài khoản ${parent.displayName || parent.email}`}
             render={<Link href={ROUTES.MANAGER.PARENT_DETAIL(parent.id)} />}
           >
             Xem tài khoản
@@ -138,6 +139,7 @@ const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
         <Button
           size="sm"
           variant="outline"
+          aria-label={`Xem hồ sơ con của ${parent.displayName || parent.email}`}
           render={
             <Link
               href={`${isStaff ? ROUTES.STAFF.STUDENTS : ROUTES.MANAGER.STUDENTS}?${new URLSearchParams({ parentUserId: parent.id })}`}
@@ -152,6 +154,7 @@ const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
           !!parent.parentProfile?._count.students && (
             <Button
               size="sm"
+              aria-label={`Đăng ký học cho con của ${parent.displayName || parent.email}`}
               render={
                 <Link
                   href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
@@ -171,7 +174,13 @@ const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
 const studentColumns = (
   isStaff: boolean,
 ): LegacyColumnDef<StudentListItem>[] => [
-  { accessorKey: "fullName", header: "Họ tên con" },
+  {
+    accessorKey: "fullName",
+    header: "Họ tên con",
+    cell: ({ row }) => (
+      <span className="font-medium">{row.original.fullName}</span>
+    ),
+  },
   {
     id: "grade",
     header: "Khối",
@@ -225,6 +234,7 @@ const studentColumns = (
         <Button
           size="sm"
           variant="outline"
+          aria-label={`Xem ghi danh của ${child.fullName}`}
           render={
             <Link
               href={
@@ -240,6 +250,7 @@ const studentColumns = (
         {isStaff && child.status === "ACTIVE" && (
           <Button
             size="sm"
+            aria-label={`Đăng ký học cho ${child.fullName}`}
             render={
               <Link
                 href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
@@ -281,13 +292,13 @@ export function RegistrationParentsView() {
     queryFn: ({ signal }) => registrationApi.parents(filters, signal),
   });
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Phụ huynh"
         description="Danh sách tài khoản phụ huynh và hồ sơ con đã tạo trên ứng dụng."
       />
-      <Card>
-        <CardContent className="space-y-4">
+      <Card className="min-w-0">
+        <CardContent className="min-w-0 space-y-4">
           <FilterBar
             searchPlaceholder="Tìm tên hoặc email phụ huynh…"
             onSearchChange={resetPage}
@@ -352,13 +363,13 @@ export function RegistrationStudentsView() {
     queryFn: ({ signal }) => registrationApi.students(filters, signal),
   });
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Hồ sơ con"
         description="Danh sách hồ sơ con cùng thông tin phụ huynh. Chọn hồ sơ để đăng ký học."
       />
-      <Card>
-        <CardContent className="space-y-4">
+      <Card className="min-w-0">
+        <CardContent className="min-w-0 space-y-4">
           <FilterBar
             searchPlaceholder="Tìm tên con hoặc email phụ huynh…"
             onSearchChange={resetPage}

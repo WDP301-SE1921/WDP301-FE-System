@@ -20,6 +20,11 @@ const rules: {
   roles: readonly WebRole[] | null;
 }[] = [
   { method: "GET", path: /^dashboard$/, roles: manager },
+  {
+    method: "GET",
+    path: /^academic\/analytics(?:\/export)?$/,
+    roles: contentReaders,
+  },
   { method: "GET", path: /^staff(?:\/[^/]+)?$/, roles: manager },
   { method: "POST", path: /^staff$/, roles: manager },
   {

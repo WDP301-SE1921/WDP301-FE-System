@@ -9,7 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  DataTable,
+  type DataTableColumn,
+} from "@/components/shared/data-table/data-table";
 import { ROUTES } from "@/constants/routes";
+import { cn } from "@/lib/utils";
+import type { BackendUser } from "@/types/backend";
 import {
   accountCreateSchema,
   accountUpdateSchema,
@@ -36,110 +42,149 @@ export function AccountsView({ kind }: { kind: "staff" | "teachers" }) {
   const title = kind === "teachers" ? "Giáo viên" : "Nhân viên";
   const base =
     kind === "teachers" ? "/manager/teachers" : "/manager/system/staff";
+  const columns: DataTableColumn<BackendUser>[] = [
+    {
+      id: "name",
+      header: "Họ tên",
+      cell: ({ row }) => (
+        <p className="font-medium">
+          {row.original.displayName || "Chưa có tên"}
+        </p>
+      ),
+    },
+    { accessorKey: "email", header: "Email" },
+    {
+      id: "status",
+      header: "Trạng thái",
+      cell: ({ row }) => (
+        <Badge
+          variant={row.original.status === "ACTIVE" ? "success" : "secondary"}
+        >
+          {row.original.status === "ACTIVE" ? "Hoạt động" : "Đã khóa"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Thao tác",
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="outline"
+          aria-label={`Xem thông tin ${row.original.displayName || row.original.email}`}
+          render={<Link href={`${base}/${row.original.id}`} />}
+        >
+          Xem và chỉnh sửa
+        </Button>
+      ),
+    },
+  ];
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title={title}
         description="Quản lý thông tin và trạng thái tài khoản tại trung tâm."
-      />
-      <Input
-        aria-label={`Tìm ${title.toLowerCase()}`}
-        placeholder="Tìm tên hoặc email…"
-        value={search}
-        onChange={(event) =>
-          void setFilters({ search: event.target.value, page: 1 })
+        actions={
+          kind === "teachers" ? (
+            <Button render={<Link href={ROUTES.MANAGER.TEACHER_INVITATIONS} />}>
+              Mời và duyệt giáo viên
+            </Button>
+          ) : undefined
         }
       />
-      <AsyncBoundary
-        isLoading={query.isPending}
-        isError={query.isError}
-        error={query.error}
-        onRetry={() => void query.refetch()}
-        data={query.data?.items}
-        emptyProps={{ title: "Chưa có tài khoản" }}
+      <div
+        className={cn(
+          "grid min-w-0 items-start gap-6",
+          kind === "staff" && "xl:grid-cols-[20rem_minmax(0,1fr)]",
+        )}
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          {query.data?.items.map((account) => (
-            <Card key={account.id}>
-              <CardHeader>
-                <CardTitle>{account.displayName || account.email}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="break-all text-sm">{account.email}</p>
-                <Badge
-                  variant={
-                    account.status === "ACTIVE" ? "success" : "secondary"
-                  }
-                >
-                  {account.status === "ACTIVE" ? "Hoạt động" : "Đã khóa"}
-                </Badge>
-                <div>
-                  <Button
-                    variant="outline"
-                    render={<Link href={`${base}/${account.id}`} />}
-                  >
-                    Thông tin và chỉnh sửa
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </AsyncBoundary>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          variant="outline"
-          disabled={page <= 1 || query.isFetching}
-          onClick={() => void setFilters({ page: page - 1 })}
-        >
-          Trước
-        </Button>
-        <p>
-          Trang {Math.max(1, page)} · {query.data?.total ?? 0} tài khoản
-        </p>
-        <Button
-          variant="outline"
-          disabled={
-            !query.data || page * 20 >= query.data.total || query.isFetching
-          }
-          onClick={() => void setFilters({ page: page + 1 })}
-        >
-          Sau
-        </Button>
-      </div>
-      {kind === "staff" ? (
-        <Card>
+        {kind === "staff" ? (
+          <Card className="min-w-0">
+            <CardHeader>
+              <CardTitle>Tạo tài khoản {title.toLowerCase()}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ApiForm
+                schema={accountCreateSchema}
+                defaults={{ email: "", displayName: "", password: "" }}
+                fields={[
+                  { name: "displayName", label: "Họ tên" },
+                  { name: "email", label: "Email", type: "email" },
+                  {
+                    name: "password",
+                    label: "Mật khẩu ban đầu",
+                    type: "password",
+                    description:
+                      "Ít nhất 8 ký tự. Cung cấp mật khẩu cho người nhận qua kênh riêng.",
+                  },
+                ]}
+                submitLabel="Tạo tài khoản"
+                onSubmit={(value) => directoryApi.createAccount("staff", value)}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+        <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Tạo tài khoản {title.toLowerCase()}</CardTitle>
+            <CardTitle>Danh sách {title.toLowerCase()}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ApiForm
-              schema={accountCreateSchema}
-              defaults={{ email: "", displayName: "", password: "" }}
-              fields={[
-                { name: "displayName", label: "Họ tên" },
-                { name: "email", label: "Email", type: "email" },
-                {
-                  name: "password",
-                  label: "Mật khẩu ban đầu",
-                  type: "password",
-                  description:
-                    "Ít nhất 8 ký tự. Cung cấp mật khẩu cho người nhận qua kênh riêng.",
-                },
-              ]}
-              submitLabel="Tạo tài khoản"
-              onSubmit={(value) => directoryApi.createAccount("staff", value)}
+          <CardContent className="min-w-0 space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Input
+                className="sm:max-w-md"
+                aria-label={`Tìm ${title.toLowerCase()}`}
+                placeholder="Tìm tên hoặc email…"
+                value={search}
+                onChange={(event) =>
+                  void setFilters({ search: event.target.value, page: 1 })
+                }
+              />
+              {query.data && (
+                <p className="text-sm text-muted-foreground sm:ml-auto">
+                  {query.data.total} tài khoản
+                </p>
+              )}
+            </div>
+            <DataTable
+              columns={columns}
+              data={query.data?.items ?? []}
+              isLoading={query.isPending}
+              isError={query.isError}
+              error={query.error}
+              onRetry={() => void query.refetch()}
+              emptyTitle="Chưa có tài khoản phù hợp"
+              emptyDescription="Thử tìm theo tên hoặc email khác."
             />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Trang {Math.max(1, page)}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page <= 1 || query.isFetching}
+                  onClick={() => void setFilters({ page: page - 1 })}
+                >
+                  Trang trước
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={
+                    !query.data ||
+                    page * 20 >= query.data.total ||
+                    query.isFetching
+                  }
+                  onClick={() => void setFilters({ page: page + 1 })}
+                >
+                  Trang sau
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      ) : (
-        <Button
-          variant="outline"
-          render={<Link href={ROUTES.MANAGER.TEACHER_INVITATIONS} />}
-        >
-          Mời và duyệt giáo viên
-        </Button>
-      )}
+      </div>
     </PageContainer>
   );
 }

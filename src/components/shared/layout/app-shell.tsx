@@ -1,37 +1,74 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Sidebar } from "./sidebar"
-import { Header } from "./header/header"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
-import type { WebRole } from "@/constants/roles"
-import { STORAGE_KEYS } from "@/constants/storage-keys"
-import { type MenuBadgeCounts } from "@/constants/menu"
+import * as React from "react";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Sidebar } from "./sidebar";
+import { Header } from "./header/header";
+import {
+  Sheet,
+  SheetContent,
+  SheetClose,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import type { WebRole } from "@/constants/roles";
+import { STORAGE_KEYS } from "@/constants/storage-keys";
+import { type MenuBadgeCounts } from "@/constants/menu";
 
 export interface AppShellProps {
-  role: WebRole
+  role: WebRole;
   /** Số thật của badge menu, key theo `badgeKey` khai báo trong constants/menu.ts */
-  badgeCounts?: MenuBadgeCounts
-  children: React.ReactNode
+  badgeCounts?: MenuBadgeCounts;
+  children: React.ReactNode;
+}
+
+function subscribeSidebarPreference(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  return () => window.removeEventListener("storage", onChange);
+}
+
+function readSidebarPreference() {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === "true";
+  } catch {
+    return false;
+  }
 }
 
 function AppShell({ role, badgeCounts, children }: AppShellProps) {
-  const [collapsed, setCollapsed] = React.useState(() => {
-    if (typeof window === "undefined") return false
-    return localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === "true"
-  })
-  const [mobileOpen, setMobileOpen] = React.useState(false)
+  const warmDashboard = usePathname().endsWith("/dashboard");
+  const storedCollapsed = React.useSyncExternalStore(
+    subscribeSidebarPreference,
+    readSidebarPreference,
+    () => false,
+  );
+  const [collapsedOverride, setCollapsedOverride] = React.useState<
+    boolean | null
+  >(null);
+  const collapsed = collapsedOverride ?? storedCollapsed;
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const handleToggleCollapse = () => {
-    setCollapsed((prev) => {
-      const next = !prev
-      localStorage.setItem(STORAGE_KEYS.SIDEBAR_COLLAPSED, String(next))
-      return next
-    })
-  }
+    const next = !collapsed;
+    setCollapsedOverride(next);
+    try {
+      localStorage.setItem(STORAGE_KEYS.SIDEBAR_COLLAPSED, String(next));
+    } catch {
+      // Persisting the preference is optional.
+    }
+  };
 
   return (
-    <div data-slot="app-shell" className="flex min-h-screen bg-background text-foreground">
+    <div
+      data-slot="app-shell"
+      className={cn(
+        "flex min-h-screen bg-background text-foreground",
+        warmDashboard && "edugrade-warm",
+      )}
+    >
       {/* Desktop Sidebar */}
       <div className="sticky top-0 hidden h-dvh shrink-0 self-start lg:block">
         <Sidebar
@@ -39,23 +76,52 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
           collapsed={collapsed}
           onToggleCollapse={handleToggleCollapse}
           badgeCounts={badgeCounts}
+          warm={warmDashboard}
         />
       </div>
 
       {/* Mobile Sidebar Sheet Drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="p-0 w-64 border-r border-border">
-          <Sidebar role={role} collapsed={false} badgeCounts={badgeCounts} />
+        <SheetContent
+          side="left"
+          className="p-0 w-64 border-r border-border"
+          showCloseButton={false}
+        >
+          <SheetTitle className="sr-only">Menu điều hướng</SheetTitle>
+          <SheetClose
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Đóng menu"
+                className="absolute right-2 top-2 z-10"
+                leftIcon={
+                  <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+                }
+              />
+            }
+          />
+          <Sidebar
+            role={role}
+            collapsed={false}
+            badgeCounts={badgeCounts}
+            onNavigate={() => setMobileOpen(false)}
+            warm={warmDashboard}
+          />
         </SheetContent>
       </Sheet>
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
-        <Header role={role} onToggleMobileSidebar={() => setMobileOpen(true)} />
+        <Header
+          role={role}
+          warm={warmDashboard}
+          onToggleMobileSidebar={() => setMobileOpen(true)}
+        />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
-  )
+  );
 }
 
-export { AppShell }
+export { AppShell };

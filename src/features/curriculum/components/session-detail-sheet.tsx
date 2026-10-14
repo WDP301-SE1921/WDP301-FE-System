@@ -14,7 +14,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetClose,
 } from "@/components/ui/sheet";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,8 +70,24 @@ export function SessionDetailSheet({
         if (!open) onClose();
       }}
     >
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-        <SheetHeader>
+      <SheetContent
+        className="w-full overflow-y-auto sm:max-w-xl"
+        showCloseButton={false}
+      >
+        <SheetClose
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Đóng chi tiết buổi học"
+              className="absolute right-4 top-4"
+              leftIcon={
+                <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+              }
+            />
+          }
+        />
+        <SheetHeader className="pr-10">
           <SheetTitle>
             {detail.data?.lesson?.title ?? "Chi tiết buổi học"}
           </SheetTitle>

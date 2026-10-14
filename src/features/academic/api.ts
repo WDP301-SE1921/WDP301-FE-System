@@ -312,6 +312,10 @@ export const academicApi = {
     ),
   announcements: (signal?: AbortSignal) =>
     readArrayPages<AnnouncementRecord>("academic/announcements", {}, signal),
+  recentAnnouncements: (signal?: AbortSignal) =>
+    apiRequest<AnnouncementRecord[]>("academic/announcements?page=1&limit=5", {
+      signal,
+    }),
   createAnnouncement: (body: unknown) =>
     command<AnnouncementRecord>(
       "academic/announcements",

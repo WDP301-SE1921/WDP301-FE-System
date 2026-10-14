@@ -4,7 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
-import { getNavMenu, type MenuBadgeCounts } from "@/constants/menu";
+import {
+  getActiveMenuHref,
+  getNavMenu,
+  type MenuBadgeCounts,
+} from "@/constants/menu";
 import type { WebRole } from "@/constants/roles";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +19,11 @@ export interface SidebarProps {
   role: WebRole;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  onNavigate?: () => void;
   /** Số thật của badge menu, key theo `badgeKey` khai báo trong constants/menu.ts */
   badgeCounts?: MenuBadgeCounts;
   className?: string;
+  warm?: boolean;
 }
 
 function SidebarIcon({ name }: { name: string }) {
@@ -30,11 +36,14 @@ function Sidebar({
   role,
   collapsed = false,
   onToggleCollapse,
+  onNavigate,
   badgeCounts,
   className,
+  warm = false,
 }: SidebarProps) {
   const pathname = usePathname();
   const menuGroups = getNavMenu(role);
+  const activeHref = getActiveMenuHref(pathname, menuGroups);
 
   return (
     <aside
@@ -47,10 +56,26 @@ function Sidebar({
       )}
     >
       {/* Brand Header */}
-      <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-sidebar-border">
-        <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-extrabold text-base shadow-sm">
-            EG
+      <div
+        className={cn(
+          "flex shrink-0 items-center border-b border-sidebar-border",
+          collapsed ? "flex-col gap-2 px-2 py-3" : "h-16 justify-between px-4",
+        )}
+      >
+        <Link
+          href="/"
+          onNavigate={onNavigate}
+          className="flex items-center gap-2.5 overflow-hidden"
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-extrabold text-base shadow-sm">
+            {warm ? (
+              <HugeiconsIcon
+                icon={Icons.Mortarboard01Icon}
+                className="size-7"
+              />
+            ) : (
+              "EG"
+            )}
           </div>
           {!collapsed && (
             <div className="flex flex-col">
@@ -58,7 +83,7 @@ function Sidebar({
                 EduGrade
               </span>
               <span className="text-[10px] text-muted-foreground font-medium">
-                Hệ thống Quản lý Center
+                Hệ thống Quản lý Trung tâm
               </span>
             </div>
           )}
@@ -68,13 +93,18 @@ function Sidebar({
             variant="ghost"
             size="icon-xs"
             onClick={onToggleCollapse}
+            aria-label={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
+            title={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
             className="hidden lg:flex rounded-full text-muted-foreground hover:text-foreground"
-          >
-            <HugeiconsIcon
-              icon={collapsed ? Icons.SidebarRightIcon : Icons.SidebarLeftIcon}
-              className="size-4"
-            />
-          </Button>
+            leftIcon={
+              <HugeiconsIcon
+                icon={
+                  collapsed ? Icons.SidebarRightIcon : Icons.SidebarLeftIcon
+                }
+                className="size-4"
+              />
+            }
+          />
         )}
       </div>
 
@@ -89,9 +119,7 @@ function Sidebar({
             )}
             <nav className="space-y-1">
               {group.items.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  pathname?.startsWith(item.href + "/");
+                const isActive = activeHref === item.href;
                 const badgeCount = item.badgeKey
                   ? badgeCounts?.[item.badgeKey]
                   : undefined;
@@ -102,8 +130,10 @@ function Sidebar({
                   <Link
                     key={item.href}
                     href={item.href}
+                    onNavigate={onNavigate}
                     prefetch={false}
-                    title={collapsed ? item.title : undefined}
+                    aria-current={isActive ? "page" : undefined}
+                    title={item.title}
                     className={cn(
                       "flex h-10 items-center gap-3 rounded-2xl px-3 text-sm font-medium transition-colors",
                       isActive

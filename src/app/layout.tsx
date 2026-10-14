@@ -1,34 +1,46 @@
-import type { Metadata } from "next"
-import { Geist_Mono, Be_Vietnam_Pro } from "next/font/google"
-import "./globals.css"
-import { cn } from "@/lib/utils"
-import { Providers } from "@/providers/providers"
+import type { Metadata } from "next";
+import { Geist_Mono, Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
+import "./globals.css";
+import { cn } from "@/lib/utils";
+import { Providers } from "@/providers/providers";
 
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
-})
+});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-})
+});
+
+const dashboardSerif = Noto_Serif({
+  variable: "--font-dashboard-serif",
+  subsets: ["latin", "vietnamese"],
+  weight: ["600", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "EduGrade — Hệ thống quản lý trung tâm giáo dục",
   description: "EduGrade Education Center Management Platform",
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html
       lang="vi"
-      className={cn("h-full antialiased", geistMono.variable, beVietnamPro.variable)}
+      className={cn(
+        "h-full antialiased",
+        geistMono.variable,
+        beVietnamPro.variable,
+        dashboardSerif.variable,
+      )}
     >
       {/* Browser extensions can add attributes to body before React hydrates. */}
       <body
@@ -38,5 +50,5 @@ export default function RootLayout({
         <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }
