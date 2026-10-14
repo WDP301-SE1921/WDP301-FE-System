@@ -15,10 +15,12 @@ import {
   displayMoment,
 } from "@/features/academic/components/live-fields";
 import { dateRangeSchema } from "@/lib/validators/web-workflows";
+import { AuditChangeDetails } from "@/features/system/components/audit-change-details";
 
 const PAGE_SIZE = 20;
 const ALL = "all";
 const ACTION_TEXT: Record<string, string> = {
+  DEMO_SEED_CREATED: "Tạo dữ liệu demo",
   REGISTRATION_CONFIRM_PAYMENT: "Xác nhận thanh toán",
   REGISTRATION_CANCEL_DRAFT: "Hủy đăng ký nháp",
   ENROLLMENT_END: "Kết thúc môn học",
@@ -28,6 +30,8 @@ const ACTION_TEXT: Record<string, string> = {
   MAKEUP_RESCHEDULE: "Đổi buổi học bù",
   CLASS_TEACHER_ASSIGNED: "Đổi giáo viên phụ trách",
   SESSION_SUBSTITUTE_ASSIGNED: "Xếp giáo viên dạy thay",
+  CLASS_SCHEDULE_CONFIRMED: "Xác nhận lịch lớp",
+  CLASS_SCHEDULE_UNLOCKED: "Mở khóa lịch lớp",
   CLASS_SESSIONS_GENERATED: "Sinh buổi học",
   CLASS_SESSION_RESCHEDULED: "Đổi giờ buổi học",
   CLASS_SESSION_CANCELLED: "Hủy buổi học",
@@ -37,15 +41,20 @@ const ACTION_TEXT: Record<string, string> = {
   PROGRAM_DELETE: "Xóa khóa học",
   PROFILE_UPDATED: "Cập nhật hồ sơ",
   PASSWORD_CHANGED: "Đổi mật khẩu",
+  PASSWORD_RESET: "Đặt lại mật khẩu",
+  LEAVE_APPROVED: "Duyệt đơn nghỉ",
   PARENT_ACCOUNT_UPDATE: "Cập nhật tài khoản phụ huynh",
   STAFF_ACCOUNT_CREATE: "Tạo tài khoản nhân viên",
   STAFF_ACCOUNT_UPDATE: "Cập nhật tài khoản nhân viên",
   TEACHER_ACCOUNT_CREATE: "Tạo tài khoản giáo viên",
   TEACHER_ACCOUNT_UPDATE: "Cập nhật tài khoản giáo viên",
+  MANAGER_ACCOUNT_CREATE: "Tạo tài khoản quản lý",
+  MANAGER_ACCOUNT_UPDATE: "Cập nhật tài khoản quản lý",
   ACCOUNT_INVITATION_APPROVED: "Duyệt tài khoản được mời",
   ACCOUNT_INVITATION_REJECTED: "Từ chối tài khoản được mời",
 };
 const ENTITY_TEXT: Record<string, string> = {
+  DemoDataset: "Dữ liệu demo",
   RegistrationOrder: "Đăng ký",
   Enrollment: "Ghi danh",
   StudentProfile: "Hồ sơ học sinh",
@@ -165,12 +174,18 @@ export function LiveAuditLogView() {
           {query.data?.items.map((log) => (
             <Card key={log.id}>
               <CardHeader>
-                <CardTitle>{ACTION_TEXT[log.action] ?? log.action}</CardTitle>
+                <CardTitle>
+                  {Object.hasOwn(ACTION_TEXT, log.action)
+                    ? ACTION_TEXT[log.action]
+                    : "Cập nhật thông tin"}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">
-                    {ENTITY_TEXT[log.entityType] ?? log.entityType}
+                    {Object.hasOwn(ENTITY_TEXT, log.entityType)
+                      ? ENTITY_TEXT[log.entityType]
+                      : "Đối tượng khác"}
                   </Badge>
                   <Badge variant="secondary">
                     {displayMoment(log.createdAt)}
@@ -185,28 +200,10 @@ export function LiveAuditLogView() {
                 <p className="break-all text-muted-foreground">
                   Mã đối tượng: {log.entityId}
                 </p>
-                {(log.beforeData != null || log.afterData != null) && (
-                  <details className="rounded-xl border border-border p-3">
-                    <summary className="cursor-pointer">
-                      Chi tiết thay đổi
-                    </summary>
-                    <div className="mt-2 grid gap-3 md:grid-cols-2">
-                      {[
-                        ["Trước", log.beforeData],
-                        ["Sau", log.afterData],
-                      ].map(([label, value]) => (
-                        <div key={String(label)}>
-                          <p className="font-medium">{String(label)}</p>
-                          <pre className="overflow-x-auto whitespace-pre-wrap break-all text-xs">
-                            {value == null
-                              ? "—"
-                              : JSON.stringify(value, null, 2)}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                )}
+                <AuditChangeDetails
+                  before={log.beforeData}
+                  after={log.afterData}
+                />
               </CardContent>
             </Card>
           ))}
