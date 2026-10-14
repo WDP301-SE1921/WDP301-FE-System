@@ -17,58 +17,15 @@ import {
 import { dateRangeSchema } from "@/lib/validators/web-workflows";
 import { AuditChangeDetails } from "@/features/system/components/audit-change-details";
 
+import {
+  AUDIT_ACTION_LABELS,
+  AUDIT_ENTITY_LABELS,
+  auditActionLabel,
+  auditEntityLabel,
+} from "@/constants/audit-events";
+
 const PAGE_SIZE = 20;
 const ALL = "all";
-const ACTION_TEXT: Record<string, string> = {
-  DEMO_SEED_CREATED: "Tạo dữ liệu demo",
-  REGISTRATION_CONFIRM_PAYMENT: "Xác nhận thanh toán",
-  REGISTRATION_CANCEL_DRAFT: "Hủy đăng ký nháp",
-  ENROLLMENT_END: "Kết thúc môn học",
-  STUDENT_END_STUDY: "Nghỉ hẳn",
-  STUDENT_REACTIVATE: "Cho học lại",
-  LEAVE_END_EARLY: "Kết thúc nghỉ dài hạn sớm",
-  MAKEUP_RESCHEDULE: "Đổi buổi học bù",
-  CLASS_TEACHER_ASSIGNED: "Đổi giáo viên phụ trách",
-  SESSION_SUBSTITUTE_ASSIGNED: "Xếp giáo viên dạy thay",
-  CLASS_SCHEDULE_CONFIRMED: "Xác nhận lịch lớp",
-  CLASS_SCHEDULE_UNLOCKED: "Mở khóa lịch lớp",
-  CLASS_SESSIONS_GENERATED: "Sinh buổi học",
-  CLASS_SESSION_RESCHEDULED: "Đổi giờ buổi học",
-  CLASS_SESSION_CANCELLED: "Hủy buổi học",
-  CURRICULUM_UNIT_SUBMITTED: "Gửi duyệt giáo trình",
-  CURRICULUM_UNIT_CHANGES_REQUESTED: "Yêu cầu sửa giáo trình",
-  CURRICULUM_UNIT_APPROVED: "Duyệt giáo trình",
-  PROGRAM_DELETE: "Xóa khóa học",
-  PROFILE_UPDATED: "Cập nhật hồ sơ",
-  PASSWORD_CHANGED: "Đổi mật khẩu",
-  PASSWORD_RESET: "Đặt lại mật khẩu",
-  LEAVE_APPROVED: "Duyệt đơn nghỉ",
-  PARENT_ACCOUNT_UPDATE: "Cập nhật tài khoản phụ huynh",
-  STAFF_ACCOUNT_CREATE: "Tạo tài khoản nhân viên",
-  STAFF_ACCOUNT_UPDATE: "Cập nhật tài khoản nhân viên",
-  TEACHER_ACCOUNT_CREATE: "Tạo tài khoản giáo viên",
-  TEACHER_ACCOUNT_UPDATE: "Cập nhật tài khoản giáo viên",
-  MANAGER_ACCOUNT_CREATE: "Tạo tài khoản quản lý",
-  MANAGER_ACCOUNT_UPDATE: "Cập nhật tài khoản quản lý",
-  ACCOUNT_INVITATION_APPROVED: "Duyệt tài khoản được mời",
-  ACCOUNT_INVITATION_REJECTED: "Từ chối tài khoản được mời",
-};
-const ENTITY_TEXT: Record<string, string> = {
-  DemoDataset: "Dữ liệu demo",
-  RegistrationOrder: "Đăng ký",
-  Enrollment: "Ghi danh",
-  StudentProfile: "Hồ sơ học sinh",
-  LeaveRequest: "Đơn nghỉ",
-  MakeupBooking: "Học bù",
-  Class: "Lớp",
-  ClassSession: "Buổi học",
-  ScheduleGeneration: "Đợt sinh lịch",
-  CurriculumUnit: "Giáo trình",
-  Program: "Khóa học",
-  User: "Tài khoản",
-  AccountInvitation: "Lời mời",
-};
-
 /** SRS §5.14: history of teacher changes, substitutes, makeups, leaves, payment, … (BE audit log). */
 export function LiveAuditLogView() {
   const [{ page, entityType, action, fromDate, toDate }, setFilters] =
@@ -115,7 +72,7 @@ export function LiveAuditLogView() {
           value={entityType}
           options={[
             { value: ALL, label: "Tất cả" },
-            ...Object.entries(ENTITY_TEXT).map(([value, label]) => ({
+            ...Object.entries(AUDIT_ENTITY_LABELS).map(([value, label]) => ({
               value,
               label,
             })),
@@ -127,7 +84,7 @@ export function LiveAuditLogView() {
           value={action}
           options={[
             { value: ALL, label: "Tất cả" },
-            ...Object.entries(ACTION_TEXT).map(([value, label]) => ({
+            ...Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => ({
               value,
               label,
             })),
@@ -174,18 +131,12 @@ export function LiveAuditLogView() {
           {query.data?.items.map((log) => (
             <Card key={log.id}>
               <CardHeader>
-                <CardTitle>
-                  {Object.hasOwn(ACTION_TEXT, log.action)
-                    ? ACTION_TEXT[log.action]
-                    : "Cập nhật thông tin"}
-                </CardTitle>
+                <CardTitle>{auditActionLabel(log.action)}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">
-                    {Object.hasOwn(ENTITY_TEXT, log.entityType)
-                      ? ENTITY_TEXT[log.entityType]
-                      : "Đối tượng khác"}
+                    {auditEntityLabel(log.entityType)}
                   </Badge>
                   <Badge variant="secondary">
                     {displayMoment(log.createdAt)}

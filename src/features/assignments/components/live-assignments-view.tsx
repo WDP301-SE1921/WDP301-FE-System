@@ -34,6 +34,7 @@ import type {
   EnrollmentRecord,
   SubmissionRecord,
 } from "@/types/academic-workflows";
+import { TEST_TYPE_TEXT } from "../assessment-labels";
 const publishSchema = recipientsSchema.extend({
   confirmed: confirmationSchema.shape.confirmed,
 });
@@ -49,7 +50,7 @@ export function LiveAssignmentsView() {
     <PageContainer>
       <PageHeader title="Bài tập và đề kiểm tra" />
       <Button render={<Link href="/teacher/assignments/new" />}>
-        Tạo bài tập
+        Tạo bài tập / bài kiểm tra
       </Button>
       <AsyncBoundary
         isLoading={assignments.isPending}
@@ -66,6 +67,18 @@ export function LiveAssignmentsView() {
                 <CardTitle>{assignment.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <Badge variant="outline">
+                  {assignment.kind === "TEST"
+                    ? assignment.testType
+                      ? TEST_TYPE_TEXT[assignment.testType]
+                      : "Bài kiểm tra"
+                    : "Bài tập"}
+                </Badge>
+                {assignment.session && (
+                  <p className="text-sm text-muted-foreground">
+                    Buổi kiểm tra: {displayMoment(assignment.session.startsAt)}
+                  </p>
+                )}
                 <p>Hạn nộp: {displayMoment(assignment.dueAt)}</p>
                 <Badge>{STATUS_TEXT[assignment.status]}</Badge>
                 <div className="flex flex-wrap gap-3">

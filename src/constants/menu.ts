@@ -96,7 +96,7 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
         area: AREA.SCHEDULE,
       },
       {
-        title: "Buổi học",
+        title: "Xếp lịch & buổi học",
         href: ROUTES.MANAGER.SESSIONS,
         iconName: "Clock01Icon",
         area: AREA.SCHEDULE,
@@ -345,6 +345,12 @@ export const MENU_TEACHER: MenuGroup[] = [
         area: AREA.TEACHER_PORTAL,
       },
       {
+        title: "Thẩm định giáo trình",
+        href: ROUTES.TEACHER.CURRICULUM,
+        iconName: "AssignmentsIcon",
+        area: AREA.TEACHER_PORTAL,
+      },
+      {
         title: "Điểm danh",
         href: ROUTES.TEACHER.ATTENDANCE,
         iconName: "CheckListIcon",
@@ -415,10 +421,34 @@ export function getNavMenu(role: WebRole): MenuGroup[] {
       ...group,
       items: group.items.filter(
         (item) =>
-          canAccessArea(role, item.area) && canAccessPath(role, item.href),
+          canAccessArea(role, item.area) &&
+          canAccessPath(role, item.href) &&
+          !(
+            role === ROLES.CURRICULUM_DESIGNER &&
+            item.href === ROUTES.MANAGER.CATALOG
+          ),
       ),
     }))
     .filter((group) => group.items.length > 0);
+}
+
+/** Chỉ menu có đường dẫn khớp dài nhất được đánh dấu đang mở. */
+export function getActiveMenuHref(
+  pathname: string,
+  groups: readonly MenuGroup[],
+): string | null {
+  let activeHref: string | null = null;
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (
+        (pathname === item.href || pathname.startsWith(`${item.href}/`)) &&
+        (!activeHref || item.href.length > activeHref.length)
+      ) {
+        activeHref = item.href;
+      }
+    }
+  }
+  return activeHref;
 }
 
 export interface QuickCreateItem {

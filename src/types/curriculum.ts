@@ -20,11 +20,21 @@ export interface CurriculumUnit {
   status: "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "ARCHIVED";
   revision: number;
   reviewNote: string | null;
+  reviewerTeacherId: string | null;
+  reviewerTeacher: CurriculumReviewer | null;
+  technicalReviewedAt: string | null;
+  technicalReviewNote: string | null;
   submittedAt?: string | null;
   reviewedAt?: string | null;
   program?: { id: string; name: string; subject: string; grade: number };
   track: { id: string; grade: number; subject: string; subjectKey: string };
   _count?: { lessons: number };
+}
+
+export interface CurriculumReviewer {
+  id: string;
+  displayName: string | null;
+  email: string;
 }
 
 export interface CurriculumUnitDetail extends CurriculumUnit {

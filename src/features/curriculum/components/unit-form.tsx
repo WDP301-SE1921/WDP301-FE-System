@@ -25,15 +25,21 @@ import { registrationApi } from "@/features/registration-flow/api";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { useCurriculumMutation } from "../hooks/use-curriculum";
+import {
+  useCurriculumFormState,
+  type CurriculumFormState,
+} from "../hooks/use-curriculum-form";
 
 export function UnitForm({
   unit,
   programId,
   onSaved,
+  onStateChange,
 }: {
   unit?: CurriculumUnit;
   programId?: string;
   onSaved: (id: string) => void;
+  onStateChange?: (state: CurriculumFormState) => void;
 }) {
   const programs = useQuery({
     queryKey: ["registration-programs"],
@@ -56,9 +62,11 @@ export function UnitForm({
     onSaved(result.id);
     return result;
   });
+  useCurriculumFormState(form.formState.isDirty, save.isPending, onStateChange);
   return (
     <form
       className="space-y-4"
+      noValidate
       onSubmit={form.handleSubmit((input) => save.mutate(input))}
     >
       <div className="space-y-2">
@@ -96,20 +104,47 @@ export function UnitForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="unit-title">Tên học phần</Label>
-        <Input id="unit-title" {...form.register("title")} />
-        <FieldError message={form.formState.errors.title?.message} />
+        <Label htmlFor="unit-title">Tên giáo trình / học kỳ</Label>
+        <Input
+          id="unit-title"
+          placeholder="Ví dụ: Toán 8 – Học kỳ II năm học 2026–2027"
+          disabled={save.isPending}
+          aria-invalid={!!form.formState.errors.title}
+          aria-describedby="unit-title-error"
+          {...form.register("title")}
+        />
+        <div id="unit-title-error">
+          <FieldError message={form.formState.errors.title?.message} />
+        </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="unit-from">Từ ngày</Label>
-          <Input id="unit-from" type="date" {...form.register("fromDate")} />
-          <FieldError message={form.formState.errors.fromDate?.message} />
+          <Input
+            id="unit-from"
+            type="date"
+            disabled={save.isPending}
+            aria-invalid={!!form.formState.errors.fromDate}
+            aria-describedby="unit-from-error"
+            {...form.register("fromDate")}
+          />
+          <div id="unit-from-error">
+            <FieldError message={form.formState.errors.fromDate?.message} />
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="unit-to">Đến ngày</Label>
-          <Input id="unit-to" type="date" {...form.register("toDate")} />
-          <FieldError message={form.formState.errors.toDate?.message} />
+          <Input
+            id="unit-to"
+            type="date"
+            disabled={save.isPending}
+            aria-invalid={!!form.formState.errors.toDate}
+            aria-describedby="unit-to-error"
+            {...form.register("toDate")}
+          />
+          <div id="unit-to-error">
+            <FieldError message={form.formState.errors.toDate?.message} />
+          </div>
         </div>
       </div>
       <ApiFeedback error={save.error} />

@@ -20,6 +20,7 @@ import { ApiForm } from "@/components/shared/forms/api-form";
 import { displayMoment } from "@/features/academic/components/live-fields";
 import { confirmationSchema } from "@/lib/validators/web-workflows";
 import { ClassAttendanceSummary } from "./class-attendance-summary";
+import { calendarDateLabel } from "@/lib/calendar-date";
 export function TeacherClassDetailView({ classId }: { classId: string }) {
   const [page, setPage] = useQueryState(
     "rosterPage",
@@ -210,14 +211,13 @@ export function TeacherClassDetailView({ classId }: { classId: string }) {
             {units.data?.map((u) => (
               <Card key={u.id}>
                 <CardHeader>
-                  <CardTitle>
-                    {u.title} · Phiên bản {u.version}
-                  </CardTitle>
+                  <CardTitle>{u.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <StatusBadge category="curriculum" status={u.status} />
                   <p>
-                    {u.fromDate.slice(0, 10)} → {u.toDate.slice(0, 10)}
+                    {calendarDateLabel(u.fromDate.slice(0, 10))} –{" "}
+                    {calendarDateLabel(u.toDate.slice(0, 10))}
                   </p>
                   <Button
                     variant="outline"
@@ -235,22 +235,21 @@ export function TeacherClassDetailView({ classId }: { classId: string }) {
                       onRetry={() => void unit.refetch()}
                     >
                       <div className="mt-4 space-y-3">
-                        {unit.data?.lessons.map((lesson) => (
-                          <div
-                            key={lesson.id}
-                            className="rounded-xl border border-border p-3"
-                          >
-                            <p className="font-medium">
-                              {lesson.kind === "MONTHLY_TEST"
-                                ? "Kiểm tra " + lesson.monthKey
-                                : "Bài " + lesson.sequence}
-                              : {lesson.title}
-                            </p>
-                            <p className="mt-2 whitespace-pre-wrap text-sm">
-                              {lesson.content}
-                            </p>
-                          </div>
-                        ))}
+                        {unit.data?.lessons
+                          .filter((lesson) => lesson.kind === "LESSON")
+                          .map((lesson) => (
+                            <div
+                              key={lesson.id}
+                              className="rounded-xl border border-border p-3"
+                            >
+                              <p className="font-medium">
+                                {"Bài " + lesson.sequence}: {lesson.title}
+                              </p>
+                              <p className="mt-2 whitespace-pre-wrap text-sm">
+                                {lesson.content}
+                              </p>
+                            </div>
+                          ))}
                       </div>
                     </AsyncBoundary>
                   )}

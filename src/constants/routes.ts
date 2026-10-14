@@ -95,6 +95,8 @@ export const ROUTES = {
 
     SCHEDULE: "/teacher/schedule",
     CLASSES: "/teacher/classes",
+    CURRICULUM: "/teacher/curriculum",
+    CURRICULUM_UNIT: (id: string) => `/teacher/curriculum/${id}`,
     CLASS_DETAIL: (id: string) => `/teacher/classes/${id}`,
     ATTENDANCE: "/teacher/attendance",
     ATTENDANCE_SESSION: (id: string) => `/teacher/attendance/${id}`,

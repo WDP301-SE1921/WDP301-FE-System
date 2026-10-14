@@ -147,6 +147,11 @@ const rules: {
   { method: "PATCH", path: /^academic\/assignments\/[^/]+$/, roles: teacher },
   {
     method: "POST",
+    path: /^academic\/assignments\/import-preview$/,
+    roles: teacher,
+  },
+  {
+    method: "POST",
     path: /^academic\/submissions\/[^/]+\/(grades|grade-objective|grade-ai)$/,
     roles: teacher,
   },
@@ -261,8 +266,18 @@ const rules: {
     roles: contentReaders,
   },
   {
+    method: "GET",
+    path: /^academic\/curriculum-units\/[^/]+\/reviewers$/,
+    roles: [...manager, ...designer],
+  },
+  {
     method: "POST",
-    path: /^academic\/curriculum-units(?:\/[^/]+\/(lessons|monthly-tests|submit|revisions|import-preview|import-commit))?$/,
+    path: /^academic\/curriculum-units\/[^/]+\/technical-review$/,
+    roles: teacher,
+  },
+  {
+    method: "POST",
+    path: /^academic\/curriculum-units(?:\/[^/]+\/(lessons|submit|revisions|import-preview|import-commit))?$/,
     roles: designer,
   },
   {

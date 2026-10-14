@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { curriculumApi } from "../api";
 import { sessionTime } from "../session-format";
+import { calendarDateLabel } from "@/lib/calendar-date";
 
 export function GenerationHistory({ classId }: { classId: string }) {
   const [id, setId] = useQueryState(
@@ -43,12 +44,10 @@ export function GenerationHistory({ classId }: { classId: string }) {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3"
             >
               <div>
-                <p className="font-medium">
-                  {row.unit?.title ?? "Học phần"} · Phiên bản{" "}
-                  {row.unit?.version}
-                </p>
+                <p className="font-medium">{row.unit?.title ?? "Giáo trình"}</p>
                 <p className="text-sm text-muted-foreground">
-                  {row.fromDate.slice(0, 10)} → {row.toDate.slice(0, 10)} ·{" "}
+                  {calendarDateLabel(row.fromDate.slice(0, 10))} –{" "}
+                  {calendarDateLabel(row.toDate.slice(0, 10))} ·{" "}
                   {row._count?.sessions ?? 0} buổi
                 </p>
               </div>

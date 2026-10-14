@@ -2,11 +2,15 @@ import { apiRequest } from "@/lib/api/client";
 import {
   curriculumUnitSchema,
   curriculumLessonSchema,
-  monthlyTestSchema,
+  curriculumSubmitSchema,
+  curriculumTechnicalReviewSchema,
+  curriculumRevisionSchema,
   scheduleRangeSchema,
   type CurriculumUnitInput,
   type CurriculumLessonInput,
-  type MonthlyTestInput,
+  type CurriculumSubmitInput,
+  type CurriculumTechnicalReviewInput,
+  type CurriculumRevisionInput,
   type ScheduleRangeInput,
   importCommitSchema,
   reviewReasonSchema,
@@ -29,6 +33,7 @@ import type {
   CurriculumFilters,
   CurriculumValidation,
   ImportPreview,
+  CurriculumReviewer,
 } from "@/types/curriculum";
 import type { PaginatedList } from "@/types/backend";
 
@@ -101,25 +106,14 @@ export const curriculumApi = {
         },
       },
     ),
-  monthlyTest: (
-    id: string,
-    input: MonthlyTestInput,
-    expectedRevision?: number,
-  ) =>
-    apiRequest<CurriculumLesson>(`${unitPath(id)}/monthly-tests`, {
-      method: "POST",
-      body: {
-        ...monthlyTestSchema.parse(input),
-        ...(expectedRevision === undefined ? {} : { expectedRevision }),
-      },
-    }),
   approve: (id: string) =>
     apiRequest<CurriculumUnitDetail>(`${unitPath(id)}/approve`, {
       method: "POST",
     }),
-  revise: (id: string) =>
+  revise: (id: string, input: CurriculumRevisionInput) =>
     apiRequest<CurriculumUnitDetail>(`${unitPath(id)}/revisions`, {
       method: "POST",
+      body: curriculumRevisionSchema.parse(input),
     }),
   preview: (classId: string, input: ScheduleRangeInput) =>
     apiRequest<SessionPreview>(
@@ -139,9 +133,17 @@ export const curriculumApi = {
     apiRequest<CurriculumValidation>(`${unitPath(id)}/validation`, {
       method: "POST",
     }),
-  submit: (id: string) =>
+  reviewers: (id: string, signal?: AbortSignal) =>
+    apiRequest<CurriculumReviewer[]>(`${unitPath(id)}/reviewers`, { signal }),
+  submit: (id: string, input: CurriculumSubmitInput) =>
     apiRequest<CurriculumUnitDetail>(`${unitPath(id)}/submit`, {
       method: "POST",
+      body: curriculumSubmitSchema.parse(input),
+    }),
+  technicalReview: (id: string, input: CurriculumTechnicalReviewInput) =>
+    apiRequest<CurriculumUnitDetail>(`${unitPath(id)}/technical-review`, {
+      method: "POST",
+      body: curriculumTechnicalReviewSchema.parse(input),
     }),
   requestChanges: (id: string, reason: string) =>
     apiRequest<CurriculumUnit>(`${unitPath(id)}/request-changes`, {

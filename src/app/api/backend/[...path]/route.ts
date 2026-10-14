@@ -191,7 +191,31 @@ async function handle(
         "VALIDATION_ERROR",
         "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
       );
-    if (path.endsWith("/import-preview")) {
+    if (path === "academic/assignments/import-preview") {
+      const data = await request.formData();
+      const file = data.get("file");
+      const classId = data.get("classId");
+      if (
+        !(file instanceof File) ||
+        !file.size ||
+        file.size > 5 * 1024 * 1024 ||
+        !/\.(csv|docx|pdf)$/i.test(file.name) ||
+        typeof classId !== "string" ||
+        !classId.trim() ||
+        classId.length > 191 ||
+        data.getAll("file").length !== 1 ||
+        data.getAll("classId").length !== 1 ||
+        [...data.keys()].some(
+          (field) => field !== "file" && field !== "classId",
+        )
+      )
+        throw backendError(
+          400,
+          "VALIDATION_ERROR",
+          "Chọn lớp và một file CSV, DOCX hoặc PDF tối đa 5 MiB.",
+        );
+      init.body = data;
+    } else if (path.endsWith("/import-preview")) {
       const data = await request.formData();
       const file = data.get("file");
       const mode = data.get("mode");

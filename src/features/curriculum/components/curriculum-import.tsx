@@ -46,12 +46,18 @@ import {
   uncertainAcademicFailure,
   type AcademicAttempt,
 } from "../operation-storage";
+import {
+  useCurriculumFormState,
+  type CurriculumFormState,
+} from "../hooks/use-curriculum-form";
 export function CurriculumImport({
   unit,
   userId,
+  onStateChange,
 }: {
   unit: CurriculumUnitDetail;
   userId: string;
+  onStateChange?: (state: CurriculumFormState) => void;
 }) {
   const now = useCurrentTime();
   const client = useQueryClient(),
@@ -96,6 +102,7 @@ export function CurriculumImport({
       clearAcademicAttempt(userId, target);
       setAttempt(null);
       preview.reset();
+      form.reset({ mode: "APPEND" });
       void client.invalidateQueries({ queryKey: ["curriculum"] });
     },
     onError: (error) => {
@@ -108,6 +115,11 @@ export function CurriculumImport({
   });
   const locked =
     !!attempt || preview.isPending || commit.isPending || !!restored.error;
+  useCurriculumFormState(
+    form.formState.isDirty || !!preview.data || !!attempt,
+    preview.isPending || commit.isPending,
+    onStateChange,
+  );
   const ready =
     !!preview.data &&
     !preview.data.summary.invalidRows &&
@@ -117,9 +129,7 @@ export function CurriculumImport({
     const url = URL.createObjectURL(
       new Blob(
         [
-          "\uFEFFkind,sequence,title,content,monthKey\nLESSON,1,Bài học 1,Nội dung bài 1,\nMONTHLY_TEST,,Kiểm tra tháng,Nội dung kiểm tra," +
-            unit.fromDate.slice(0, 7) +
-            "\n",
+          "\uFEFFkind,sequence,title,content,monthKey\nLESSON,1,Bài học 1,Nội dung bài 1,\nLESSON,2,Bài học 2,Nội dung bài 2,\n",
         ],
         { type: "text/csv;charset=utf-8" },
       ),
@@ -133,7 +143,7 @@ export function CurriculumImport({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Nhập nội dung từ CSV</CardTitle>
+        <CardTitle>Nhập bài học từ CSV</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button type="button" variant="outline" onClick={download}>
@@ -141,6 +151,7 @@ export function CurriculumImport({
         </Button>
         <form
           className="space-y-3"
+          noValidate
           onSubmit={form.handleSubmit((input) => preview.mutate(input))}
         >
           <Label htmlFor="curriculum-csv">
@@ -151,9 +162,17 @@ export function CurriculumImport({
             type="file"
             accept=".csv,text/csv"
             disabled={locked}
+            aria-invalid={!!form.formState.errors.file}
+            aria-describedby="curriculum-csv-help"
             {...form.register("file", { onChange: () => preview.reset() })}
           />
-          <FieldError message={form.formState.errors.file?.message} />
+          <div id="curriculum-csv-help">
+            <FieldError message={form.formState.errors.file?.message} />
+            <p className="text-xs text-muted-foreground">
+              CSV chỉ nhập bài học. Giáo viên tạo bài kiểm tra riêng theo buổi
+              học.
+            </p>
+          </div>
           <Controller
             control={form.control}
             name="mode"
@@ -163,7 +182,7 @@ export function CurriculumImport({
                 disabled={locked}
                 items={[
                   { value: "APPEND", label: "Thêm vào nội dung hiện có" },
-                  { value: "REPLACE", label: "Thay toàn bộ bài và kiểm tra" },
+                  { value: "REPLACE", label: "Thay toàn bộ bài học" },
                 ]}
                 onValueChange={(v) => {
                   field.onChange(v);
@@ -177,9 +196,7 @@ export function CurriculumImport({
                   <SelectItem value="APPEND">
                     Thêm vào nội dung hiện có
                   </SelectItem>
-                  <SelectItem value="REPLACE">
-                    Thay toàn bộ bài và kiểm tra
-                  </SelectItem>
+                  <SelectItem value="REPLACE">Thay toàn bộ bài học</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -232,7 +249,7 @@ export function CurriculumImport({
                         <p className="text-xs text-muted-foreground">
                           {row.kind === "LESSON"
                             ? "Bài " + row.sequence
-                            : "Kiểm tra " + row.monthKey}
+                            : "Loại nội dung không được hỗ trợ"}
                         </p>
                       </TableCell>
                       <TableCell>
@@ -242,7 +259,11 @@ export function CurriculumImport({
                                 {(
                                   {
                                     INVALID_KIND:
-                                      "Loại phải là LESSON hoặc MONTHLY_TEST.",
+                                      "Chỉ nhập bài học (LESSON). Bài kiểm tra được tạo riêng theo buổi học.",
+                                    MONTHLY_TEST_NOT_ALLOWED:
+                                      "Bài kiểm tra đã được tách khỏi giáo trình. Tạo đề kiểm tra trong phần Bài tập / Đề kiểm tra.",
+                                    TESTS_MANAGED_BY_TEACHER:
+                                      "Bài kiểm tra được giáo viên tạo riêng theo buổi học, không nhập vào giáo trình.",
                                     INVALID_TITLE:
                                       "Tên nội dung bắt buộc, tối đa 255 ký tự.",
                                     INVALID_CONTENT:
@@ -250,7 +271,7 @@ export function CurriculumImport({
                                     INVALID_SEQUENCE:
                                       "Số thứ tự bài phải liên tục theo chế độ nhập.",
                                     INVALID_MONTH:
-                                      "Tháng kiểm tra phải nằm trong học phần và không trùng.",
+                                      "Bài học không dùng trường tháng kiểm tra.",
                                   } as Record<string, string>
                                 )[e.code] ?? e.code}
                               </p>
@@ -286,7 +307,7 @@ export function CurriculumImport({
           open={confirm}
           onOpenChange={setConfirm}
           title="Thay toàn bộ nội dung?"
-          description="Các bài học và bài kiểm tra hiện có sẽ được thay bằng nội dung vừa xem trước."
+          description="Các bài học trong bản nháp sẽ được thay bằng danh sách vừa xem trước."
           variant="danger"
           isLoading={commit.isPending}
           onConfirm={async () => {

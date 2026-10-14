@@ -3,6 +3,27 @@ import { emitSessionExpired } from "@/lib/auth-events";
 import type { ApiEnvelope } from "@/types/backend";
 
 const ERROR_TEXT: Record<string, string> = {
+  UNIT_REVISION_REQUIRED: "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
+  UNIT_APPROVAL_REQUIRED: "Giáo trình cần được giáo viên duyệt chuyên môn và Quản lý xác nhận trước khi sử dụng bài học.",
+  INVALID_ASSESSMENT_TYPE:
+    "Bài kiểm tra cần chọn loại kiểm tra và buổi học; bài tập không dùng loại kiểm tra.",
+  INVALID_ASSESSMENT_SESSION:
+    "Chọn buổi học thuộc đúng lớp, được phân công cho bạn, còn lên lịch và chưa kết thúc.",
+  ASSIGNMENT_IMPORT_AI_UNAVAILABLE:
+    "Chưa cấu hình AI để đọc Word/PDF. Bạn có thể nhập CSV hoặc soạn câu hỏi thủ công.",
+  ASSIGNMENT_IMPORT_AI_FAILED:
+    "Chưa trích được câu hỏi từ file. Thử lại hoặc dùng CSV mẫu.",
+  INVALID_CURRICULUM_REVIEWER:
+    "Chọn giáo viên đang phụ trách lớp thuộc khóa học này để duyệt chuyên môn.",
+  UNIT_NOT_PENDING_TECHNICAL_REVIEW:
+    "Giáo trình không còn chờ duyệt chuyên môn. Tải lại để xem trạng thái mới.",
+  REVIEW_NOTE_REQUIRED: "Nhập nội dung cần sửa trước khi trả lại giáo trình.",
+  TECHNICAL_REVIEW_REQUIRED:
+    "Giáo viên phụ trách cần duyệt chuyên môn trước khi Quản lý xác nhận sử dụng.",
+  FUTURE_CURRICULUM_PERIOD_REQUIRED:
+    "Bản sửa cần áp dụng cho kỳ tiếp theo, sau kỳ hiện tại và sau hôm nay.",
+  TESTS_MANAGED_BY_TEACHER:
+    "Bài kiểm tra được tạo riêng trong phần bài tập của giáo viên.",
   RESOURCE_CONFLICT:
     "Dữ liệu đã thay đổi hoặc thao tác đã tồn tại. Tải lại để kiểm tra trước khi thực hiện lại.",
   SESSION_NOT_FINISHED: "Chỉ chốt điểm danh sau khi buổi học kết thúc.",
@@ -225,7 +246,8 @@ const ERROR_TEXT: Record<string, string> = {
     "Phòng đã có buổi khác trùng giờ. Chọn phòng hoặc giờ khác.",
   ROSTER_MAKEUP_CONFLICT:
     "Học viên đang có lịch học bù liên quan đến buổi này. Xử lý lịch học bù trước.",
-  GENERATION_NOT_FOUND: "Không tìm thấy đợt sinh lịch. Tải lại lịch sử sinh lịch.",
+  GENERATION_NOT_FOUND:
+    "Không tìm thấy đợt sinh lịch. Tải lại lịch sử sinh lịch.",
   INVALID_DESIGNER:
     "Người soạn phải là tài khoản Thiết kế giáo trình đang hoạt động.",
   INVALID_LESSON: "Bài học không hợp lệ hoặc không thuộc khóa học đã chọn.",
@@ -253,7 +275,8 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_AI_REPORT:
     "AI trả về nhận xét báo cáo không hợp lệ. Tạo lại báo cáo sau ít phút.",
   INVALID_FORMAT: "Chỉ tải báo cáo dạng PDF hoặc XLSX.",
-  INVALID_REPORT_SNAPSHOT: "Dữ liệu báo cáo đã lưu không đọc được. Tạo lại báo cáo.",
+  INVALID_REPORT_SNAPSHOT:
+    "Dữ liệu báo cáo đã lưu không đọc được. Tạo lại báo cáo.",
   REPORTS_NOT_FOUND: "Không tìm thấy báo cáo. Tải lại danh sách báo cáo.",
   REPORT_TOO_LARGE: "Báo cáo quá lớn. Thu hẹp khoảng ngày hoặc số học sinh.",
   INVALID_ANALYTICS_RANGE: "Khoảng ngày thống kê không hợp lệ.",

@@ -89,6 +89,15 @@ export interface AssignmentSummary {
   dueAt: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   maxAttempts: number;
+  kind: "HOMEWORK" | "TEST";
+  testType: "FIFTEEN_MINUTES" | "ONE_PERIOD" | "MIDTERM" | "FINAL" | null;
+  sessionId: string | null;
+  session?: {
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    status: string;
+  } | null;
 }
 export interface AssignmentQuestion {
   id: string;
@@ -103,6 +112,15 @@ export interface AssignmentDetail extends AssignmentSummary {
   instructions: string;
   recipients: { id: string; enrollmentId: string }[];
   questions: AssignmentQuestion[];
+}
+export interface AssignmentImportPreview {
+  fileName: string;
+  format: "CSV" | "DOCX" | "PDF";
+  title?: string;
+  instructions?: string;
+  questions: Omit<AssignmentQuestion, "id">[];
+  warnings: string[];
+  usedAi: boolean;
 }
 export interface GradeScore {
   questionId: string;

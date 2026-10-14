@@ -3,6 +3,7 @@ const FIELD_TEXT: Record<string, string> = {
   version: "Phiên bản",
   referenceDate: "Ngày tham chiếu",
   teacherId: "Mã giáo viên",
+  reviewerTeacherId: "Mã giáo viên duyệt chuyên môn",
   effectiveAt: "Thời điểm có hiệu lực",
   affectedSessions: "Số buổi học bị ảnh hưởng",
   confirmed: "Đã xác nhận lịch",

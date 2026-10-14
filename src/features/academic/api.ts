@@ -7,6 +7,7 @@ import type {
 import type {
   AnnouncementRecord,
   AssignmentDetail,
+  AssignmentImportPreview,
   AssignmentSummary,
   AttendanceSummary,
   CurriculumFeedbackRecord,
@@ -44,6 +45,7 @@ import {
   substitutionSchema,
   transferSchema,
 } from "@/lib/validators/web-workflows";
+import { assignmentImportPreviewSchema } from "@/lib/validators/assignment-import";
 
 export function queryPath(
   path: string,
@@ -227,6 +229,23 @@ export const academicApi = {
     readArrayPages<AssignmentSummary>("academic/assignments", {}, signal),
   assignment: (id: string, signal?: AbortSignal) =>
     apiRequest<AssignmentDetail>(itemPath("assignments", id), { signal }),
+  importAssignment: async (classId: string, file: File) => {
+    const body = new FormData();
+    body.set("classId", classId);
+    body.set("file", file);
+    const preview = await apiRequest<AssignmentImportPreview>(
+      "academic/assignments/import-preview",
+      { method: "POST", body },
+    );
+    const parsed = assignmentImportPreviewSchema.safeParse(preview);
+    if (!parsed.success)
+      throw new ApiError(
+        "INVALID_API_RESPONSE",
+        "Nội dung nhập từ file không hợp lệ. Vui lòng thử lại.",
+        502,
+      );
+    return preview;
+  },
   createAssignment: (body: unknown) =>
     command<AssignmentDetail>(
       "academic/assignments",
