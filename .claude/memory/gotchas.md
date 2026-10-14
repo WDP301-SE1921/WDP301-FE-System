@@ -1,5 +1,7 @@
 # Gotchas
 
+- **Hydration/body (2026-10-14)**: thuộc tính `__processed_<uuid>__` không đến từ source FE, phù hợp với tiện ích trình duyệt sửa DOM trước hydration. Chỉ đặt `suppressHydrationWarning` tại `body` cho trường hợp này; không áp dụng rộng cho các component con. Audit snapshots phải render thành trường/danh sách dễ đọc, không in JSON trên UI; requestId vẫn giữ trong ApiError nhưng không hiển thị trên giao diện.
+
 - **Web workflow API (2026-10-10)**: single absence cần participant/roster đã được Teacher chuẩn bị; Staff không được tự POST roster. Hủy makeup không xóa participant unique key của BE, nên cùng enrollment không đặt lại được cùng target session; lọc các target từng đặt và chọn buổi khác. Parent-only upload/submission không mở trên BFF Web.
 - **Report/AI/email**: BFF phải giữ bytes và content-type/disposition khi tải PDF/XLSX; lỗi JSON có thể đến dưới dạng blob. AI proposal không tạo/công bố GradeReview; vẫn cần Teacher lưu, approve rồi publish. Lưu announcement chưa gửi email; hiển thị kết quả từng recipient từ lệnh send, không dùng success chung cho SMTP.
 - **MySQL/Chromium test local**: chỉ migrate database biệt lập và drop sau test. Nest test phải chạy với cwd của BE vì PDF tìm `assets/fonts` từ cwd. Base UI Checkbox có input ẩn cùng label; chọn `getByRole("checkbox", { name })` khi kiểm thử tương tác.
