@@ -30,7 +30,11 @@ export default function RootLayout({
       lang="vi"
       className={cn("h-full antialiased", geistMono.variable, beVietnamPro.variable)}
     >
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+      {/* Browser extensions can add attributes to body before React hydrates. */}
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col font-sans bg-background text-foreground"
+      >
         <Providers>{children}</Providers>
       </body>
     </html>
