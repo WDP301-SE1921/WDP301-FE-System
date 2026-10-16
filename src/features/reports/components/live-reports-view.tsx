@@ -18,6 +18,7 @@ import {
   displayMoment,
 } from "@/features/academic/components/live-fields";
 import { downloadReport } from "@/lib/api/client";
+const ALL_STUDENTS = "all";
 const reportFormSchema = z
   .object({
     studentId: z.string().optional(),
@@ -99,14 +100,14 @@ export function LiveReportsView() {
               <ApiForm
                 key={classId}
                 schema={reportFormSchema}
-                defaults={{ studentId: "", includeAi: false }}
+                defaults={{ studentId: ALL_STUDENTS, includeAi: false }}
                 fields={[
                   {
                     name: "studentId",
                     label: "Học sinh",
                     type: "select",
                     options: [
-                      { value: "", label: "Toàn lớp" },
+                      { value: ALL_STUDENTS, label: "Toàn lớp" },
                       ...Array.from(students, ([value, label]) => ({
                         value,
                         label,
@@ -125,7 +126,10 @@ export function LiveReportsView() {
                 onSubmit={(value) =>
                   academicApi.createReport({
                     classId,
-                    studentId: value.studentId || undefined,
+                    studentId:
+                      value.studentId === ALL_STUDENTS
+                        ? undefined
+                        : value.studentId || undefined,
                     from: new Date(
                       `${value.fromDate}T00:00:00+07:00`,
                     ).toISOString(),
