@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
+import { userFacingMessage } from "@/lib/api/error-message";
 import { academicApi } from "@/features/academic/api";
 import {
   useLiveCommand,
@@ -101,7 +102,9 @@ export function EmailDeliveriesView() {
                 <CardContent className="space-y-2 text-sm">
                   <Badge variant={status.variant}>{status.label}</Badge>
                   <p className="break-all">Người nhận: {email.recipient}</p>
-                  <p>Loại: {EVENT_TEXT[email.eventType] ?? email.eventType}</p>
+                  <p>
+                    Loại: {EVENT_TEXT[email.eventType] ?? "Email nghiệp vụ khác"}
+                  </p>
                   <p>
                     Số lần gửi: {email.attemptCount}/{email.maxAttempts}
                   </p>
@@ -112,7 +115,11 @@ export function EmailDeliveriesView() {
                   )}
                   {email.lastError && (
                     <p className="break-words text-destructive">
-                      Lỗi gần nhất: {email.lastError}
+                      Lỗi gần nhất:{" "}
+                      {userFacingMessage(
+                        email.lastError,
+                        "Chưa gửi được email. Kiểm tra địa chỉ người nhận hoặc liên hệ quản trị để kiểm tra cấu hình gửi email.",
+                      )}
                     </p>
                   )}
                   {canRetry && (

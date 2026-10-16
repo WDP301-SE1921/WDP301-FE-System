@@ -122,7 +122,7 @@ export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
             value={enrollmentId}
             options={(enrollments.data ?? []).map((item) => ({
               value: item.id,
-              label: `${item.class.name} · ${STATUS_TEXT[item.status] ?? item.status} · ${item.startDate ? displayDate(item.startDate) : ""}–${item.endDate ? displayDate(item.endDate) : ""}`,
+              label: `${item.class.name} · ${STATUS_TEXT[item.status] ?? "Chưa xác định trạng thái"} · ${item.startDate ? displayDate(item.startDate) : ""}–${item.endDate ? displayDate(item.endDate) : ""}`,
             }))}
             onChange={(value) => void setSelection({ enrollmentId: value })}
           />
@@ -395,7 +395,11 @@ function MakeupPanel({
                   <li key={item.id}>
                     {item.class.name} · {displayMoment(item.startsAt)}:{" "}
                     {item.reasonCodes
-                      .map((code) => MAKEUP_REASON_TEXT[code] ?? code)
+                      .map(
+                        (code) =>
+                          MAKEUP_REASON_TEXT[code] ??
+                          "chưa đủ điều kiện học bù, hãy tải lại để kiểm tra",
+                      )
                       .join("; ")}
                   </li>
                 ))}
@@ -453,7 +457,9 @@ function MakeupPanel({
                   className="space-y-3 rounded-2xl border border-border p-4"
                 >
                   <p>{displayMoment(booking.replacement.session.startsAt)}</p>
-                  <Badge>{STATUS_TEXT[booking.status]}</Badge>
+                  <Badge>
+                    {STATUS_TEXT[booking.status] ?? "Chưa xác định trạng thái"}
+                  </Badge>
                   {booking.status === "BOOKED" && (
                     <RescheduleMakeup booking={booking} />
                   )}
@@ -572,7 +578,9 @@ function LeaveHistory({ studentId }: { studentId: string }) {
                   {displayDate(leave.fromDate)} – {displayDate(leave.toDate)}
                 </p>
                 <p className="whitespace-pre-wrap">{leave.reason}</p>
-                <Badge>{STATUS_TEXT[leave.status]}</Badge>
+                <Badge>
+                  {STATUS_TEXT[leave.status] ?? "Chưa xác định trạng thái"}
+                </Badge>
                 {leave.decisionNote && leave.decisionNote !== leave.reason && (
                   <p>{leave.decisionNote}</p>
                 )}

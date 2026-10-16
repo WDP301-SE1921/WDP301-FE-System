@@ -7,6 +7,7 @@ const FIELD_TEXT: Record<string, string> = {
   effectiveAt: "Thời điểm có hiệu lực",
   affectedSessions: "Số buổi học bị ảnh hưởng",
   confirmed: "Đã xác nhận lịch",
+  approved: "Đã duyệt chuyên môn",
   reason: "Lý do",
   note: "Ghi chú",
   paymentId: "Mã thanh toán",
@@ -48,16 +49,54 @@ const VALUE_TEXT: Record<string, string> = {
   INVITED: "Đã gửi lời mời",
   ACCEPTED: "Đã chấp nhận",
   PENDING: "Chờ duyệt",
+  PENDING_REVIEW: "Chờ duyệt giáo trình",
   APPROVED: "Đã duyệt",
   REJECTED: "Đã từ chối",
   REVOKED: "Đã thu hồi",
   ENDED: "Đã kết thúc",
   DRAFT: "Bản nháp",
+  ARCHIVED: "Đã lưu trữ",
   PUBLISHED: "Đã công bố",
   CANCELLED: "Đã hủy",
   COMPLETED: "Hoàn tất",
   SCHEDULED: "Đã lên lịch",
 };
+
+const SNAPSHOT_LIMIT_MESSAGE =
+  "Chi tiết thay đổi quá lớn để hiển thị. Liên hệ quản trị để tra cứu.";
+const MAX_SNAPSHOT_LENGTH = 100_000;
+const MAX_SNAPSHOT_DEPTH = 12;
+const MAX_SNAPSHOT_NODES = 1_000;
+
+/** Older audit records may contain an encoded object instead of a JSON object. */
+function readSnapshot(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const text = value.trim();
+  if (
+    !(
+      (text.startsWith("{") && text.endsWith("}")) ||
+      (text.startsWith("[") && text.endsWith("]"))
+    )
+  )
+    return value;
+  if (text.length > MAX_SNAPSHOT_LENGTH) return SNAPSHOT_LIMIT_MESSAGE;
+  try {
+    const parsed: unknown = JSON.parse(text);
+    const pending = [{ value: parsed, depth: 0 }];
+    let nodes = 0;
+    while (pending.length) {
+      const current = pending.pop()!;
+      if (++nodes > MAX_SNAPSHOT_NODES || current.depth > MAX_SNAPSHOT_DEPTH)
+        return SNAPSHOT_LIMIT_MESSAGE;
+      if (current.value !== null && typeof current.value === "object")
+        for (const child of Object.values(current.value))
+          pending.push({ value: child, depth: current.depth + 1 });
+    }
+    return parsed;
+  } catch {
+    return value;
+  }
+}
 
 function displayValue(value: unknown) {
   if (value == null || value === "") return "Chưa có thông tin";
@@ -136,7 +175,7 @@ export function AuditChangeDetails({
         ].map(({ label, value }) => (
           <div key={label} className="min-w-0 space-y-2">
             <p className="font-medium">{label}</p>
-            <AuditValue value={value} />
+            <AuditValue value={readSnapshot(value)} />
           </div>
         ))}
       </div>

@@ -39,6 +39,7 @@ import {
 import type { CurriculumUnitDetail } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { importCommitFromPreview } from "../import-contract";
+import { curriculumImportDiagnosticText } from "../presentation";
 import {
   readAcademicAttempt,
   saveAcademicAttempt,
@@ -256,24 +257,7 @@ export function CurriculumImport({
                         {row.errors.length
                           ? row.errors.map((e) => (
                               <p className="text-destructive" key={e.code}>
-                                {(
-                                  {
-                                    INVALID_KIND:
-                                      "Chỉ nhập bài học (LESSON). Bài kiểm tra được tạo riêng theo buổi học.",
-                                    MONTHLY_TEST_NOT_ALLOWED:
-                                      "Bài kiểm tra đã được tách khỏi giáo trình. Tạo đề kiểm tra trong phần Bài tập / Đề kiểm tra.",
-                                    TESTS_MANAGED_BY_TEACHER:
-                                      "Bài kiểm tra được giáo viên tạo riêng theo buổi học, không nhập vào giáo trình.",
-                                    INVALID_TITLE:
-                                      "Tên nội dung bắt buộc, tối đa 255 ký tự.",
-                                    INVALID_CONTENT:
-                                      "Nội dung bắt buộc, tối đa 50.000 ký tự.",
-                                    INVALID_SEQUENCE:
-                                      "Số thứ tự bài phải liên tục theo chế độ nhập.",
-                                    INVALID_MONTH:
-                                      "Bài học không dùng trường tháng kiểm tra.",
-                                  } as Record<string, string>
-                                )[e.code] ?? e.code}
+                                {curriculumImportDiagnosticText(e)}
                               </p>
                             ))
                           : "Hợp lệ"}

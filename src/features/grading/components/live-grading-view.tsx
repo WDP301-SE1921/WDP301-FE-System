@@ -39,6 +39,7 @@ import type {
   GradeScore,
   SubmissionRecord,
 } from "@/types/academic-workflows";
+import { gradingJobFailureMessage } from "../presentation";
 const gradeFormSchema = z.object({
   scores: z
     .array(
@@ -268,7 +269,11 @@ export function LiveGradingDetail({ submissionId }: { submissionId: string }) {
               <Card>
                 <CardContent className="space-y-2 pt-6">
                   <Badge>{STATUS_TEXT[job.data.status]}</Badge>
-                  {job.data.error && <p role="alert">{job.data.error}</p>}
+                  {job.data.status === "FAILED" && (
+                    <p role="alert">
+                      {gradingJobFailureMessage(job.data.error)}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     Đề xuất không được tự lưu hoặc công bố thành điểm.
                   </p>
