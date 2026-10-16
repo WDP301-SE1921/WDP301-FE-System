@@ -1,15 +1,16 @@
-import * as React from "react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { ACTION_LABEL, ERROR_MSG } from "@/constants/messages"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Alert01Icon, RefreshIcon } from "@hugeicons/core-free-icons"
+import * as React from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { ACTION_LABEL, ERROR_MSG } from "@/constants/messages";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Alert01Icon, RefreshIcon } from "@hugeicons/core-free-icons";
+import { userFacingMessage } from "@/lib/api/error-message";
 
 export interface ErrorStateProps {
-  title?: string
-  message?: string
-  onRetry?: () => void
-  className?: string
+  title?: string;
+  message?: string;
+  onRetry?: () => void;
+  className?: string;
 }
 
 function ErrorState({
@@ -23,7 +24,7 @@ function ErrorState({
       <HugeiconsIcon icon={Alert01Icon} className="size-5" />
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <span>{message}</span>
+        <span>{userFacingMessage(message, ERROR_MSG.DEFAULT)}</span>
         {onRetry && (
           <Button
             variant="outline"
@@ -37,7 +38,7 @@ function ErrorState({
         )}
       </AlertDescription>
     </Alert>
-  )
+  );
 }
 
-export { ErrorState }
+export { ErrorState };

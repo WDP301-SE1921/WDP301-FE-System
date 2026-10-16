@@ -1,10 +1,13 @@
 import axios from "axios";
 import { emitSessionExpired } from "@/lib/auth-events";
 import type { ApiEnvelope } from "@/types/backend";
+import { userFacingMessage } from "./error-message";
 
 const ERROR_TEXT: Record<string, string> = {
-  UNIT_REVISION_REQUIRED: "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
-  UNIT_APPROVAL_REQUIRED: "Giáo trình cần được giáo viên duyệt chuyên môn và Quản lý xác nhận trước khi sử dụng bài học.",
+  UNIT_REVISION_REQUIRED:
+    "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
+  UNIT_APPROVAL_REQUIRED:
+    "Giáo trình cần được giáo viên duyệt chuyên môn và Quản lý xác nhận trước khi sử dụng bài học.",
   INVALID_ASSESSMENT_TYPE:
     "Bài kiểm tra cần chọn loại kiểm tra và buổi học; bài tập không dùng loại kiểm tra.",
   INVALID_ASSESSMENT_SESSION:
@@ -292,9 +295,11 @@ export class ApiError extends Error {
     public details?: unknown,
   ) {
     super(
-      status === 429
-        ? "Thao tác quá nhiều lần. Vui lòng thử lại sau."
-        : (ERROR_TEXT[code] ?? message),
+      userFacingMessage(
+        status === 429
+          ? "Thao tác quá nhiều lần. Vui lòng thử lại sau."
+          : (ERROR_TEXT[code] ?? message),
+      ),
     );
   }
 }
@@ -355,9 +360,7 @@ export async function apiRequest<T>(
   }
 }
 export function apiErrorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "Không thể hoàn tất thao tác. Vui lòng thử lại.";
+  return userFacingMessage(error);
 }
 export async function downloadReport(id: string, format: "xlsx" | "pdf") {
   try {

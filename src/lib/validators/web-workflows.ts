@@ -96,7 +96,7 @@ export const roomSchema = z.object({
     .number({ error: "Nhập sức chứa." })
     .int("Sức chứa là số nguyên.")
     .min(1, "Sức chứa ít nhất 1.")
-    .max(10000),
+    .max(10000, "Sức chứa tối đa 10000."),
 });
 export const roomUpdateSchema = roomSchema
   .partial()

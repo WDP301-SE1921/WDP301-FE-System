@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { useLiveCommand } from "@/features/academic/hooks/use-live-api";
+import { userFacingMessage } from "@/lib/api/error-message";
 
 export interface ApiFormField {
   name: string;
@@ -86,7 +87,10 @@ export function ApiForm({
               .map((field) => (
                 <li key={field.name}>
                   {field.label}:{" "}
-                  {String(form.formState.errors[field.name]?.message)}
+                  {userFacingMessage(
+                    form.formState.errors[field.name]?.message,
+                    "Vui lòng kiểm tra lại thông tin đã nhập.",
+                  )}
                 </li>
               ))}
           </ul>
@@ -187,7 +191,10 @@ export function ApiForm({
                   role="alert"
                   className="text-sm text-destructive"
                 >
-                  {String(message)}
+                  {userFacingMessage(
+                    message,
+                    "Vui lòng kiểm tra lại thông tin đã nhập.",
+                  )}
                 </p>
               )}
             </div>
