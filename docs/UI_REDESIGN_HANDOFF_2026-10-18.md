@@ -2,7 +2,7 @@
 
 Ngày: 18/10/2026. Phạm vi: **chỉ Web** (`WDP301-FE-System`), 4 vai trò Quản lý trung tâm, Nhân viên, Giáo viên, Thiết kế giáo trình. App Mobile phụ huynh chỉ bị nhắc ở phần cần làm thêm.
 
-Trạng thái: **mới có bản thiết kế, chưa sửa code**. Tài liệu này dùng để người khác lập trình lại giao diện theo thiết kế.
+Trạng thái (cập nhật 18/10/2026): **Đợt 1 đã code xong và đã push `dev`**. Đợt 2, 3, 4 **chưa làm**: chỉ bắt đầu khi chủ dự án yêu cầu. Việc đã làm, việc còn lại và cách nghiệm thu xem [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu). Tài liệu này dùng để người khác lập trình tiếp phần giao diện còn lại theo thiết kế.
 
 Nguyên tắc chung: **chỉ đổi giao diện và điều hướng**. Giữ nguyên API, phân quyền theo vai trò, validate (Zod), luồng duyệt giáo trình hai cấp, các bước nghỉ/học bù/thanh toán. Mọi chỗ khác nguyên tắc này được liệt kê riêng ở [mục 6](#6-những-chỗ-có-đổi-logic).
 
@@ -143,14 +143,14 @@ Không đụng: `/manager/absences/*`. Các route này chỉ vai trò `admin` v�
 
 ### 4.2 Nhân viên: 11 → 6 mục
 
-| Mục mới                 | Route                                                                                      | Gộp từ                                                                                                                                                                                                                                                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dashboard (**màn mới**) | `/staff/dashboard` (**route mới**)                                                         | —                                                                                                                                                                                                                                                                                                                                         |
-| Học sinh & phụ huynh    | `/staff/students` (`?tab=students\|parents`, `&student=<id>&action=<mode>` mở Sheet Xử lý) | `/staff/parents` → `?tab=parents`; `/staff/absences/makeup` → `?action=makeup`; `/staff/absences/swap` → `?action=swap`; `/staff/absences/change-class` → `?action=change`; `/staff/absences/long-leave` → `?action=leave`; `/staff/absences/withdraw` → `?action=withdraw` (giữ `studentId`, `enrollmentId`, `sessionId` sang query mới) |
-| Đăng ký học             | `/staff/enrollments/new`                                                                   | giữ                                                                                                                                                                                                                                                                                                                                       |
-| Đăng ký & biên lai      | `/staff/payments`                                                                          | giữ                                                                                                                                                                                                                                                                                                                                       |
-| Lớp học                 | `/staff/classes`                                                                           | giữ (không có tab Phòng vì nhân viên không có quyền `rooms`)                                                                                                                                                                                                                                                                              |
-| Lịch học                | `/staff/schedule`                                                                          | giữ                                                                                                                                                                                                                                                                                                                                       |
+| Mục mới                 | Route                                                                                        | Gộp từ                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dashboard (**màn mới**) | `/staff/dashboard` (**route mới**)                                                           | —                                                                                                                                                                                                                                                                                                                                                                                        |
+| Học sinh & phụ huynh    | `/staff/students` (`?tab=students\|parents`, `&studentId=<id>&action=<mode>` mở Sheet Xử lý) | `/staff/parents` → `?tab=parents` (giữ bộ lọc); `/staff/absences/makeup` và `/staff/absences/swap` → `?action=makeup`; `/staff/absences/change-class` → `?action=change`; `/staff/absences/long-leave` → `?action=leave`; `/staff/absences/withdraw` → `?action=withdraw` (giữ `studentId`, `enrollmentId`, `sessionId`; không có `studentId` thì chỉ mở danh sách). **Đã làm ở Đợt 1.** |
+| Đăng ký học             | `/staff/enrollments/new`                                                                     | giữ                                                                                                                                                                                                                                                                                                                                                                                      |
+| Đăng ký & biên lai      | `/staff/payments`                                                                            | giữ                                                                                                                                                                                                                                                                                                                                                                                      |
+| Lớp học                 | `/staff/classes`                                                                             | giữ (không có tab Phòng vì nhân viên không có quyền `rooms`)                                                                                                                                                                                                                                                                                                                             |
+| Lịch học                | `/staff/schedule`                                                                            | giữ                                                                                                                                                                                                                                                                                                                                                                                      |
 
 Đề xuất (cần bạn duyệt): đổi trang chủ sau đăng nhập của nhân viên (`ROLE_HOME_ROUTE.staff`) từ `/staff/enrollments/new` sang `/staff/dashboard`.
 
@@ -214,6 +214,10 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 - Thêm: bảng học sinh (Học sinh · Phụ huynh · Lớp đang học · **Chuyên cần %** · Nghỉ/học bù · Trạng thái · **Xem** · **Xử lý**). Bấm _Xử lý_ mở Sheet gồm: ô chọn ghi danh, 6 tab (Nghỉ 1 buổi · Học bù · Đổi 1 buổi · Đổi lớp/lịch cố định · Nghỉ dài hạn · Nghỉ môn/nghỉ hẳn), dưới cùng là lịch sử nghỉ & học bù. Lọc nhanh: Chờ xếp học bù / Đang nghỉ dài hạn / Chưa có lớp.
 - Cách làm: tách `LiveStaffWorkflows` thành `StudentActionSheet` nhận `mode` từ tab (`?action=`) thay vì từ route. Các panel con giữ nguyên.
 - Đổi logic: không.
+- **Đã làm ở Đợt 1** (khác thiết kế ở các điểm sau):
+  - Component là `StudentWorkflowSheet` (cùng file `live-staff-workflows.tsx`), màn danh sách là `StaffStudentsHub` (`directory-list-view.tsx`). Quản lý vẫn dùng `RegistrationStudentsView`/`RegistrationParentsView` cũ, không có nút Xử lý.
+  - Sheet có **4 tab** chứ không phải 6: _Nghỉ & học bù_ · _Đổi lớp / lịch cố định_ · _Nghỉ dài hạn_ · _Nghỉ môn / nghỉ hẳn_. Lý do: trong code cũ, ba trang "Nghỉ học và học bù", "Đổi một buổi", "Nghỉ 1 buổi" hiện **cùng một bộ panel** (`SingleAbsence` + `MakeupPanel`), nên tách 3 tab sẽ lặp nội dung.
+  - Chưa có cột _Lớp đang học_, _Chuyên cần %_, _Nghỉ/học bù_ và bộ lọc nhanh _Chờ xếp học bù / Đang nghỉ dài hạn / Chưa có lớp_. API danh sách học sinh chưa trả các số này; tính ở FE thì mỗi dòng phải gọi thêm API. Chuyển sang Đợt 4, cùng màn chi tiết học sinh.
 
 **`QL-HocSinhChiTiet`, chi tiết học sinh**: `/staff/students/[id]` và `/manager/students/[id]`, component `src/features/directory/components/student-detail-view.tsx`
 
@@ -242,6 +246,7 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 - Bỏ: thẻ 3 cột cao ~380px, dòng lặp "Toán · Khối 8 / Toán 8", hai nút to full chiều ngang mỗi thẻ; trang Phòng học riêng có **form sửa cho từng phòng**.
 - Thêm: thẻ gọn 4 cột (tên + trạng thái, môn · khối · phòng, lịch tuần, giáo viên hoặc cảnh báo _Chưa phân công_, sĩ số dạng thanh, học phí, nút _Chi tiết_ + menu ⋯ gồm _Xem buổi học / Thêm học sinh / Đóng đăng ký / Ngừng hoạt động_); nút chuyển Thẻ/Bảng; tab **Phòng học** (chỉ Quản lý): form thêm phòng bên trái, bảng phòng bên phải (Sửa / Ngừng sử dụng bằng Dialog).
 - Đổi logic: không.
+- **Đợt 1 đã làm phần Phòng học**: `LiveRoomsView` có form thêm phòng bên trái, bảng phòng bên phải, _Sửa_ và _Ngừng sử dụng / Dùng lại_ mở Dialog. Phần này vẫn nằm ở trang riêng `/manager/rooms`. Lưới lớp 4 cột và việc đưa Phòng thành tab trong Lớp học thuộc **Đợt 2**.
 
 **`QL-ChiTietLop`, chi tiết lớp**: `/manager/classes/[id]`, `RegistrationClassEditor` (`registration-flow/components/class-editor.tsx`)
 
@@ -318,6 +323,12 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 - Bỏ: card _Tra cứu mã đăng ký_ và card _Đăng ký gần đây trong phiên này_.
 - Thêm: ô tìm kiếm chung (tên con, email phụ huynh **hoặc mã đăng ký**); bộ lọc thời gian có lựa chọn _Tạo trong phiên này_; chip tổng hợp _N chờ thu · tổng tiền_; bấm dòng nháp mở **Sheet thu học phí** (thông tin bill, cần thu, số biên lai, xác nhận đã nhận đủ, In bill, Hủy đăng ký); dòng hoàn tất có nút _Biên lai_.
 - Đổi logic: không.
+- **Đã làm ở Đợt 1**:
+  - Nút trên dòng đổi theo trạng thái: _Thu phí_ (nháp), _Biên lai_ (hoàn tất), _Xem_ (đã hủy). Bấm mở Sheet bên phải chứa `RegistrationBillPanel` + biên lai. Hộp thoại xác nhận thu tiền mở chồng lên Sheet, giữ nguyên khóa chống trùng.
+  - In bill/biên lai từ trong Sheet: thêm CSS in cho `[data-registration-sheet]` trong `globals.css` để bản in nằm đầu trang, không bị khung cuộn cắt.
+  - Ô tìm kiếm: BE chỉ tìm theo tên con, email phụ huynh, số biên lai. Khi chuỗi gõ vào trông giống mã đăng ký (≥ 20 ký tự chữ/số), hiện nút _Mở theo mã đăng ký_ gọi `registrationApi.get` như card tra cứu cũ.
+  - Lọc nhanh _Hôm nay_, _Tháng này_ (điền sẵn Từ ngày/Đến ngày) và _Tạo trong phiên này_ (danh sách lưu trên thiết bị như card cũ, đăng ký không tải được vẫn có nút mở).
+  - Chưa làm: chip _N chờ thu · tổng tiền_. API danh sách chỉ trả tổng số dòng, không trả tổng tiền theo trạng thái. Chuyển sang Đợt 4 (dashboard nhân viên dùng cùng số liệu).
 
 **Đăng ký học** (`registration-wizard.tsx`): **giữ nguyên**, chỉ đổi theo token màu chung.
 
@@ -370,6 +381,7 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 - Giữ: thông báo lớp, nhắc học phí, gửi lại email lỗi, thông báo lỗi đã diễn giải.
 - Bỏ: 2 trang riêng; lịch sử email dạng 11 card 2 cột (~2.000px).
 - Thêm: trái là form soạn (tab _Thông báo lớp / Nhắc học phí_); phải là **bảng lịch sử email** (Tiêu đề · Người nhận · Trạng thái · Lần gửi · Tạo lúc · Gửi lại) có lọc trạng thái, dòng lỗi tô đỏ.
+- **Đợt 1 đã làm**: `EmailDeliveriesView` chuyển từ card sang bảng (Email · Người nhận · Trạng thái kèm lỗi gần nhất · Lần gửi · Thời gian · Gửi lại), vẫn ở trang `/manager/notifications/emails`. Chưa có **lọc trạng thái**: `GET academic/email-deliveries` chỉ nhận `page`, `limit`, lọc ở FE trên một trang sẽ sai số liệu. Cần BE nhận thêm `status` (BE-12). Gộp với Gửi thông báo thành một màn 2 phần thuộc **Đợt 2**.
 
 **`QL-NhanSu`, Nhân sự**: `/manager/people` (route mới), `AccountsView`, `AccountDetailView`, `ManagersView`, `TeacherInvitationsView`, `InvitationsPanel` (`features/directory/components/`)
 
@@ -389,6 +401,7 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 - Giữ: bộ lọc đối tượng / hành động / khoảng ngày, giải mã snapshot thay đổi, escape nội dung.
 - Bỏ: mỗi bản ghi một card full chiều ngang (19 bản ghi ≈ 5.000px).
 - Thêm: **bảng** (Thời gian · Hành động · Đối tượng · Người thực hiện), bấm dòng mở chi tiết thay đổi ngay dưới dòng; lọc thêm theo người thực hiện; 5 bản ghi mới nhất hiện ở Dashboard Quản lý.
+- **Đợt 1 đã làm**: bảng 5 cột, người thực hiện kèm vai trò; nút _Xem thay đổi / Thu gọn_ mở phần Trước/Sau ngay dưới dòng (`AuditChangeDetails` giờ hiện thẳng nội dung, không còn khối `<details>`). Chưa làm: lọc theo người thực hiện (cần kiểm tra BE có nhận `actorId` không) và 5 bản ghi trên Dashboard (Đợt 4).
 
 **`TaiKhoan`, tài khoản cá nhân**: `/manager/profile`, `/staff/profile`, `/teacher/profile`, `AccountProfile` (`features/auth/components/account-profile.tsx`)
 
@@ -437,7 +450,7 @@ Ngoài các mục dưới đây, **không đổi logic**: không đổi API, kh�
 
 - Route mới: `/staff/dashboard`, `/manager/notifications`, `/manager/people`, `/manager/curriculum/overview`. Phải thêm vào `ROUTE_AREAS` trong `role-access.ts` đúng vùng quyền: dashboard nhân viên → `dashboard`; thông báo → `notifications`; nhân sự → `teachers` cho tab giáo viên, `staff_accounts` cho các tab còn lại; overview → `catalog`.
 - Redirect route cũ như bảng mục 4.
-- Bỏ theme `edugrade-warm`.
+- Bỏ theme `edugrade-warm` (đã làm ở Đợt 1).
 - (Đề xuất, chờ duyệt) trang chủ nhân viên → `/staff/dashboard`.
 
 ---
@@ -475,7 +488,7 @@ Ngoài các mục dưới đây, **không đổi logic**: không đổi API, kh�
 
 ## 9. Việc cần BE / Mobile
 
-FE **không sửa** repo BE. Các mục dưới là yêu cầu gửi nhóm BE. Trong lúc chờ, FE làm đúng cột "FE tạm".
+Các mục dưới là việc phía BE/Mobile. Trong lúc chờ, FE làm đúng cột "FE tạm". Từ 18/10/2026 chủ dự án cho phép sửa BE khi màn hình thật sự cần. Mỗi thay đổi BE phải nhỏ, tách riêng, hỏi trước khi push repo BE. FE chỉ gửi tham số mới khi BE trên `dev` đã nhận tham số đó; nếu chưa, validation whitelist của BE trả 400.
 
 | Mã    | Cần làm                                                                                                                               | FE tạm                                                                           |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -490,25 +503,82 @@ FE **không sửa** repo BE. Các mục dưới là yêu cầu gửi nhóm BE. T
 | BE-9  | **Xóa** tài khoản phụ huynh chưa có hồ sơ con/thanh toán                                                                              | Chỉ cho Khóa tài khoản                                                           |
 | BE-10 | Danh sách + quyền tạo/khóa tài khoản **Thiết kế giáo trình** cho Quản lý, chung bảng với Nhân viên                                    | Bảng chỉ hiện Nhân viên                                                          |
 | BE-11 | API **thống kê buổi dạy** theo giáo viên/tháng (đã chốt điểm danh, dạy thay)                                                          | Đếm từ danh sách buổi                                                            |
+| BE-12 | `GET academic/email-deliveries` nhận thêm `status` (PENDING/PROCESSING/SENT/FAILED)                                                   | Bảng email không có bộ lọc trạng thái                                            |
 | M-1   | App phụ huynh (`WDP301-FEM-System`): **chụp/chọn ảnh** bài tự luận khi nộp (hiện chỉ nhập chữ, chưa có image picker) và gửi `fileIds` | Web chỉ hiện bài nhập chữ                                                        |
 
 Chi tiết nghiệp vụ giáo trình (quan hệ dữ liệu, vòng đời theo kỳ) xem artboard `NghiepVu-QuanHe` và `NghiepVu-QuyTrinh` trên canvas.
 
 ---
 
-## 10. Thứ tự làm đề xuất và nghiệm thu
+## 10. Tiến độ theo đợt và nghiệm thu
 
-1. **Nền**: token xanh, bỏ `edugrade-warm`, `menu.ts` / `routes.ts` / `role-access.ts`, redirect route cũ, mẫu "bảng + Sheet" dùng chung (tận dụng `shared/data-table`, `shared/display`, `shared/workflows` có sẵn, xem mục 3.2).
-2. **Nhân viên**: Học sinh & phụ huynh + Sheet Xử lý, chi tiết học sinh, Đăng ký & biên lai, Dashboard nhân viên.
-3. **Giáo viên**: Bài tập & chấm bài (Gửi điểm), Lịch dạy & điểm danh, Báo cáo, Dashboard.
-4. **Quản lý**: Lịch học Kanban + Sheet, Lớp học + Phòng, Chi tiết lớp, Thông báo, Nhân sự, Lịch sử thay đổi, Dashboard.
-5. **Giáo trình**: Khóa học & giáo trình, bảng bài học, tạo kỳ mới, nhập CSV, thẩm định, phản hồi, Sinh lịch theo khóa, Dashboard thiết kế giáo trình.
-6. Phần chờ BE/Mobile: bật khi BE trả API.
+Chia 4 đợt code. Thứ tự dựa trên ba tiêu chí: không cần BE, test được ngay trên máy, và người dùng thấy thay đổi rõ nhất. **Đợt 2, 3, 4 chưa bắt đầu và chỉ làm khi chủ dự án yêu cầu.**
 
-Mỗi bước:
+### 10.1 Đợt 1: đã xong (18/10/2026)
+
+Không cần BE, không có màn mới, không đổi logic.
+
+| Việc                                 | Kết quả                                                                                                                                                                  | File chính                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Một tông xanh cho mọi màn            | Bỏ theme `edugrade-warm` (kem/cam đất), font Noto Serif và cờ `warm` của khung ứng dụng. Dashboard dùng token chung. `.claude/rules/ui.md` ghi lại quyết định mới.       | `globals.css`, `layout.tsx`, `app-shell.tsx`, `sidebar.tsx`, `header/header.tsx`, `dashboard-stat-card.tsx`, `live-manager-dashboard.tsx` |
+| Menu Nhân viên 11 → 5 mục            | _Học sinh & phụ huynh_ · _Lớp học_ · _Lịch học_ · _Đăng ký học_ · _Đăng ký & biên lai_. Dashboard nhân viên chưa có (Đợt 4).                                             | `constants/menu.ts`                                                                                                                       |
+| Học sinh & phụ huynh + Sheet _Xử lý_ | Tab Học sinh/Phụ huynh (`?tab=`), nút _Xử lý_ trên dòng mở Sheet 4 tab, xem [5.2](#52-học-sinh--phụ-huynh). Nút _Nghỉ học và học bù_ ở chi tiết học sinh mở thẳng Sheet. | `directory-list-view.tsx`, `live-staff-workflows.tsx`, `student-detail-view.tsx`, `routes.ts` (`STAFF.STUDENT_ACTION`)                    |
+| Chuyển hướng route cũ                | 5 route `/staff/absences/*` và `/staff/parents` chỉ còn `redirect`, giữ tham số.                                                                                         | `app/(staff)/staff/absences/*/page.tsx`, `features/absences/legacy-routes.ts`, `app/(staff)/staff/parents/page.tsx`                       |
+| Đăng ký & biên lai                   | Bỏ 2 card tra mã / phiên; tìm kiếm chung, lọc nhanh, bill và biên lai trong Sheet, xem [5.5](#55-đăng-ký--thanh-toán).                                                   | `payments-view.tsx`, `payment-history.tsx`, `globals.css` (in)                                                                            |
+| Thẻ → bảng                           | Phòng học (form trái + bảng, Dialog Sửa/Ngừng), Lịch sử email, Lịch sử thay đổi (dòng mở rộng).                                                                          | `live-rooms-view.tsx`, `email-deliveries-view.tsx`, `live-audit-log-view.tsx`, `audit-change-details.tsx`                                 |
+
+Kiểm tra đã chạy:
+
+- `npx eslint --fix`, `npm run lint` (0 lỗi; 8 cảnh báo cũ ở file không sửa), `npx tsc --noEmit`, `npx next build --webpack`: đạt.
+- Test UI trên DB MySQL riêng (không đụng `edugrade_db`, đã chặn SMTP), Chrome 1440×900, **28/28 bước đạt**, không có lỗi console:
+  - menu mới; hai tab; mở Sheet; chọn ghi danh; 4 tab; **gửi thật** form Nghỉ dài hạn trong Sheet; đóng Sheet thì xóa query;
+  - 3 kiểu chuyển hướng route cũ;
+  - **thu tiền thật** trong Sheet (hộp thoại chồng lên Sheet) rồi ra biên lai; giả lập in thì biên lai nằm đầu trang;
+  - mở theo mã đăng ký; lọc _Tạo trong phiên này_ và _Tháng này_;
+  - dashboard quản lý không còn theme ấm; **sửa phòng** và **ngừng sử dụng phòng** qua Dialog;
+  - bảng email không tràn ngang; mở dòng lịch sử thay đổi;
+  - Quản lý vẫn dùng màn Hồ sơ con cũ, không thấy nút _Xử lý_.
+- Phần **chưa làm** của các màn Đợt 1 đã ghi ở mục 5 tương ứng: cột chuyên cần và lọc nhanh của bảng học sinh, chip tổng tiền của Đăng ký & biên lai, lọc trạng thái email (BE-12), lọc người thực hiện ở lịch sử thay đổi.
+
+### 10.2 Đợt 2: gộp menu Quản lý (chưa làm)
+
+Không cần BE. Menu Quản lý 18 → 8 mục theo [4.1](#41-quản-lý-trung-tâm-18--8-mục), thêm route mới vào `ROUTE_AREAS` và redirect route cũ.
+
+- **Học sinh & phụ huynh** của Quản lý: tab Phụ huynh có Xem (Sheet) / Sửa (Dialog) / Xóa → Khóa tài khoản ([5.2](#52-học-sinh--phụ-huynh)); `/manager/parents`, `/manager/parents/[id]` chuyển hướng.
+- **Nhân sự** (`/manager/people`, route mới): gộp 4 trang Giáo viên, Lời mời, Nhân sự trung tâm, Quản lý trung tâm ([5.7](#57-quản-trị)). Cột số buổi dạy để sang Đợt 4.
+- **Thông báo** (`/manager/notifications`, route mới): form soạn bên trái, bảng email Đợt 1 bên phải.
+- **Khóa học & giáo trình**: gộp Danh mục vào `/manager/curriculum` theo tab ([5.4](#54-khóa-học--giáo-trình)); Quản lý vẫn **không** có nút tạo giáo trình.
+- **Lớp học**: lưới thẻ 4 cột, chuyển Thẻ/Bảng, tab **Phòng học** dùng `LiveRoomsView` của Đợt 1; `/manager/rooms` chuyển hướng.
+- **Chi tiết lớp** chia tab, 2 cột; form _Đổi giáo viên_ thành Dialog.
+- **Lịch học Kanban** mặc định + Sheet buổi học (đổi giờ, hủy, dạy thay); `/manager/teachers/substitutes` chuyển hướng.
+
+### 10.3 Đợt 3: Giáo viên + giáo trình (chưa làm)
+
+Có các đổi logic nhỏ đã chốt ở [mục 6](#6-những-chỗ-có-đổi-logic).
+
+- **Bài tập & chấm bài** với nút **Gửi điểm** (6.1); gộp `/teacher/submissions` và `/teacher/grading`.
+- **Lịch dạy & điểm danh** (gộp trang Điểm danh), **Tạo/sửa bài tập**, **Báo cáo** 2 phần.
+- **Giáo trình**: bảng bài học, thẩm định chỉ xem bài thay đổi, nhập CSV, tạo giáo trình kỳ mới, phản hồi thành tab, **Sinh lịch theo khóa** nhiều lớp (6.3).
+- Môi trường test: ở máy hiện tại API bài tập và giáo trình trả 500, vì `node_modules` của repo BE cũ hơn code BE (Prisma client cũ, thiếu `mammoth`, `pdf-parse`). Chủ dự án đã cho phép cài lại thư viện BE (`pnpm install` + `prisma generate`) **khi tới đợt này**. Việc này không sửa code BE.
+
+### 10.4 Đợt 4: màn mới và số liệu mới (chưa làm)
+
+Cần chủ dự án xem nội dung hiển thị trước khi làm.
+
+- 4 Dashboard có biểu đồ ([5.1](#51-dashboard)); Dashboard **Nhân viên** (`/staff/dashboard`) và **Thiết kế giáo trình** (`/manager/curriculum/overview`) là màn mới. Kèm đề xuất đổi trang chủ nhân viên sang dashboard.
+- **Chi tiết học sinh** có chuyên cần %, số buổi vắng, dải điểm danh; thêm cột chuyên cần và lọc nhanh vào bảng học sinh Đợt 1.
+- **Số buổi dạy** của giáo viên theo tháng (tính khi giáo viên chốt điểm danh), thay nhóm mock `features/work-credits`.
+- Chip _N chờ thu · tổng tiền_ ở Đăng ký & biên lai; 5 thay đổi mới nhất trên Dashboard Quản lý; badge số trên menu ([5.8](#58-khung-ứng-dụng)).
+
+### 10.5 Chờ BE / Mobile
+
+Bảng ở [mục 9](#9-việc-cần-be--mobile): chấm trên ảnh bằng bút vẽ (BE-7, M-1), sửa hồ sơ con (BE-8), xóa phụ huynh (BE-9), tài khoản Thiết kế giáo trình chung bảng (BE-10), thống kê buổi dạy (BE-11), số buổi/tuần (BE-1), một giáo trình hiệu lực mỗi khóa (BE-2, BE-3), chương/tài liệu (BE-4), `.xlsx` (BE-5), sinh lịch nhiều lớp một lần (BE-6), lọc email theo trạng thái (BE-12).
+
+### 10.6 Nghiệm thu mỗi đợt
 
 - `npx eslint --fix .`, `npm run lint`, `npx tsc --noEmit`, `npx next build --webpack`.
-- Chạy harness UI desktop `tests/ui-flows/` (DB MySQL riêng, không đụng `edugrade_db`, đã chặn SMTP). Lưu ý: bộ flow cũ hỏng từ bước F1 vì danh mục đã chuyển sang bảng, cần cập nhật selector theo màn mới.
-- Kiểm tra mọi route cũ trong mục 4 vẫn mở được và chuyển đúng màn.
-- Kiểm tra quyền: Nhân viên không thấy tab Phòng; Thiết kế giáo trình không thấy tab Môn học/Khóa học; **Quản lý không có nút tạo giáo trình**; Giáo viên chỉ thấy lớp của mình.
+- Test UI desktop trên DB MySQL riêng (`tests/ui-flows/`, không đụng `edugrade_db`, đã chặn SMTP). Bộ flow cũ hỏng từ bước F1 vì danh mục đã chuyển sang bảng; Đợt 1 dùng script thao tác riêng theo màn mới.
+- Mọi route cũ trong mục 4 vẫn mở được và chuyển đúng màn.
+- Quyền: Nhân viên không thấy tab Phòng; Thiết kế giáo trình không thấy tab Môn học/Khóa học; **Quản lý không có nút tạo giáo trình**; Giáo viên chỉ thấy lớp của mình.
 - Màn 1440px không tràn ngang; bảng rộng cuộn trong khung riêng; ở màn nhỏ form 2 phần xếp dọc.
+- Xong đợt thì commit + push `dev`, cập nhật mục 10 này.
