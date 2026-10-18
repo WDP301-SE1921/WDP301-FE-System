@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
+import { Geist_Mono, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/providers/providers";
@@ -13,13 +13,6 @@ const beVietnamPro = Be_Vietnam_Pro({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const dashboardSerif = Noto_Serif({
-  variable: "--font-dashboard-serif",
-  subsets: ["latin", "vietnamese"],
-  weight: ["600", "700"],
-  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -39,7 +32,6 @@ export default function RootLayout({
         "h-full antialiased",
         geistMono.variable,
         beVietnamPro.variable,
-        dashboardSerif.variable,
       )}
     >
       {/* Browser extensions can add attributes to body before React hydrates. */}

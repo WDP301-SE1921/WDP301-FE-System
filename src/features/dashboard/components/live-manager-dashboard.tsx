@@ -76,7 +76,7 @@ function PanelTitle({
 }) {
   return (
     <CardTitle className="flex min-w-0 items-center gap-3 text-xl leading-6">
-      <span className="dashboard-panel-icon flex size-9 shrink-0 items-center justify-center rounded-xl">
+      <span className="flex bg-primary/10 text-primary size-9 shrink-0 items-center justify-center rounded-xl">
         <HugeiconsIcon icon={icon} className="size-5" />
       </span>
       {children}
@@ -420,7 +420,7 @@ export function LiveManagerDashboard() {
                       key={item.id}
                       className="flex items-center gap-3 py-3 first:pt-0"
                     >
-                      <span className="dashboard-panel-icon flex size-7 shrink-0 items-center justify-center rounded-full">
+                      <span className="flex bg-primary/10 text-primary size-7 shrink-0 items-center justify-center rounded-full">
                         <HugeiconsIcon icon={Task01Icon} className="size-4" />
                       </span>
                       <div className="min-w-0 flex-1">

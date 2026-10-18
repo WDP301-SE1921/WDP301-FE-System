@@ -16,10 +16,9 @@ import { Menu01Icon } from "@hugeicons/core-free-icons";
 export interface HeaderProps {
   role: WebRole;
   onToggleMobileSidebar?: () => void;
-  warm?: boolean;
 }
 
-function Header({ role, onToggleMobileSidebar, warm = false }: HeaderProps) {
+function Header({ role, onToggleMobileSidebar }: HeaderProps) {
   const user = useCurrentUser();
   const quickCreateItems = getQuickCreateItems(role);
   const accountHref =
@@ -58,8 +57,7 @@ function Header({ role, onToggleMobileSidebar, warm = false }: HeaderProps) {
         <div className="h-6 w-px bg-border hidden sm:block" />
         <UserMenu
           name={user?.name}
-          roleLabel={warm ? undefined : ROLE_LABEL[role]}
-          subtitleLine={warm ? ROLE_LABEL[role] : undefined}
+          roleLabel={ROLE_LABEL[role]}
           email={user?.email}
           avatarUrl={user?.avatarUrl}
           accountHref={accountHref}

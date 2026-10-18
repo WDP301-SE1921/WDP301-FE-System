@@ -21,7 +21,7 @@ export function DashboardStatCard({
       <CardContent className="flex min-h-32 items-start gap-4 p-5">
         <span
           data-tone={tone}
-          className="dashboard-stat-icon flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary [&>svg]:size-7"
+          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary [&>svg]:size-7"
         >
           {icon}
         </span>

@@ -139,103 +139,6 @@
   }
 }
 
-/* The reference dashboard's cream/terracotta theme is scoped to dashboards.
-   The body selector also themes portaled menus, date filters and dialogs. */
-.edugrade-warm,
-body:has(.edugrade-warm) {
-  --background: #fbf5ef;
-  --foreground: #302019;
-  --card: #fffdfb;
-  --card-foreground: #302019;
-  --popover: #fffdfb;
-  --popover-foreground: #302019;
-  --primary: #bc4e36;
-  --primary-foreground: #ffffff;
-  --secondary: #f5e9df;
-  --secondary-foreground: #694336;
-  --muted: #f6ece4;
-  --muted-foreground: #7b6860;
-  --accent: #f8e5d9;
-  --accent-foreground: #743f2f;
-  --border: #eadbd0;
-  --input: #e8d5c8;
-  --ring: #bc4e36;
-  --brand-accent: #e79572;
-  --brand-accent-foreground: #512b20;
-  --chart-1: #c75740;
-  --chart-2: #f0a477;
-  --chart-3: #f6c3a9;
-  --chart-4: #e9cfbb;
-  --chart-5: #b27d66;
-  --sidebar: #fbf6f1;
-  --sidebar-foreground: #432c23;
-  --sidebar-border: #eadbd0;
-  --sidebar-accent: #f6e6db;
-  --sidebar-accent-foreground: #6c3a2b;
-  --dashboard-display:
-    var(--font-dashboard-serif), Georgia, "Times New Roman", serif;
-}
-
-.edugrade-warm {
-  background-image: radial-gradient(
-    ellipse at 65% 20%,
-    #fffaf6 0,
-    transparent 65%
-  );
-}
-.edugrade-warm .font-heading,
-.edugrade-warm [data-slot="page-header"] h1 {
-  font-family: var(--dashboard-display);
-}
-.edugrade-warm [data-slot="header"] {
-  height: 4.75rem;
-  background: #fffcf8ed;
-  box-shadow: 0 2px 8px #7e46200a;
-}
-.edugrade-warm [data-slot="sidebar"] {
-  background: linear-gradient(160deg, #fffcf8, #f9eee4);
-}
-.edugrade-warm [data-slot="sidebar"] > div:first-child {
-  height: 4.75rem;
-}
-.edugrade-warm [data-slot="sidebar"] a[aria-current="page"] {
-  background: linear-gradient(100deg, #cf7259, #eea387);
-  box-shadow: 0 3px 10px #b35b3320;
-}
-.edugrade-warm [data-slot="card"] {
-  border: 1px solid var(--border);
-  border-radius: 1.25rem;
-  box-shadow: 0 2px 8px #7953340a;
-}
-.edugrade-warm .dashboard-stat-icon[data-tone="orange"] {
-  color: #c64e2f;
-  background: #fae0d1;
-}
-.edugrade-warm .dashboard-stat-icon[data-tone="amber"] {
-  color: #aa432c;
-  background: #fbe5d5;
-}
-.edugrade-warm .dashboard-stat-icon[data-tone="green"] {
-  color: #287441;
-  background: #e8efdb;
-}
-.edugrade-warm .dashboard-stat-icon[data-tone="purple"] {
-  color: #853cc0;
-  background: #f0e3f8;
-}
-.edugrade-warm .dashboard-stat-icon[data-tone="teal"] {
-  color: #217863;
-  background: #e3eee6;
-}
-.edugrade-warm .dashboard-stat-icon[data-tone="blue"] {
-  color: #285fca;
-  background: #e0e9fa;
-}
-.edugrade-warm .dashboard-panel-icon {
-  color: var(--primary);
-  background: #f9ded0;
-}
-
 /* Base UI positioners create a stacking context above modal dialogs. */
 @layer components {
   [data-slot="select-portal"]
@@ -245,6 +148,17 @@ body:has(.edugrade-warm) {
 }
 
 @media print {
+  /* Bill/biên lai mở trong Sheet: bỏ khung cố định và thanh cuộn để in đủ trang. */
+  [data-registration-sheet] {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
   body[data-registration-print="bill"] *,
   body:has([data-registration-bill]):not(:has([data-registration-receipt])) * {
     visibility: hidden;

@@ -166,19 +166,16 @@ export function AuditChangeDetails({
 }) {
   if (before == null && after == null) return null;
   return (
-    <details className="rounded-xl border border-border p-3">
-      <summary className="cursor-pointer">Chi tiết thay đổi</summary>
-      <div className="mt-3 grid gap-4 lg:grid-cols-2">
-        {[
-          { label: "Trước", value: before },
-          { label: "Sau", value: after },
-        ].map(({ label, value }) => (
-          <div key={label} className="min-w-0 space-y-2">
-            <p className="font-medium">{label}</p>
-            <AuditValue value={readSnapshot(value)} />
-          </div>
-        ))}
-      </div>
-    </details>
+    <div className="grid gap-4 lg:grid-cols-2">
+      {[
+        { label: "Trước", value: before },
+        { label: "Sau", value: after },
+      ].map(({ label, value }) => (
+        <div key={label} className="min-w-0 space-y-2">
+          <p className="font-medium">{label}</p>
+          <AuditValue value={readSnapshot(value)} />
+        </div>
+      ))}
+    </div>
   );
 }

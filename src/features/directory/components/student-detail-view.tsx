@@ -6,6 +6,7 @@ import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ROUTES } from "@/constants/routes";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { currentEnrollmentClass } from "@/features/academic/api";
@@ -64,7 +65,7 @@ export function LiveStudentDetailView({ id }: { id: string }) {
                   <Button
                     variant="outline"
                     render={
-                      <Link href={`/staff/absences/makeup?studentId=${id}`} />
+                      <Link href={ROUTES.STAFF.STUDENT_ACTION({ studentId: id })} />
                     }
                   >
                     Nghỉ học và học bù

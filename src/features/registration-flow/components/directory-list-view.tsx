@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -173,6 +174,7 @@ const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
 
 const studentColumns = (
   isStaff: boolean,
+  onProcess?: (studentId: string) => void,
 ): LegacyColumnDef<StudentListItem>[] => [
   {
     accessorKey: "fullName",
@@ -247,6 +249,16 @@ const studentColumns = (
         >
           Xem ghi danh
         </Button>
+        {onProcess && (
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={`Xử lý nghỉ học, học bù hoặc đổi lớp cho ${child.fullName}`}
+            onClick={() => onProcess(child.id)}
+          >
+            Xử lý
+          </Button>
+        )}
         {isStaff && child.status === "ACTIVE" && (
           <Button
             size="sm"
@@ -269,6 +281,18 @@ const studentColumns = (
 ];
 
 export function RegistrationParentsView() {
+  return (
+    <PageContainer maxWidth="full" className="min-w-0">
+      <PageHeader
+        title="Phụ huynh"
+        description="Danh sách tài khoản phụ huynh và hồ sơ con đã tạo trên ứng dụng."
+      />
+      <ParentsDirectory />
+    </PageContainer>
+  );
+}
+
+function ParentsDirectory() {
   const user = useCurrentUser();
   const [search] = useQueryState("search", parseAsString.withDefault(""));
   const [{ page, pageSize, status }, setFilters] = useQueryStates({
@@ -292,12 +316,7 @@ export function RegistrationParentsView() {
     queryFn: ({ signal }) => registrationApi.parents(filters, signal),
   });
   return (
-    <PageContainer maxWidth="full" className="min-w-0">
-      <PageHeader
-        title="Phụ huynh"
-        description="Danh sách tài khoản phụ huynh và hồ sơ con đã tạo trên ứng dụng."
-      />
-      <Card className="min-w-0">
+    <Card className="min-w-0">
         <CardContent className="min-w-0 space-y-4">
           <FilterBar
             searchPlaceholder="Tìm tên hoặc email phụ huynh…"
@@ -330,11 +349,26 @@ export function RegistrationParentsView() {
           <TablePagination totalItems={query.data?.total ?? 0} />
         </CardContent>
       </Card>
-    </PageContainer>
   );
 }
 
 export function RegistrationStudentsView() {
+  return (
+    <PageContainer maxWidth="full" className="min-w-0">
+      <PageHeader
+        title="Hồ sơ con"
+        description="Danh sách hồ sơ con cùng thông tin phụ huynh. Chọn hồ sơ để đăng ký học."
+      />
+      <StudentsDirectory />
+    </PageContainer>
+  );
+}
+
+function StudentsDirectory({
+  onProcess,
+}: {
+  onProcess?: (studentId: string) => void;
+}) {
   const user = useCurrentUser();
   const [search] = useQueryState("search", parseAsString.withDefault(""));
   const [{ page, pageSize, status, grade, parentUserId }, setFilters] =
@@ -363,12 +397,7 @@ export function RegistrationStudentsView() {
     queryFn: ({ signal }) => registrationApi.students(filters, signal),
   });
   return (
-    <PageContainer maxWidth="full" className="min-w-0">
-      <PageHeader
-        title="Hồ sơ con"
-        description="Danh sách hồ sơ con cùng thông tin phụ huynh. Chọn hồ sơ để đăng ký học."
-      />
-      <Card className="min-w-0">
+    <Card className="min-w-0">
         <CardContent className="min-w-0 space-y-4">
           <FilterBar
             searchPlaceholder="Tìm tên con hoặc email phụ huynh…"
@@ -414,7 +443,7 @@ export function RegistrationStudentsView() {
             )}
           </FilterBar>
           <DataTable
-            columns={studentColumns(user?.role === "staff")}
+            columns={studentColumns(user?.role === "staff", onProcess)}
             data={query.data?.items ?? []}
             isLoading={query.isPending}
             isError={query.isError}
@@ -426,6 +455,74 @@ export function RegistrationStudentsView() {
           <TablePagination totalItems={query.data?.total ?? 0} />
         </CardContent>
       </Card>
+  );
+}
+
+const HUB_TABS = { students: "Học sinh", parents: "Phụ huynh" } as const;
+type HubTab = keyof typeof HUB_TABS;
+const HUB_TAB_KEYS = Object.keys(HUB_TABS) as HubTab[];
+
+/**
+ * Nhân viên: một màn "Học sinh & phụ huynh" thay cho hai trang Hồ sơ con / Phụ huynh.
+ * Nút "Xử lý" trên dòng học sinh mở panel nghỉ học, học bù, đổi lớp (`?studentId=`).
+ */
+export function StaffStudentsHub() {
+  const [tab, setTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(HUB_TAB_KEYS).withDefault("students"),
+  );
+  const [, setListState] = useQueryStates({
+    search: parseAsString,
+    page: parseAsInteger,
+    status: parseAsString,
+    grade: parseAsString,
+    parentUserId: parseAsString,
+  });
+  const [, setWorkflow] = useQueryStates({
+    studentId: parseAsString,
+    enrollmentId: parseAsString,
+    action: parseAsString,
+  });
+  return (
+    <PageContainer maxWidth="full" className="min-w-0">
+      <PageHeader
+        title="Học sinh & phụ huynh"
+        description="Hồ sơ con và tài khoản phụ huynh. Bấm Xử lý trên dòng học sinh để ghi nghỉ, xếp học bù, đổi lớp hoặc cho nghỉ."
+      />
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          const next = HUB_TAB_KEYS.find((key) => key === value);
+          if (!next) return;
+          // Bộ lọc của hai bảng khác nhau nên đổi tab thì bắt đầu lại từ đầu.
+          void setListState({
+            search: null,
+            page: null,
+            status: null,
+            grade: null,
+            parentUserId: null,
+          });
+          void setTab(next);
+        }}
+      >
+        <TabsList aria-label="Chọn danh sách">
+          {HUB_TAB_KEYS.map((key) => (
+            <TabsTrigger key={key} value={key}>
+              {HUB_TABS[key]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      {tab === "parents" ? (
+        <ParentsDirectory key="parents" />
+      ) : (
+        <StudentsDirectory
+          key="students"
+          onProcess={(studentId) =>
+            void setWorkflow({ studentId, enrollmentId: null, action: null })
+          }
+        />
+      )}
     </PageContainer>
   );
 }

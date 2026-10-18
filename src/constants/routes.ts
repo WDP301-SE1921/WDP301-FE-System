@@ -81,6 +81,20 @@ export const ROUTES = {
     PARENTS: "/staff/parents",
     STUDENTS: "/staff/students",
     STUDENT_DETAIL: (id: string) => `/staff/students/${id}`,
+    /** Màn Học sinh & phụ huynh mở sẵn panel Xử lý của một học sinh. */
+    STUDENT_ACTION: (params: {
+      studentId: string;
+      action?: "makeup" | "change" | "leave" | "withdraw";
+      enrollmentId?: string;
+      sessionId?: string;
+    }) => {
+      const query = new URLSearchParams({ studentId: params.studentId });
+      if (params.action) query.set("action", params.action);
+      if (params.enrollmentId) query.set("enrollmentId", params.enrollmentId);
+      if (params.sessionId) query.set("sessionId", params.sessionId);
+      return `/staff/students?${query}`;
+    },
+    /** Các trang cũ dưới /staff/absences chỉ còn chuyển hướng sang panel Xử lý. */
     MAKEUP: "/staff/absences/makeup",
     SWAP_SESSION: "/staff/absences/swap",
     CHANGE_CLASS: "/staff/absences/change-class",

@@ -11,7 +11,7 @@ Friendly Professional, classic — serious and trustworthy, but warm and approac
 
 ## Colors
 
-- User-approved dashboard variant (2026-10-14): use the scoped `edugrade-warm` cream/terracotta tokens in `globals.css`, with six KPI cards in three columns and Noto Serif headings. This overrides the default palette only on dashboard routes and their portals. Other screens retain the default tokens.
+- One theme for every screen (user decision 2026-10-18, replaces the 2026-10-14 cream/terracotta dashboard variant): dashboards use the same blue tokens and fonts as the rest of the app. Don't reintroduce a per-route palette.
 - Primary: `#2563EB` (blue) or `#16A34A` (green)
 - Accent: `#F59E0B` — CTA buttons, highlights
 - Light background as the base, generous whitespace. No dark mode as default.

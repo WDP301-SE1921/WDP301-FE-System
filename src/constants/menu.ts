@@ -235,37 +235,14 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
 
 export const MENU_STAFF: MenuGroup[] = [
   {
-    groupTitle: "NGHỈ HỌC & XẾP LỚP",
+    groupTitle: "HỌC SINH",
     items: [
       {
-        title: "Nghỉ học và học bù",
-        href: ROUTES.STAFF.MAKEUP,
-        iconName: "CalendarCheckIn01Icon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Đổi một buổi học",
-        href: ROUTES.STAFF.SWAP_SESSION,
-        iconName: "Exchange01Icon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Đổi lớp và lịch cố định",
-        href: ROUTES.STAFF.CHANGE_CLASS,
-        iconName: "RepeatIcon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Nghỉ dài hạn",
-        href: ROUTES.STAFF.LONG_LEAVE,
-        iconName: "CalendarBlock01Icon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Nghỉ môn / Nghỉ hẳn",
-        href: ROUTES.STAFF.WITHDRAW,
-        iconName: "UserRemove01Icon",
-        area: AREA.ABSENCES,
+        // Gồm cả tab Phụ huynh và panel Xử lý nghỉ học, học bù, đổi lớp, nghỉ hẳn.
+        title: "Học sinh & phụ huynh",
+        href: ROUTES.STAFF.STUDENTS,
+        iconName: "StudentsIcon",
+        area: AREA.STUDENTS,
       },
     ],
   },
@@ -273,13 +250,13 @@ export const MENU_STAFF: MenuGroup[] = [
     groupTitle: "LỚP HỌC & LỊCH",
     items: [
       {
-        title: "Lớp học / thêm học sinh",
+        title: "Lớp học",
         href: ROUTES.STAFF.CLASSES,
         iconName: "SchoolIcon",
         area: AREA.CLASSES,
       },
       {
-        title: "Buổi học",
+        title: "Lịch học",
         href: ROUTES.STAFF.SCHEDULE,
         iconName: "Calendar03Icon",
         area: AREA.SCHEDULE,
@@ -287,25 +264,13 @@ export const MENU_STAFF: MenuGroup[] = [
     ],
   },
   {
-    groupTitle: "ĐĂNG KÝ & THU HỌC PHÍ",
+    groupTitle: "ĐĂNG KÝ & HỌC PHÍ",
     items: [
       {
         title: "Đăng ký học",
         href: ROUTES.STAFF.ENROLLMENT_NEW,
         iconName: "UserAdd01Icon",
         area: AREA.ENROLLMENTS,
-      },
-      {
-        title: "Phụ huynh",
-        href: ROUTES.STAFF.PARENTS,
-        iconName: "UserGroupIcon",
-        area: AREA.PARENTS,
-      },
-      {
-        title: "Hồ sơ con",
-        href: ROUTES.STAFF.STUDENTS,
-        iconName: "StudentsIcon",
-        area: AREA.STUDENTS,
       },
       {
         title: "Đăng ký & biên lai",

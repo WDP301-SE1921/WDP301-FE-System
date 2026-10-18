@@ -1,13 +1,23 @@
 "use client";
+import { Fragment, useState } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { directoryApi } from "@/features/directory/api";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import {
@@ -16,6 +26,8 @@ import {
 } from "@/features/academic/components/live-fields";
 import { dateRangeSchema } from "@/lib/validators/web-workflows";
 import { AuditChangeDetails } from "@/features/system/components/audit-change-details";
+import { ROLE_LABEL } from "@/constants/roles";
+import type { AuditLogRecord } from "@/types/academic-workflows";
 
 import {
   AUDIT_ACTION_LABELS,
@@ -26,6 +38,12 @@ import {
 
 const PAGE_SIZE = 20;
 const ALL = "all";
+
+/** BE trả role dạng enum (`MANAGER`, `STAFF`…); FE dùng `center_manager`, `staff`… */
+function actorRoleLabel(role: string) {
+  const key = role.toLowerCase() === "manager" ? "center_manager" : role;
+  return (ROLE_LABEL as Record<string, string>)[key.toLowerCase()];
+}
 /** SRS §5.14: history of teacher changes, substitutes, makeups, leaves, payment, … (BE audit log). */
 export function LiveAuditLogView() {
   const [{ page, entityType, action, fromDate, toDate }, setFilters] =
@@ -60,8 +78,10 @@ export function LiveAuditLogView() {
     (signal) => directoryApi.auditLogs(filters, signal),
     !rangeError,
   );
+  // Dòng đang mở xem trước/sau; chỉ là trạng thái hiển thị tạm trên trang hiện tại.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Lịch sử thay đổi"
         description="Ai đã làm gì, lúc nào: thanh toán, đổi giáo viên, dạy thay, học bù, nghỉ học, cho học lại…"
@@ -127,43 +147,109 @@ export function LiveAuditLogView() {
         data={query.data?.items}
         emptyProps={{ title: "Chưa có thay đổi phù hợp bộ lọc" }}
       >
-        <div className="grid gap-4">
-          {query.data?.items.map((log) => (
-            <Card key={log.id}>
-              <CardHeader>
-                <CardTitle>{auditActionLabel(log.action)}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">
-                    {auditEntityLabel(log.entityType)}
-                  </Badge>
-                  <Badge variant="secondary">
-                    {displayMoment(log.createdAt)}
-                  </Badge>
-                </div>
-                <p>
-                  Người thực hiện:{" "}
-                  {log.actor
-                    ? `${log.actor.displayName ?? log.actor.email} (${log.actor.email})`
-                    : "Hệ thống"}
-                </p>
-                <p className="break-all text-muted-foreground">
-                  Mã đối tượng: {log.entityId}
-                </p>
-                <AuditChangeDetails
-                  before={log.beforeData}
-                  after={log.afterData}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card className="min-w-0">
+          <CardContent className="min-w-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Thời gian</TableHead>
+                  <TableHead>Hành động</TableHead>
+                  <TableHead>Đối tượng</TableHead>
+                  <TableHead>Người thực hiện</TableHead>
+                  <TableHead>Chi tiết</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {query.data?.items.map((log) => (
+                  <AuditRow
+                    key={log.id}
+                    log={log}
+                    isExpanded={expandedId === log.id}
+                    onToggle={() =>
+                      setExpandedId((current) =>
+                        current === log.id ? null : log.id,
+                      )
+                    }
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </AsyncBoundary>
       <TablePagination
         totalItems={query.data?.total ?? 0}
         fixedPageSize={PAGE_SIZE}
       />
     </PageContainer>
+  );
+}
+
+function AuditRow({
+  log,
+  isExpanded,
+  onToggle,
+}: {
+  log: AuditLogRecord;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasChanges = log.beforeData != null || log.afterData != null;
+  const detailsId = `audit-details-${log.id}`;
+  const roleLabel = log.actor ? actorRoleLabel(log.actor.role) : undefined;
+  return (
+    <Fragment>
+      <TableRow>
+        <TableCell className="whitespace-nowrap tabular-nums">
+          {displayMoment(log.createdAt)}
+        </TableCell>
+        <TableCell className="font-medium">
+          {auditActionLabel(log.action)}
+        </TableCell>
+        <TableCell>
+          <div className="min-w-40 space-y-1">
+            <Badge variant="outline">{auditEntityLabel(log.entityType)}</Badge>
+            <p className="text-xs text-muted-foreground">
+              Mã {log.entityId}
+            </p>
+          </div>
+        </TableCell>
+        <TableCell>
+          {log.actor ? (
+            <div className="min-w-44 space-y-1">
+              <p>{log.actor.displayName ?? log.actor.email}</p>
+              <p className="text-xs text-muted-foreground">
+                {roleLabel ? `${roleLabel} · ` : ""}
+                {log.actor.email}
+              </p>
+            </div>
+          ) : (
+            "Hệ thống"
+          )}
+        </TableCell>
+        <TableCell>
+          {hasChanges ? (
+            <Button
+              size="sm"
+              variant="outline"
+              aria-expanded={isExpanded}
+              aria-controls={detailsId}
+              onClick={onToggle}
+            >
+              {isExpanded ? "Thu gọn" : "Xem thay đổi"}
+            </Button>
+          ) : (
+            <span className="text-muted-foreground">Không có</span>
+          )}
+        </TableCell>
+      </TableRow>
+      {isExpanded && (
+        <TableRow id={detailsId} className="bg-muted/30 hover:bg-muted/30">
+          <TableCell colSpan={5} className="whitespace-normal">
+            <AuditChangeDetails before={log.beforeData} after={log.afterData} />
+          </TableCell>
+        </TableRow>
+      )}
+    </Fragment>
   );
 }

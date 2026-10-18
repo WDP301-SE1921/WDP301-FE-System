@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header/header";
 import {
@@ -39,7 +37,6 @@ function readSidebarPreference() {
 }
 
 function AppShell({ role, badgeCounts, children }: AppShellProps) {
-  const warmDashboard = usePathname().endsWith("/dashboard");
   const storedCollapsed = React.useSyncExternalStore(
     subscribeSidebarPreference,
     readSidebarPreference,
@@ -64,10 +61,7 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
   return (
     <div
       data-slot="app-shell"
-      className={cn(
-        "flex min-h-screen bg-background text-foreground",
-        warmDashboard && "edugrade-warm",
-      )}
+      className="flex min-h-screen bg-background text-foreground"
     >
       {/* Desktop Sidebar */}
       <div className="sticky top-0 hidden h-dvh shrink-0 self-start lg:block">
@@ -76,7 +70,6 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
           collapsed={collapsed}
           onToggleCollapse={handleToggleCollapse}
           badgeCounts={badgeCounts}
-          warm={warmDashboard}
         />
       </div>
 
@@ -106,7 +99,6 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
             collapsed={false}
             badgeCounts={badgeCounts}
             onNavigate={() => setMobileOpen(false)}
-            warm={warmDashboard}
           />
         </SheetContent>
       </Sheet>
@@ -115,7 +107,6 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
       <div className="flex flex-1 flex-col min-w-0">
         <Header
           role={role}
-          warm={warmDashboard}
           onToggleMobileSidebar={() => setMobileOpen(true)}
         />
         <main className="flex-1 overflow-y-auto">{children}</main>

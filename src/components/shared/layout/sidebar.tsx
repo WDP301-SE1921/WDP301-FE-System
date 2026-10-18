@@ -23,7 +23,6 @@ export interface SidebarProps {
   /** Số thật của badge menu, key theo `badgeKey` khai báo trong constants/menu.ts */
   badgeCounts?: MenuBadgeCounts;
   className?: string;
-  warm?: boolean;
 }
 
 function SidebarIcon({ name }: { name: string }) {
@@ -39,7 +38,6 @@ function Sidebar({
   onNavigate,
   badgeCounts,
   className,
-  warm = false,
 }: SidebarProps) {
   const pathname = usePathname();
   const menuGroups = getNavMenu(role);
@@ -68,14 +66,7 @@ function Sidebar({
           className="flex items-center gap-2.5 overflow-hidden"
         >
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-extrabold text-base shadow-sm">
-            {warm ? (
-              <HugeiconsIcon
-                icon={Icons.Mortarboard01Icon}
-                className="size-7"
-              />
-            ) : (
-              "EG"
-            )}
+            EG
           </div>
           {!collapsed && (
             <div className="flex flex-col">
