@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Lịch học tuần</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app" style="position: relative">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="manager" active="schedule" hint-size="256px,640px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Trần Minh Quân" role-label="Quản lý trung tâm" email="manager.qa@edugrade.test" initials="TQ" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page" style="gap: 20px">
+<div class="eg-ph">
+<div><h1 class="eg-h1">Lịch học</h1><p class="eg-sub">Buổi học thật theo giờ Việt Nam. Bấm một buổi để xem bài, đổi giờ, hủy hoặc xếp dạy thay.</p></div>
+<a class="eg-btn eg-btn-p" href="GT-SinhLich.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Sinh lịch theo khóa</a>
+</div>
+<div class="eg-toolbar">
+<select class="eg-select" style="width: 200px" aria-label="Lọc lớp"><option>Tất cả lớp</option><option>Toán 8A - Tối 2, 4, 6</option><option>Toán 8B - Tối 3, 5</option></select>
+<select class="eg-select" style="width: 180px" aria-label="Lọc giáo viên"><option>Tất cả giáo viên</option><option>Phạm Văn Hùng</option><option>Bùi Đức Long</option></select>
+<div class="eg-row" style="gap: 6px"><button type="button" class="eg-btn eg-btn-o eg-btn-icon" aria-label="Tuần trước"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button><b style="padding: 0 6px">19/10 – 25/10/2026</b><button type="button" class="eg-btn eg-btn-o eg-btn-icon" aria-label="Tuần sau"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><button type="button" class="eg-btn eg-btn-o">Hôm nay</button></div>
+<span style="flex: 1 1 auto"></span>
+<div class="eg-tabs" role="tablist" aria-label="Cách xem"><button type="button" role="tab" aria-selected="false" class="eg-tab">Ngày</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Tuần</button><button type="button" role="tab" aria-selected="true" class="eg-tab on">Kanban</button></div>
+</div>
+<div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-gray">14 buổi trong tuần</span><span class="eg-badge eg-b-red">1 buổi đã hủy</span><span class="eg-badge eg-b-blue">1 buổi có dạy thay</span></div>
+
+<div class="eg-kanban">
+<section class="eg-kcol" aria-label="Thứ 2"><div class="eg-khead"><b>Thứ 2</b><span class="eg-xs eg-muted">19/10</span></div>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">16:00–17:30</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 6A</b></span><span class="eg-xs eg-muted">Bài 13 · Ước chung lớn nhất</span><span class="eg-xs eg-muted">Bùi Đức Long · P.201</span></button>
+<button type="button" class="eg-kcard on"><span class="eg-xs eg-strong">18:00–19:30</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 8A</b></span><span class="eg-xs eg-muted">Bài 19 · Phương trình tích</span><span class="eg-xs eg-muted">Phạm Văn Hùng · P.101</span></button>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">19:45–21:15</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-ly"></span><b class="eg-sm">Vật lý 8A</b></span><span class="eg-xs eg-muted">Bài 13 · Áp suất chất lỏng</span><span class="eg-xs eg-muted">Nguyễn Thị Mai · P.202</span></button>
+</section>
+<section class="eg-kcol" aria-label="Thứ 3"><div class="eg-khead"><b>Thứ 3</b><span class="eg-xs eg-muted">20/10</span></div>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">18:00–19:30</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 8B</b></span><span class="eg-xs eg-muted">Bài 13 · Phân thức đại số</span><span class="eg-xs eg-muted">Phạm Văn Hùng · P.102</span></button>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">19:45–21:15</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 9A</b></span><span class="eg-xs eg-muted">Bài 19 · Hệ số góc của đường thẳng</span><span class="eg-xs eg-muted">Bùi Đức Long · P.201</span></button>
+</section>
+<section class="eg-kcol" aria-label="Thứ 4"><div class="eg-khead"><b>Thứ 4</b><span class="eg-xs eg-muted">21/10</span></div>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">16:00–17:30</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 6A</b></span><span class="eg-xs eg-muted">Bài 14 · Bội chung nhỏ nhất</span><span class="eg-xs eg-muted">Bùi Đức Long · P.201</span></button>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">18:00–19:30</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 8A</b></span><span class="eg-xs eg-muted">Bài 20 · Phương trình chứa ẩn ở mẫu</span><span class="eg-xs eg-muted">Phạm Văn Hùng · P.101</span></button>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">19:45–21:15</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-hoa"></span><b class="eg-sm">Hóa học 9A</b></span><span class="eg-xs eg-muted">Bài 13 · Tính chất hóa học của muối</span><span class="eg-xs eg-muted">Đỗ Quang Huy · P. thí nghiệm</span></button>
+</section>
+<section class="eg-kcol" aria-label="Thứ 5"><div class="eg-khead"><b>Thứ 5</b><span class="eg-xs eg-muted">22/10</span></div>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">18:00–19:30</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 8B</b></span><span class="eg-xs eg-muted">Bài 14 · Rút gọn phân thức</span><span class="eg-xs eg-muted">Phạm Văn Hùng · P.102</span></button>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">19:45–21:15</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-ly"></span><b class="eg-sm">Vật lý 8A</b></span><span class="eg-xs eg-muted">Bài 14 · Áp suất khí quyển</span><span class="eg-xs eg-muted">Nguyễn Thị Mai · P.202</span></button>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">19:45–21:15</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 9A</b></span><span class="eg-xs eg-muted">Bài 20 · Ôn tập chương 2</span><span class="eg-xs eg-muted">Bùi Đức Long · P.201</span></button>
+</section>
+<section class="eg-kcol" aria-label="Thứ 6"><div class="eg-khead"><b>Thứ 6</b><span class="eg-xs eg-muted">23/10</span></div>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">18:00–19:30</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 8A</b></span><span class="eg-xs eg-muted">Bài 21 · Giải bài toán bằng cách lập phương trình</span><span class="eg-row" style="gap: 6px"><span class="eg-badge eg-b-blue" style="height: 20px">Dạy thay</span><span class="eg-xs eg-muted">Bùi Đức Long</span></span></button>
+<button type="button" class="eg-kcard cancel"><span class="eg-xs eg-strong">19:45–21:15</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-hoa"></span><b class="eg-sm" style="text-decoration: line-through">Hóa học 9A</b></span><span class="eg-xs">Bài 14 · Phân bón hóa học</span><span class="eg-badge eg-b-red" style="height: 20px; align-self: flex-start">Đã hủy</span></button>
+</section>
+<section class="eg-kcol" aria-label="Thứ 7"><div class="eg-khead"><b>Thứ 7</b><span class="eg-xs eg-muted">24/10</span></div>
+<button type="button" class="eg-kcard"><span class="eg-xs eg-strong">19:45–21:15</span><span class="eg-row" style="gap: 6px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b class="eg-sm">Toán 9A</b></span><span class="eg-xs eg-muted">Bài 21 · Phương trình bậc nhất hai ẩn</span><span class="eg-xs eg-muted">Bùi Đức Long · P.201</span></button>
+</section>
+<section class="eg-kcol" aria-label="Chủ nhật"><div class="eg-khead"><b>Chủ nhật</b><span class="eg-xs eg-muted">25/10</span></div>
+<p class="eg-xs eg-muted" style="margin: 16px 0; text-align: center">Không có buổi</p>
+</section>
+</div>
+</main>
+</div>
+
+<div class="eg-overlay" aria-hidden="true"></div>
+<aside class="eg-drawer" role="dialog" aria-label="Buổi học Toán 8A thứ 2 19/10">
+<div class="eg-dh">
+<div><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><p class="eg-ct">Toán 8A - Tối 2, 4, 6</p></div><p class="eg-cs" style="margin-top: 4px">Thứ 2, 19/10/2026 · 18:00–19:30 · P.101</p></div>
+<div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-blue">Đã lên lịch</span><button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Đóng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div>
+</div>
+<div class="eg-db">
+<div class="eg-tabs" role="tablist" aria-label="Thao tác với buổi học">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button type="button" role="tab" aria-selected="{{t.selected}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+
+<sc-if value="{{isInfo}}" hint-placeholder-val="{{true}}">
+<div class="eg-col" style="gap: 16px">
+<dl class="eg-kv">
+<dt>Giáo viên</dt><dd>Phạm Văn Hùng</dd>
+<dt>Bài học</dt><dd>Bài 19 · Phương trình tích<div class="eg-xs eg-muted" style="font-weight: 400">Toán 8 · HK1 2026–2027</div></dd>
+<dt>Học viên</dt><dd>5 chính thức · 0 học bù</dd>
+<dt>Điểm danh</dt><dd><span class="eg-badge eg-b-gray">Chưa điểm danh</span></dd>
+</dl>
+<div style="padding: 14px; border-radius: 14px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 13px; line-height: 1.6"><b>Nội dung bài</b><br>Mục tiêu: giải phương trình đưa được về dạng tích A(x)·B(x) = 0.<br>Nội dung: phân tích vế trái thành nhân tử, giải từng phương trình, ví dụ 1–4, bài tập 21–25 SGK.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDoiGio}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-two">
+<div class="eg-field"><label class="eg-label" for="lh-s">Bắt đầu mới</label><input id="lh-s" class="eg-input" type="datetime-local" value="2026-10-19T18:30"></div>
+<div class="eg-field"><label class="eg-label" for="lh-e">Kết thúc mới</label><input id="lh-e" class="eg-input" type="datetime-local" value="2026-10-19T20:00"></div>
+</div>
+<div class="eg-field"><label class="eg-label" for="lh-r">Lý do</label><textarea id="lh-r" class="eg-textarea" placeholder="Ví dụ: phòng P.101 bảo trì điện"></textarea></div>
+<p class="eg-note eg-ok">Xem trước: không trùng lịch giáo viên, phòng và học viên.</p>
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><button type="button" class="eg-btn eg-btn-o">Xem trước</button><button type="button" class="eg-btn eg-btn-p">Xác nhận đổi giờ</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isHuy}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-field"><label class="eg-label" for="lh-c">Lý do hủy</label><textarea id="lh-c" class="eg-textarea" placeholder="Ví dụ: trung tâm nghỉ lễ"></textarea></div>
+<label class="eg-check"><input type="checkbox"><span>Tôi xác nhận hủy buổi Toán 8A ngày 19/10/2026.</span></label>
+<div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-dp">Hủy buổi</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDayThay}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><legend class="eg-label" style="padding: 0; margin-bottom: 8px">Giáo viên đang rảnh giờ này</legend>
+<label class="eg-choice on"><input type="radio" name="sub" checked><span><b>Bùi Đức Long</b><br><span class="eg-xs eg-muted">Dạy Toán 6A, Toán 9A · rảnh 18:00–19:30</span></span></label>
+<label class="eg-choice"><input type="radio" name="sub"><span><b>Nguyễn Thị Mai</b><br><span class="eg-xs eg-muted">Dạy Vật lý · rảnh 18:00–19:30</span></span></label>
+</fieldset>
+<div class="eg-field"><label class="eg-label" for="lh-sr">Lý do</label><textarea id="lh-sr" class="eg-textarea" placeholder="Ví dụ: giáo viên phụ trách nghỉ ốm"></textarea></div>
+<p class="eg-help">Buổi học, bài học và danh sách học viên giữ nguyên.</p>
+<div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-p">Xếp dạy thay</button></div>
+</div>
+</sc-if>
+</div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1120}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { tab: 'info' };
+}
+renderVals() {
+const tab = this.state.tab;
+const list = [['info', 'Nội dung'], ['doigio', 'Đổi giờ'], ['huy', 'Hủy buổi'], ['daythay', 'Dạy thay']];
+return {
+tabs: list.map(([id, label]) => ({
+label,
+selected: id === tab ? 'true' : 'false',
+cls: id === tab ? 'eg-tab on' : 'eg-tab',
+pick: () => this.setState({ tab: id })
+})),
+isInfo: tab === 'info',
+isDoiGio: tab === 'doigio',
+isHuy: tab === 'huy',
+isDayThay: tab === 'daythay'
+};
+}
+}
+</script>
+</body>
+</html>

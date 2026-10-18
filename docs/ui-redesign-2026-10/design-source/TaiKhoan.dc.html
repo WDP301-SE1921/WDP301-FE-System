@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tài khoản cá nhân</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="staff" active="none" hint-size="256px,560px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Lê Thu Hà" role-label="Nhân viên" email="staff.qa@edugrade.test" initials="LH" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Tài khoản của tôi</h1><p class="eg-sub">Mở từ menu tên người dùng ở góc phải.</p></div></div>
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Thông tin tài khoản">
+<div class="eg-row" style="gap: 14px"><span class="eg-avatar" style="width: 56px; height: 56px; font-size: 18px">LH</span><div><p class="eg-ct">Lê Thu Hà</p><p class="eg-cs">staff.qa@edugrade.test</p><span class="eg-badge eg-b-blue" style="margin-top: 6px">Nhân viên</span></div></div>
+<hr class="eg-divider">
+<div class="eg-field"><label class="eg-label" for="pf-n">Họ tên hiển thị</label><input id="pf-n" class="eg-input" value="Lê Thu Hà"></div>
+<div class="eg-field"><label class="eg-label" for="pf-e">Email đăng nhập</label><input id="pf-e" class="eg-input" value="staff.qa@edugrade.test" disabled style="background: #fafafa; color: #737373"></div>
+<button type="button" class="eg-btn eg-btn-p" style="align-self: flex-start">Lưu thông tin</button>
+</section>
+<section class="eg-right eg-card" aria-label="Đổi mật khẩu" style="max-width: 560px">
+<p class="eg-ct">Đổi mật khẩu</p>
+<div class="eg-field"><label class="eg-label" for="pw-c">Mật khẩu hiện tại</label><input id="pw-c" class="eg-input" type="password"></div>
+<div class="eg-field"><label class="eg-label" for="pw-n">Mật khẩu mới</label><input id="pw-n" class="eg-input" type="password"><p class="eg-help">Ít nhất 8 ký tự.</p></div>
+<div class="eg-field"><label class="eg-label" for="pw-r">Nhập lại mật khẩu mới</label><input id="pw-r" class="eg-input" type="password"></div>
+<button type="button" class="eg-btn eg-btn-p" style="align-self: flex-start">Đổi mật khẩu</button>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

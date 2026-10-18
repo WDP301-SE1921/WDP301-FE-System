@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Chấm bài nộp bằng ảnh</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=Patrick+Hand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="teacher" active="assignments" hint-size="256px,520px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Phạm Văn Hùng" role-label="Giáo viên" email="teacher.qa@edugrade.test" initials="PH" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page" style="gap: 20px">
+<nav class="eg-crumb" aria-label="Đường dẫn"><a href="GV-BaiTap.dc.html">Bài tập &amp; chấm bài</a><span aria-hidden="true">›</span><a href="GV-BaiNop.dc.html">Hằng đẳng thức đáng nhớ</a><span aria-hidden="true">›</span><span style="color: #0a0a0a">Trịnh Đức Anh</span></nav>
+<div class="eg-ph">
+<div><div class="eg-row" style="gap: 10px"><h1 class="eg-h1">Trịnh Đức Anh</h1><span class="eg-badge eg-b-gray">Nháp</span></div><p class="eg-sub">Toán 8A · lần nộp 2/2 · 19:40 26/10/2026 · câu 2 nộp bằng 2 ảnh</p></div>
+<div class="eg-row"><a class="eg-btn eg-btn-o" href="GV-BaiNop.dc.html">Danh sách bài nộp</a><button type="button" class="eg-btn eg-btn-o">Bài chưa chấm tiếp theo</button></div>
+</div>
+
+<div class="eg-split">
+<section class="eg-left-wide eg-card" style="gap: 14px" aria-label="Chấm trên ảnh câu 2">
+<div class="eg-row-sb"><div><p class="eg-strong" style="margin: 0">Câu 2 · Tự luận · ảnh 1/2</p><p class="eg-cs">Phân tích x² − 4 thành nhân tử và giải thích.</p></div><span class="eg-badge eg-b-gray">6 điểm</span></div>
+
+<div class="eg-row" role="toolbar" aria-label="Công cụ chấm trên ảnh" style="gap: 8px; padding: 8px; border: 1px solid #e5e5e5; border-radius: 14px; background: #fafafa">
+<div class="eg-seg" role="group" aria-label="Công cụ">
+<sc-for list="{{tools}}" as="t" hint-placeholder-count="2"><button type="button" aria-pressed="{{t.pressed}}" style="{{t.style}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+<span style="width: 1px; height: 24px; background: #e5e5e5"></span>
+<div class="eg-row" style="gap: 6px" role="group" aria-label="Màu bút">
+<sc-for list="{{colors}}" as="c" hint-placeholder-count="3"><button type="button" aria-label="{{c.label}}" aria-pressed="{{c.pressed}}" style="{{c.style}}" onClick="{{c.pick}}"></button></sc-for>
+</div>
+<span style="width: 1px; height: 24px; background: #e5e5e5"></span>
+<div class="eg-seg" role="group" aria-label="Độ dày nét">
+<sc-for list="{{sizes}}" as="z" hint-placeholder-count="3"><button type="button" aria-pressed="{{z.pressed}}" style="{{z.style}}" onClick="{{z.pick}}">{{z.label}}</button></sc-for>
+</div>
+<span style="flex: 1 1 auto"></span>
+<button type="button" class="eg-btn eg-btn-o eg-btn-sm" onClick="{{undo}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg>Hoàn tác</button>
+<button type="button" class="eg-btn eg-btn-g eg-btn-sm" onClick="{{clear}}">Xóa hết nét</button>
+</div>
+
+<div style="position: relative; width: 100%; max-width: 760px; aspect-ratio: 640 / 480; align-self: center; border-radius: 14px; overflow: hidden; border: 1px solid #e5e5e5; box-shadow: 0 2px 10px rgba(0,0,0,.06); background: #fffdf8">
+<svg viewBox="0 0 640 480" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%" role="img" aria-label="Ảnh bài làm của học sinh (minh họa)">
+<rect width="640" height="480" fill="#fffdf8"></rect>
+<g stroke="#dbeafe" stroke-width="1.5"><line x1="0" y1="80" x2="640" y2="80"></line><line x1="0" y1="140" x2="640" y2="140"></line><line x1="0" y1="200" x2="640" y2="200"></line><line x1="0" y1="260" x2="640" y2="260"></line><line x1="0" y1="320" x2="640" y2="320"></line><line x1="0" y1="380" x2="640" y2="380"></line><line x1="0" y1="440" x2="640" y2="440"></line></g>
+<line x1="56" y1="0" x2="56" y2="480" stroke="#fecaca" stroke-width="2"></line>
+<g font-family="'Patrick Hand', 'Comic Sans MS', cursive" font-size="28" fill="#1e3a8a">
+<text x="72" y="70">Bài 2. Phân tích x² − 4 thành nhân tử</text>
+<text x="72" y="130">x² − 4 = x² − 2²</text>
+<text x="72" y="190">= (x − 2)(x − 2)</text>
+<text x="72" y="250">Vì đây là hiệu hai bình phương</text>
+</g>
+</svg>
+<sc-for list="{{strokes}}" as="s" hint-placeholder-count="2"><svg viewBox="0 0 640 480" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none"><path d="{{s.d}}" fill="none" stroke="{{s.color}}" stroke-width="{{s.width}}" stroke-opacity="{{s.op}}" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-for>
+<div aria-label="Vùng vẽ: giữ chuột và kéo để chấm lên ảnh" style="position: absolute; inset: 0; cursor: crosshair; touch-action: none" onPointerDown="{{down}}" onPointerMove="{{move}}" onPointerUp="{{up}}" onPointerLeave="{{up}}"></div>
+</div>
+
+<div class="eg-row-sb">
+<div class="eg-row" style="gap: 8px">
+<button type="button" aria-label="Ảnh 1, đang chấm" style="width: 72px; height: 54px; border-radius: 10px; border: 2px solid #155dfc; background: #fffdf8; font: inherit; font-size: 11px; color: #1e3a8a; cursor: pointer">Ảnh 1</button>
+<button type="button" aria-label="Ảnh 2" style="width: 72px; height: 54px; border-radius: 10px; border: 1px solid #e5e5e5; background: #fffdf8; font: inherit; font-size: 11px; color: #737373; cursor: pointer">Ảnh 2</button>
+</div>
+<p class="eg-help" style="max-width: 420px; text-align: right">Giữ chuột và kéo để vẽ. Ảnh gốc của học sinh giữ nguyên; nét chấm lưu thành lớp riêng. <span class="eg-badge eg-b-gray" style="height: 20px">chờ BE-7</span></p>
+</div>
+</section>
+
+<aside class="eg-right-narrow eg-card eg-sticky" style="gap: 16px" aria-label="Chấm điểm">
+<div class="eg-row-sb"><p class="eg-ct">Chấm điểm</p><span class="eg-strong eg-num" style="font-size: 18px">7 <span class="eg-muted" style="font-weight: 400">/ 10</span></span></div>
+<div class="eg-row-sb" style="padding: 10px 12px; border-radius: 14px; background: #ecfdf5; border: 1px solid #a4f4cf"><span class="eg-sm"><b>Câu 1 · Trắc nghiệm</b><br><span style="color: #004f3b">Chọn B · đúng · tự chấm</span></span><b class="eg-num">4/4</b></div>
+<div class="eg-col" style="gap: 10px; padding: 12px; border-radius: 14px; border: 1px solid #bedbff; background: #f8fbff">
+<div class="eg-row-sb"><b class="eg-sm">Câu 2 · Tự luận · nộp ảnh</b><div class="eg-row" style="gap: 6px"><label class="eg-sm eg-muted" for="ca-s2">Điểm</label><input id="ca-s2" class="eg-input eg-num" value="3" style="width: 64px"><span class="eg-sm eg-muted">/6</span></div></div>
+<div class="eg-field"><label class="eg-label" for="ca-f2">Nhận xét câu 2</label><textarea id="ca-f2" class="eg-textarea" style="min-height: 96px">Dòng 3 sai dấu (chỗ khoanh đỏ): phải là (x − 2)(x + 2). Giải thích đúng.</textarea></div>
+</div>
+<div class="eg-field"><label class="eg-label" for="ca-all">Nhận xét chung</label><textarea id="ca-all" class="eg-textarea" style="min-height: 72px">Xem lại công thức a² − b² = (a − b)(a + b).</textarea></div>
+<hr class="eg-divider">
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><button type="button" class="eg-btn eg-btn-o">Lưu nháp</button><button type="button" class="eg-btn eg-btn-p">Gửi điểm</button></div>
+<p class="eg-help">Phụ huynh xem được điểm, nhận xét và ảnh có nét chấm trên ứng dụng.</p>
+</aside>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.cur = null;
+this.state = {
+tool: 'pen',
+color: '#e7000b',
+size: 3,
+strokes: [
+{ d: 'M 280 118 L 294 134 L 322 100', color: '#009966', width: 4, op: 1 },
+{ d: 'M 58 180 a 120 30 0 1 0 240 0 a 120 30 0 1 0 -240 0', color: '#e7000b', width: 3, op: 1 },
+{ d: 'M 72 242 L 420 242', color: '#facc15', width: 18, op: 0.4 }
+]
+};
+}
+pt(e) {
+const r = e.currentTarget.getBoundingClientRect();
+return [((e.clientX - r.left) * 640 / r.width).toFixed(1), ((e.clientY - r.top) * 480 / r.height).toFixed(1)];
+}
+renderVals() {
+const s = this.state;
+const segBtn = (on) => 'height: 30px; padding: 0 10px; border: 0; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; ' + (on ? 'background: #155dfc; color: #ffffff;' : 'background: #ffffff; color: #404040;');
+const tools = [['pen', 'Bút'], ['hl', 'Dạ quang']].map(([id, label]) => ({
+label, pressed: s.tool === id ? 'true' : 'false', style: segBtn(s.tool === id),
+pick: () => this.setState({ tool: id })
+}));
+const colors = [['#e7000b', 'Màu đỏ'], ['#155dfc', 'Màu xanh dương'], ['#009966', 'Màu xanh lá']].map(([hex, label]) => ({
+label, pressed: s.color === hex ? 'true' : 'false',
+style: 'width: 28px; height: 28px; border-radius: 999px; cursor: pointer; background: ' + hex + '; border: 3px solid ' + (s.color === hex ? '#0a0a0a' : '#ffffff') + '; box-shadow: 0 0 0 1px #d4d4d4;',
+pick: () => this.setState({ color: hex, tool: 'pen' })
+}));
+const sizes = [[2, 'Mảnh'], [3, 'Vừa'], [6, 'Đậm']].map(([w, label]) => ({
+label, pressed: s.size === w ? 'true' : 'false', style: segBtn(s.size === w),
+pick: () => this.setState({ size: w })
+}));
+const down = (e) => {
+e.preventDefault();
+try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+const [x, y] = this.pt(e);
+const hl = this.state.tool === 'hl';
+this.cur = { d: 'M ' + x + ' ' + y, color: hl ? '#facc15' : this.state.color, width: hl ? 18 : this.state.size, op: hl ? 0.4 : 1 };
+this.setState({ strokes: this.state.strokes.concat([this.cur]) });
+};
+const move = (e) => {
+if (!this.cur) return;
+const [x, y] = this.pt(e);
+this.cur = Object.assign({}, this.cur, { d: this.cur.d + ' L ' + x + ' ' + y });
+this.setState({ strokes: this.state.strokes.slice(0, -1).concat([this.cur]) });
+};
+const up = () => { this.cur = null; };
+return {
+tools, colors, sizes, down, move, up,
+strokes: s.strokes,
+undo: () => this.setState({ strokes: this.state.strokes.slice(0, -1) }),
+clear: () => this.setState({ strokes: [] })
+};
+}
+}
+</script>
+</body>
+</html>

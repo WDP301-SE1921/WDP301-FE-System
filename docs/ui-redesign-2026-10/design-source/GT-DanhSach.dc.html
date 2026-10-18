@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Giáo trình theo khóa học</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="designer" active="curriculum" hint-size="256px,400px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Hoàng Thị Lan" role-label="Thiết kế giáo trình" email="curriculum-designer.qa@edugrade.test" initials="HL" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph">
+<div><h1 class="eg-h1">Giáo trình</h1><p class="eg-sub">Mỗi khóa học có một giáo trình dùng cho mọi lớp. Mỗi kỳ là một phiên bản mới.</p></div>
+<div class="eg-row"><button type="button" class="eg-btn eg-btn-o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"></path><path d="m7 10 5 5 5-5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>File CSV mẫu</button><button type="button" class="eg-btn eg-btn-p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo giáo trình</button></div>
+</div>
+
+<div class="eg-tabs" role="tablist" aria-label="Giáo trình hoặc phản hồi"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Giáo trình</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Phản hồi từ giáo viên <span class="eg-count">3</span></button></div>
+
+<p class="eg-note eg-warn"><b>Toán 9 chưa có giáo trình HK2 2026–2027</b> (bắt đầu 18/01/2027, còn 13 tuần). Bấm “Chuẩn bị kỳ tiếp theo” ở dòng Toán 9 để sao chép bài từ HK1.</p>
+
+<div class="eg-toolbar">
+<label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input class="eg-input" type="search" placeholder="Tìm khóa học, giáo trình…" aria-label="Tìm giáo trình"></label>
+<select class="eg-select" style="width: 160px" aria-label="Lọc theo môn"><option>Tất cả môn</option><option>Toán</option><option>Vật lý</option><option>Hóa học</option><option>Sinh học</option></select>
+<select class="eg-select" style="width: 140px" aria-label="Lọc theo khối"><option>Tất cả khối</option><option>Khối 6</option><option>Khối 7</option><option>Khối 8</option><option>Khối 9</option></select>
+<div class="eg-tabs" role="tablist" aria-label="Lọc trạng thái"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Tất cả</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Cần tôi xử lý <span class="eg-count">2</span></button><button type="button" role="tab" aria-selected="false" class="eg-tab">Đang áp dụng</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Đang soạn &amp; chờ duyệt</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Lưu trữ</button></div>
+</div>
+
+<div class="eg-tw">
+<table class="eg-t">
+<thead><tr><th>Giáo trình</th><th>Hiệu lực</th><th class="r">Bài học</th><th>Lớp dùng</th><th>Trạng thái</th><th>Bước tiếp theo</th><th class="r"><span style="position: absolute; left: -9999px">Thao tác</span></th></tr></thead>
+<tbody>
+<tr><td colspan="7" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><b>Toán 8</b><span class="eg-muted eg-sm">Khối 8 · 3 buổi/tuần · Toán 8A, Toán 8B</span><span class="eg-badge eg-b-amber">Toán 8B chỉ 2 buổi/tuần</span></div></td></tr>
+<tr><td><b>Toán 8 · HK1 2026–2027</b><div class="eg-xs eg-muted">Phiên bản 2</div></td><td class="nw">07/09/2026 → 16/01/2027<div class="eg-xs eg-muted">còn 13 tuần</div></td><td class="r eg-num">57/57</td><td>8A, 8B</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td class="eg-muted">—</td><td class="r"><a class="eg-btn eg-btn-o eg-btn-sm" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr class="on"><td><b>Toán 8 · HK2 2026–2027</b><div class="eg-xs eg-muted">Phiên bản 3 · sao chép từ HK1</div></td><td class="nw">18/01/2027 → 16/05/2027<div class="eg-xs eg-muted">17 tuần học</div></td><td class="r eg-num"><b>48</b>/51<div class="eg-xs" style="color: #a33d00">thiếu 3 bài</div></td><td class="eg-muted">8A, 8B (sẽ dùng)</td><td><span class="eg-badge eg-b-gray">Nháp</span></td><td><b>Bạn:</b> thêm 3 bài, gửi thẩm định</td><td class="r"><a class="eg-btn eg-btn-p eg-btn-sm" href="GT-ChiTiet.dc.html">Mở</a></td></tr>
+<tr><td colspan="7" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-hoa"></span><b>Hóa học 9</b><span class="eg-muted eg-sm">Khối 9 · 2 buổi/tuần · Hóa học 9A</span></div></td></tr>
+<tr><td><b>Hóa học 9 · HK1 2026–2027</b><div class="eg-xs eg-muted">Phiên bản 1</div></td><td class="nw">07/09/2026 → 16/01/2027<div class="eg-xs eg-muted">còn 13 tuần</div></td><td class="r eg-num">38/38</td><td>9A</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td class="eg-muted">—</td><td class="r"><a class="eg-btn eg-btn-o eg-btn-sm" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr class="on"><td><b>Hóa học 9 · HK2 2026–2027</b><div class="eg-xs eg-muted">Phiên bản 2</div></td><td class="nw">18/01/2027 → 16/05/2027<div class="eg-xs eg-muted">17 tuần học</div></td><td class="r eg-num">34/34</td><td class="eg-muted">9A (sẽ dùng)</td><td><span class="eg-badge eg-b-red">Trả lại để sửa</span><div class="eg-xs eg-muted" style="margin-top: 4px">Quản lý: thêm bài thực hành</div></td><td><b>Bạn:</b> sửa theo nhận xét</td><td class="r"><a class="eg-btn eg-btn-p eg-btn-sm" href="GT-ChiTiet.dc.html">Mở</a></td></tr>
+<tr><td colspan="7" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-ly"></span><b>Vật lý 8</b><span class="eg-muted eg-sm">Khối 8 · 2 buổi/tuần · Vật lý 8A</span></div></td></tr>
+<tr><td><b>Vật lý 8 · HK1 2026–2027</b><div class="eg-xs eg-muted">Phiên bản 1</div></td><td class="nw">07/09/2026 → 16/01/2027<div class="eg-xs eg-muted">còn 13 tuần</div></td><td class="r eg-num">38/38</td><td>8A</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td class="eg-muted">—</td><td class="r"><a class="eg-btn eg-btn-o eg-btn-sm" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr><td><b>Vật lý 8 · HK2 2026–2027</b><div class="eg-xs eg-muted">Phiên bản 2</div></td><td class="nw">18/01/2027 → 16/05/2027<div class="eg-xs eg-muted">17 tuần học</div></td><td class="r eg-num">34/34</td><td class="eg-muted">8A (sẽ dùng)</td><td><span class="eg-badge eg-b-amber">Chờ thẩm định</span></td><td>GV Nguyễn Thị Mai thẩm định</td><td class="r"><a class="eg-btn eg-btn-o eg-btn-sm" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr><td colspan="7" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><b>Toán 9</b><span class="eg-muted eg-sm">Khối 9 · 3 buổi/tuần · Toán 9A</span></div></td></tr>
+<tr><td><b>Toán 9 · HK1 2026–2027</b><div class="eg-xs eg-muted">Phiên bản 1</div></td><td class="nw">07/09/2026 → 16/01/2027<div class="eg-xs eg-muted">còn 13 tuần</div></td><td class="r eg-num">57/57</td><td>9A</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td><span style="color: #a33d00">Chưa có bản HK2</span></td><td class="r"><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Chuẩn bị kỳ tiếp theo</button></td></tr>
+</tbody>
+</table>
+</div>
+<div class="eg-tfoot"><span>7 phiên bản · 4 khóa học · dòng tô xanh là việc cần bạn xử lý</span><span>Bản đã lưu trữ xem ở bộ lọc “Lưu trữ”</span></div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

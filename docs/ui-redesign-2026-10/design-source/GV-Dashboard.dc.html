@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Dashboard giáo viên</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="teacher" active="dashboard" hint-size="256px,520px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Phạm Văn Hùng" role-label="Giáo viên" email="teacher.qa@edugrade.test" initials="PH" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph">
+<div><h1 class="eg-h1">Tổng quan giảng dạy</h1><p class="eg-sub">Thứ 5, 29/10/2026 · lớp Toán 8A và Toán 8B.</p></div>
+<a class="eg-btn eg-btn-p" href="GV-TaoBaiTap.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo bài tập / kiểm tra</a>
+</div>
+
+<div class="eg-grid4">
+<div class="eg-card eg-card-sm" style="gap: 6px"><span class="eg-sm eg-muted">Lớp phụ trách</span><b style="font-size: 28px; letter-spacing: -0.02em">2</b><span class="eg-xs eg-muted">Toán 8A · Toán 8B · 5 học sinh</span></div>
+<div class="eg-card eg-card-sm" style="gap: 6px"><span class="eg-sm eg-muted">Buổi dạy hôm nay</span><b style="font-size: 28px; letter-spacing: -0.02em">1</b><span class="eg-xs eg-muted">Toán 8B · 18:00 · P.102</span></div>
+<a href="GV-BaiNop.dc.html" class="eg-card eg-card-sm" style="gap: 6px; text-decoration: none; color: inherit"><span class="eg-sm eg-muted">Bài nộp chưa chấm</span><b style="font-size: 28px; letter-spacing: -0.02em">2</b><span class="eg-xs eg-muted">Hằng đẳng thức đáng nhớ</span></a>
+<a href="GV-DiemDanh.dc.html" class="eg-card eg-card-sm" style="gap: 6px; text-decoration: none; color: inherit"><span class="eg-sm eg-muted">Buổi chưa điểm danh</span><b style="font-size: 28px; letter-spacing: -0.02em">1</b><span class="eg-xs eg-muted">Toán 8A · T4 28/10</span></a>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px">
+<section class="eg-card" aria-label="Chuyên cần Toán 8A">
+<div><p class="eg-ct">Chuyên cần · Toán 8A</p><p class="eg-cs">Tỉ lệ có mặt các buổi đã chốt · rê chuột để xem</p></div>
+<div style="display: flex; gap: 8px">
+<div style="display: flex; flex-direction: column; justify-content: space-between; height: 180px; font-size: 11px; color: #737373; text-align: right; width: 34px; font-variant-numeric: tabular-nums"><span>100%</span><span>50%</span><span>0%</span></div>
+<div style="flex: 1 1 auto; position: relative; height: 180px">
+<div style="position: absolute; left: 0; right: 0; top: 0; border-top: 1px solid #f0f0f0"></div>
+<div style="position: absolute; left: 0; right: 0; top: 90px; border-top: 1px solid #f0f0f0"></div>
+<div style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid #d4d4d4"></div>
+<div style="position: absolute; inset: 0; display: flex; align-items: flex-end">
+<sc-for list="{{att}}" as="b" hint-placeholder-count="4"><div style="flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; justify-content: center" onMouseEnter="{{b.enter}}"><div style="{{b.bar}}"></div></div></sc-for>
+</div>
+<div style="{{tipStyle}}"><b>{{tip.day}}</b><br>{{tip.value}}</div>
+</div>
+</div>
+<div style="display: flex; gap: 8px"><span style="width: 34px"></span><div style="flex: 1 1 auto; display: flex"><sc-for list="{{att}}" as="b" hint-placeholder-count="4"><span style="flex: 1 1 0; text-align: center; font-size: 12px; color: #737373">{{b.label}}</span></sc-for></div></div>
+</section>
+
+<section class="eg-card" aria-label="Tiến độ giáo trình">
+<div class="eg-row-sb"><div><p class="eg-ct">Tiến độ giáo trình</p><p class="eg-cs">Toán 8 · HK1 2026–2027 · 57 bài</p></div><a class="eg-link eg-sm" href="GT-DanhSach.dc.html">Giáo trình</a></div>
+<div class="eg-col" style="gap: 16px">
+<div class="eg-col" style="gap: 6px"><div class="eg-row-sb eg-sm"><span><b>Toán 8A</b> · 3 buổi/tuần</span><b class="eg-num">bài 23/57</b></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 40%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div><span class="eg-xs eg-muted">Đúng tiến độ, hết bài 57 vào 15/01/2027</span></div>
+<div class="eg-col" style="gap: 6px"><div class="eg-row-sb eg-sm"><span><b>Toán 8B</b> · 2 buổi/tuần</span><b class="eg-num">bài 16/57</b></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 28%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div><span class="eg-row" style="gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c98500" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20Z"></path><path d="M12 10v4M12 17h.01"></path></svg><span class="eg-xs" style="color: #7b3306">Chậm hơn khóa: hết kỳ chỉ tới bài 38</span></span></div>
+</div>
+</section>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px">
+<section class="eg-card" aria-label="Hôm nay">
+<div class="eg-row-sb"><p class="eg-ct">Hôm nay</p><a class="eg-link eg-sm" href="GV-DiemDanh.dc.html">Lịch dạy</a></div>
+<div class="eg-row-sb" style="padding: 12px; border: 1px solid #e5e5e5; border-radius: 14px"><span class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><span><b class="eg-sm">18:00 · Toán 8B</b><br><span class="eg-xs eg-muted">P.102 · Bài 16 · Rút gọn phân thức</span></span></span><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Xem bài</button></div>
+</section>
+<section class="eg-card" aria-label="Cần chấm">
+<div class="eg-row-sb"><p class="eg-ct">Cần chấm</p><a class="eg-link eg-sm" href="GV-BaiTap.dc.html">Tất cả</a></div>
+<div class="eg-col" style="gap: 8px">
+<div class="eg-row-sb"><span><b class="eg-sm">Nguyễn Minh An</b><br><span class="eg-xs eg-muted">Hằng đẳng thức · nộp 20:14 27/10</span></span><a class="eg-btn eg-btn-p eg-btn-xs" href="GV-ChamBai.dc.html">Chấm</a></div>
+<div class="eg-row-sb"><span><b class="eg-sm">Lê Gia Bảo</b><br><span class="eg-xs eg-muted">Hằng đẳng thức · nộp 21:02 27/10</span></span><a class="eg-btn eg-btn-p eg-btn-xs" href="GV-ChamBai.dc.html">Chấm</a></div>
+</div>
+</section>
+<section class="eg-card" aria-label="Giáo trình chờ thẩm định">
+<div class="eg-row-sb"><p class="eg-ct">Chờ bạn thẩm định</p><span class="eg-badge eg-b-amber">1</span></div>
+<div class="eg-row-sb" style="padding: 12px; border: 1px solid #e5e5e5; border-radius: 14px"><span><b class="eg-sm">Toán 8 · HK2 2026–2027</b><br><span class="eg-xs eg-muted">51 bài · 4 mới · 6 đã sửa</span></span><a class="eg-btn eg-btn-p eg-btn-xs" href="GT-ThamDinh.dc.html">Thẩm định</a></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1260}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { hov: 3 };
+}
+renderVals() {
+const data = [['T2 19/10', 100, '5/5'], ['T4 21/10', 100, '5/5'], ['T6 23/10', 80, '4/5'], ['T2 26/10', 100, '5/5']];
+const hov = this.state.hov;
+const att = data.map(([label, v], i) => ({
+label,
+bar: 'width: 24px; height: ' + Math.round(v / 100 * 180) + 'px; background: #2a78d6; border-radius: 4px 4px 0 0; opacity: ' + (i === hov ? '1' : '0.55') + ';',
+enter: () => this.setState({ hov: i })
+}));
+const [d, v, n] = data[hov];
+const left = (hov + 0.5) / data.length * 100;
+return {
+att,
+tip: { day: d, value: v + '% có mặt · ' + n + ' học sinh' },
+tipStyle: 'position: absolute; top: 8px; left: ' + Math.min(82, Math.max(16, left)) + '%; transform: translateX(-50%); background: #ffffff; border: 1px solid #e5e5e5; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.08); padding: 6px 10px; font-size: 12px; line-height: 1.45; white-space: nowrap; pointer-events: none;'
+};
+}
+}
+</script>
+</body>
+</html>

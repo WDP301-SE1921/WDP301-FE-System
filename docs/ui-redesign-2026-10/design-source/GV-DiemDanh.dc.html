@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Lịch dạy và điểm danh</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="teacher" active="teach" hint-size="256px,520px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Phạm Văn Hùng" role-label="Giáo viên" email="teacher.qa@edugrade.test" initials="PH" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page" style="gap: 20px">
+<div class="eg-ph"><div><h1 class="eg-h1">Lịch dạy &amp; điểm danh</h1><p class="eg-sub">Chọn buổi đã kết thúc để điểm danh và chốt. Giờ theo giờ Việt Nam.</p></div></div>
+<div class="eg-toolbar">
+<div class="eg-row" style="gap: 6px"><button type="button" class="eg-btn eg-btn-o eg-btn-icon" aria-label="Tuần trước"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button><b style="padding: 0 6px">26/10 – 01/11/2026</b><button type="button" class="eg-btn eg-btn-o eg-btn-icon" aria-label="Tuần sau"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button><button type="button" class="eg-btn eg-btn-o">Hôm nay</button></div>
+<span style="flex: 1 1 auto"></span>
+<div class="eg-tabs" role="tablist" aria-label="Cách xem"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Danh sách</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Kanban tuần</button></div>
+</div>
+
+<div class="eg-split">
+<section class="eg-left eg-col" style="gap: 8px" aria-label="Buổi dạy trong tuần">
+<button type="button" class="eg-kcard"><span class="eg-row-sb"><b class="eg-sm">T2 26/10 · 18:00–19:30</b><span class="eg-badge eg-b-green">Đã chốt</span></span><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><span class="eg-sm">Toán 8A · Bài 22</span></span><span class="eg-xs eg-muted">5 có mặt · 0 vắng</span></button>
+<button type="button" class="eg-kcard"><span class="eg-row-sb"><b class="eg-sm">T3 27/10 · 18:00–19:30</b><span class="eg-badge eg-b-gray">0 học viên</span></span><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><span class="eg-sm">Toán 8B · Bài 15</span></span><span class="eg-xs eg-muted">Lớp chưa có ghi danh</span></button>
+<button type="button" class="eg-kcard on"><span class="eg-row-sb"><b class="eg-sm">T4 28/10 · 18:00–19:30</b><span class="eg-badge eg-b-amber">Chưa điểm danh</span></span><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><span class="eg-sm">Toán 8A · Bài 23</span></span><span class="eg-xs eg-muted">Đã kết thúc · cần chốt</span></button>
+<button type="button" class="eg-kcard"><span class="eg-row-sb"><b class="eg-sm">T5 29/10 · 18:00–19:30</b><span class="eg-badge eg-b-blue">Hôm nay</span></span><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><span class="eg-sm">Toán 8B · Bài 16</span></span><span class="eg-xs eg-muted">P.102</span></button>
+<button type="button" class="eg-kcard"><span class="eg-row-sb"><b class="eg-sm">T6 30/10 · 18:00–19:30</b><span class="eg-badge eg-b-gray">Sắp tới</span></span><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><span class="eg-sm">Toán 8A · Bài 24</span></span><span class="eg-xs eg-muted">P.101</span></button>
+</section>
+
+<section class="eg-right eg-card" aria-label="Điểm danh buổi đã chọn">
+<div class="eg-row-sb" style="align-items: flex-start"><div><p class="eg-ct">Toán 8A · Thứ 4, 28/10/2026</p><p class="eg-cs" style="margin-top: 4px">18:00–19:30 · P.101 · Bài 23 · Luyện tập giải bài toán bằng cách lập phương trình</p></div><a class="eg-link eg-sm" href="#">Xem nội dung bài</a></div>
+<div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-green">4 có mặt</span><span class="eg-badge eg-b-red">1 vắng</span><span class="eg-badge eg-b-gray">0 có phép</span><span class="eg-xs eg-muted">Danh sách chuẩn bị lúc 17:55</span></div>
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th style="width: 48px">#</th><th>Học sinh</th><th>Loại</th><th class="r">Điểm danh</th></tr></thead>
+<tbody>
+<tr><td class="eg-muted eg-num">1</td><td><b>Nguyễn Minh An</b></td><td class="eg-muted">Chính thức</td><td class="r"><div class="eg-seg" role="group" aria-label="Điểm danh Nguyễn Minh An"><button type="button" class="p" aria-pressed="true">Có mặt</button><button type="button" aria-pressed="false">Vắng</button><button type="button" aria-pressed="false">Có phép</button></div></td></tr>
+<tr><td class="eg-muted eg-num">2</td><td><b>Lê Gia Bảo</b></td><td class="eg-muted">Chính thức</td><td class="r"><div class="eg-seg" role="group" aria-label="Điểm danh Lê Gia Bảo"><button type="button" class="p" aria-pressed="true">Có mặt</button><button type="button" aria-pressed="false">Vắng</button><button type="button" aria-pressed="false">Có phép</button></div></td></tr>
+<tr><td class="eg-muted eg-num">3</td><td><b>Đỗ Hoàng Nam</b></td><td class="eg-muted">Chính thức</td><td class="r"><div class="eg-seg" role="group" aria-label="Điểm danh Đỗ Hoàng Nam"><button type="button" class="p" aria-pressed="true">Có mặt</button><button type="button" aria-pressed="false">Vắng</button><button type="button" aria-pressed="false">Có phép</button></div></td></tr>
+<tr><td class="eg-muted eg-num">4</td><td><b>Trịnh Đức Anh</b></td><td class="eg-muted">Chính thức</td><td class="r"><div class="eg-seg" role="group" aria-label="Điểm danh Trịnh Đức Anh"><button type="button" aria-pressed="false">Có mặt</button><button type="button" class="a" aria-pressed="true">Vắng</button><button type="button" aria-pressed="false">Có phép</button></div></td></tr>
+<tr><td class="eg-muted eg-num">5</td><td><b>Châu Gia Huy</b></td><td class="eg-muted">Chính thức</td><td class="r"><div class="eg-seg" role="group" aria-label="Điểm danh Châu Gia Huy"><button type="button" class="p" aria-pressed="true">Có mặt</button><button type="button" aria-pressed="false">Vắng</button><button type="button" aria-pressed="false">Có phép</button></div></td></tr>
+</tbody></table></div>
+<div class="eg-field"><label class="eg-label" for="at-n">Ghi chú buổi học</label><textarea id="at-n" class="eg-textarea" placeholder="Ví dụ: lớp làm xong bài 1–5, bài 6 về nhà"></textarea></div>
+<div class="eg-row-sb"><p class="eg-help">Chốt rồi thì không sửa được. Học sinh vắng có thể được nhân viên xếp học bù.</p><button type="button" class="eg-btn eg-btn-p">Chốt điểm danh</button></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

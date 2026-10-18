@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Topbar EduGrade</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<header style="height: 64px; box-sizing: border-box; display: flex; align-items: center; gap: 16px; padding: 0 32px; border-bottom: 1px solid #e5e5e5; background: #ffffff; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0a0a0a; min-width: 0">
+<button type="button" style="flex: 0 1 320px; min-width: 0; height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; border: 1px solid #e5e5e5; border-radius: 999px; background: #ffffff; font: inherit; font-size: 14px; color: #737373; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+<span style="flex: 1 1 auto; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tìm màn hình, học sinh, lớp…</span>
+<span style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #525252; border: 1px solid #e5e5e5; border-radius: 8px; padding: 1px 6px; background: #fafafa">Ctrl K</span>
+</button>
+<span style="flex: 1 1 auto"></span>
+<sc-if value="{{showCreate}}" hint-placeholder-val="{{true}}">
+<button type="button" style="height: 36px; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 999px; background: #155dfc; color: #ffffff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo nhanh</button>
+</sc-if>
+<button type="button" aria-label="Thông báo" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; background: transparent; color: #525252; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+<span style="width: 1px; height: 28px; background: #e5e5e5"></span>
+<span style="display: flex; align-items: center; gap: 10px; min-width: 0">
+<span style="width: 32px; height: 32px; border-radius: 999px; background: #eff6ff; color: #155dfc; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex: none">{{initials}}</span>
+<span style="display: flex; flex-direction: column; line-height: 1.25; min-width: 0">
+<span style="display: flex; align-items: center; gap: 6px"><b style="font-size: 13px; white-space: nowrap">{{person}}</b><span style="height: 18px; padding: 0 8px; border-radius: 999px; background: #eff6ff; color: #1447e6; border: 1px solid #bedbff; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; white-space: nowrap">{{roleLabel}}</span></span>
+<span style="font-size: 12px; color: #737373; white-space: nowrap">{{email}}</span>
+</span>
+</span>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"person":{"editor":"text","default":"Lê Thu Hà"},"roleLabel":{"editor":"text","default":"Nhân viên"},"email":{"editor":"text","default":"staff.qa@edugrade.test"},"initials":{"editor":"text","default":"LH"},"showCreate":{"editor":"boolean","default":true},"$preview":{"width":1184,"height":64}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+person: this.props.person ?? 'Lê Thu Hà',
+roleLabel: this.props.roleLabel ?? 'Nhân viên',
+email: this.props.email ?? 'staff.qa@edugrade.test',
+initials: this.props.initials ?? 'LH',
+showCreate: this.props.showCreate ?? true
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Đăng ký và biên lai</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app" style="position: relative">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="staff" active="payments" hint-size="256px,560px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Lê Thu Hà" role-label="Nhân viên" email="staff.qa@edugrade.test" initials="LH" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Đăng ký &amp; biên lai</h1><p class="eg-sub">Thu học phí cho đăng ký nháp, mở lại bill hoặc biên lai.</p></div></div>
+<div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-amber">6 chờ thu · 14.300.000 đ</span><span class="eg-badge eg-b-green">11 hoàn tất · 28.600.000 đ</span></div>
+<div class="eg-toolbar">
+<div class="eg-tabs" role="tablist" aria-label="Danh sách"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Đăng ký</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Thanh toán đã xác nhận</button></div>
+<label class="eg-search" style="max-width: 420px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input class="eg-input" type="search" placeholder="Tên con, email phụ huynh hoặc mã đăng ký…" aria-label="Tìm đăng ký"></label>
+<select class="eg-select" style="width: 150px" aria-label="Trạng thái"><option>Tất cả</option><option>Bản nháp</option><option>Hoàn tất</option><option>Đã hủy</option></select>
+<select class="eg-select" style="width: 170px" aria-label="Thời gian"><option>Tháng này</option><option>Hôm nay</option><option>Tạo trong phiên này</option></select>
+</div>
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Học sinh</th><th>Lớp</th><th>Kỳ học</th><th class="r">Học phí</th><th>Trạng thái</th><th class="r"><span style="position: absolute; left: -9999px">Thao tác</span></th></tr></thead>
+<tbody>
+<tr class="on"><td><b>Võ Nhật Minh</b><div class="eg-xs eg-muted">mai.huong.ph@gmail.com</div></td><td>Toán 9A</td><td class="nw">20/10/2026 · 6 tháng</td><td class="r eg-num">5.700.000 đ</td><td><span class="eg-badge eg-b-amber">Bản nháp</span></td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+<tr><td><b>Ngô Bảo Anh</b><div class="eg-xs eg-muted">ngo.dung.ph@gmail.com</div></td><td>Toán 9A</td><td class="nw">20/10/2026 · 3 tháng</td><td class="r eg-num">2.850.000 đ</td><td><span class="eg-badge eg-b-amber">Bản nháp</span></td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+<tr><td><b>Châu Gia Huy</b><div class="eg-xs eg-muted">chau.tuan.ph@gmail.com</div></td><td>Vật lý 8A</td><td class="nw">19/10/2026 · 3 tháng</td><td class="r eg-num">2.250.000 đ</td><td><span class="eg-badge eg-b-amber">Bản nháp</span></td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+<tr><td><b>Nguyễn Minh An</b><div class="eg-xs eg-muted">phuhuynh.qa.mvdfarne@gmail.com</div></td><td>Toán 8A</td><td class="nw">19/10/2026 · 3 tháng</td><td class="r eg-num">2.700.000 đ</td><td><span class="eg-badge eg-b-green">Hoàn tất</span></td><td class="r"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Biên lai</button></td></tr>
+<tr><td><b>Nguyễn Minh An</b><div class="eg-xs eg-muted">phuhuynh.qa.mvdfarne@gmail.com</div></td><td>Vật lý 8A</td><td class="nw">19/10/2026 · 6 tháng</td><td class="r eg-num">4.500.000 đ</td><td><span class="eg-badge eg-b-green">Hoàn tất</span></td><td class="r"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Biên lai</button></td></tr>
+<tr><td><b>Lê Gia Hân</b><div class="eg-xs eg-muted">tran.hong.ph@gmail.com</div></td><td>Toán 6A</td><td class="nw">19/10/2026 · 3 tháng</td><td class="r eg-num">2.100.000 đ</td><td><span class="eg-badge eg-b-green">Hoàn tất</span></td><td class="r"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Biên lai</button></td></tr>
+</tbody></table></div>
+<div class="eg-tfoot"><span>Hiển thị 1–6 trên 17 đăng ký</span><div class="eg-row" style="gap: 8px"><button type="button" class="eg-btn eg-btn-o eg-btn-sm" disabled>Trước</button><span>1 / 3</span><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Sau</button></div></div>
+</main>
+</div>
+
+<div class="eg-overlay" aria-hidden="true"></div>
+<aside class="eg-drawer" role="dialog" aria-label="Thu học phí Võ Nhật Minh" style="width: min(520px, 100%)">
+<div class="eg-dh">
+<div><p class="eg-ct">Thu học phí</p><p class="eg-cs">Mã đăng ký DK-7F3K2 · tạo 13:36 18/10/2026</p></div>
+<button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Đóng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<div class="eg-db">
+<dl class="eg-kv">
+<dt>Học sinh</dt><dd>Võ Nhật Minh · Khối 9</dd>
+<dt>Phụ huynh</dt><dd>Mai Thanh Hương · mai.huong.ph@gmail.com</dd>
+<dt>Lớp</dt><dd>Toán 9A - Tối 3, 5, 7</dd>
+<dt>Lịch tuần</dt><dd>T3 · T5 · T7 · 19:45–21:15</dd>
+<dt>Kỳ học</dt><dd>20/10/2026 → trước 20/04/2027</dd>
+</dl>
+<div style="padding: 14px 16px; border-radius: 14px; background: #fafafa; border: 1px solid #e5e5e5; display: flex; flex-direction: column; gap: 6px">
+<div class="eg-row-sb eg-sm"><span class="eg-muted">Học phí tháng</span><span class="eg-num">950.000 đ</span></div>
+<div class="eg-row-sb eg-sm"><span class="eg-muted">Số tháng</span><span class="eg-num">× 6</span></div>
+<hr class="eg-divider">
+<div class="eg-row-sb"><b>Cần thu</b><b class="eg-num" style="font-size: 20px; color: #155dfc">5.700.000 đ</b></div>
+</div>
+<div class="eg-field"><label class="eg-label" for="pm-r">Số biên lai</label><input id="pm-r" class="eg-input" placeholder="Ví dụ: BL-2026-118"></div>
+<label class="eg-check"><input type="checkbox"><span>Tôi đã nhận đủ 5.700.000 đ từ phụ huynh.</span></label>
+</div>
+<div class="eg-df"><button type="button" class="eg-btn eg-btn-g">Hủy đăng ký</button><button type="button" class="eg-btn eg-btn-o">In bill</button><button type="button" class="eg-btn eg-btn-p">Xác nhận đã thu</button></div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

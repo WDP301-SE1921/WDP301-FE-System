@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Dashboard thiết kế giáo trình</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="designer" active="dashboard" hint-size="256px,400px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Hoàng Thị Lan" role-label="Thiết kế giáo trình" email="curriculum-designer.qa@edugrade.test" initials="HL" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph">
+<div><h1 class="eg-h1">Tổng quan giáo trình</h1><p class="eg-sub">Chuẩn bị cho HK2 2026–2027 · bắt đầu 18/01/2027, còn 13 tuần.</p></div>
+<a class="eg-btn eg-btn-p" href="GT-TaoMoi.dc.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo giáo trình</a>
+</div>
+<div class="eg-grid4">
+<a href="GT-DanhSach.dc.html" class="eg-card eg-card-sm" style="gap: 6px; text-decoration: none; color: inherit"><span class="eg-sm eg-muted">Đang soạn</span><b style="font-size: 28px; letter-spacing: -0.02em">1</b><span class="eg-xs eg-muted">Toán 8 · thiếu 3 bài</span></a>
+<a href="GT-DanhSach.dc.html" class="eg-card eg-card-sm" style="gap: 6px; text-decoration: none; color: inherit"><span class="eg-sm eg-muted">Cần sửa theo nhận xét</span><b style="font-size: 28px; letter-spacing: -0.02em">1</b><span class="eg-xs eg-muted">Hóa học 9</span></a>
+<div class="eg-card eg-card-sm" style="gap: 6px"><span class="eg-sm eg-muted">Đang chờ duyệt</span><b style="font-size: 28px; letter-spacing: -0.02em">1</b><span class="eg-xs eg-muted">Vật lý 8 · giáo viên thẩm định</span></div>
+<a href="GT-PhanHoi.dc.html" class="eg-card eg-card-sm" style="gap: 6px; text-decoration: none; color: inherit"><span class="eg-sm eg-muted">Phản hồi chưa xử lý</span><b style="font-size: 28px; letter-spacing: -0.02em">3</b><span class="eg-xs eg-muted">từ 2 giáo viên</span></a>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px">
+<section class="eg-card" aria-label="Mức sẵn sàng HK2">
+<div><p class="eg-ct">Sẵn sàng cho HK2 theo khóa</p><p class="eg-cs">Số bài đã có / số bài cần (số tuần × số buổi/tuần)</p></div>
+<div class="eg-col" style="gap: 16px">
+<div class="eg-col" style="gap: 6px"><div class="eg-row-sb eg-sm"><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-ly"></span><b>Vật lý 8</b></span><span class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-amber">Chờ thẩm định</span><b class="eg-num">34/34</b></span></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 100%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div></div>
+<div class="eg-col" style="gap: 6px"><div class="eg-row-sb eg-sm"><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-hoa"></span><b>Hóa học 9</b></span><span class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-red">Trả lại để sửa</span><b class="eg-num">34/34</b></span></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 100%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div></div>
+<div class="eg-col" style="gap: 6px"><div class="eg-row-sb eg-sm"><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><b>Toán 8</b></span><span class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-gray">Nháp</span><b class="eg-num">48/51</b></span></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 94%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div></div>
+<div class="eg-col" style="gap: 6px"><div class="eg-row-sb eg-sm"><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><b>Toán 6</b></span><span class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-gray">Chưa tạo</span><b class="eg-num">0/34</b></span></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"></div></div>
+<div class="eg-col" style="gap: 6px"><div class="eg-row-sb eg-sm"><span class="eg-row" style="gap: 6px"><span class="eg-dot eg-d-toan"></span><b>Toán 9</b></span><span class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-gray">Chưa tạo</span><b class="eg-num">0/51</b></span></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"></div></div>
+<p class="eg-help">Vật lý 9 và Sinh học 7 chưa có giáo trình HK1 nên lớp chưa sinh được lịch.</p>
+</div>
+</section>
+
+<section class="eg-card" aria-label="Phản hồi mới">
+<div class="eg-row-sb"><div><p class="eg-ct">Phản hồi mới từ giáo viên</p><p class="eg-cs">Gom để sửa ở bản kỳ sau</p></div><a class="eg-link eg-sm" href="GT-PhanHoi.dc.html">Tất cả</a></div>
+<div class="eg-col" style="gap: 12px">
+<div class="eg-row" style="gap: 10px; flex-wrap: nowrap; align-items: flex-start"><span class="eg-avatar" style="width: 28px; height: 28px; font-size: 10px">PH</span><span class="eg-sm"><b>Toán 8 · Bài 20</b> · Phương trình chứa ẩn ở mẫu<br><span class="eg-muted">“Ví dụ 3 thiếu bước đặt điều kiện xác định.”</span><br><span class="eg-xs eg-muted">Phạm Văn Hùng · 21/10</span></span></div>
+<div class="eg-row" style="gap: 10px; flex-wrap: nowrap; align-items: flex-start"><span class="eg-avatar" style="width: 28px; height: 28px; font-size: 10px">PH</span><span class="eg-sm"><b>Toán 8 · Bài 21</b> · Giải bài toán bằng cách lập phương trình<br><span class="eg-muted">“Nên thêm 1 bài toán chuyển động.”</span><br><span class="eg-xs eg-muted">Phạm Văn Hùng · 23/10</span></span></div>
+<div class="eg-row" style="gap: 10px; flex-wrap: nowrap; align-items: flex-start"><span class="eg-avatar" style="width: 28px; height: 28px; font-size: 10px">NM</span><span class="eg-sm"><b>Vật lý 8 · Bài 14</b> · Áp suất khí quyển<br><span class="eg-muted">“Thí nghiệm Tô-ri-xe-li cần hình minh họa.”</span><br><span class="eg-xs eg-muted">Nguyễn Thị Mai · 22/10</span></span></div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

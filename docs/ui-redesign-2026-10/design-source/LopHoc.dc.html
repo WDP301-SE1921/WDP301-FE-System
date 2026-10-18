@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Lớp học</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="manager" active="classes" hint-size="256px,640px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Trần Minh Quân" role-label="Quản lý trung tâm" email="manager.qa@edugrade.test" initials="TQ" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph">
+<div><h1 class="eg-h1">Lớp học</h1><p class="eg-sub">Lớp, lịch tuần, giáo viên và sĩ số của trung tâm.</p></div>
+<a class="eg-btn eg-btn-p" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Tạo lớp học</a>
+</div>
+<div class="eg-tabs" role="tablist" aria-label="Lớp học hoặc phòng học"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="2"><button type="button" role="tab" aria-selected="{{t.selected}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for></div>
+<sc-if value="{{isClasses}}" hint-placeholder-val="{{true}}">
+<div class="eg-col" style="gap: 24px">
+<div class="eg-toolbar">
+<label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input class="eg-input" type="search" placeholder="Tên lớp, môn hoặc giáo viên…" aria-label="Tìm lớp"></label>
+<select class="eg-select" style="width: 140px" aria-label="Lọc môn"><option>Tất cả môn</option><option>Toán</option><option>Vật lý</option><option>Hóa học</option><option>Sinh học</option></select>
+<select class="eg-select" style="width: 130px" aria-label="Lọc khối"><option>Tất cả khối</option><option>Khối 6</option><option>Khối 7</option><option>Khối 8</option><option>Khối 9</option></select>
+<select class="eg-select" style="width: 160px" aria-label="Lọc trạng thái"><option>Đang mở đăng ký</option><option>Đóng đăng ký</option><option>Ngừng hoạt động</option></select>
+<span style="flex: 1 1 auto"></span>
+<div class="eg-tabs" role="tablist" aria-label="Kiểu hiển thị"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Thẻ</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Bảng</button></div>
+</div>
+
+<div class="eg-grid4">
+<article class="eg-card eg-card-sm" style="gap: 10px">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b style="font-size: 15px">Toán 8A - Tối 2, 4, 6</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Toán · Khối 8 · P.101</p>
+<p class="eg-sm" style="margin: 0">T2 · T4 · T6 · 18:00–19:30</p>
+<div class="eg-row" style="gap: 8px"><span class="eg-avatar" style="width: 24px; height: 24px; font-size: 10px">PH</span><span class="eg-sm">Phạm Văn Hùng</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">5/20</b></div><div class="eg-bar"><i style="width: 25%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">900.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Toán 8A"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+
+<article class="eg-card eg-card-sm" style="gap: 10px">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b style="font-size: 15px">Toán 8B - Tối 3, 5</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Toán · Khối 8 · P.102</p>
+<p class="eg-sm" style="margin: 0">T3 · T5 · 18:00–19:30 <span class="eg-badge eg-b-amber" style="height: 20px; margin-left: 4px">2/3 buổi</span></p>
+<div class="eg-row" style="gap: 8px"><span class="eg-avatar" style="width: 24px; height: 24px; font-size: 10px">PH</span><span class="eg-sm">Phạm Văn Hùng</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">0/20</b></div><div class="eg-bar"><i style="width: 0%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">900.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Toán 8B"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+
+<article class="eg-card eg-card-sm" style="gap: 10px">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b style="font-size: 15px">Toán 9A - Tối 3, 5, 7</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Toán · Khối 9 · P.201</p>
+<p class="eg-sm" style="margin: 0">T3 · T5 · T7 · 19:45–21:15</p>
+<div class="eg-row" style="gap: 8px"><span class="eg-avatar" style="width: 24px; height: 24px; font-size: 10px">BL</span><span class="eg-sm">Bùi Đức Long</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">0/20</b></div><div class="eg-bar"><i style="width: 0%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">950.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Toán 9A"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+
+<article class="eg-card eg-card-sm" style="gap: 10px">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-toan"></span><b style="font-size: 15px">Toán 6A - Chiều 2, 4</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Toán · Khối 6 · P.201</p>
+<p class="eg-sm" style="margin: 0">T2 · T4 · 16:00–17:30</p>
+<div class="eg-row" style="gap: 8px"><span class="eg-avatar" style="width: 24px; height: 24px; font-size: 10px">BL</span><span class="eg-sm">Bùi Đức Long</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">3/20</b></div><div class="eg-bar"><i style="width: 15%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">700.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Toán 6A"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+
+<article class="eg-card eg-card-sm" style="gap: 10px">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-ly"></span><b style="font-size: 15px">Vật lý 8A - Tối 2, 5</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Vật lý · Khối 8 · P.202</p>
+<p class="eg-sm" style="margin: 0">T2 · T5 · 19:45–21:15</p>
+<div class="eg-row" style="gap: 8px"><span class="eg-avatar" style="width: 24px; height: 24px; font-size: 10px">NM</span><span class="eg-sm">Nguyễn Thị Mai</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">3/15</b></div><div class="eg-bar"><i style="width: 20%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">750.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Vật lý 8A"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+
+<article class="eg-card eg-card-sm" style="gap: 10px">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-ly"></span><b style="font-size: 15px">Vật lý 9A - Sáng CN</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Vật lý · Khối 9 · P.202</p>
+<p class="eg-sm" style="margin: 0">CN · 08:00–10:00</p>
+<div class="eg-row" style="gap: 8px"><span class="eg-avatar" style="width: 24px; height: 24px; font-size: 10px">NM</span><span class="eg-sm">Nguyễn Thị Mai</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">0/15</b></div><div class="eg-bar"><i style="width: 0%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">650.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Vật lý 9A"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+
+<article class="eg-card eg-card-sm" style="gap: 10px">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-hoa"></span><b style="font-size: 15px">Hóa học 9A - Tối 4, 6</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Hóa học · Khối 9 · Phòng thí nghiệm</p>
+<p class="eg-sm" style="margin: 0">T4 · T6 · 19:45–21:15</p>
+<div class="eg-row" style="gap: 8px"><span class="eg-avatar" style="width: 24px; height: 24px; font-size: 10px">ĐH</span><span class="eg-sm">Đỗ Quang Huy</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">0/12</b></div><div class="eg-bar"><i style="width: 0%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">850.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Hóa học 9A"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+
+<article class="eg-card eg-card-sm" style="gap: 10px; border-color: #fee685">
+<div class="eg-row-sb" style="flex-wrap: nowrap; align-items: flex-start"><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-dot eg-d-sinh"></span><b style="font-size: 15px">Sinh học 7A - Chiều 7</b></div><span class="eg-badge eg-b-green">Mở ĐK</span></div>
+<p class="eg-sm eg-muted" style="margin: 0">Sinh học · Khối 7 · P.101</p>
+<p class="eg-sm" style="margin: 0">T7 · 14:00–16:00</p>
+<div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-amber">Chưa phân công giáo viên</span></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-xs"><span class="eg-muted">Sĩ số</span><b class="eg-num">0/20</b></div><div class="eg-bar"><i style="width: 0%"></i></div></div>
+<div class="eg-row-sb" style="padding-top: 6px; border-top: 1px solid #f0f0f0"><span class="eg-sm eg-strong eg-num">600.000 đ<span class="eg-muted" style="font-weight: 400">/tháng</span></span><div class="eg-row" style="gap: 4px"><a class="eg-btn eg-btn-o eg-btn-xs" href="QL-ChiTietLop.dc.html">Chi tiết</a><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thêm thao tác cho Sinh học 7A"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button></div></div>
+</article>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{isRooms}}" hint-placeholder-val="{{false}}">
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Thêm phòng">
+<p class="eg-ct">Thêm phòng</p>
+<div class="eg-field"><label class="eg-label" for="rm-n">Tên phòng</label><input id="rm-n" class="eg-input" placeholder="Ví dụ: P.301"></div>
+<div class="eg-field"><label class="eg-label" for="rm-c">Sức chứa</label><input id="rm-c" class="eg-input" value="20"><p class="eg-help">Phải từ sĩ số lớp trở lên, tối đa 10.000.</p></div>
+<button type="button" class="eg-btn eg-btn-p" style="align-self: flex-start">Thêm phòng</button>
+</section>
+<section class="eg-right eg-col" style="gap: 12px" aria-label="Danh sách phòng">
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Phòng</th><th class="r">Sức chứa</th><th>Lớp đang dùng</th><th>Trạng thái</th><th class="r">Thao tác</th></tr></thead>
+<tbody>
+<tr><td class="eg-strong">P.101</td><td class="r eg-num">20</td><td>Toán 8A · Sinh học 7A</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+<tr><td class="eg-strong">P.102</td><td class="r eg-num">20</td><td>Toán 8B</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+<tr><td class="eg-strong">P.201</td><td class="r eg-num">25</td><td>Toán 6A · Toán 9A</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+<tr><td class="eg-strong">P.202</td><td class="r eg-num">15</td><td>Vật lý 8A · Vật lý 9A</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+<tr><td class="eg-strong">Phòng thí nghiệm</td><td class="r eg-num">12</td><td>Hóa học 9A</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+</tbody></table></div>
+<p class="eg-help">Phòng có buổi sắp tới thì không ngừng sử dụng được.</p>
+</section>
+</div>
+</sc-if>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { tab: 'classes' };
+}
+renderVals() {
+const tab = this.state.tab;
+return {
+tabs: [['classes', 'Lớp học'], ['rooms', 'Phòng học']].map(([id, label]) => ({
+label,
+selected: id === tab ? 'true' : 'false',
+cls: id === tab ? 'eg-tab on' : 'eg-tab',
+pick: () => this.setState({ tab: id })
+})),
+isClasses: tab === 'classes',
+isRooms: tab === 'rooms'
+};
+}
+}
+</script>
+</body>
+</html>

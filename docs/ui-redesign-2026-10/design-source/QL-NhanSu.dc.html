@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhân sự</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app" style="position: relative">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="manager" active="people" hint-size="256px,640px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Trần Minh Quân" role-label="Quản lý trung tâm" email="manager.qa@edugrade.test" initials="TQ" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Nhân sự</h1><p class="eg-sub">Giáo viên, nhân viên vận hành, thiết kế giáo trình và quản lý trung tâm.</p></div>
+<sc-if value="{{hasAction}}" hint-placeholder-val="{{true}}"><button type="button" class="eg-btn eg-btn-p" onClick="{{openCreate}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>{{actionLabel}}</button></sc-if>
+</div>
+<div class="eg-toolbar">
+<div class="eg-tabs" role="tablist" aria-label="Nhóm tài khoản"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button type="button" role="tab" aria-selected="{{t.selected}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}} <span class="eg-count eg-count-gray">{{t.count}}</span></button></sc-for></div>
+<span style="flex: 1 1 auto"></span>
+<sc-if value="{{isTeachers}}" hint-placeholder-val="{{true}}"><select class="eg-select" style="width: 150px" aria-label="Tháng tính buổi dạy"><option>Tháng 10/2026</option><option>Tháng 9/2026</option></select></sc-if>
+<label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input class="eg-input" type="search" placeholder="Tìm tên hoặc email…" aria-label="Tìm tài khoản"></label>
+</div>
+
+<sc-if value="{{isTeachers}}" hint-placeholder-val="{{true}}">
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Giáo viên</th><th>Lớp phụ trách</th><th class="r">Buổi đã dạy T10</th><th class="r">Chờ điểm danh</th><th class="r">Dạy thay</th><th>Trạng thái</th><th class="r">Thao tác</th></tr></thead>
+<tbody>
+<tr class="on"><td><span class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-avatar">PH</span><span><b>Phạm Văn Hùng</b><br><span class="eg-xs eg-muted">teacher.qa@edugrade.test</span></span></span></td><td>Toán 8A · Toán 8B</td><td class="r eg-num"><b>21</b></td><td class="r"><span class="eg-badge eg-b-amber">1</span></td><td class="r eg-num eg-muted">0</td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openTeacher}}">Xem</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs" onClick="{{openEdit}}">Sửa</button></div></td></tr>
+<tr><td><span class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-avatar">BL</span><span><b>Bùi Đức Long</b><br><span class="eg-xs eg-muted">long.bui@edugrade.test</span></span></span></td><td>Toán 6A · Toán 9A</td><td class="r eg-num"><b>23</b></td><td class="r eg-num eg-muted">0</td><td class="r eg-num">1</td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openTeacher}}">Xem</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs" onClick="{{openEdit}}">Sửa</button></div></td></tr>
+<tr><td><span class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-avatar">NM</span><span><b>Nguyễn Thị Mai</b><br><span class="eg-xs eg-muted">mai.nguyen@edugrade.test</span></span></span></td><td>Vật lý 8A · Vật lý 9A</td><td class="r eg-num"><b>9</b></td><td class="r eg-num eg-muted">0</td><td class="r eg-num eg-muted">0</td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openTeacher}}">Xem</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs" onClick="{{openEdit}}">Sửa</button></div></td></tr>
+<tr><td><span class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-avatar">ĐH</span><span><b>Đỗ Quang Huy</b><br><span class="eg-xs eg-muted">huy.do@edugrade.test</span></span></span></td><td>Hóa học 9A</td><td class="r eg-num"><b>8</b></td><td class="r eg-num eg-muted">0</td><td class="r eg-num eg-muted">0</td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openTeacher}}">Xem</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs" onClick="{{openEdit}}">Sửa</button></div></td></tr>
+<tr><td><span class="eg-row" style="gap: 8px; flex-wrap: nowrap"><span class="eg-avatar">VT</span><span><b>Vũ Thanh Tâm</b><br><span class="eg-xs eg-muted">tam.vu@edugrade.test</span></span></span></td><td class="eg-muted">Chưa phân công</td><td class="r eg-num eg-muted">0</td><td class="r eg-num eg-muted">0</td><td class="r eg-num eg-muted">0</td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openTeacher}}">Xem</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs" onClick="{{openEdit}}">Sửa</button></div></td></tr>
+</tbody></table></div>
+<p class="eg-help">Buổi đã dạy = buổi giáo viên dạy và đã chốt điểm danh trong tháng. Buổi dạy thay tính cho người dạy thay. <span class="eg-badge eg-b-gray" style="height: 20px">chờ BE-11</span></p>
+</sc-if>
+
+<sc-if value="{{isStaff}}" hint-placeholder-val="{{false}}">
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th class="r">Thao tác</th></tr></thead>
+<tbody>
+<tr><td><span class="eg-row" style="gap: 8px"><span class="eg-avatar">LH</span><b>Lê Thu Hà</b></span></td><td>staff.qa@edugrade.test</td><td><span class="eg-badge eg-b-amber">Nhân viên</span></td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openEdit}}">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Khóa</button></div></td></tr>
+<tr><td><span class="eg-row" style="gap: 8px"><span class="eg-avatar">ĐT</span><b>Đặng Thu Trang</b></span></td><td>trang.dang@edugrade.test</td><td><span class="eg-badge eg-b-amber">Nhân viên</span></td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openEdit}}">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Khóa</button></div></td></tr>
+<tr><td><span class="eg-row" style="gap: 8px"><span class="eg-avatar">HL</span><b>Hoàng Thị Lan</b></span></td><td>curriculum-designer.qa@edugrade.test</td><td><span class="eg-badge eg-b-violet">Thiết kế giáo trình</span></td><td><span class="eg-badge eg-b-green">Hoạt động</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs" onClick="{{openEdit}}">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Khóa</button></div></td></tr>
+</tbody></table></div>
+<p class="eg-help">Gộp Nhân viên và Thiết kế giáo trình vào một bảng, lọc theo cột Vai trò. <span class="eg-badge eg-b-gray" style="height: 20px">chờ BE-10</span></p>
+</sc-if>
+
+<sc-if value="{{isManagers}}" hint-placeholder-val="{{false}}">
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Họ tên</th><th>Email</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr><td><span class="eg-row" style="gap: 8px"><span class="eg-avatar">TQ</span><b>Trần Minh Quân</b></span></td><td>manager.qa@edugrade.test</td><td><span class="eg-badge eg-b-green">Hoạt động</span></td></tr>
+</tbody></table></div>
+<p class="eg-help">Mọi quản lý có cùng quyền quản lý trung tâm.</p>
+</sc-if>
+
+<sc-if value="{{isInvites}}" hint-placeholder-val="{{false}}">
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Gửi lúc</th><th class="r">Thao tác</th></tr></thead>
+<tbody>
+<tr class="on"><td><b>thanh.ngoc@gmail.com</b><div class="eg-xs eg-muted">Đã đặt họ tên: Lương Thanh Ngọc</div></td><td>Giáo viên</td><td><span class="eg-badge eg-b-amber">Chờ duyệt</span></td><td class="nw">09:12 17/10/2026</td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Duyệt</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Từ chối</button></div></td></tr>
+<tr><td><b>minh.le.ql@gmail.com</b></td><td>Quản lý</td><td><span class="eg-badge eg-b-gray">Chờ người nhận</span></td><td class="nw">15:40 16/10/2026</td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Gửi lại</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Thu hồi</button></div></td></tr>
+</tbody></table></div>
+</sc-if>
+</main>
+</div>
+
+<sc-if value="{{showTeacher}}" hint-placeholder-val="{{true}}">
+<div class="eg-overlay" aria-hidden="true"></div>
+<aside class="eg-drawer" role="dialog" aria-label="Giáo viên Phạm Văn Hùng" style="width: min(680px, 100%)">
+<div class="eg-dh">
+<div class="eg-row" style="gap: 12px; align-items: flex-start"><span class="eg-avatar" style="width: 40px; height: 40px; font-size: 14px">PH</span><div><p class="eg-ct">Phạm Văn Hùng</p><p class="eg-cs">teacher.qa@edugrade.test · Toán 8A · Toán 8B</p></div></div>
+<div class="eg-row" style="gap: 6px"><button type="button" class="eg-btn eg-btn-o eg-btn-sm" onClick="{{openEdit}}">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Đóng" onClick="{{closeAll}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div>
+</div>
+<div class="eg-db">
+<div class="eg-row-sb"><p class="eg-strong" style="margin: 0">Buổi dạy tháng 10/2026</p><select class="eg-select" style="width: 160px" aria-label="Chọn tháng"><option>Tháng 10/2026</option><option>Tháng 9/2026</option></select></div>
+<div class="eg-row" style="gap: 10px; align-items: stretch">
+<div class="eg-stat" style="border-color: #a4f4cf; background: #ecfdf5"><span class="eg-xs" style="color: #004f3b">Đã tính</span><b style="color: #004f3b">21 buổi</b><span class="eg-xs" style="color: #004f3b">đã chốt điểm danh</span></div>
+<div class="eg-stat" style="border-color: #fee685; background: #fffbeb"><span class="eg-xs" style="color: #7b3306">Chờ điểm danh</span><b style="color: #7b3306">1 buổi</b><span class="eg-xs" style="color: #7b3306">chưa tính</span></div>
+<div class="eg-stat"><span class="eg-xs eg-muted">Người khác dạy thay</span><b>1 buổi</b><span class="eg-xs eg-muted">tính cho Bùi Đức Long</span></div>
+</div>
+<div class="eg-tw"><table class="eg-t" style="font-size: 13px">
+<thead><tr><th>Ngày</th><th>Lớp · bài</th><th>Điểm danh</th><th>Tính buổi</th></tr></thead>
+<tbody>
+<tr><td class="nw">T6 30/10</td><td>Toán 8A · Bài 24</td><td>Chốt 19:35 30/10</td><td><span class="eg-badge eg-b-green">Đã tính</span></td></tr>
+<tr><td class="nw">T5 29/10</td><td>Toán 8B · Bài 16</td><td>Chốt 19:32 29/10</td><td><span class="eg-badge eg-b-green">Đã tính</span></td></tr>
+<tr><td class="nw">T4 28/10</td><td>Toán 8A · Bài 23</td><td class="eg-muted">Chưa điểm danh</td><td><span class="eg-badge eg-b-amber">Chưa tính</span></td></tr>
+<tr><td class="nw">T3 27/10</td><td>Toán 8B · Bài 15</td><td>Chốt 19:40 27/10</td><td><span class="eg-badge eg-b-green">Đã tính</span></td></tr>
+<tr><td class="nw">T2 26/10</td><td>Toán 8A · Bài 22</td><td>Chốt 19:31 26/10</td><td><span class="eg-badge eg-b-green">Đã tính</span></td></tr>
+<tr><td class="nw">T6 23/10</td><td>Toán 8A · Bài 21</td><td class="eg-muted">Bùi Đức Long dạy thay</td><td><span class="eg-badge eg-b-gray">Không tính</span></td></tr>
+<tr><td class="nw">T5 22/10</td><td>Toán 8B · Bài 14</td><td>Chốt 19:36 22/10</td><td><span class="eg-badge eg-b-green">Đã tính</span></td></tr>
+</tbody></table></div>
+<div class="eg-tfoot"><span>7 buổi gần nhất · 23 buổi trong tháng</span><a class="eg-link" href="#">Xem cả tháng</a></div>
+<p class="eg-help">Buổi chỉ được tính khi giáo viên dạy buổi đó chốt điểm danh. <span class="eg-badge eg-b-gray" style="height: 20px">chờ BE-11</span></p>
+</div>
+</aside>
+</sc-if>
+
+<sc-if value="{{showEdit}}" hint-placeholder-val="{{false}}">
+<div class="eg-overlay" aria-hidden="true"></div>
+<div class="eg-dialog" role="dialog" aria-label="Sửa tài khoản">
+<div class="eg-row-sb"><p class="eg-ct">Sửa tài khoản</p><button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Đóng" onClick="{{closeAll}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div>
+<div class="eg-field"><label class="eg-label" for="ed-n">Họ tên</label><input id="ed-n" class="eg-input" value="Phạm Văn Hùng"></div>
+<div class="eg-field"><label class="eg-label" for="ed-e">Email</label><input id="ed-e" class="eg-input" value="teacher.qa@edugrade.test" disabled style="background: #fafafa; color: #737373"></div>
+<div class="eg-field"><label class="eg-label" for="ed-s">Trạng thái</label><select id="ed-s" class="eg-select"><option>Hoạt động</option><option>Khóa tài khoản</option></select><p class="eg-help">Khóa thì không đăng nhập được; dữ liệu lớp, buổi dạy vẫn giữ.</p></div>
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><button type="button" class="eg-btn eg-btn-o" onClick="{{closeAll}}">Hủy</button><button type="button" class="eg-btn eg-btn-p">Lưu</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{showCreate}}" hint-placeholder-val="{{false}}">
+<div class="eg-overlay" aria-hidden="true"></div>
+<div class="eg-dialog" role="dialog" aria-label="{{actionLabel}}">
+<div class="eg-row-sb"><p class="eg-ct">{{actionLabel}}</p><button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Đóng" onClick="{{closeAll}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></div>
+<sc-if value="{{isStaff}}" hint-placeholder-val="{{false}}">
+<div class="eg-field"><label class="eg-label" for="cr-r">Vai trò</label><select id="cr-r" class="eg-select"><option>Nhân viên</option><option>Thiết kế giáo trình (chờ BE-10)</option></select></div>
+<div class="eg-field"><label class="eg-label" for="cr-n">Họ tên</label><input id="cr-n" class="eg-input"></div>
+</sc-if>
+<div class="eg-field"><label class="eg-label" for="cr-e">Email</label><input id="cr-e" class="eg-input" type="email" placeholder="ten@gmail.com"></div>
+<sc-if value="{{isStaff}}" hint-placeholder-val="{{false}}">
+<div class="eg-field"><label class="eg-label" for="cr-p">Mật khẩu ban đầu</label><input id="cr-p" class="eg-input" type="password"><p class="eg-help">Ít nhất 8 ký tự. Gửi cho người nhận qua kênh riêng.</p></div>
+</sc-if>
+<sc-if value="{{isInviteKind}}" hint-placeholder-val="{{true}}">
+<p class="eg-help">Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt ở tab Lời mời.</p>
+</sc-if>
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><button type="button" class="eg-btn eg-btn-o" onClick="{{closeAll}}">Hủy</button><button type="button" class="eg-btn eg-btn-p">{{submitLabel}}</button></div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { tab: 'teachers', panel: 'teacher' };
+}
+renderVals() {
+const tab = this.state.tab;
+const panel = this.state.panel;
+const list = [['teachers', 'Giáo viên', '5'], ['staff', 'Nhân viên & thiết kế GT', '3'], ['managers', 'Quản lý', '1'], ['invites', 'Lời mời', '2']];
+const actions = { teachers: ['Mời giáo viên', 'Tạo lời mời'], staff: ['Tạo tài khoản', 'Tạo tài khoản'], managers: ['Mời quản lý', 'Tạo lời mời'], invites: ['', ''] };
+return {
+tabs: list.map(([id, label, count]) => ({
+label, count,
+selected: id === tab ? 'true' : 'false',
+cls: id === tab ? 'eg-tab on' : 'eg-tab',
+pick: () => this.setState({ tab: id, panel: null })
+})),
+isTeachers: tab === 'teachers',
+isStaff: tab === 'staff',
+isManagers: tab === 'managers',
+isInvites: tab === 'invites',
+isInviteKind: tab === 'teachers' || tab === 'managers',
+hasAction: tab !== 'invites',
+actionLabel: actions[tab][0],
+submitLabel: actions[tab][1],
+showTeacher: panel === 'teacher' && tab === 'teachers',
+showEdit: panel === 'edit',
+showCreate: panel === 'create',
+openTeacher: () => this.setState({ panel: 'teacher' }),
+openEdit: () => this.setState({ panel: 'edit' }),
+openCreate: () => this.setState({ panel: 'create' }),
+closeAll: () => this.setState({ panel: null })
+};
+}
+}
+</script>
+</body>
+</html>

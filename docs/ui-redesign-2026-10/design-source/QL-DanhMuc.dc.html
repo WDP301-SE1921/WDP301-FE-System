@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Khóa học và giáo trình</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="manager" active="curriculum" hint-size="256px,640px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Trần Minh Quân" role-label="Quản lý trung tâm" email="manager.qa@edugrade.test" initials="TQ" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Khóa học &amp; giáo trình</h1><p class="eg-sub">Mỗi khóa học (môn + khối) có một giáo trình dùng cho mọi lớp của khóa, mỗi kỳ một phiên bản.</p></div></div>
+<div class="eg-tabs" role="tablist" aria-label="Phần của danh mục">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{t.selected}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+<a role="tab" aria-selected="false" class="eg-tab" href="GT-PhanHoi.dc.html" style="text-decoration: none">Phản hồi giáo trình <span class="eg-count">3</span></a>
+</div>
+
+<sc-if value="{{isPrograms}}" hint-placeholder-val="{{true}}">
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Tạo khóa học">
+<p class="eg-ct">Tạo khóa học</p>
+<div class="eg-field"><label class="eg-label" for="pg-n">Tên khóa học</label><input id="pg-n" class="eg-input" placeholder="Ví dụ: Toán 7"></div>
+<div class="eg-two">
+<div class="eg-field"><label class="eg-label" for="pg-s">Môn học</label><select id="pg-s" class="eg-select"><option>Toán</option><option>Vật lý</option><option>Hóa học</option><option>Sinh học</option></select></div>
+<div class="eg-field"><label class="eg-label" for="pg-g">Khối</label><select id="pg-g" class="eg-select"><option>Khối 6</option><option>Khối 7</option><option>Khối 8</option><option>Khối 9</option></select></div>
+</div>
+<div class="eg-field"><label class="eg-label" for="pg-w">Số buổi/tuần <span class="eg-badge eg-b-gray" style="height: 20px; margin-left: 6px">chờ BE-1</span></label><input id="pg-w" class="eg-input" value="3" disabled style="background: #fafafa; color: #737373"></div>
+<button type="button" class="eg-btn eg-btn-p" style="align-self: flex-start">Tạo khóa học</button>
+<hr class="eg-divider">
+<p class="eg-help">Giáo trình do Thiết kế giáo trình soạn; quản lý duyệt áp dụng và sinh lịch cho các lớp.</p>
+</section>
+
+<section class="eg-right eg-col" style="gap: 12px" aria-label="Khóa học và giáo trình">
+<div class="eg-toolbar">
+<label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input class="eg-input" type="search" placeholder="Tìm khóa học…" aria-label="Tìm khóa học"></label>
+<select class="eg-select" style="width: 190px" aria-label="Lọc"><option>Tất cả khóa</option><option>Chờ tôi duyệt giáo trình</option><option>Chưa có giáo trình kỳ sau</option></select>
+</div>
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Khóa học / giáo trình</th><th>Hiệu lực</th><th class="r">Bài</th><th>Trạng thái</th><th class="r">Thao tác</th></tr></thead>
+<tbody>
+<tr><td colspan="4" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><b>Toán 8</b><span class="eg-sm eg-muted">Toán · Khối 8 · 3 buổi/tuần · Toán 8A, Toán 8B</span></div></td><td class="r" style="background: #fafafa"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa khóa</button></td></tr>
+<tr><td style="padding-left: 32px">HK1 2026–2027 · v2</td><td class="nw">07/09/2026 → 16/01/2027</td><td class="r eg-num">57/57</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td class="r"><a class="eg-btn eg-btn-g eg-btn-xs" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr class="on"><td style="padding-left: 32px">HK2 2026–2027 · v3</td><td class="nw">18/01/2027 → 16/05/2027</td><td class="r eg-num">51/51</td><td><span class="eg-badge eg-b-amber">Chờ bạn duyệt</span></td><td class="r"><a class="eg-btn eg-btn-p eg-btn-xs" href="GT-ThamDinh.dc.html">Duyệt</a></td></tr>
+<tr><td colspan="4" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><b>Toán 9</b><span class="eg-sm eg-muted">Toán · Khối 9 · 3 buổi/tuần · Toán 9A</span></div></td><td class="r" style="background: #fafafa"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa khóa</button></td></tr>
+<tr><td style="padding-left: 32px">HK1 2026–2027 · v1</td><td class="nw">07/09/2026 → 16/01/2027</td><td class="r eg-num">57/57</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td class="r"><a class="eg-btn eg-btn-g eg-btn-xs" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr><td style="padding-left: 32px; color: #a33d00">Chưa có giáo trình HK2</td><td class="eg-muted">—</td><td class="r eg-muted">—</td><td><span class="eg-badge eg-b-gray">Chưa tạo</span></td><td class="r eg-muted">—</td></tr>
+<tr><td colspan="4" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-ly"></span><b>Vật lý 8</b><span class="eg-sm eg-muted">Vật lý · Khối 8 · 2 buổi/tuần · Vật lý 8A</span></div></td><td class="r" style="background: #fafafa"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa khóa</button></td></tr>
+<tr><td style="padding-left: 32px">HK1 2026–2027 · v1</td><td class="nw">07/09/2026 → 16/01/2027</td><td class="r eg-num">38/38</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td class="r"><a class="eg-btn eg-btn-g eg-btn-xs" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr><td style="padding-left: 32px">HK2 2026–2027 · v2</td><td class="nw">18/01/2027 → 16/05/2027</td><td class="r eg-num">34/34</td><td><span class="eg-badge eg-b-amber">Giáo viên thẩm định</span></td><td class="r"><a class="eg-btn eg-btn-g eg-btn-xs" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr><td colspan="4" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-hoa"></span><b>Hóa học 9</b><span class="eg-sm eg-muted">Hóa học · Khối 9 · 2 buổi/tuần · Hóa học 9A</span></div></td><td class="r" style="background: #fafafa"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa khóa</button></td></tr>
+<tr><td style="padding-left: 32px">HK1 2026–2027 · v1</td><td class="nw">07/09/2026 → 16/01/2027</td><td class="r eg-num">38/38</td><td><span class="eg-badge eg-b-green">Đang áp dụng</span></td><td class="r"><a class="eg-btn eg-btn-g eg-btn-xs" href="GT-ChiTiet.dc.html">Xem</a></td></tr>
+<tr><td colspan="4" style="background: #fafafa; padding: 10px 16px"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><b>Toán 7</b><span class="eg-sm eg-muted">Toán · Khối 7 · chưa có lớp</span></div></td><td class="r" style="background: #fafafa"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa khóa</button></td></tr>
+<tr><td style="padding-left: 32px" class="eg-muted">Chưa có giáo trình</td><td class="eg-muted">—</td><td class="r eg-muted">—</td><td><span class="eg-badge eg-b-gray">Chưa tạo</span></td><td class="r eg-muted">—</td></tr>
+</tbody></table></div>
+<div class="eg-tfoot"><span>8 khóa học · hiển thị 5</span><div class="eg-row" style="gap: 8px"><button type="button" class="eg-btn eg-btn-o eg-btn-sm" disabled>Trước</button><span>1 / 2</span><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Sau</button></div></div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{isSubjects}}" hint-placeholder-val="{{false}}">
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Tạo môn học">
+<p class="eg-ct">Tạo môn học</p>
+<div class="eg-field"><label class="eg-label" for="sb-c">Mã môn</label><input id="sb-c" class="eg-input" placeholder="Ví dụ: TOAN"></div>
+<div class="eg-field"><label class="eg-label" for="sb-n">Tên môn</label><input id="sb-n" class="eg-input" placeholder="Ví dụ: Toán"></div>
+<button type="button" class="eg-btn eg-btn-p" style="align-self: flex-start">Lưu môn học</button>
+</section>
+<section class="eg-right eg-col" style="gap: 12px" aria-label="Danh sách môn học">
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Môn học</th><th>Mã môn</th><th class="r">Khóa học</th><th>Trạng thái</th><th class="r">Thao tác</th></tr></thead>
+<tbody>
+<tr><td class="eg-strong">Toán</td><td>TOAN</td><td class="r eg-num">4</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+<tr><td class="eg-strong">Vật lý</td><td>LY</td><td class="r eg-num">2</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+<tr><td class="eg-strong">Hóa học</td><td>HOA</td><td class="r eg-num">1</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+<tr><td class="eg-strong">Sinh học</td><td>SINH</td><td class="r eg-num">1</td><td><span class="eg-badge eg-b-green">Đang sử dụng</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Sửa</button><button type="button" class="eg-btn eg-btn-g eg-btn-xs">Ngừng sử dụng</button></div></td></tr>
+</tbody></table></div>
+</section>
+</div>
+</sc-if>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { tab: 'programs' };
+}
+renderVals() {
+const tab = this.state.tab;
+const list = [['programs', 'Khóa học & giáo trình'], ['subjects', 'Môn học']];
+return {
+tabs: list.map(([id, label]) => ({
+label,
+selected: id === tab ? 'true' : 'false',
+cls: id === tab ? 'eg-tab on' : 'eg-tab',
+pick: () => this.setState({ tab: id })
+})),
+isPrograms: tab === 'programs',
+isSubjects: tab === 'subjects'
+};
+}
+}
+</script>
+</body>
+</html>

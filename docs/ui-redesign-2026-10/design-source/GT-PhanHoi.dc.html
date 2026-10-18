@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phản hồi giáo trình</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="designer" active="curriculum" hint-size="256px,400px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Hoàng Thị Lan" role-label="Thiết kế giáo trình" email="curriculum-designer.qa@edugrade.test" initials="HL" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Giáo trình</h1><p class="eg-sub">Phản hồi giáo viên gửi về từng bài học. Sửa ở bản kỳ sau, không sửa bản đang dùng.</p></div></div>
+<div class="eg-tabs" role="tablist" aria-label="Giáo trình hoặc phản hồi"><a role="tab" aria-selected="false" class="eg-tab" href="GT-DanhSach.dc.html" style="text-decoration: none">Giáo trình</a><button type="button" role="tab" aria-selected="true" class="eg-tab on">Phản hồi từ giáo viên <span class="eg-count">3</span></button></div>
+<div class="eg-toolbar">
+<select class="eg-select" style="width: 170px" aria-label="Trạng thái"><option>Chưa xử lý</option><option>Đang xử lý</option><option>Đã xử lý</option><option>Từ chối</option><option>Tất cả</option></select>
+<select class="eg-select" style="width: 160px" aria-label="Khóa học"><option>Tất cả khóa</option><option>Toán 8</option><option>Vật lý 8</option></select>
+</div>
+<div class="eg-split">
+<section class="eg-left-wide" aria-label="Danh sách phản hồi">
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Bài học</th><th>Nội dung</th><th>Giáo viên</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr class="on"><td><b>Toán 8 · Bài 20</b><div class="eg-xs eg-muted">Phương trình chứa ẩn ở mẫu · HK1</div></td><td>Ví dụ 3 thiếu bước đặt điều kiện xác định.</td><td class="nw">Phạm Văn Hùng<div class="eg-xs eg-muted">21/10/2026</div></td><td><span class="eg-badge eg-b-amber">Chưa xử lý</span></td></tr>
+<tr><td><b>Toán 8 · Bài 21</b><div class="eg-xs eg-muted">Giải bài toán bằng cách lập phương trình · HK1</div></td><td>Nên thêm 1 bài toán chuyển động.</td><td class="nw">Phạm Văn Hùng<div class="eg-xs eg-muted">23/10/2026</div></td><td><span class="eg-badge eg-b-amber">Chưa xử lý</span></td></tr>
+<tr><td><b>Vật lý 8 · Bài 14</b><div class="eg-xs eg-muted">Áp suất khí quyển · HK1</div></td><td>Thí nghiệm Tô-ri-xe-li cần hình minh họa.</td><td class="nw">Nguyễn Thị Mai<div class="eg-xs eg-muted">22/10/2026</div></td><td><span class="eg-badge eg-b-amber">Chưa xử lý</span></td></tr>
+<tr><td><b>Toán 8 · Bài 7</b><div class="eg-xs eg-muted">Tính chất đường phân giác · HK1</div></td><td>Thêm ví dụ thực tế.</td><td class="nw">Phạm Văn Hùng<div class="eg-xs eg-muted">05/10/2026</div></td><td><span class="eg-badge eg-b-green">Đã xử lý</span><div class="eg-xs eg-muted" style="margin-top: 4px">Sửa ở HK2 · bài 7</div></td></tr>
+</tbody></table></div>
+</section>
+<aside class="eg-right-narrow eg-card" aria-label="Xử lý phản hồi">
+<div><p class="eg-ct">Toán 8 · Bài 20</p><p class="eg-cs">Phạm Văn Hùng · 21/10/2026</p></div>
+<div style="padding: 12px 14px; border-radius: 14px; background: #fafafa; border: 1px solid #e5e5e5; font-size: 14px; line-height: 1.6">“Ví dụ 3 thiếu bước đặt điều kiện xác định, học sinh dễ quên loại nghiệm.”</div>
+<div class="eg-field"><label class="eg-label" for="fb-s">Trạng thái</label><select id="fb-s" class="eg-select"><option>Đang xử lý</option><option>Đã xử lý</option><option>Từ chối</option></select></div>
+<div class="eg-field"><label class="eg-label" for="fb-l">Bài đã sửa (bản kỳ sau)</label><select id="fb-l" class="eg-select"><option>Toán 8 · HK2 2026–2027 · Bài 20</option></select></div>
+<div class="eg-field"><label class="eg-label" for="fb-r">Trả lời giáo viên</label><textarea id="fb-r" class="eg-textarea">Đã bổ sung bước đặt điều kiện vào ví dụ 3 ở bản HK2.</textarea></div>
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><a class="eg-btn eg-btn-o" href="GT-ChiTiet.dc.html">Mở bản HK2</a><button type="button" class="eg-btn eg-btn-p">Lưu</button></div>
+</aside>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

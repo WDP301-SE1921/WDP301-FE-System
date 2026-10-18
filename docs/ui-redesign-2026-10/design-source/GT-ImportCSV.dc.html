@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nhập bài học từ CSV</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="designer" active="curriculum" hint-size="256px,400px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Hoàng Thị Lan" role-label="Thiết kế giáo trình" email="curriculum-designer.qa@edugrade.test" initials="HL" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page" style="gap: 20px">
+<nav class="eg-crumb" aria-label="Đường dẫn"><a href="GT-DanhSach.dc.html">Giáo trình</a><span aria-hidden="true">›</span><a href="GT-ChiTiet.dc.html">Toán 8 · HK2 2026–2027</a><span aria-hidden="true">›</span><span style="color: #0a0a0a">Nhập CSV</span></nav>
+<div class="eg-ph"><div><h1 class="eg-h1">Nhập bài học từ CSV</h1><p class="eg-sub">Xem trước từng dòng trước khi ghi vào bản nháp. Bản HK1 đang áp dụng không bị ảnh hưởng.</p></div></div>
+
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Chọn file và chế độ">
+<div class="eg-col" style="gap: 6px"><p class="eg-strong" style="margin: 0">1. File mẫu</p><p class="eg-cs">Cột: thứ tự, tên bài, nội dung. Mã hóa UTF-8.</p><button type="button" class="eg-btn eg-btn-o eg-btn-sm" style="align-self: flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"></path><path d="m7 10 5 5 5-5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>Tải file mẫu .csv</button></div>
+<hr class="eg-divider">
+<div class="eg-col" style="gap: 8px"><p class="eg-strong" style="margin: 0">2. Chọn file</p>
+<label style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 20px; border: 1.5px dashed #bedbff; border-radius: 14px; background: #eff6ff; text-align: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#155dfc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path></svg><b style="font-size: 14px">toan8-hk2-bo-sung.csv</b><span class="eg-xs eg-muted">4 dòng · 2 KB · bấm để chọn file khác</span><input type="file" accept=".csv" style="position: absolute; width: 1px; height: 1px; opacity: 0"></label>
+</div>
+<hr class="eg-divider">
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><legend class="eg-strong" style="margin-bottom: 8px; padding: 0">3. Chế độ nhập</legend>
+<label class="eg-choice on"><input type="radio" name="mode" checked><span><b>Thêm vào nội dung hiện có</b><br><span class="eg-xs eg-muted">Giữ 48 bài, thêm các bài trong file.</span></span></label>
+<label class="eg-choice"><input type="radio" name="mode"><span><b>Thay toàn bộ bài học</b><br><span class="eg-xs eg-muted">Xóa 48 bài nháp hiện có. Sẽ hỏi xác nhận trước khi ghi.</span></span></label>
+</fieldset>
+<button type="button" class="eg-btn eg-btn-p">Xem trước</button>
+</section>
+
+<section class="eg-right eg-col" style="gap: 12px" aria-label="Xem trước">
+<div class="eg-row-sb"><p class="eg-ct">Xem trước</p><div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-green">3 dòng hợp lệ</span><span class="eg-badge eg-b-red">1 dòng lỗi</span></div></div>
+<div class="eg-tw">
+<table class="eg-t">
+<thead><tr><th style="width: 72px">Dòng</th><th style="width: 72px">STT</th><th>Tên bài</th><th>Nội dung</th><th>Kết quả</th></tr></thead>
+<tbody>
+<tr><td class="eg-num eg-muted">2</td><td class="eg-num">49</td><td class="eg-strong">Bất phương trình chứa ẩn ở mẫu</td><td class="eg-muted">Điều kiện xác định, quy đồng và xét dấu.</td><td><span class="eg-badge eg-b-green">Hợp lệ</span></td></tr>
+<tr><td class="eg-num eg-muted">3</td><td class="eg-num">50</td><td class="eg-strong">Ôn tập chương 4</td><td class="eg-muted">Hệ thống định lí Ta-lét và tam giác đồng dạng.</td><td><span class="eg-badge eg-b-green">Hợp lệ</span></td></tr>
+<tr><td class="eg-num eg-muted">4</td><td class="eg-num">51</td><td class="eg-strong">Luyện đề cuối kỳ</td><td class="eg-muted">Đề tổng hợp 90 phút, chữa nhanh các câu sai nhiều.</td><td><span class="eg-badge eg-b-green">Hợp lệ</span></td></tr>
+<tr style="background: #fef2f2"><td class="eg-num eg-muted">5</td><td class="eg-num" style="color: #c10007">51</td><td class="eg-strong">Chữa đề cuối kỳ</td><td class="eg-muted">Chữa chi tiết đề luyện tập.</td><td><span class="eg-badge eg-b-red">Lỗi</span><div class="eg-xs" style="color: #c10007; margin-top: 4px">Trùng thứ tự 51 với dòng 4</div></td></tr>
+</tbody>
+</table>
+</div>
+<p class="eg-note eg-err">Dòng 5 trùng thứ tự với dòng 4: xóa hoặc sửa trong file rồi chọn lại. Chỉ nhập được khi mọi dòng hợp lệ.</p>
+<p class="eg-note eg-ok">Bỏ dòng 5 thì sau khi nhập có <b>51/51 bài</b>, đủ cho 17 tuần × 3 buổi của khóa Toán 8.</p>
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><button type="button" class="eg-btn eg-btn-o">Chọn lại file</button><button type="button" class="eg-btn eg-btn-p" disabled>Nhập vào nháp</button></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

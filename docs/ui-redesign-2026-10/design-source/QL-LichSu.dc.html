@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Lịch sử thay đổi</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="manager" active="audit" hint-size="256px,640px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Trần Minh Quân" role-label="Quản lý trung tâm" email="manager.qa@edugrade.test" initials="TQ" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Lịch sử thay đổi</h1><p class="eg-sub">Ai đã làm gì, lúc nào: thanh toán, lớp, giáo viên, dạy thay, học bù, nghỉ học, tài khoản.</p></div></div>
+<div class="eg-toolbar">
+<select class="eg-select" style="width: 170px" aria-label="Đối tượng"><option>Tất cả đối tượng</option><option>Đăng ký</option><option>Lớp</option><option>Tài khoản</option></select>
+<select class="eg-select" style="width: 190px" aria-label="Hành động"><option>Tất cả hành động</option><option>Xác nhận thanh toán</option><option>Xác nhận lịch lớp</option></select>
+<select class="eg-select" style="width: 190px" aria-label="Người thực hiện"><option>Mọi người thực hiện</option><option>Lê Thu Hà</option><option>Bùi Đức Long</option></select>
+<div class="eg-row" style="gap: 6px"><label class="eg-sm eg-muted" for="lg-f">Từ</label><input id="lg-f" class="eg-input" type="date" value="2026-10-18" style="width: 150px"><label class="eg-sm eg-muted" for="lg-t">đến</label><input id="lg-t" class="eg-input" type="date" value="2026-10-18" style="width: 150px"></div>
+</div>
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th style="width: 140px">Thời gian</th><th>Hành động</th><th>Đối tượng</th><th>Người thực hiện</th><th class="r" style="width: 64px"><span style="position: absolute; left: -9999px">Chi tiết</span></th></tr></thead>
+<tbody>
+<tr class="on"><td class="nw eg-num">13:35 18/10/2026</td><td><b>Xác nhận thanh toán</b></td><td><span class="eg-badge eg-b-gray">Đăng ký</span> Nguyễn Minh An · Toán 8A</td><td>Lê Thu Hà <span class="eg-xs eg-muted">Nhân viên</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Thu gọn chi tiết" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg></button></td></tr>
+<tr><td colspan="5" style="background: #f8fbff; padding: 16px 24px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px 32px">
+<dl class="eg-kv"><dt>Trạng thái</dt><dd>Bản nháp → <span style="color: #007a55">Hoàn tất</span></dd><dt>Số tiền</dt><dd class="eg-num">2.700.000 đ</dd><dt>Số biên lai</dt><dd>BL-2026-112</dd></dl>
+<dl class="eg-kv"><dt>Học sinh</dt><dd>Nguyễn Minh An · Khối 8</dd><dt>Lớp</dt><dd>Toán 8A - Tối 2, 4, 6</dd><dt>Kỳ học</dt><dd>19/10/2026 → 19/01/2027 · 3 tháng</dd></dl>
+</div>
+</td></tr>
+<tr><td class="nw eg-num">13:35 18/10/2026</td><td><b>Xác nhận thanh toán</b></td><td><span class="eg-badge eg-b-gray">Đăng ký</span> Nguyễn Minh An · Vật lý 8A</td><td>Lê Thu Hà <span class="eg-xs eg-muted">Nhân viên</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Xem chi tiết" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></td></tr>
+<tr><td class="nw eg-num">13:35 18/10/2026</td><td><b>Xác nhận thanh toán</b></td><td><span class="eg-badge eg-b-gray">Đăng ký</span> Châu Gia Huy · Toán 8A</td><td>Lê Thu Hà <span class="eg-xs eg-muted">Nhân viên</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Xem chi tiết" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></td></tr>
+<tr><td class="nw eg-num">13:32 18/10/2026</td><td><b>Xác nhận lịch lớp</b></td><td><span class="eg-badge eg-b-gray">Lớp</span> Toán 9A - Tối 3, 5, 7</td><td>Bùi Đức Long <span class="eg-xs eg-muted">Giáo viên</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Xem chi tiết" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></td></tr>
+<tr><td class="nw eg-num">13:32 18/10/2026</td><td><b>Xác nhận lịch lớp</b></td><td><span class="eg-badge eg-b-gray">Lớp</span> Toán 6A - Chiều 2, 4</td><td>Bùi Đức Long <span class="eg-xs eg-muted">Giáo viên</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Xem chi tiết" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></td></tr>
+<tr><td class="nw eg-num">13:32 18/10/2026</td><td><b>Xác nhận lịch lớp</b></td><td><span class="eg-badge eg-b-gray">Lớp</span> Hóa học 9A - Tối 4, 6</td><td>Đỗ Quang Huy <span class="eg-xs eg-muted">Giáo viên</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Xem chi tiết" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></td></tr>
+<tr><td class="nw eg-num">13:31 18/10/2026</td><td><b>Xác nhận lịch lớp</b></td><td><span class="eg-badge eg-b-gray">Lớp</span> Toán 8A - Tối 2, 4, 6</td><td>Phạm Văn Hùng <span class="eg-xs eg-muted">Giáo viên</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Xem chi tiết" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></td></tr>
+<tr><td class="nw eg-num">13:30 18/10/2026</td><td><b>Tạo tài khoản nhân viên</b></td><td><span class="eg-badge eg-b-gray">Tài khoản</span> Đặng Thu Trang</td><td>Trần Minh Quân <span class="eg-xs eg-muted">Quản lý</span></td><td class="r"><button type="button" class="eg-btn eg-btn-g eg-btn-xs" aria-label="Xem chi tiết" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></td></tr>
+</tbody></table></div>
+<div class="eg-tfoot"><span>Hiển thị 1–8 trên 19 dòng</span><div class="eg-row" style="gap: 8px"><button type="button" class="eg-btn eg-btn-o eg-btn-sm" disabled>Trước</button><span>1 / 3</span><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Sau</button></div></div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

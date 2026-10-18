@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sinh lịch theo khóa</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="manager" active="schedule" hint-size="256px,640px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Trần Minh Quân" role-label="Quản lý trung tâm" email="manager.qa@edugrade.test" initials="TQ" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page" style="gap: 20px">
+<nav class="eg-crumb" aria-label="Đường dẫn"><a href="QL-LichHoc.dc.html">Lịch học</a><span aria-hidden="true">›</span><span style="color: #0a0a0a">Sinh lịch theo khóa</span></nav>
+<div class="eg-ph"><div><h1 class="eg-h1">Sinh lịch theo khóa</h1><p class="eg-sub">Một lần cho mọi lớp của khóa. Hệ thống tự lấy giáo trình đã duyệt có hiệu lực trong khoảng ngày.</p></div></div>
+
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Thiết lập">
+<div class="eg-field"><label class="eg-label" for="sl-program">Khóa học</label><select id="sl-program" class="eg-select"><option>Toán 8 · Khối 8 · 3 buổi/tuần</option><option>Toán 6 · Khối 6 · 2 buổi/tuần</option><option>Vật lý 8 · Khối 8 · 2 buổi/tuần</option></select></div>
+<div class="eg-two">
+<div class="eg-field"><label class="eg-label" for="sl-from">Từ ngày</label><input id="sl-from" class="eg-input" type="date" value="2027-01-18"></div>
+<div class="eg-field"><label class="eg-label" for="sl-to">Đến ngày</label><input id="sl-to" class="eg-input" type="date" value="2027-05-16"></div>
+</div>
+<div class="eg-field"><span class="eg-label">Giáo trình áp dụng</span>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: #ecfdf5; border: 1px solid #a4f4cf"><b>Toán 8 · HK2 2026–2027</b><span class="eg-sm" style="color: #004f3b">Phiên bản 3 · Đã duyệt · 51 bài · hiệu lực 18/01 → 16/05/2027</span></div>
+<p class="eg-help">Tự chọn theo khóa và khoảng ngày, không cần chọn tay.</p></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><legend class="eg-label" style="padding: 0; margin-bottom: 8px">Lớp của khóa</legend>
+<label class="eg-choice on"><input type="checkbox" checked><span><b>Toán 8A - Tối 2, 4, 6</b><br><span class="eg-xs eg-muted">3 buổi/tuần · P.101 · Phạm Văn Hùng</span></span></label>
+<label class="eg-choice on" style="border-color: #fee685; background: #fffbeb"><input type="checkbox" checked><span><b>Toán 8B - Tối 3, 5</b><br><span class="eg-xs" style="color: #7b3306">2 buổi/tuần, khác khóa (3 buổi)</span></span></label>
+</fieldset>
+<button type="button" class="eg-btn eg-btn-p">Xem trước 2 lớp</button>
+</section>
+
+<section class="eg-right eg-col" style="gap: 16px" aria-label="Xem trước theo lớp">
+<div class="eg-card" style="gap: 12px">
+<div class="eg-row-sb"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><p class="eg-ct">Toán 8A - Tối 2, 4, 6</p></div><div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-green">Đủ bài</span><span class="eg-badge eg-b-gray">0 xung đột</span></div></div>
+<p class="eg-cs">51 buổi · dạy bài 1 → 51 · 18/01/2027 → 14/05/2027</p>
+<div class="eg-tw">
+<table class="eg-t">
+<thead><tr><th style="width: 64px">Buổi</th><th>Ngày</th><th>Giờ</th><th>Phòng</th><th>Bài học</th></tr></thead>
+<tbody>
+<tr><td class="eg-num eg-muted">1</td><td class="nw">T2 18/01/2027</td><td class="nw">18:00–19:30</td><td>P.101</td><td>Bài 1 · Ôn tập đầu kỳ</td></tr>
+<tr><td class="eg-num eg-muted">2</td><td class="nw">T4 20/01/2027</td><td class="nw">18:00–19:30</td><td>P.101</td><td>Bài 2 · Bất phương trình bậc nhất một ẩn</td></tr>
+<tr><td class="eg-num eg-muted">3</td><td class="nw">T6 22/01/2027</td><td class="nw">18:00–19:30</td><td>P.101</td><td>Bài 3 · Giải bất phương trình</td></tr>
+<tr><td colspan="5" class="eg-muted eg-sm" style="text-align: center; padding: 8px">… 47 buổi nữa</td></tr>
+<tr><td class="eg-num eg-muted">51</td><td class="nw">T6 14/05/2027</td><td class="nw">18:00–19:30</td><td>P.101</td><td>Bài 51 · Luyện đề cuối kỳ</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="eg-card" style="gap: 12px; border-color: #fee685">
+<div class="eg-row-sb"><div class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><p class="eg-ct">Toán 8B - Tối 3, 5</p></div><div class="eg-row" style="gap: 8px"><span class="eg-badge eg-b-amber">Lệch tiến độ</span><span class="eg-badge eg-b-gray">0 xung đột</span></div></div>
+<p class="eg-cs">34 buổi · dạy bài 1 → 34 · 19/01/2027 → 13/05/2027</p>
+<p class="eg-note eg-warn">Lớp chỉ học 2 buổi/tuần nên dừng ở bài 34/51, không học hết giáo trình kỳ này. Nên đổi lịch tuần thành 3 buổi (ví dụ T3-5-7) hoặc tách sang khóa 2 buổi/tuần.</p>
+<div class="eg-row" style="gap: 8px"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-ChiTietLop.dc.html">Mở lịch tuần lớp 8B</a><button type="button" class="eg-btn eg-btn-g eg-btn-sm">Bỏ chọn lớp này</button></div>
+</div>
+
+<div class="eg-row-sb" style="padding-top: 4px"><p class="eg-help" style="max-width: 560px">Mỗi lớp được gửi riêng bằng API sinh lịch hiện có, giữ nguyên khóa chống trùng khi thử lại. Đổi đầu vào thì phải xem trước lại.</p><div class="eg-row" style="gap: 8px"><button type="button" class="eg-btn eg-btn-o">Hủy</button><button type="button" class="eg-btn eg-btn-p">Sinh lịch cho 2 lớp</button></div></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
