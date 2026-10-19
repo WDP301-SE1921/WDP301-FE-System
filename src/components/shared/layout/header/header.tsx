@@ -51,9 +51,8 @@ function Header({ role, onToggleMobileSidebar }: HeaderProps) {
         {quickCreateItems.length > 0 && (
           <QuickCreateMenu items={quickCreateItems} />
         )}
-        {(role === ROLES.CENTER_MANAGER || role === ROLES.TEACHER) && (
-          <NotificationBell role={role} />
-        )}
+        {/* Hộp thư thông báo của BE dành cho mọi vai trò Web (đơn nghỉ, giáo trình, dạy thay…). */}
+        <NotificationBell role={role} />
         <div className="h-6 w-px bg-border hidden sm:block" />
         <UserMenu
           name={user?.name}

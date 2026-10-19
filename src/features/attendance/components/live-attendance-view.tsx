@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { academicApi } from "@/features/academic/api";
+import { ApiError } from "@/lib/api/client";
 import {
   useLiveCommand,
   useLiveQuery,
@@ -86,90 +87,103 @@ export function LiveAttendanceSession({
           }
         />
       )}
-      <AsyncBoundary
-        isLoading={session.isPending}
-        isError={session.isError}
-        error={session.error}
-        onRetry={() => void session.refetch()}
-        data={session.data}
-      >
-        {session.data?.status === "SCHEDULED" && (
-          <>
-            <Button
-              disabled={prepare.isPending}
-              onClick={() =>
-                prepare.mutate(() => academicApi.prepareRoster(sessionId))
-              }
-            >
-              {prepare.isPending
-                ? "Đang chuẩn bị…"
-                : "Chuẩn bị / cập nhật danh sách học viên"}
-            </Button>
-            <ApiFeedback error={prepare.error} />
-          </>
-        )}
-        {!editable && session.data?.status === "SCHEDULED" && (
-          <p className="text-sm text-muted-foreground">
-            Bạn có thể chuẩn bị danh sách; chốt điểm danh sau khi buổi học kết
-            thúc.
-          </p>
-        )}
-        <AsyncBoundary
-          isLoading={roster.isPending}
-          isError={roster.isError}
-          error={roster.error}
-          onRetry={() => void roster.refetch()}
+      {/* Buổi đã xếp dạy thay / đổi giáo viên (mở từ thông báo): BE trả 403/404 — giải thích thay vì báo lỗi. */}
+      {session.error instanceof ApiError &&
+      [403, 404].includes(session.error.status) ? (
+        <p
+          role="status"
+          className="rounded-xl border border-border bg-muted p-4 text-sm"
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>Học viên của buổi</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {roster.data &&
-                (editable ? (
-                  <AttendanceEditor
-                    key={`${sessionId}-${roster.data.map((row) => `${row.id}:${row.attendance}`).join(",")}`}
-                    rows={roster.data}
-                    sessionId={sessionId}
-                  />
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Học sinh</TableHead>
-                        <TableHead>Buổi học</TableHead>
-                        <TableHead>Kết quả</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {roster.data.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="whitespace-normal">
-                            {row.enrollment.studentProfile?.fullName ??
-                              "Hồ sơ học sinh"}
-                          </TableCell>
-                          <TableCell>
-                            {row.kind === "MAKEUP" ? "Học bù" : "Buổi thường"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge>{STATUS_TEXT[row.attendance]}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {!roster.data.length && (
+          Buổi học này không còn trong lịch dạy của bạn — có thể đã được xếp
+          giáo viên dạy thay hoặc đổi giáo viên phụ trách. Chọn buổi khác trong
+          danh sách.
+        </p>
+      ) : (
+        <AsyncBoundary
+          isLoading={session.isPending}
+          isError={session.isError}
+          error={session.error}
+          onRetry={() => void session.refetch()}
+          data={session.data}
+        >
+          {session.data?.status === "SCHEDULED" && (
+            <>
+              <Button
+                disabled={prepare.isPending}
+                onClick={() =>
+                  prepare.mutate(() => academicApi.prepareRoster(sessionId))
+                }
+              >
+                {prepare.isPending
+                  ? "Đang chuẩn bị…"
+                  : "Chuẩn bị / cập nhật danh sách học viên"}
+              </Button>
+              <ApiFeedback error={prepare.error} />
+            </>
+          )}
+          {!editable && session.data?.status === "SCHEDULED" && (
+            <p className="text-sm text-muted-foreground">
+              Bạn có thể chuẩn bị danh sách; chốt điểm danh sau khi buổi học kết
+              thúc.
+            </p>
+          )}
+          <AsyncBoundary
+            isLoading={roster.isPending}
+            isError={roster.isError}
+            error={roster.error}
+            onRetry={() => void roster.refetch()}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Học viên của buổi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {roster.data &&
+                  (editable ? (
+                    <AttendanceEditor
+                      key={`${sessionId}-${roster.data.map((row) => `${row.id}:${row.attendance}`).join(",")}`}
+                      rows={roster.data}
+                      sessionId={sessionId}
+                    />
+                  ) : (
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={3}>
-                            Chưa có học viên trong danh sách.
-                          </TableCell>
+                          <TableHead>Học sinh</TableHead>
+                          <TableHead>Buổi học</TableHead>
+                          <TableHead>Kết quả</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                ))}
-            </CardContent>
-          </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {roster.data.map((row) => (
+                          <TableRow key={row.id}>
+                            <TableCell className="whitespace-normal">
+                              {row.enrollment.studentProfile?.fullName ??
+                                "Hồ sơ học sinh"}
+                            </TableCell>
+                            <TableCell>
+                              {row.kind === "MAKEUP" ? "Học bù" : "Buổi thường"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge>{STATUS_TEXT[row.attendance]}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {!roster.data.length && (
+                          <TableRow>
+                            <TableCell colSpan={3}>
+                              Chưa có học viên trong danh sách.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  ))}
+              </CardContent>
+            </Card>
+          </AsyncBoundary>
         </AsyncBoundary>
-      </AsyncBoundary>
+      )}
     </AttendanceContainer>
   );
 }

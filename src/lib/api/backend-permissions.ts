@@ -20,6 +20,14 @@ const rules: {
   roles: readonly WebRole[] | null;
 }[] = [
   { method: "GET", path: /^dashboard$/, roles: manager },
+  // Hộp thư thông báo của chính tài khoản đang đăng nhập; BE lọc theo người nhận.
+  {
+    method: "GET",
+    path: /^notifications(?:\/unread-count)?$/,
+    roles: null,
+  },
+  { method: "PATCH", path: /^notifications\/[^/]+\/read$/, roles: null },
+  { method: "POST", path: /^notifications\/read-all$/, roles: null },
   {
     method: "GET",
     path: /^academic\/analytics(?:\/export)?$/,
