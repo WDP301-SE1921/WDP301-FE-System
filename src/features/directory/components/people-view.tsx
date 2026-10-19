@@ -53,6 +53,12 @@ import { registrationApi } from "@/features/registration-flow/api";
 import type { BackendUser, RegistrationClass } from "@/types/backend";
 import { directoryApi } from "../api";
 import {
+  currentMonth,
+  teacherMonthStats,
+  TeacherMonthSessions,
+  useMonthSessions,
+} from "./teacher-month-sessions";
+import {
   AccountEditForm,
   StaffAccountCreateForm,
   type AccountKind,
@@ -85,6 +91,7 @@ const LIST_RESET = {
   teacherInvitesPage: null,
   managerInvitesPage: null,
   person: null,
+  personMonth: null,
 };
 
 function StatusBadge({ status }: { status: BackendUser["status"] }) {
@@ -321,6 +328,19 @@ function AccountsTable({
     kind === "teachers",
   );
   const byTeacher = classesByTeacher(classes.data);
+  const month = currentMonth();
+  const monthSessions = useMonthSessions(month, kind === "teachers");
+  const monthLabel = `T${Number(month.slice(5, 7))}`;
+  const statsFor = (teacherId: string) =>
+    teacherMonthStats(monthSessions.data, teacherId, monthSessions.dataUpdatedAt);
+  const sessionCell = (value: (id: string) => number) =>
+    function SessionCountCell({ row }: { row: { original: BackendUser } }) {
+      if (monthSessions.isPending)
+        return <span className="text-muted-foreground">…</span>;
+      if (monthSessions.isError)
+        return <span className="text-muted-foreground">—</span>;
+      return <span className="tabular-nums">{value(row.original.id)}</span>;
+    };
   const columns: DataTableColumn<BackendUser>[] = [
     {
       id: "name",
@@ -353,6 +373,16 @@ function AccountsTable({
                 <span className="text-muted-foreground">Chưa phân công</span>
               );
             },
+          } satisfies DataTableColumn<BackendUser>,
+          {
+            id: "taught",
+            header: `Đã dạy ${monthLabel}`,
+            cell: sessionCell((id) => statsFor(id).taught),
+          } satisfies DataTableColumn<BackendUser>,
+          {
+            id: "pending",
+            header: "Chờ điểm danh",
+            cell: sessionCell((id) => statsFor(id).pending),
           } satisfies DataTableColumn<BackendUser>,
         ]
       : [
@@ -500,12 +530,15 @@ function PersonSheet({
   kind: AccountKind;
   onEdit: (account: BackendUser) => void;
 }) {
-  const [person, setPerson] = useQueryState("person", parseAsString);
+  const [{ person }, setPerson] = useQueryStates({
+    person: parseAsString,
+    personMonth: parseAsString,
+  });
   return (
     <Sheet
       open={!!person}
       onOpenChange={(open) => {
-        if (!open) void setPerson(null);
+        if (!open) void setPerson({ person: null, personMonth: null });
       }}
     >
       <SheetContent
@@ -629,6 +662,7 @@ function PersonSheetContent({
             </AsyncBoundary>
           </section>
         )}
+        {kind === "teachers" && <TeacherMonthSessions teacherId={id} />}
       </div>
       {data && (
         <SheetFooter className="pt-6">

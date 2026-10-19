@@ -18,16 +18,16 @@ export function DashboardStatCard({
 }) {
   return (
     <Card className="relative min-w-0 overflow-hidden p-0">
-      <CardContent className="flex min-h-32 items-start gap-4 p-5">
+      <CardContent className="flex min-h-32 items-start gap-3 p-5">
         <span
           data-tone={tone}
-          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary [&>svg]:size-7"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary [&>svg]:size-6"
         >
           {icon}
         </span>
         <div className="min-w-0 space-y-1.5">
           <p className="text-sm font-medium leading-5">{label}</p>
-          <p className="break-words text-2xl font-semibold tracking-tight tabular-nums">
+          <p className="break-words text-xl font-semibold tracking-tight tabular-nums">
             {value}
           </p>
           <p className="text-xs leading-5 text-muted-foreground">{note}</p>

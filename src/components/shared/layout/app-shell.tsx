@@ -15,6 +15,7 @@ import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import type { WebRole } from "@/constants/roles";
 import { STORAGE_KEYS } from "@/constants/storage-keys";
 import { type MenuBadgeCounts } from "@/constants/menu";
+import { useMenuBadgeCounts } from "@/features/dashboard/menu-badges";
 
 export interface AppShellProps {
   role: WebRole;
@@ -37,6 +38,8 @@ function readSidebarPreference() {
 }
 
 function AppShell({ role, badgeCounts, children }: AppShellProps) {
+  const liveCounts = useMenuBadgeCounts(role);
+  const counts = badgeCounts ?? liveCounts;
   const storedCollapsed = React.useSyncExternalStore(
     subscribeSidebarPreference,
     readSidebarPreference,
@@ -69,7 +72,7 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
           role={role}
           collapsed={collapsed}
           onToggleCollapse={handleToggleCollapse}
-          badgeCounts={badgeCounts}
+          badgeCounts={counts}
         />
       </div>
 
@@ -97,7 +100,7 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
           <Sidebar
             role={role}
             collapsed={false}
-            badgeCounts={badgeCounts}
+            badgeCounts={counts}
             onNavigate={() => setMobileOpen(false)}
           />
         </SheetContent>

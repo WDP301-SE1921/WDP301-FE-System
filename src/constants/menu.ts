@@ -11,6 +11,7 @@ export const MENU_BADGE_KEYS = {
   UNMARKED_SESSIONS_TODAY: "unmarkedSessionsToday",
   UNGRADED_SUBMISSIONS: "ungradedSubmissions",
   PENDING_AI_REVIEW: "pendingAiReview",
+  PENDING_REGISTRATIONS: "pendingRegistrations",
 } as const;
 
 export type MenuBadgeKey =
@@ -24,6 +25,8 @@ export interface MenuItem {
   iconName: string;
   /** Area của item — sidebar chỉ hiện item mà role hiện tại vào được (`role-access.ts`). */
   area: Area;
+  /** Chỉ các vai trò này thấy mục (ngoài kiểm area), vd. tổng quan riêng của Thiết kế giáo trình. */
+  roles?: readonly WebRole[];
   badgeKey?: MenuBadgeKey;
   subItems?: MenuItem[];
 }
@@ -47,6 +50,13 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
         href: ROUTES.MANAGER.DASHBOARD,
         iconName: "DashboardSquare01Icon",
         area: AREA.DASHBOARD,
+      },
+      {
+        title: "Tổng quan",
+        href: ROUTES.MANAGER.CURRICULUM_OVERVIEW,
+        iconName: "DashboardSquare01Icon",
+        area: AREA.CATALOG,
+        roles: [ROLES.CURRICULUM_DESIGNER],
       },
     ],
   },
@@ -173,6 +183,17 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
 
 export const MENU_STAFF: MenuGroup[] = [
   {
+    groupTitle: "TỔNG QUAN",
+    items: [
+      {
+        title: "Dashboard",
+        href: ROUTES.STAFF.DASHBOARD,
+        iconName: "DashboardSquare01Icon",
+        area: AREA.DASHBOARD,
+      },
+    ],
+  },
+  {
     groupTitle: "HỌC SINH",
     items: [
       {
@@ -215,6 +236,7 @@ export const MENU_STAFF: MenuGroup[] = [
         href: ROUTES.STAFF.PAYMENTS,
         iconName: "Invoice01Icon",
         area: AREA.PAYMENTS,
+        badgeKey: MENU_BADGE_KEYS.PENDING_REGISTRATIONS,
       },
     ],
   },
@@ -294,7 +316,9 @@ export function getNavMenu(role: WebRole): MenuGroup[] {
       ...group,
       items: group.items.filter(
         (item) =>
-          canAccessArea(role, item.area) && canAccessPath(role, item.href),
+          (!item.roles || item.roles.includes(role)) &&
+          canAccessArea(role, item.area) &&
+          canAccessPath(role, item.href),
       ),
     }))
     .filter((group) => group.items.length > 0);

@@ -3,28 +3,28 @@
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { parseAsString, useQueryStates } from "nuqs";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowDown01Icon,
   ArrowRight01Icon,
   Calendar03Icon,
-  ChartColumnIcon,
-  Clock01Icon,
   Download01Icon,
   Invoice01Icon,
   Mortarboard01Icon,
   SchoolIcon,
-  StarIcon,
-  TeacherIcon,
-  UserGroupIcon,
-  Task01Icon,
-  FlashIcon,
 } from "@hugeicons/core-free-icons";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,17 +40,14 @@ import { displayMoment } from "@/features/academic/components/live-fields";
 import { directoryApi } from "@/features/directory/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { money, todayInVietnam } from "@/features/registration-flow/calendar";
+import { curriculumApi } from "@/features/curriculum/api";
+import { addCalendarDays, calendarWeekStart } from "@/lib/calendar-date";
 import { dateRangeSchema } from "@/lib/validators/web-workflows";
-import { useCurrentTime } from "@/hooks/use-current-time";
 import { auditActionLabel } from "@/constants/audit-events";
 import { ROUTES } from "@/constants/routes";
 import { dashboardApi } from "../api";
 import { DashboardStatCard } from "./dashboard-stat-card";
-import {
-  ActivityChart,
-  StudentDistributionChart,
-  RevenueChart,
-} from "./dashboard-charts";
+import { ColumnChart, HorizontalBars } from "./column-chart";
 import type { AnalyticsFilters } from "../types";
 
 const dashboardRangeSchema = dateRangeSchema.refine(
@@ -67,25 +64,17 @@ function sixMonthStart(date: string) {
   const [year, month] = date.split("-").map(Number);
   return new Date(Date.UTC(year, month - 6, 1)).toISOString().slice(0, 10);
 }
-function PanelTitle({
-  children,
-  icon,
-}: {
-  children: React.ReactNode;
-  icon: IconSvgElement;
-}) {
-  return (
-    <CardTitle className="flex min-w-0 items-center gap-3 text-xl leading-6">
-      <span className="flex bg-primary/10 text-primary size-9 shrink-0 items-center justify-center rounded-xl">
-        <HugeiconsIcon icon={icon} className="size-5" />
-      </span>
-      {children}
-    </CardTitle>
-  );
+function monthLabel(period: string) {
+  const [year, month] = period.split("-");
+  return { short: `T${Number(month)}`, full: `Tháng ${Number(month)}/${year}` };
 }
+const percent = new Intl.NumberFormat("vi-VN", {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
 
+/** Dashboard Quản lý (artboard QL-Dashboard). Chỉ đọc API sẵn có; % và lấp chỗ tính ở FE. */
 export function LiveManagerDashboard() {
-  const now = useCurrentTime();
   const today = todayInVietnam();
   const [{ fromDate, toDate }, setRange] = useQueryStates({
     fromDate: parseAsString.withDefault(`${today.slice(0, 8)}01`),
@@ -102,6 +91,7 @@ export function LiveManagerDashboard() {
     ...selectedFilters,
     from: `${sixMonthStart(range.success ? toDate : today)}T00:00:00.000+07:00`,
   };
+  const weekStart = calendarWeekStart(today);
   const summary = useLiveQuery(
     ["manager-dashboard", fromDate, toDate],
     (signal) => directoryApi.dashboard({ fromDate, toDate }, signal),
@@ -116,93 +106,102 @@ export function LiveManagerDashboard() {
     (signal) => dashboardApi.analytics(historyFilters, signal),
     range.success,
   );
-  const activity = useLiveQuery(
-    ["dashboard-activity", selectedFilters],
+  const activity = useLiveQuery(["dashboard-activity"], (signal) =>
+    directoryApi.auditLogs({ page: 1, limit: 5 }, signal),
+  );
+  const weekSessions = useLiveQuery(
+    ["dashboard-sessions", weekStart],
     (signal) =>
-      directoryApi.auditLogs(
-        {
-          page: 1,
-          limit: 100,
-          from: selectedFilters.from,
-          to: selectedFilters.to,
-        },
+      academicApi.sessions(
+        { fromDate: weekStart, toDate: addCalendarDays(weekStart, 6) },
         signal,
       ),
-    range.success,
   );
-  const sessions = useLiveQuery(["dashboard-sessions", today], (signal) =>
-    academicApi.sessions({ fromDate: today, toDate: today }, signal),
+  const failedEmails = useLiveQuery(["dashboard-failed-emails"], (signal) =>
+    academicApi.emailDeliveries(1, 1, signal, "FAILED"),
+  );
+  const units = useLiveQuery(["dashboard-curriculum-units"], (signal) =>
+    curriculumApi.units(undefined, signal),
   );
   const exportAction = useMutation({
     mutationFn: () => dashboardApi.export(selectedFilters),
   });
-  const todaySessions = (sessions.data ?? [])
-    .filter((item) => item.status !== "CANCELLED")
-    .sort((left, right) => left.startsAt.localeCompare(right.startsAt));
-  const upcoming = todaySessions.find(
-    (item) => Date.parse(item.startsAt) > now,
+
+  const trend = analytics.data?.trend ?? [];
+  const current = trend.at(-1)?.confirmedRevenue;
+  const previous = trend.at(-2)?.confirmedRevenue;
+  const change =
+    current !== undefined && previous ? (current - previous) / previous : null;
+  const activeClasses = (classes.data ?? []).filter(
+    (item) => item.isActive !== false,
   );
-  const cards = summary.data
-    ? [
-        {
-          label: "Doanh thu học phí đã nhận",
-          value: money(summary.data.tuition.confirmedAmount),
-          note: "Học phí đã xác nhận trong kỳ",
-          icon: UserGroupIcon,
-          tone: "orange" as const,
-          trend: analytics.data?.trend.map((point) => point.confirmedRevenue),
-        },
-        {
-          label: "Khoản thu trong kỳ",
-          value: summary.data.tuition.paymentCount,
-          note: "Số lượt xác nhận thanh toán",
-          icon: Calendar03Icon,
-          tone: "amber" as const,
-        },
-        {
-          label: "Học sinh đang học",
-          value: summary.data.counts.studyingStudents,
-          note: "Có ghi danh còn hiệu lực",
-          icon: Mortarboard01Icon,
-          tone: "green" as const,
-        },
-        {
-          label: "Hồ sơ học sinh hoạt động",
-          value: summary.data.counts.activeStudents,
-          note: "Hồ sơ hiện tại của trung tâm",
-          icon: StarIcon,
-          tone: "purple" as const,
-        },
-        {
-          label: "Giáo viên hoạt động",
-          value: summary.data.counts.activeTeachers,
-          note: "Tài khoản đang hoạt động",
-          icon: TeacherIcon,
-          tone: "teal" as const,
-        },
-        {
-          label: "Lớp học đang mở",
-          value:
-            classes.data?.filter(
-              (item) => item.isOpen && item.isActive !== false,
-            ).length ?? "—",
-          note: classes.isError
-            ? "Chưa tải được lớp. Thử lại bên dưới."
-            : "Lớp hoạt động, mở đăng ký",
-          icon: SchoolIcon,
-          tone: "blue" as const,
-        },
-      ]
-    : [];
+  const openClasses = activeClasses.filter((item) => item.isOpen);
+  const sessionsThisWeek = (weekSessions.data ?? []).filter(
+    (item) => item.status !== "CANCELLED",
+  );
+  const byGrade = new Map<number, number>();
+  for (const student of students.data ?? [])
+    if (student.status === "ACTIVE")
+      byGrade.set(student.grade, (byGrade.get(student.grade) ?? 0) + 1);
+  const fill = activeClasses
+    .filter((item) => item.capacity > 0 && item.rosterCount !== undefined)
+    .map((item) => ({
+      item,
+      ratio: (item.rosterCount ?? 0) / item.capacity,
+    }))
+    .sort((a, b) => b.ratio - a.ratio);
+
+  // Cần chú ý: chỉ hiện dòng có dữ liệu thật; dòng nào API lỗi thì bỏ.
+  const unassigned = activeClasses.filter((item) => !item.teacherId).length;
+  const programsInUse = new Map(
+    activeClasses.map((item) => [item.programId, item.program.name]),
+  );
+  const withNextTerm = new Set(
+    (units.data ?? [])
+      .filter(
+        (unit) => unit.status !== "ARCHIVED" && unit.fromDate.slice(0, 10) > today,
+      )
+      .map((unit) => unit.programId),
+  );
+  const missingNextTerm = [...programsInUse.keys()].filter(
+    (id) => !withNextTerm.has(id),
+  ).length;
+  const awaitingApproval = (units.data ?? []).filter(
+    (unit) => unit.status === "PENDING_REVIEW" && !!unit.technicalReviewedAt,
+  ).length;
+  const attention = [
+    failedEmails.data && {
+      key: "emails",
+      label: "Email gửi lỗi",
+      count: failedEmails.data.total,
+      href: `${ROUTES.MANAGER.NOTIFICATIONS}?emailStatus=FAILED`,
+    },
+    classes.data && {
+      key: "teachers",
+      label: "Lớp chưa có giáo viên",
+      count: unassigned,
+      href: ROUTES.MANAGER.CLASSES_UNASSIGNED,
+    },
+    classes.data &&
+      units.data && {
+        key: "next-term",
+        label: "Khóa đang có lớp chưa có giáo trình kỳ sau",
+        count: missingNextTerm,
+        href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs`,
+      },
+    units.data && {
+      key: "approval",
+      label: "Giáo trình chờ bạn duyệt",
+      count: awaitingApproval,
+      href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs&programFilter=review`,
+    },
+  ].filter((row) => !!row);
 
   return (
-    <PageContainer
-      maxWidth="full"
-      className="dashboard-content space-y-4 lg:px-7 lg:pt-5"
-    >
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Tổng quan hoạt động"
-        description="Thống kê và tình hình hoạt động của trung tâm trong kỳ đã chọn"
+        description="Học phí, học sinh, lớp và việc cần xử lý của trung tâm."
         actions={
           <div className="flex flex-wrap items-center gap-3">
             <Popover>
@@ -210,14 +209,13 @@ export function LiveManagerDashboard() {
                 render={
                   <Button
                     variant="outline"
-                    className="h-11 bg-card px-4"
                     leftIcon={
-                      <HugeiconsIcon icon={Calendar03Icon} className="size-5" />
+                      <HugeiconsIcon icon={Calendar03Icon} className="size-4" />
                     }
                     rightIcon={
                       <HugeiconsIcon
                         icon={ArrowDown01Icon}
-                        className="ml-3 size-4"
+                        className="ml-2 size-4"
                       />
                     }
                   />
@@ -274,12 +272,11 @@ export function LiveManagerDashboard() {
               </PopoverContent>
             </Popover>
             <Button
-              className="h-11 px-5"
               disabled={!range.success}
               isLoading={exportAction.isPending}
               onClick={() => exportAction.mutate()}
               leftIcon={
-                <HugeiconsIcon icon={Download01Icon} className="size-5" />
+                <HugeiconsIcon icon={Download01Icon} className="size-4" />
               }
             >
               Xuất báo cáo
@@ -299,55 +296,68 @@ export function LiveManagerDashboard() {
           error={summary.error}
           onRetry={() => void summary.refetch()}
           skeleton={
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }, (_, index) => (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {Array.from({ length: 4 }, (_, index) => (
                 <Skeleton key={index} className="h-32 rounded-2xl" />
               ))}
             </div>
           }
         >
-          <div
-            data-dashboard-kpis
-            className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
-          >
-            {cards.map((card) => (
+          {summary.data && (
+            <div
+              data-dashboard-kpis
+              className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+            >
               <DashboardStatCard
-                key={card.label}
-                {...card}
-                icon={<HugeiconsIcon icon={card.icon} />}
+                label="Học phí đã nhận"
+                value={money(summary.data.tuition.confirmedAmount)}
+                note={
+                  change === null
+                    ? `${summary.data.tuition.paymentCount} lượt thanh toán trong kỳ`
+                    : `${change >= 0 ? "+" : ""}${percent.format(change)} so với tháng trước`
+                }
+                icon={<HugeiconsIcon icon={Invoice01Icon} />}
               />
-            ))}
-          </div>
-        </AsyncBoundary>
-      )}
-      {classes.isError && (
-        <AsyncBoundary
-          isLoading={false}
-          isError
-          error={classes.error}
-          onRetry={() => void classes.refetch()}
-        >
-          {null}
-        </AsyncBoundary>
-      )}
-      <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
-        <Card className="min-w-0 gap-4 p-5">
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
-            <PanelTitle icon={ChartColumnIcon}>
-              Doanh thu & Buổi học theo tháng
-            </PanelTitle>
-            <div className="flex gap-4 text-xs">
-              <span className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-chart-1" />
-                Doanh thu (VND)
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-chart-2" />
-                Buổi hoàn thành
-              </span>
+              <DashboardStatCard
+                label="Học sinh đang học"
+                value={`${summary.data.counts.studyingStudents} / ${summary.data.counts.activeStudents}`}
+                note="Đang có ghi danh / hồ sơ đang hoạt động"
+                icon={<HugeiconsIcon icon={Mortarboard01Icon} />}
+              />
+              <DashboardStatCard
+                label="Lớp đang mở"
+                value={classes.data ? openClasses.length : "—"}
+                note={
+                  classes.data
+                    ? `Trên ${activeClasses.length} lớp đang hoạt động`
+                    : "Chưa tải được lớp"
+                }
+                icon={<HugeiconsIcon icon={SchoolIcon} />}
+              />
+              <DashboardStatCard
+                label="Buổi học tuần này"
+                value={weekSessions.data ? sessionsThisWeek.length : "—"}
+                note={
+                  weekSessions.data
+                    ? `${sessionsThisWeek.filter((item) => item.status === "COMPLETED").length} buổi đã chốt điểm danh`
+                    : "Chưa tải được lịch"
+                }
+                icon={<HugeiconsIcon icon={Calendar03Icon} />}
+              />
             </div>
+          )}
+        </AsyncBoundary>
+      )}
+
+      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle>Học phí theo tháng</CardTitle>
+            <CardDescription>
+              Học phí đã xác nhận, sáu tháng kết thúc trong kỳ đã chọn.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
             {!rangeError && (
               <AsyncBoundary
                 isLoading={analytics.isPending}
@@ -356,18 +366,25 @@ export function LiveManagerDashboard() {
                 onRetry={() => void analytics.refetch()}
                 skeleton={<Skeleton className="h-52 rounded-xl" />}
               >
-                {analytics.data && (
-                  <RevenueChart points={analytics.data.trend} bucket="MONTH" />
-                )}
+                <ColumnChart
+                  ariaLabel="Học phí đã xác nhận theo tháng"
+                  valueLabel="Học phí"
+                  format={money}
+                  data={trend.map((point) => ({
+                    key: point.period,
+                    label: monthLabel(point.period).short,
+                    title: monthLabel(point.period).full,
+                    value: point.confirmedRevenue,
+                  }))}
+                />
               </AsyncBoundary>
             )}
           </CardContent>
         </Card>
-        <Card className="min-w-0 gap-4 p-5">
+        <Card className="min-w-0">
           <CardHeader>
-            <PanelTitle icon={UserGroupIcon}>
-              Phân bố học sinh theo khối
-            </PanelTitle>
+            <CardTitle>Học sinh theo khối</CardTitle>
+            <CardDescription>Hồ sơ học sinh đang hoạt động.</CardDescription>
           </CardHeader>
           <CardContent>
             <AsyncBoundary
@@ -378,179 +395,155 @@ export function LiveManagerDashboard() {
               data={students.data}
               emptyProps={{ title: "Chưa có hồ sơ học sinh" }}
             >
-              {students.data && (
-                <StudentDistributionChart
-                  students={students.data.filter(
-                    (student) => student.status === "ACTIVE",
-                  )}
-                />
+              <HorizontalBars
+                format={(value) => `${value} học sinh`}
+                rows={[...byGrade.entries()]
+                  .sort(([a], [b]) => a - b)
+                  .map(([grade, count]) => ({
+                    key: String(grade),
+                    label: `Khối ${grade}`,
+                    value: count,
+                  }))}
+              />
+            </AsyncBoundary>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-3">
+        <Card className="min-w-0">
+          <CardHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="space-y-1">
+                <CardTitle>Lấp chỗ theo lớp</CardTitle>
+                <CardDescription>Học sinh đang học / sức chứa.</CardDescription>
+              </div>
+              <Button
+                variant="link"
+                size="sm"
+                render={<Link href={ROUTES.MANAGER.CLASSES} />}
+              >
+                Lớp học
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <AsyncBoundary
+              isLoading={classes.isPending}
+              isError={classes.isError}
+              error={classes.error}
+              onRetry={() => void classes.refetch()}
+              data={fill}
+              emptyProps={{ title: "Chưa có lớp đang hoạt động" }}
+            >
+              <HorizontalBars
+                max={100}
+                format={(value) => `${Math.round(value)}%`}
+                rows={fill.slice(0, 8).map(({ item, ratio }) => ({
+                  key: item.id,
+                  label: item.name,
+                  value: ratio * 100,
+                  note: `${item.rosterCount}/${item.capacity}`,
+                }))}
+              />
+              {fill.length > 8 && (
+                <p className="pt-3 text-xs text-muted-foreground">
+                  Hiện 8 lớp đầy nhất trên {fill.length} lớp.
+                </p>
               )}
             </AsyncBoundary>
           </CardContent>
         </Card>
-      </div>
-      <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
-        <Card className="min-w-0 gap-4 p-5">
-          <CardHeader className="flex-row items-center justify-between gap-2">
-            <CardTitle className="text-xl">Hoạt động gần đây</CardTitle>
-            <Button
-              variant="link"
-              size="xs"
-              render={<Link href={ROUTES.MANAGER.AUDIT_LOGS} />}
-              rightIcon={
-                <HugeiconsIcon icon={ArrowRight01Icon} className="size-3" />
-              }
-            >
-              Xem tất cả
-            </Button>
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle>Cần chú ý</CardTitle>
+            <CardDescription>Bấm để mở màn xử lý.</CardDescription>
           </CardHeader>
           <CardContent>
-            {!rangeError && (
-              <AsyncBoundary
-                isLoading={activity.isPending}
-                isError={activity.isError}
-                error={activity.error}
-                onRetry={() => void activity.refetch()}
-                data={activity.data?.items}
-                emptyProps={{ title: "Chưa có hoạt động trong kỳ" }}
-              >
-                <ol className="divide-y divide-border">
-                  {activity.data?.items.slice(0, 4).map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center gap-3 py-3 first:pt-0"
+            {attention.length ? (
+              <ul className="divide-y divide-border">
+                {attention.map((row) => (
+                  <li key={row.key}>
+                    <Link
+                      href={row.href}
+                      className="flex items-center justify-between gap-3 rounded-xl py-3 text-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <span className="flex bg-primary/10 text-primary size-7 shrink-0 items-center justify-center rounded-full">
-                        <HugeiconsIcon icon={Task01Icon} className="size-4" />
+                      <span>{row.label}</span>
+                      <span className="flex items-center gap-2">
+                        <Badge variant={row.count ? "warning" : "outline"}>
+                          {row.count}
+                        </Badge>
+                        <HugeiconsIcon
+                          icon={ArrowRight01Icon}
+                          className="size-4 text-muted-foreground"
+                        />
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs leading-5">
-                          {auditActionLabel(item.action)}
-                        </p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {item.actor?.displayName ??
-                            item.actor?.email ??
-                            "Hệ thống"}
-                        </p>
-                      </div>
-                      <time
-                        dateTime={item.createdAt}
-                        className="shrink-0 text-[10px] text-muted-foreground"
-                      >
-                        {displayMoment(item.createdAt)}
-                      </time>
-                    </li>
-                  ))}
-                </ol>
-              </AsyncBoundary>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {failedEmails.isPending || classes.isPending || units.isPending
+                  ? "Đang tải…"
+                  : "Chưa tải được số liệu cần chú ý."}
+              </p>
             )}
           </CardContent>
         </Card>
-        <Card className="min-w-0 gap-4 p-5">
+        <Card className="min-w-0">
           <CardHeader>
-            <PanelTitle icon={ChartColumnIcon}>
-              Thống kê theo loại hoạt động
-            </PanelTitle>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle>Hoạt động gần đây</CardTitle>
+              <Button
+                variant="link"
+                size="sm"
+                render={<Link href={ROUTES.MANAGER.AUDIT_LOGS} />}
+              >
+                Xem tất cả
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            {!rangeError && (
-              <AsyncBoundary
-                isLoading={activity.isPending}
-                isError={activity.isError}
-                error={activity.error}
-                onRetry={() => void activity.refetch()}
-              >
-                {activity.data && (
-                  <ActivityChart
-                    actions={activity.data.items.map((item) => item.action)}
-                    total={activity.data.total}
-                  />
-                )}
-              </AsyncBoundary>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="min-w-0 gap-4 p-5">
-          <CardHeader>
-            <PanelTitle icon={FlashIcon}>Thông tin nhanh</PanelTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
             <AsyncBoundary
-              isLoading={sessions.isPending}
-              isError={sessions.isError}
-              error={sessions.error}
-              onRetry={() => void sessions.refetch()}
+              isLoading={activity.isPending}
+              isError={activity.isError}
+              error={activity.error}
+              onRetry={() => void activity.refetch()}
+              data={activity.data?.items}
+              emptyProps={{ title: "Chưa có hoạt động" }}
             >
-              <dl className="space-y-4 text-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="flex items-center gap-3">
-                    <HugeiconsIcon
-                      icon={Calendar03Icon}
-                      className="size-4 text-primary"
-                    />
-                    Lịch học hôm nay
-                  </dt>
-                  <dd className="font-semibold">{todaySessions.length} buổi</dd>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="flex items-center gap-3">
-                    <HugeiconsIcon
-                      icon={Invoice01Icon}
-                      className="size-4 text-primary"
-                    />
-                    Đã hoàn thành
-                  </dt>
-                  <dd className="font-semibold">
-                    {
-                      todaySessions.filter(
-                        (session) => session.status === "COMPLETED",
-                      ).length
-                    }{" "}
-                    buổi
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="flex items-center gap-3">
-                    <HugeiconsIcon
-                      icon={Clock01Icon}
-                      className="size-4 text-primary"
-                    />
-                    Buổi học sắp tới
-                  </dt>
-                  <dd className="max-w-36 text-right">
-                    <p className="font-semibold">
-                      {upcoming
-                        ? new Intl.DateTimeFormat("vi-VN", {
-                            timeZone: "Asia/Ho_Chi_Minh",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }).format(new Date(upcoming.startsAt))
-                        : "Chưa có"}
-                    </p>
-                    {upcoming && (
-                      <p className="truncate text-[10px] text-muted-foreground">
-                        {upcoming.class.name}
+              <ol className="divide-y divide-border">
+                {activity.data?.items.slice(0, 5).map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-start justify-between gap-3 py-2.5 first:pt-0"
+                  >
+                    <div className="min-w-0 text-sm">
+                      <p className="leading-5">
+                        {auditActionLabel(item.action)}
                       </p>
-                    )}
-                  </dd>
-                </div>
-              </dl>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {item.actor?.displayName ??
+                          item.actor?.email ??
+                          "Hệ thống"}
+                      </p>
+                    </div>
+                    <time
+                      dateTime={item.createdAt}
+                      className="shrink-0 text-xs text-muted-foreground tabular-nums"
+                    >
+                      {displayMoment(item.createdAt)}
+                    </time>
+                  </li>
+                ))}
+              </ol>
             </AsyncBoundary>
-            <Button
-              className="mt-auto w-full"
-              render={
-                <Link href={`${ROUTES.MANAGER.SCHEDULE}?date=${today}`} />
-              }
-              rightIcon={<HugeiconsIcon icon={ArrowRight01Icon} />}
-            >
-              Xem lịch chi tiết
-            </Button>
           </CardContent>
         </Card>
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        Học phí theo kỳ đã chọn; hồ sơ và tài khoản là số hiện tại. Biểu đồ
-        doanh thu/buổi hoàn thành hiển thị sáu tháng kết thúc trong kỳ.
+      <p className="text-xs text-muted-foreground">
+        Học phí theo kỳ đã chọn; số học sinh, lớp và tài khoản là số hiện tại.
       </p>
     </PageContainer>
   );

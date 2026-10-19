@@ -286,3 +286,27 @@ export interface StudentSchedule {
   startTime: string;
   endTime: string;
 }
+
+/** `GET academic/classes/:id/attendance-summary` (buổi đã chốt; `effectiveStatus` tính cả học bù). */
+export interface ClassAttendanceSummary {
+  counts: {
+    present: number;
+    absent: number;
+    madeUp: number;
+    excused: number;
+    required: number;
+    attended: number;
+  };
+  attendancePercent: number | null;
+  students: {
+    studentId: string;
+    fullName: string;
+    attendancePercent: number | null;
+  }[];
+  history: {
+    id: string;
+    attendance: SessionParticipant["attendance"];
+    effectiveStatus: "PRESENT" | "ABSENT" | "EXCUSED" | "MADE_UP";
+    session: { id: string; classId: string; startsAt: string; endsAt: string };
+  }[];
+}

@@ -43,6 +43,8 @@ export const ROUTES = {
     CATALOG_PROGRAM_DETAIL: (id: string) => `/manager/catalog/programs/${id}`,
     ROOMS: "/manager/rooms",
     CURRICULUM: "/manager/curriculum",
+    /** Tổng quan của Thiết kế giáo trình (giáo trình đang soạn, chờ duyệt, phản hồi). */
+    CURRICULUM_OVERVIEW: "/manager/curriculum/overview",
     CURRICULUM_FEEDBACK: "/manager/curriculum/feedback",
     CURRICULUM_UNIT: (id: string) => `/manager/curriculum/${id}`,
     CLASS_SESSIONS: (id: string) => `/manager/classes/${id}/sessions`,
@@ -80,6 +82,8 @@ export const ROUTES = {
         : "/staff/enrollments/new";
     },
 
+    /** Tổng quan việc trong ngày của Nhân viên. */
+    DASHBOARD: "/staff/dashboard",
     PAYMENTS: "/staff/payments",
 
     PARENTS: "/staff/parents",

@@ -24,6 +24,14 @@ import { ApiFeedback } from "./api-feedback";
 import { RegistrationReceipt } from "./registration-receipt";
 import { RegistrationBillPanel } from "@/features/billing/components/registration-bill-panel";
 import { LivePaymentHistory } from "@/features/directory/components/payment-history";
+import { Badge } from "@/components/ui/badge";
+import { SheetCloseButton } from "@/components/shared/actions/sheet-close-button";
+import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
+import {
+  readCompletedSummary,
+  readPendingRegistrations,
+} from "@/features/dashboard/staff-summary";
+import { money } from "../calendar";
 
 const idSchema = z.object({
   id: z
@@ -87,6 +95,7 @@ export function RegistrationPaymentsView() {
         title="Đăng ký & biên lai"
         description="Thu học phí cho đăng ký nháp, mở lại bill hoặc biên lai của đăng ký đã hoàn tất."
       />
+      <RegistrationTotals />
       <LivePaymentHistory
         onOpen={(id) => void setRegistrationId(id)}
         searchAction={(search) =>
@@ -119,7 +128,9 @@ export function RegistrationPaymentsView() {
         <SheetContent
           className="w-full overflow-y-auto sm:max-w-2xl"
           data-registration-sheet
+          showCloseButton={false}
         >
+          <SheetCloseButton label="Đóng đăng ký" />
           <SheetHeader className="pr-12">
             <SheetTitle>
               {order.data
@@ -167,5 +178,33 @@ export function RegistrationPaymentsView() {
         </SheetContent>
       </Sheet>
     </PageContainer>
+  );
+}
+
+/** Chip tổng hợp: đơn chờ thu và đơn đã thu, kèm tổng tiền (dùng chung với Dashboard Nhân viên). */
+function RegistrationTotals() {
+  const pending = useLiveQuery(["staff-dashboard", "pending"], (signal) =>
+    readPendingRegistrations(signal),
+  );
+  const completed = useLiveQuery(["staff-dashboard", "completed"], (signal) =>
+    readCompletedSummary(signal),
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2" aria-live="polite">
+      <Badge variant="warning" className="h-auto px-3 py-1 text-sm">
+        {pending.data
+          ? `${pending.data.count} chờ thu · ${money(pending.data.amount)}`
+          : pending.isError
+            ? "Chưa tải được đơn chờ thu"
+            : "Đang tải đơn chờ thu…"}
+      </Badge>
+      <Badge variant="success" className="h-auto px-3 py-1 text-sm">
+        {completed.data
+          ? `${completed.data.count} hoàn tất · ${money(completed.data.amount)}`
+          : completed.isError
+            ? "Chưa tải được đơn hoàn tất"
+            : "Đang tải đơn hoàn tất…"}
+      </Badge>
+    </div>
   );
 }

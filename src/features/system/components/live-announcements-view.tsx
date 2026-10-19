@@ -170,7 +170,7 @@ export function AnnouncementsTable({
       id: "title",
       header: "Tiêu đề",
       cell: ({ row: { original: announcement } }) => (
-        <div className="max-w-80 min-w-56 space-y-1 whitespace-normal">
+        <div className="max-w-72 min-w-48 space-y-1 whitespace-normal">
           <p className="font-medium">{announcement.title}</p>
           <p className="line-clamp-2 text-xs text-muted-foreground">
             {announcement.content}
@@ -181,12 +181,14 @@ export function AnnouncementsTable({
     {
       id: "class",
       header: "Lớp",
-      cell: ({ row }) => classNames.get(row.original.classId) ?? "Lớp học",
-    },
-    {
-      id: "createdAt",
-      header: "Tạo lúc",
-      cell: ({ row }) => displayMoment(row.original.createdAt),
+      cell: ({ row }) => (
+        <div className="min-w-32 space-y-1 whitespace-normal">
+          <p>{classNames.get(row.original.classId) ?? "Lớp học"}</p>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            Tạo {displayMoment(row.original.createdAt)}
+          </p>
+        </div>
+      ),
     },
     {
       id: "actions",

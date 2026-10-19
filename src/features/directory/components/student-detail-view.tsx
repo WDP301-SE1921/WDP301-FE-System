@@ -1,22 +1,90 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  CheckmarkCircle02Icon,
+  Invoice01Icon,
+  UserRemove01Icon,
+} from "@hugeicons/core-free-icons";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RowActions } from "@/components/shared/data-table/row-actions";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ROUTES } from "@/constants/routes";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
-import { currentEnrollmentClass } from "@/features/academic/api";
+import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
+import { displayMoment } from "@/features/academic/components/live-fields";
+import { DashboardStatCard } from "@/features/dashboard/components/dashboard-stat-card";
 import {
   displayDate,
+  money,
   scheduleText,
 } from "@/features/registration-flow/calendar";
+import { addCalendarDays, todayInVietnam } from "@/lib/calendar-date";
+import { cn } from "@/lib/utils";
+import type { ClassAttendanceSummary } from "@/types/academic-workflows";
 import { directoryApi } from "../api";
+
+const TABS = {
+  overview: "Tổng quan",
+  schedule: "Lịch học",
+  tuition: "Học phí",
+  absences: "Nghỉ & học bù",
+} as const;
+type Tab = keyof typeof TABS;
+const TAB_KEYS = Object.keys(TABS) as Tab[];
+const UPCOMING_DAYS = 14;
+
+type AttendanceStatus = ClassAttendanceSummary["history"][number]["effectiveStatus"];
+const CELL: Record<AttendanceStatus | "UPCOMING", { label: string; className: string }> = {
+  PRESENT: { label: "Có mặt", className: "bg-emerald-500" },
+  ABSENT: { label: "Vắng", className: "bg-red-500" },
+  EXCUSED: { label: "Có phép", className: "bg-amber-400" },
+  MADE_UP: { label: "Học bù", className: "bg-sky-500" },
+  UPCOMING: { label: "Sắp tới", className: "border border-border bg-muted" },
+};
+const day = new Intl.DateTimeFormat("vi-VN", {
+  weekday: "short",
+  day: "2-digit",
+  month: "2-digit",
+  timeZone: "Asia/Ho_Chi_Minh",
+});
+
+/**
+ * Chi tiết học sinh (Quản lý, Nhân viên). Chuyên cần từ `attendance-summary` từng lớp (BE-8):
+ * BE chưa nhận thì ẩn các khối chuyên cần. Chưa có API điểm cho Quản lý/Nhân viên nên không
+ * có thẻ/tab Điểm; sửa hồ sơ chờ API (BE-8).
+ */
 export function LiveStudentDetailView({ id }: { id: string }) {
   const user = useCurrentUser();
+  const router = useRouter();
+  const isStaff = user?.role === "staff";
+  const today = todayInVietnam();
+  const [tab, setTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(TAB_KEYS).withDefault("overview"),
+  );
   const data = useLiveQuery(["student-detail", id], async (signal) => {
     const [student, enrollments, schedule] = await Promise.all([
       directoryApi.student(id, signal),
@@ -25,11 +93,196 @@ export function LiveStudentDetailView({ id }: { id: string }) {
     ]);
     return { student, enrollments, schedule };
   });
+  const active = (data.data?.enrollments ?? []).filter(
+    (item) => item.status === "ACTIVE",
+  );
+  // Gia hạn theo tháng tạo nhiều ghi danh cùng lớp: gộp theo lớp hiện tại, bỏ kỳ đã hết hạn.
+  const studying = [
+    ...active
+      .filter((item) => !item.endDate || item.endDate.slice(0, 10) > today)
+      .reduce((groups, item) => {
+        const classId = currentEnrollmentClass(item);
+        const group = groups.get(classId) ?? [];
+        groups.set(classId, [...group, item]);
+        return groups;
+      }, new Map<string, typeof active>())
+      .values(),
+  ].map((items) => {
+    const sorted = [...items].sort((a, b) =>
+      (a.startDate ?? "").localeCompare(b.startDate ?? ""),
+    );
+    const first = sorted[0];
+    const currentId = currentEnrollmentClass(first);
+    return {
+      id: first.id,
+      classroom:
+        first.placements.find((placement) => placement.classId === currentId)
+          ?.class ?? first.class,
+      startDate: first.startDate?.slice(0, 10),
+      endDate: sorted.at(-1)?.endDate?.slice(0, 10),
+    };
+  });
+  const classIds = [
+    ...new Set(
+      (data.data?.enrollments ?? []).flatMap((item) => [
+        currentEnrollmentClass(item),
+        ...item.placements.map((placement) => placement.classId),
+      ]),
+    ),
+  ];
+  const attendance = useLiveQuery(
+    ["student-attendance", id, classIds],
+    async (signal) =>
+      Promise.all(
+        classIds.map(async (classId) => ({
+          classId,
+          summary: await academicApi.classAttendance(classId, id, signal),
+        })),
+      ),
+    !!data.data && classIds.length > 0,
+  );
+  const upcoming = useLiveQuery(
+    ["student-upcoming", id, today],
+    (signal) =>
+      academicApi.sessions(
+        {
+          studentId: id,
+          fromDate: today,
+          toDate: addCalendarDays(today, UPCOMING_DAYS - 1),
+        },
+        signal,
+      ),
+    !!data.data,
+  );
+  const makeups = useLiveQuery(
+    ["student-makeup-sources", id],
+    (signal) => academicApi.makeupSources(id, signal),
+    isStaff,
+  );
+
+  const student = data.data?.student;
+  const totals = (attendance.data ?? []).reduce(
+    (sum, { summary }) => ({
+      present: sum.present + summary.counts.present,
+      absent: sum.absent + summary.counts.absent,
+      excused: sum.excused + summary.counts.excused,
+      madeUp: sum.madeUp + summary.counts.madeUp,
+      required: sum.required + summary.counts.required,
+      attended: sum.attended + summary.counts.attended,
+    }),
+    { present: 0, absent: 0, excused: 0, madeUp: 0, required: 0, attended: 0 },
+  );
+  const history = (attendance.data ?? [])
+    .flatMap(({ summary }) => summary.history)
+    .sort((a, b) => b.session.startsAt.localeCompare(a.session.startsAt));
+  const className = new Map(
+    (data.data?.enrollments ?? []).flatMap((item) => [
+      [item.class.id, item.class.name] as const,
+      ...item.placements.flatMap((placement) =>
+        placement.class ? [[placement.classId, placement.class.name] as const] : [],
+      ),
+    ]),
+  );
+  const payments = (data.data?.enrollments ?? []).flatMap((item) =>
+    item.registrationOrder?.payment
+      ? [{ enrollment: item, payment: item.registrationOrder.payment }]
+      : [],
+  );
+  const paid = payments.reduce((sum, row) => sum + Number(row.payment.amount), 0);
+  const paidUntil = active
+    .map((item) => item.endDate?.slice(0, 10))
+    .filter((value): value is string => !!value)
+    .sort()
+    .at(-1);
+  const attendanceReady = attendance.isSuccess;
+
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
-        title={data.data?.student.fullName ?? "Hồ sơ học sinh"}
-        description="Ghi danh và lịch sử học tại trung tâm."
+        title={student?.fullName ?? "Hồ sơ học sinh"}
+        breadcrumbs={[
+          {
+            label: "Học sinh & phụ huynh",
+            href: isStaff ? ROUTES.STAFF.STUDENTS : ROUTES.MANAGER.STUDENTS,
+          },
+          { label: student?.fullName ?? "Hồ sơ học sinh" },
+        ]}
+        description={
+          student
+            ? [
+                `Khối ${student.grade}`,
+                student.dateOfBirth ? `Sinh ${displayDate(student.dateOfBirth)}` : null,
+                `Phụ huynh ${student.parentProfile.user.displayName || student.parentProfile.user.email}`,
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            : undefined
+        }
+        actions={
+          student && (
+            <div className="flex flex-wrap items-center gap-2">
+              {isStaff && student.status === "ACTIVE" && (
+                <Button
+                  render={
+                    <Link
+                      href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
+                        studentId: id,
+                        email: student.parentProfile.user.email,
+                      })}
+                    />
+                  }
+                >
+                  Đăng ký thêm lớp
+                </Button>
+              )}
+              {isStaff && (
+                <Button
+                  variant="outline"
+                  render={
+                    <Link href={ROUTES.STAFF.STUDENT_ACTION({ studentId: id })} />
+                  }
+                >
+                  Xử lý nghỉ / học bù
+                </Button>
+              )}
+              <RowActions
+                items={[
+                  {
+                    id: "edit",
+                    label: "Sửa hồ sơ (chờ hệ thống hỗ trợ)",
+                    disabled: true,
+                    onClick: () => undefined,
+                  },
+                  ...(isStaff
+                    ? [
+                        {
+                          id: "withdraw",
+                          label: "Ngừng học",
+                          danger: true,
+                          onClick: () =>
+                            router.push(
+                              ROUTES.STAFF.STUDENT_ACTION({
+                                studentId: id,
+                                action: "withdraw",
+                              }),
+                            ),
+                        },
+                      ]
+                    : [
+                        {
+                          id: "parent",
+                          label: "Xem tài khoản phụ huynh",
+                          onClick: () =>
+                            router.push(
+                              `${ROUTES.MANAGER.STUDENTS}?${new URLSearchParams({ tab: "parents", parentId: student.parentProfile.user.id })}`,
+                            ),
+                        },
+                      ]),
+                ]}
+              />
+            </div>
+          )
+        }
       />
       <AsyncBoundary
         isLoading={data.isPending}
@@ -38,109 +291,489 @@ export function LiveStudentDetailView({ id }: { id: string }) {
         onRetry={() => void data.refetch()}
         data={data.data}
       >
-        {data.data && (
+        {student && data.data && (
           <>
-            <Card>
-              <CardContent className="space-y-2 pt-6">
-                <p>
-                  Khối {data.data.student.grade} ·{" "}
-                  {data.data.student.status === "ACTIVE"
-                    ? "Hoạt động"
-                    : "Ngừng học"}
-                </p>
-                <p>Phụ huynh: {data.data.student.parentProfile.user.email}</p>
-                {user?.role === "staff" &&
-                  data.data.student.status === "ACTIVE" && (
-                    <Button
-                      render={
-                        <Link
-                          href={`/staff/enrollments/new?studentId=${id}&email=${encodeURIComponent(data.data.student.parentProfile.user.email)}`}
-                        />
-                      }
-                    >
-                      Đăng ký thêm lớp
-                    </Button>
-                  )}
-                {user?.role === "staff" && (
-                  <Button
-                    variant="outline"
-                    render={
-                      <Link href={ROUTES.STAFF.STUDENT_ACTION({ studentId: id })} />
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={student.status === "ACTIVE" ? "success" : "secondary"}>
+                {student.status === "ACTIVE" ? "Đang học" : "Ngừng học"}
+              </Badge>
+              <Badge variant="outline">{studying.length} lớp đang học</Badge>
+            </div>
+            <div
+              className={cn(
+                "grid gap-4 sm:grid-cols-2",
+                attendanceReady ? "xl:grid-cols-3" : "xl:grid-cols-2",
+              )}
+            >
+              {attendanceReady && (
+                <>
+                  <DashboardStatCard
+                    label="Chuyên cần"
+                    value={
+                      totals.required
+                        ? `${Math.round((totals.attended / totals.required) * 100)}%`
+                        : "—"
                     }
-                  >
-                    Nghỉ học và học bù
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Lịch tuần hiện tại và sắp tới</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {data.data.schedule.map((slot, index) => (
-                  <p key={`${slot.enrollmentId}-${slot.classId}-${index}`}>
-                    {slot.className} · {scheduleText([slot])}
-                    {slot.effectiveFrom
-                      ? ` · Từ ${displayDate(slot.effectiveFrom)}`
-                      : ""}
-                    {slot.effectiveTo
-                      ? ` đến ${displayDate(slot.effectiveTo)}`
-                      : ""}
-                  </p>
+                    note={`Có mặt ${totals.attended}/${totals.required} buổi đã chốt`}
+                    icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} />}
+                  />
+                  <DashboardStatCard
+                    label="Số buổi vắng"
+                    value={totals.absent + totals.excused}
+                    note={[
+                      `${totals.excused} có phép`,
+                      `${totals.madeUp} đã học bù`,
+                      isStaff && makeups.data
+                        ? `${makeups.data.length} chờ học bù`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    icon={<HugeiconsIcon icon={UserRemove01Icon} />}
+                  />
+                </>
+              )}
+              <DashboardStatCard
+                label="Học phí đã đóng"
+                value={money(paid)}
+                note={
+                  paidUntil
+                    ? `Hết hạn ${displayDate(paidUntil)}`
+                    : "Chưa có lớp đang học"
+                }
+                icon={<HugeiconsIcon icon={Invoice01Icon} />}
+              />
+            </div>
+            <Tabs
+              value={tab}
+              onValueChange={(value) => {
+                const next = TAB_KEYS.find((key) => key === value);
+                if (next) void setTab(next === "overview" ? null : next);
+              }}
+            >
+              <TabsList aria-label="Phần của hồ sơ học sinh">
+                {TAB_KEYS.map((key) => (
+                  <TabsTrigger key={key} value={key}>
+                    {TABS[key]}
+                  </TabsTrigger>
                 ))}
-                {!data.data.schedule.length && (
-                  <p>Chưa có lịch tuần đang hiệu lực.</p>
-                )}
-              </CardContent>
-            </Card>
-            {data.data.enrollments.map((enrollment) => {
-              const currentId = currentEnrollmentClass(enrollment);
-              const current =
-                enrollment.placements.find(
-                  (placement) => placement.classId === currentId,
-                )?.class ?? enrollment.class;
-              return (
-                <Card key={enrollment.id}>
-                  <CardHeader>
-                    <CardTitle>
-                      {current.name} · {current.program.subject}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Badge>
-                      {enrollment.status === "ENDED"
-                        ? "Đã kết thúc"
-                        : "Ghi danh"}
-                    </Badge>
-                    <p>
-                      {enrollment.startDate &&
-                        displayDate(enrollment.startDate)}{" "}
-                      – {enrollment.endDate && displayDate(enrollment.endDate)}{" "}
-                      · {enrollment.packageMonths} tháng
-                    </p>
-                    <p>{scheduleText(current.weeklySchedules)}</p>
-                    {enrollment.placements.length > 1 && (
-                      <details>
-                        <summary>Lịch sử xếp lớp</summary>
-                        {enrollment.placements.map((placement) => (
-                          <p
-                            key={`${placement.classId}-${placement.effectiveFrom}`}
-                          >
-                            {placement.class?.name ?? placement.classId} ·{" "}
-                            {displayDate(placement.effectiveFrom)} –{" "}
-                            {placement.effectiveTo
-                              ? displayDate(placement.effectiveTo)
-                              : "hiện tại"}
+              </TabsList>
+            </Tabs>
+
+            {tab === "overview" && (
+              <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+                <div className="min-w-0 space-y-6">
+                  {attendanceReady && (
+                    <Card className="min-w-0">
+                      <CardHeader>
+                        <CardTitle>Điểm danh theo lớp</CardTitle>
+                        <CardDescription>
+                          Mỗi ô là một buổi; rê chuột để xem ngày.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {(attendance.data ?? []).map(({ classId, summary }) => {
+                          const future = (upcoming.data ?? []).filter(
+                            (session) =>
+                              session.classId === classId &&
+                              session.status === "SCHEDULED",
+                          );
+                          const cells = [
+                            ...[...summary.history]
+                              .sort((a, b) =>
+                                a.session.startsAt.localeCompare(b.session.startsAt),
+                              )
+                              .map((row) => ({
+                                key: row.id,
+                                status: row.effectiveStatus as AttendanceStatus | "UPCOMING",
+                                startsAt: row.session.startsAt,
+                              })),
+                            ...future.map((session) => ({
+                              key: session.id,
+                              status: "UPCOMING" as const,
+                              startsAt: session.startsAt,
+                            })),
+                          ];
+                          const own = summary.students[0];
+                          return (
+                            <div key={classId} className="space-y-1.5">
+                              <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                                <span className="font-medium">
+                                  {className.get(classId) ?? "Lớp học"}
+                                </span>
+                                <span className="tabular-nums text-muted-foreground">
+                                  {own?.attendancePercent !== null &&
+                                  own?.attendancePercent !== undefined
+                                    ? `${Math.round(own.attendancePercent)}% chuyên cần`
+                                    : "Chưa có buổi đã chốt"}
+                                </span>
+                              </div>
+                              {cells.length ? (
+                                <ul className="flex flex-wrap gap-1" aria-label={`Điểm danh lớp ${className.get(classId) ?? ""}`}>
+                                  {cells.map((cell) => (
+                                    <li
+                                      key={cell.key}
+                                      title={`${day.format(new Date(cell.startsAt))}: ${CELL[cell.status].label}`}
+                                      aria-label={`${day.format(new Date(cell.startsAt))}: ${CELL[cell.status].label}`}
+                                      className={cn(
+                                        "size-4 rounded-[4px]",
+                                        CELL[cell.status].className,
+                                      )}
+                                    />
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">
+                                  Chưa có buổi học.
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <ul className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          {Object.values(CELL).map((cell) => (
+                            <li key={cell.label} className="flex items-center gap-1.5">
+                              <span
+                                aria-hidden="true"
+                                className={cn("size-3 rounded-[3px]", cell.className)}
+                              />
+                              {cell.label}
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {attendanceReady && (
+                    <Card className="min-w-0">
+                      <CardHeader>
+                        <CardTitle>Buổi gần đây</CardTitle>
+                      </CardHeader>
+                      <CardContent className="min-w-0">
+                        {history.length ? (
+                          <div className="overflow-x-auto rounded-xl border border-border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Ngày</TableHead>
+                                  <TableHead>Lớp</TableHead>
+                                  <TableHead>Điểm danh</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {history.slice(0, 8).map((row) => (
+                                  <TableRow key={row.id}>
+                                    <TableCell className="tabular-nums">
+                                      {displayMoment(row.session.startsAt)}
+                                    </TableCell>
+                                    <TableCell>
+                                      {className.get(row.session.classId) ?? "—"}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant={
+                                          row.effectiveStatus === "ABSENT"
+                                            ? "danger"
+                                            : row.effectiveStatus === "PRESENT"
+                                              ? "success"
+                                              : "outline"
+                                        }
+                                      >
+                                        {CELL[row.effectiveStatus].label}
+                                      </Badge>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Chưa có buổi đã chốt điểm danh.
                           </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+                <div className="min-w-0 space-y-6">
+                  <Card className="min-w-0">
+                    <CardHeader>
+                      <CardTitle>Lớp đang học</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {studying.length ? (
+                        <ul className="space-y-3">
+                          {studying.map(({ id: key, classroom, startDate, endDate }) => {
+                            const weeks = endDate
+                              ? Math.max(
+                                  0,
+                                  Math.ceil(
+                                    (Date.parse(`${endDate}T00:00:00Z`) -
+                                      Date.parse(`${today}T00:00:00Z`)) /
+                                      (7 * 86400000),
+                                  ),
+                                )
+                              : null;
+                            return (
+                              <li
+                                key={key}
+                                className="space-y-1 rounded-xl border border-border p-3 text-sm"
+                              >
+                                <p className="font-medium">
+                                  {classroom.name} · {classroom.program.subject}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {scheduleText(classroom.weeklySchedules) ||
+                                    "Chưa có lịch tuần"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {startDate ? displayDate(startDate) : "—"} →{" "}
+                                  {endDate ? displayDate(endDate) : "—"}
+                                  {weeks !== null ? ` · còn ${weeks} tuần` : ""}
+                                </p>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Chưa có lớp đang học.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card className="min-w-0">
+                    <CardHeader>
+                      <CardTitle>Phụ huynh</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1 text-sm">
+                      <p className="font-medium">
+                        {student.parentProfile.user.displayName ||
+                          student.parentProfile.user.email}
+                      </p>
+                      <p className="break-all text-muted-foreground">
+                        {student.parentProfile.user.email}
+                      </p>
+                      {student.parentProfile.phone && (
+                        <p className="text-muted-foreground">
+                          {student.parentProfile.phone}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {tab === "schedule" && (
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Lịch tuần hiện tại và sắp tới</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  {data.data.schedule.map((slot, index) => (
+                    <p key={`${slot.enrollmentId}-${slot.classId}-${index}`}>
+                      <span className="font-medium">{slot.className}</span> ·{" "}
+                      {scheduleText([slot])}
+                      {slot.effectiveFrom
+                        ? ` · Từ ${displayDate(slot.effectiveFrom)}`
+                        : ""}
+                      {slot.effectiveTo
+                        ? ` đến ${displayDate(slot.effectiveTo)}`
+                        : ""}
+                    </p>
+                  ))}
+                  {!data.data.schedule.length && (
+                    <p className="text-muted-foreground">
+                      Chưa có lịch tuần đang hiệu lực.
+                    </p>
+                  )}
+                  {data.data.enrollments.some((item) => item.placements.length > 1) && (
+                    <details className="pt-2">
+                      <summary className="cursor-pointer text-muted-foreground">
+                        Lịch sử xếp lớp
+                      </summary>
+                      <ul className="space-y-1 pt-2">
+                        {data.data.enrollments.flatMap((enrollment) =>
+                          enrollment.placements.map((placement) => (
+                            <li key={`${enrollment.id}-${placement.classId}-${placement.effectiveFrom}`}>
+                              {placement.class?.name ?? placement.classId} ·{" "}
+                              {displayDate(placement.effectiveFrom)} –{" "}
+                              {placement.effectiveTo
+                                ? displayDate(placement.effectiveTo)
+                                : "hiện tại"}
+                            </li>
+                          )),
+                        )}
+                      </ul>
+                    </details>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {tab === "tuition" && (
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Học phí</CardTitle>
+                  <CardDescription>
+                    Biên lai của các ghi danh · tổng {money(paid)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="min-w-0">
+                  <div className="overflow-x-auto rounded-xl border border-border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Lớp</TableHead>
+                          <TableHead>Thời hạn</TableHead>
+                          <TableHead>Trạng thái</TableHead>
+                          <TableHead className="text-right">Số tiền</TableHead>
+                          <TableHead>Biên lai</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.data.enrollments.map((enrollment) => (
+                          <TableRow key={enrollment.id}>
+                            <TableCell>{enrollment.class.name}</TableCell>
+                            <TableCell className="tabular-nums">
+                              {enrollment.startDate
+                                ? displayDate(enrollment.startDate)
+                                : "—"}{" "}
+                              →{" "}
+                              {enrollment.endDate
+                                ? displayDate(enrollment.endDate)
+                                : "—"}{" "}
+                              · {enrollment.packageMonths} tháng
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  enrollment.status === "ACTIVE"
+                                    ? "success"
+                                    : "secondary"
+                                }
+                              >
+                                {enrollment.status === "ACTIVE"
+                                  ? "Đang học"
+                                  : enrollment.status === "ENDED"
+                                    ? "Đã kết thúc"
+                                    : enrollment.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {enrollment.registrationOrder?.payment
+                                ? money(enrollment.registrationOrder.payment.amount)
+                                : "—"}
+                            </TableCell>
+                            <TableCell className="whitespace-normal text-xs">
+                              {enrollment.registrationOrder?.payment
+                                ? `${enrollment.registrationOrder.payment.receiptNumber} · ${displayMoment(enrollment.registrationOrder.payment.confirmedAt)}`
+                                : "Chưa có biên lai"}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </details>
-                    )}
+                        {!data.data.enrollments.length && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-muted-foreground">
+                              Chưa có ghi danh.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {tab === "absences" && (
+              <div className="grid min-w-0 items-start gap-6 xl:grid-cols-2">
+                <Card className="min-w-0">
+                  <CardHeader>
+                    <CardTitle>Buổi vắng và có phép</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AsyncBoundary
+                      isLoading={attendance.isPending}
+                      isError={false}
+                      data={history.filter((row) => row.effectiveStatus !== "PRESENT")}
+                      emptyProps={{
+                        title: attendanceReady
+                          ? "Không có buổi vắng"
+                          : "Chưa xem được chuyên cần",
+                      }}
+                    >
+                      <ul className="divide-y divide-border text-sm">
+                        {history
+                          .filter((row) => row.effectiveStatus !== "PRESENT")
+                          .map((row) => (
+                            <li
+                              key={row.id}
+                              className="flex items-center justify-between gap-3 py-2"
+                            >
+                              <span>
+                                {displayMoment(row.session.startsAt)} ·{" "}
+                                {className.get(row.session.classId) ?? "Lớp học"}
+                              </span>
+                              <Badge variant="outline">
+                                {CELL[row.effectiveStatus].label}
+                              </Badge>
+                            </li>
+                          ))}
+                      </ul>
+                    </AsyncBoundary>
                   </CardContent>
                 </Card>
-              );
-            })}
-            {!data.data.enrollments.length && <p>Chưa có ghi danh.</p>}
+                {isStaff && (
+                  <Card className="min-w-0">
+                    <CardHeader>
+                      <CardTitle>Chờ xếp học bù</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <AsyncBoundary
+                        isLoading={makeups.isPending}
+                        isError={makeups.isError}
+                        error={makeups.error}
+                        onRetry={() => void makeups.refetch()}
+                        data={makeups.data}
+                        emptyProps={{ title: "Không có buổi chờ học bù" }}
+                      >
+                        <ul className="divide-y divide-border text-sm">
+                          {makeups.data?.map((source) => (
+                            <li
+                              key={source.id}
+                              className="flex flex-wrap items-center justify-between gap-3 py-2"
+                            >
+                              <span>
+                                {displayMoment(source.session.startsAt)} ·{" "}
+                                {source.session.class.name}
+                              </span>
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                render={
+                                  <Link
+                                    href={ROUTES.STAFF.STUDENT_ACTION({
+                                      studentId: id,
+                                      action: "makeup",
+                                      sessionId: source.session.id,
+                                    })}
+                                  />
+                                }
+                              >
+                                Xếp học bù
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </AsyncBoundary>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </>
         )}
       </AsyncBoundary>

@@ -103,7 +103,8 @@ const rules: {
   {
     method: "GET",
     path: /^academic\/classes\/[^/]+\/attendance-summary$/,
-    roles: teacher,
+    // BE-8: Quản lý và Nhân viên đọc chuyên cần ở chi tiết học sinh.
+    roles: sessionReaders,
   },
   {
     method: "GET",

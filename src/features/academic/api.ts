@@ -10,6 +10,7 @@ import type {
   AssignmentImportPreview,
   AssignmentSummary,
   AttendanceSummary,
+  ClassAttendanceSummary,
   CurriculumFeedbackRecord,
   EmailDelivery,
   EnrollmentRecord,
@@ -160,6 +161,21 @@ export const academicApi = {
   decideLeave: (id: string, approve: boolean, reason: string) =>
     command(`${itemPath("leaves", id)}/decide`, { approve, reason }),
   cancelLeave: (id: string) => command(`${itemPath("leaves", id)}/cancel`),
+  /** Chuyên cần một học sinh trong một lớp (Giáo viên lớp đó; Quản lý, Nhân viên — BE-8). */
+  classAttendance: (classId: string, studentId: string, signal?: AbortSignal) =>
+    apiRequest<ClassAttendanceSummary>(
+      `${itemPath("classes", classId)}/attendance-summary?${new URLSearchParams({ studentId })}`,
+      { signal },
+    ),
+  /**
+   * Trang đầu buổi vắng chờ xếp học bù của cả trung tâm (Nhân viên; không truyền `studentId`).
+   * API không trả tổng nên chỉ đọc một trang; đủ `limit` dòng nghĩa là còn nữa.
+   */
+  pendingMakeupSources: (limit: number, signal?: AbortSignal) =>
+    apiRequest<MakeupSource[]>(
+      queryPath("academic/makeup-sources", { page: 1, limit }),
+      { signal },
+    ),
   makeupSources: (studentId: string, signal?: AbortSignal) =>
     readArrayPages<MakeupSource>(
       "academic/makeup-sources",
@@ -208,9 +224,15 @@ export const academicApi = {
       ),
       { signal },
     ),
-  emailDeliveries: (page: number, limit: number, signal?: AbortSignal) =>
+  /** `status` lọc một trạng thái; `total` là số dòng sau lọc (BE-12). */
+  emailDeliveries: (
+    page: number,
+    limit: number,
+    signal?: AbortSignal,
+    status?: EmailDelivery["status"],
+  ) =>
     apiRequest<PaginatedList<EmailDelivery>>(
-      queryPath("academic/email-deliveries", { page, limit }),
+      queryPath("academic/email-deliveries", { page, limit, status }),
       { signal },
     ),
   retryEmail: (id: string) =>

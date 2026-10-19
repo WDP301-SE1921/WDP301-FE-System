@@ -1,5 +1,12 @@
 "use client";
-import { parseAsInteger, useQueryState } from "nuqs";
+import { parseAsInteger, parseAsStringLiteral, useQueryStates } from "nuqs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import {
@@ -35,6 +42,14 @@ const STATUS: Record<
   SENT: { label: "Đã gửi", variant: "success" },
   FAILED: { label: "Gửi thất bại", variant: "danger" },
 };
+const STATUS_FILTERS = ["ALL", "FAILED", "PENDING", "PROCESSING", "SENT"] as const;
+const STATUS_FILTER_TEXT: Record<(typeof STATUS_FILTERS)[number], string> = {
+  ALL: "Tất cả trạng thái",
+  FAILED: "Gửi thất bại",
+  PENDING: "Chờ gửi",
+  PROCESSING: "Đang gửi",
+  SENT: "Đã gửi",
+};
 const EVENT_TEXT: Record<string, string> = {
   PAYMENT_CONFIRMED: "Xác nhận thanh toán",
   ATTENDANCE_FINALIZED: "Kết quả điểm danh",
@@ -58,14 +73,18 @@ const EVENT_TEXT: Record<string, string> = {
 /**
  * Persisted email deliveries (BE outbox) with automatic retry and a manual retry.
  * Gồm cả thông báo lớp, lời mời và email tài khoản trong outbox của BE.
- * Chưa có lọc trạng thái: API chỉ nhận `page`, `limit` (BE-12).
+ * Lọc trạng thái trên URL (`?emailStatus=`), BE trả `total` sau lọc (BE-12).
  */
 export function EmailDeliveriesTable() {
-  const [page] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [{ page, emailStatus }, setFilters] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    emailStatus: parseAsStringLiteral(STATUS_FILTERS).withDefault("ALL"),
+  });
+  const status = emailStatus === "ALL" ? undefined : emailStatus;
   const query = useLiveQuery(
-    ["email-deliveries", page],
+    ["email-deliveries", page, emailStatus],
     (signal) =>
-      academicApi.emailDeliveries(Math.max(1, page), PAGE_SIZE, signal),
+      academicApi.emailDeliveries(Math.max(1, page), PAGE_SIZE, signal, status),
     true,
     (value) =>
       value.items.some(
@@ -78,31 +97,30 @@ export function EmailDeliveriesTable() {
       id: "email",
       header: "Email",
       cell: ({ row: { original: email } }) => (
-        <div className="max-w-80 min-w-56 space-y-1 whitespace-normal">
+        <div className="max-w-72 min-w-48 space-y-1 whitespace-normal">
           <p className="font-medium">
             {email.subject || "(Không có tiêu đề)"}
           </p>
+          <p className="text-xs break-all">{email.recipient}</p>
           <p className="text-xs text-muted-foreground">
-            {EVENT_TEXT[email.eventType] ?? "Email nghiệp vụ khác"}
+            {EVENT_TEXT[email.eventType] ?? "Email nghiệp vụ khác"} · tạo{" "}
+            {displayMoment(email.createdAt)}
           </p>
         </div>
-      ),
-    },
-    {
-      id: "recipient",
-      header: "Người nhận",
-      cell: ({ row }) => (
-        <span>{row.original.recipient}</span>
       ),
     },
     {
       id: "status",
       header: "Trạng thái",
       cell: ({ row: { original: email } }) => (
-        <div className="max-w-72 min-w-40 space-y-1 whitespace-normal">
+        <div className="max-w-60 min-w-36 space-y-1 whitespace-normal">
           <Badge variant={STATUS[email.status].variant}>
             {STATUS[email.status].label}
           </Badge>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            Lần gửi {email.attemptCount}/{email.maxAttempts}
+            {email.sentAt ? ` · gửi ${displayMoment(email.sentAt)}` : ""}
+          </p>
           {email.status === "PENDING" && email.attemptCount > 0 && (
             <p className="text-xs text-muted-foreground">
               Tự gửi lại lúc {displayMoment(email.nextAttemptAt)}
@@ -115,29 +133,6 @@ export function EmailDeliveriesTable() {
                 email.lastError,
                 "Chưa gửi được email. Kiểm tra địa chỉ người nhận hoặc liên hệ quản trị để kiểm tra cấu hình gửi email.",
               )}
-            </p>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: "attempts",
-      header: "Lần gửi",
-      cell: ({ row }) => (
-        <span className="tabular-nums">
-          {row.original.attemptCount}/{row.original.maxAttempts}
-        </span>
-      ),
-    },
-    {
-      id: "time",
-      header: "Thời gian",
-      cell: ({ row: { original: email } }) => (
-        <div className="min-w-36 space-y-1 text-sm">
-          <p>Tạo {displayMoment(email.createdAt)}</p>
-          {email.sentAt && (
-            <p className="text-muted-foreground">
-              Gửi {displayMoment(email.sentAt)}
             </p>
           )}
         </div>
@@ -169,11 +164,38 @@ export function EmailDeliveriesTable() {
   return (
     <Card className="min-w-0">
       <CardHeader>
-        <CardTitle>Lịch sử email</CardTitle>
-        <CardDescription>
-          Email nghiệp vụ được lưu và tự gửi lại khi lỗi. Có thể gửi lại thủ
-          công khi chưa hết số lần thử.
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <CardTitle>Lịch sử email</CardTitle>
+            <CardDescription>
+              Email nghiệp vụ được lưu và tự gửi lại khi lỗi. Có thể gửi lại
+              thủ công khi chưa hết số lần thử.
+            </CardDescription>
+          </div>
+          <Select
+            items={STATUS_FILTER_TEXT}
+            value={emailStatus}
+            onValueChange={(value) =>
+              void setFilters({
+                emailStatus:
+                  STATUS_FILTERS.find((key) => key === value && key !== "ALL") ??
+                  null,
+                page: null,
+              })
+            }
+          >
+            <SelectTrigger className="w-44" aria-label="Lọc trạng thái email">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTERS.map((key) => (
+                <SelectItem key={key} value={key}>
+                  {STATUS_FILTER_TEXT[key]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="min-w-0 space-y-4">
         {retry.error instanceof ApiError && retry.error.status >= 500 ? (
@@ -192,7 +214,9 @@ export function EmailDeliveriesTable() {
           isError={query.isError}
           error={query.error}
           onRetry={() => void query.refetch()}
-          emptyTitle="Chưa có email nào được lưu"
+          emptyTitle={
+            status ? "Không có email ở trạng thái này" : "Chưa có email nào được lưu"
+          }
         />
         <TablePagination
           totalItems={query.data?.total ?? 0}
