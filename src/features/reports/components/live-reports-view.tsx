@@ -9,6 +9,14 @@ import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { ApiForm } from "@/components/shared/forms/api-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
 import { registrationApi } from "@/features/registration-flow/api";
@@ -74,102 +82,118 @@ export function LiveReportsView() {
         title="Báo cáo học tập"
         description="Tổng hợp điểm đã công bố, chuyên cần và tiến độ; tải Excel/PDF dành cho giáo viên."
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>Tạo báo cáo</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <AsyncBoundary
-            isLoading={context.isPending}
-            isError={context.isError}
-            error={context.error}
-            onRetry={() => void context.refetch()}
-            data={context.data?.classes}
-            emptyProps={{ title: "Chưa có lớp được phân công" }}
-          >
-            <LiveSelect
-              label="Lớp"
-              value={classId}
-              options={(context.data?.classes ?? []).map((item) => ({
-                value: item.id,
-                label: item.name,
-              }))}
-              onChange={(value) => void setClassId(value)}
-            />
-            {selectedClass && (
-              <ApiForm
-                key={classId}
-                schema={reportFormSchema}
-                defaults={{ studentId: ALL_STUDENTS, includeAi: false }}
-                fields={[
-                  {
-                    name: "studentId",
-                    label: "Học sinh",
-                    type: "select",
-                    options: [
-                      { value: ALL_STUDENTS, label: "Toàn lớp" },
-                      ...Array.from(students, ([value, label]) => ({
-                        value,
-                        label,
-                      })),
-                    ],
-                  },
-                  { name: "fromDate", label: "Từ ngày", type: "date" },
-                  { name: "toDate", label: "Đến ngày", type: "date" },
-                  {
-                    name: "includeAi",
-                    label: "Yêu cầu AI viết nhận xét từ số liệu",
-                    type: "checkbox",
-                  },
-                ]}
-                submitLabel="Tạo báo cáo"
-                onSubmit={(value) =>
-                  academicApi.createReport({
-                    classId,
-                    studentId:
-                      value.studentId === ALL_STUDENTS
-                        ? undefined
-                        : value.studentId || undefined,
-                    from: new Date(
-                      `${value.fromDate}T00:00:00+07:00`,
-                    ).toISOString(),
-                    to: new Date(
-                      `${value.toDate}T23:59:59+07:00`,
-                    ).toISOString(),
-                    includeAi: value.includeAi,
-                  })
-                }
+      <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
+        <Card className="min-w-0 lg:sticky lg:top-20">
+          <CardHeader>
+            <CardTitle>Tạo báo cáo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AsyncBoundary
+              isLoading={context.isPending}
+              isError={context.isError}
+              error={context.error}
+              onRetry={() => void context.refetch()}
+              data={context.data?.classes}
+              emptyProps={{ title: "Chưa có lớp được phân công" }}
+            >
+              <LiveSelect
+                label="Lớp"
+                value={classId}
+                options={(context.data?.classes ?? []).map((item) => ({
+                  value: item.id,
+                  label: item.name,
+                }))}
+                onChange={(value) => void setClassId(value)}
               />
-            )}
-          </AsyncBoundary>
-        </CardContent>
-      </Card>
-      <AsyncBoundary
-        isLoading={reports.isPending}
-        isError={reports.isError}
-        error={reports.error}
-        onRetry={() => void reports.refetch()}
-        data={reports.data}
-        emptyProps={{ title: "Chưa có báo cáo" }}
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          {reports.data?.map((report) => (
-            <Card key={report.id}>
-              <CardHeader>
-                <CardTitle>
-                  {context.data?.classes.find(
-                    (item) => item.id === report.classId,
-                  )?.name ?? "Báo cáo lớp học"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p>Tạo {displayMoment(report.createdAt)}</p>
-                <ReportDownloads id={report.id} />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </AsyncBoundary>
+              {selectedClass && (
+                <ApiForm
+                  key={classId}
+                  schema={reportFormSchema}
+                  defaults={{ studentId: ALL_STUDENTS, includeAi: false }}
+                  fields={[
+                    {
+                      name: "studentId",
+                      label: "Học sinh",
+                      type: "select",
+                      options: [
+                        { value: ALL_STUDENTS, label: "Toàn lớp" },
+                        ...Array.from(students, ([value, label]) => ({
+                          value,
+                          label,
+                        })),
+                      ],
+                    },
+                    { name: "fromDate", label: "Từ ngày", type: "date" },
+                    { name: "toDate", label: "Đến ngày", type: "date" },
+                    {
+                      name: "includeAi",
+                      label: "Yêu cầu AI viết nhận xét từ số liệu",
+                      type: "checkbox",
+                    },
+                  ]}
+                  submitLabel="Tạo báo cáo"
+                  onSubmit={(value) =>
+                    academicApi.createReport({
+                      classId,
+                      studentId:
+                        value.studentId === ALL_STUDENTS
+                          ? undefined
+                          : value.studentId || undefined,
+                      from: new Date(
+                        `${value.fromDate}T00:00:00+07:00`,
+                      ).toISOString(),
+                      to: new Date(
+                        `${value.toDate}T23:59:59+07:00`,
+                      ).toISOString(),
+                      includeAi: value.includeAi,
+                    })
+                  }
+                />
+              )}
+            </AsyncBoundary>
+          </CardContent>
+        </Card>
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle>Báo cáo đã tạo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AsyncBoundary
+              isLoading={reports.isPending}
+              isError={reports.isError}
+              error={reports.error}
+              onRetry={() => void reports.refetch()}
+              data={reports.data}
+              emptyProps={{ title: "Chưa có báo cáo" }}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Lớp</TableHead>
+                    <TableHead>Tạo lúc</TableHead>
+                    <TableHead>Tải báo cáo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reports.data?.map((report) => (
+                    <TableRow key={report.id}>
+                      <TableCell className="max-w-64 whitespace-normal font-medium">
+                        {context.data?.classes.find(
+                          (item) => item.id === report.classId,
+                        )?.name ?? "Báo cáo lớp học"}
+                      </TableCell>
+                      <TableCell>{displayMoment(report.createdAt)}</TableCell>
+                      <TableCell>
+                        <ReportDownloads id={report.id} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AsyncBoundary>
+          </CardContent>
+        </Card>
+      </div>
     </PageContainer>
   );
 }

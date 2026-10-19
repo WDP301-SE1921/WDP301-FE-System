@@ -36,6 +36,7 @@ import { todayInVietnam } from "@/features/registration-flow/calendar";
 import { displayMoment } from "@/features/academic/components/live-fields";
 import { AssignmentImportDialog } from "./assignment-import-dialog";
 import { TEST_TYPE_TEXT } from "../assessment-labels";
+import { ROUTES } from "@/constants/routes";
 type AssignmentInput = z.infer<typeof assignmentEditorSchema>;
 const emptyQuestion: AssignmentInput["questions"][number] = {
   kind: "ESSAY",
@@ -56,9 +57,13 @@ export function LiveAssignmentEditor({ id }: { id?: string }) {
     !!id,
   );
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title={id ? "Sửa bài tập nháp" : "Tạo bài tập / đề kiểm tra"}
+        breadcrumbs={[
+          { label: "Bài tập & chấm bài", href: ROUTES.TEACHER.ASSIGNMENTS },
+          { label: id ? "Sửa nháp" : "Tạo mới" },
+        ]}
         description="Soạn câu hỏi, đáp án và tiêu chí chấm. Lưu nháp trước khi giao cho học sinh."
       />
       <AsyncBoundary
@@ -138,6 +143,11 @@ function AssignmentEditor({
     name: "sessionId",
   });
   const now = useCurrentTime();
+  const totalScore = (values ?? []).reduce(
+    (sum, question) =>
+      sum + (Number.isFinite(question?.maxScore) ? question.maxScore : 0),
+    0,
+  );
   useUnsavedChanges(form.formState.isDirty && !action.isSuccess);
   const sessions = useLiveQuery(
     ["assignment-sessions", classId],
@@ -187,16 +197,22 @@ function AssignmentEditor({
             {
               onSuccess: (result) =>
                 router.push(
-                  `/teacher/assignments/${(result as AssignmentDetail).id}/submissions`,
+                  ROUTES.TEACHER.ASSIGNMENT_SUBMISSIONS(
+                    (result as AssignmentDetail).id,
+                  ),
                 ),
             },
           );
         })}
       >
-        <fieldset disabled={action.isPending} className="space-y-4">
+        <fieldset
+          disabled={action.isPending}
+          className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]"
+        >
+          <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
           <Card>
             <CardHeader>
-              <CardTitle>Thông tin bài tập</CardTitle>
+              <CardTitle>Thông tin chung</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Controller
@@ -348,11 +364,37 @@ function AssignmentEditor({
                   {form.formState.errors.maxAttempts.message}
                 </p>
               )}
+              <div className="flex items-center justify-between rounded-xl bg-muted px-4 py-3 text-sm">
+                <span className="text-muted-foreground">
+                  {questions.fields.length} câu hỏi
+                </span>
+                <span className="font-semibold tabular-nums">
+                  Tổng {Math.round(totalScore * 100) / 100} điểm
+                </span>
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={
+                  isSessionUnavailable ||
+                  (kind === "TEST" && (sessions.isPending || sessions.isError))
+                }
+                isLoading={action.isPending}
+              >
+                Lưu nháp
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Lưu nháp xong, chọn học sinh rồi giao bài ở trang bài nộp.
+              </p>
+              <ApiFeedback error={action.error} />
             </CardContent>
           </Card>
+          </div>
+          <div className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">
-              Nội dung câu hỏi · {questions.fields.length} câu
+              Câu hỏi · {questions.fields.length} câu ·{" "}
+              {Math.round(totalScore * 100) / 100} điểm
             </h2>
             <Button
               type="button"
@@ -477,27 +519,16 @@ function AssignmentEditor({
               </CardContent>
             </Card>
           ))}
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={questions.fields.length >= 100}
-              onClick={() => questions.append({ ...emptyQuestion })}
-            >
-              Thêm câu hỏi
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                isSessionUnavailable ||
-                (kind === "TEST" && (sessions.isPending || sessions.isError))
-              }
-            >
-              {action.isPending ? "Đang lưu…" : "Lưu nháp"}
-            </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={questions.fields.length >= 100}
+            onClick={() => questions.append({ ...emptyQuestion })}
+          >
+            Thêm câu hỏi
+          </Button>
           </div>
         </fieldset>
-        <ApiFeedback error={action.error} />
       </form>
       {showImport && (
         <AssignmentImportDialog

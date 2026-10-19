@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { parseAsString, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,29 @@ import { StatusBadge } from "@/components/shared/feedback/status-badge";
 import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role";
 import { calendarDateLabel } from "@/lib/calendar-date";
 import { ROUTES } from "@/constants/routes";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
+import { StickyFormFooter } from "@/components/shared/workflows/sticky-form-footer";
+import {
+  ApprovalSteps,
+  ComparisonNotice,
+  LessonChangeContent,
+  useCurriculumComparison,
+} from "./curriculum-comparison";
+import { LESSON_CHANGE_LABELS } from "../workspace-selectors";
 import type { CurriculumLesson } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { curriculumStage } from "../presentation";
@@ -78,7 +101,34 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     "lesson",
     parseAsString.withDefault(""),
   );
-  const [editor, setEditor] = useState<Editor | null>(null);
+  const [editorKind, setEditorKind] = useQueryState(
+    "editor",
+    parseAsStringLiteral([
+      "unit",
+      "lesson",
+      "import",
+      "submit",
+      "technical-review",
+      "revision",
+      "request-changes",
+    ]),
+  );
+  const editor: Editor | null = editorKind
+    ? {
+        kind: editorKind,
+        lesson:
+          editorKind === "lesson"
+            ? query.data?.lessons.find(
+                (lesson) => lesson.id === selectedLessonId,
+              )
+            : undefined,
+      }
+    : null;
+  const setEditor = (value: Editor | null) => {
+    void setEditorKind(value?.kind ?? null);
+    if (value?.kind === "lesson")
+      void setSelectedLessonId(value.lesson?.id ?? null);
+  };
   const [formState, setFormState] = useState<CurriculumFormState>({
     dirty: false,
     busy: false,
@@ -106,6 +156,30 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     curriculumApi.reorder(unitId, ids, query.data!.revision),
   );
   const unit = query.data;
+  const comparison = useCurriculumComparison(unit);
+  const [changeFilter, setChangeFilter] = useQueryState(
+    "lessonChanges",
+    parseAsStringLiteral([
+      "all",
+      "changed",
+      "new",
+      "modified",
+      "unchanged",
+      "removed",
+    ]).withDefault(
+      role === "teacher" || role === "center_manager" ? "changed" : "all",
+    ),
+  );
+  const comparisonRows = comparison.rows.filter(
+    (row) =>
+      changeFilter === "all" ||
+      (changeFilter === "changed"
+        ? row.change !== "unchanged"
+        : row.change === changeFilter),
+  );
+  const selectedRow =
+    comparisonRows.find((row) => row.lesson.id === selectedLessonId) ??
+    comparisonRows[0];
   const canEdit =
     role === "curriculum_designer" &&
     unit?.designerId === user?.id &&
@@ -133,8 +207,6 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     unit?.lessons
       .filter((lesson) => lesson.kind === "LESSON")
       .sort((a, b) => a.sequence - b.sequence) ?? [];
-  const selected =
-    regular.find((lesson) => lesson.id === selectedLessonId) ?? regular[0];
   const ready =
     !!validation.data?.ready && validation.data.revision === unit?.revision;
   const backHref =
@@ -193,7 +265,11 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
               {canTechnicalReview && (
                 <Button
                   disabled={busy}
-                  onClick={() => openEditor({ kind: "technical-review" })}
+                  onClick={() =>
+                    document
+                      .getElementById("curriculum-decision")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
                 >
                   Thẩm định chuyên môn
                 </Button>
@@ -297,38 +373,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     {regular.length} bài học · Mỗi buổi một bài
                   </p>
                 </div>
-                <ol
-                  className="grid gap-3 text-sm sm:grid-cols-3"
-                  aria-label="Quy trình giáo trình"
-                >
-                  <li className="rounded-xl bg-muted p-3">
-                    <span className="font-medium">1. Soạn nội dung</span>
-                    <p className="mt-1 text-muted-foreground">
-                      {unit.status === "DRAFT"
-                        ? "Bổ sung bài học và kiểm tra cấu trúc."
-                        : "Đã hoàn tất bản nháp."}
-                    </p>
-                  </li>
-                  <li className="rounded-xl bg-muted p-3">
-                    <span className="font-medium">2. Thẩm định chuyên môn</span>
-                    <p className="mt-1 text-muted-foreground">
-                      {unit.reviewerTeacher?.displayName ||
-                        unit.reviewerTeacher?.email ||
-                        "Chọn giáo viên khi gửi thẩm định."}
-                      {unit.technicalReviewedAt ? " · Đã đồng ý." : ""}
-                    </p>
-                  </li>
-                  <li className="rounded-xl bg-muted p-3">
-                    <span className="font-medium">3. Xác nhận áp dụng</span>
-                    <p className="mt-1 text-muted-foreground">
-                      {unit.status === "APPROVED"
-                        ? "Đã được quản lý xác nhận."
-                        : unit.technicalReviewedAt
-                          ? "Chờ quản lý xác nhận."
-                          : "Sau khi hoàn tất thẩm định chuyên môn."}
-                    </p>
-                  </li>
-                </ol>
+                <ApprovalSteps unit={unit} />
+                <ComparisonNotice comparison={comparison} />
                 {canEdit && (
                   <p className="text-sm text-muted-foreground">
                     Kiểm tra cấu trúc trước khi gửi giáo viên thẩm định. Bài
@@ -404,142 +450,269 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 )}
               </div>
             )}
-            <div className="grid items-start gap-5 lg:grid-cols-3">
-              <Card className="min-w-0">
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <CardTitle>Bài học ({regular.length})</CardTitle>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        disabled={busy}
-                        onClick={() => openEditor({ kind: "lesson" })}
-                      >
-                        Thêm bài học
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {regular.length ? (
-                    <nav
-                      aria-label="Danh sách bài học"
-                      className="max-h-96 space-y-2 overflow-y-auto"
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-semibold">Bài học ({regular.length})</h2>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      "all",
+                      "changed",
+                      "new",
+                      "modified",
+                      "unchanged",
+                      "removed",
+                    ] as const
+                  ).map((filter) => (
+                    <Button
+                      key={filter}
+                      size="sm"
+                      variant={changeFilter === filter ? "secondary" : "ghost"}
+                      onClick={() => void setChangeFilter(filter)}
                     >
-                      {regular.map((lesson) => (
-                        <Button
-                          key={lesson.id}
-                          variant={
-                            selected?.id === lesson.id ? "secondary" : "ghost"
-                          }
-                          className="h-auto min-h-11 w-full justify-start gap-3 whitespace-normal text-left"
-                          aria-current={
-                            selected?.id === lesson.id ? "true" : undefined
-                          }
-                          onClick={() => void setSelectedLessonId(lesson.id)}
+                      {filter === "all"
+                        ? "Tất cả"
+                        : filter === "changed"
+                          ? "Chỉ bài thay đổi"
+                          : LESSON_CHANGE_LABELS[filter]}
+                    </Button>
+                  ))}
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => openEditor({ kind: "lesson" })}
+                    >
+                      Thêm bài học
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
+                <div className="min-w-0 overflow-x-auto rounded-2xl border border-border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>STT</TableHead>
+                        <TableHead>Tên bài · nội dung tóm tắt</TableHead>
+                        <TableHead
+                          aria-disabled="true"
+                          title="Chờ hỗ trợ chương từ hệ thống"
                         >
-                          <span className="shrink-0 font-medium">
-                            {lesson.sequence}.
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {lesson.title}
-                          </span>
-                        </Button>
+                          Chương · chưa hỗ trợ
+                        </TableHead>
+                        <TableHead>So với bản đối chiếu</TableHead>
+                        <TableHead>Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {comparisonRows.map((row) => (
+                        <TableRow
+                          key={row.lesson.id}
+                          className={
+                            selectedRow?.lesson.id === row.lesson.id
+                              ? "bg-primary/5"
+                              : undefined
+                          }
+                        >
+                          <TableCell>{row.lesson.sequence}</TableCell>
+                          <TableCell className="max-w-80 whitespace-normal">
+                            <Button
+                              variant="link"
+                              className="h-auto whitespace-normal p-0 text-left"
+                              onClick={() =>
+                                void setSelectedLessonId(row.lesson.id)
+                              }
+                            >
+                              {row.lesson.title}
+                            </Button>
+                            <p className="line-clamp-2 text-xs text-muted-foreground">
+                              {row.lesson.content}
+                            </p>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            —
+                          </TableCell>
+                          <TableCell>
+                            {LESSON_CHANGE_LABELS[row.change]}
+                          </TableCell>
+                          <TableCell>
+                            {canEdit && row.change !== "removed" ? (
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    openEditor({
+                                      kind: "lesson",
+                                      lesson: row.lesson,
+                                    })
+                                  }
+                                >
+                                  Sửa
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger
+                                    render={
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        aria-label={`Thao tác bài ${row.lesson.sequence}`}
+                                        disabled={busy}
+                                      />
+                                    }
+                                  >
+                                    ⋯
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem
+                                      disabled={
+                                        regular[0]?.id === row.lesson.id
+                                      }
+                                      onClick={() => move(row.lesson.id, -1)}
+                                    >
+                                      Đưa bài lên
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      disabled={
+                                        regular.at(-1)?.id === row.lesson.id
+                                      }
+                                      onClick={() => move(row.lesson.id, 1)}
+                                    >
+                                      Đưa bài xuống
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => setDeleting(row.lesson)}
+                                    >
+                                      Xóa bài học
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  void setSelectedLessonId(row.lesson.id)
+                                }
+                              >
+                                Đọc
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </nav>
-                  ) : (
+                    </TableBody>
+                  </Table>
+                  {!comparisonRows.length && (
                     <EmptyState
-                      title="Chưa có bài học"
-                      description="Thêm bài học hoặc nhập danh sách từ CSV."
-                      actionLabel={
-                        canEdit ? "Thêm bài học đầu tiên" : undefined
+                      title={
+                        regular.length
+                          ? "Không có bài phù hợp bộ lọc"
+                          : "Chưa có bài học"
                       }
-                      onAction={
-                        canEdit
-                          ? () => openEditor({ kind: "lesson" })
-                          : undefined
+                      description={
+                        regular.length
+                          ? "Chọn Tất cả để đọc toàn bộ giáo trình."
+                          : "Thêm bài học hoặc nhập danh sách từ CSV."
                       }
                     />
                   )}
-                </CardContent>
-              </Card>
-              <Card className="min-w-0 lg:col-span-2">
-                <CardHeader>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="mb-1 text-xs text-muted-foreground">
-                        {selected
-                          ? "Bài " + selected.sequence
-                          : "Nội dung bài học"}
+                </div>
+                <Card className="min-w-0 xl:sticky xl:top-20">
+                  <CardHeader>
+                    <CardTitle>
+                      {selectedRow?.lesson.title ?? "Chọn bài để đọc"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedRow ? (
+                      <LessonChangeContent row={selectedRow} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Chọn bài trong bảng để xem nội dung và thay đổi.
                       </p>
-                      <CardTitle className="break-words">
-                        {selected?.title ?? "Chọn bài để đọc nội dung"}
-                      </CardTitle>
-                    </div>
-                    {selected && canEdit && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              aria-label={"Thao tác với bài " + selected.title}
-                            />
-                          }
-                        >
-                          Thao tác bài học
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              openEditor({ kind: "lesson", lesson: selected })
-                            }
-                          >
-                            Sửa nội dung
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={regular[0]?.id === selected.id}
-                            onClick={() => move(selected.id, -1)}
-                          >
-                            Đưa bài lên
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={regular.at(-1)?.id === selected.id}
-                            onClick={() => move(selected.id, 1)}
-                          >
-                            Đưa bài xuống
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setDeleting(selected)}
-                          >
-                            Xóa bài học
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {selected ? (
-                    <article
-                      aria-label={"Nội dung bài " + selected.sequence}
-                      className="whitespace-pre-wrap wrap-anywhere text-sm leading-7"
-                    >
-                      {selected.content}
-                    </article>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Nội dung sẽ xuất hiện tại đây sau khi thêm bài học.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
+            {canTechnicalReview && (
+              <section id="curriculum-decision" className="scroll-mt-24">
+                <CurriculumTechnicalReviewForm
+                  unit={unit}
+                  onStateChange={setFormState}
+                  onSaved={(approved) => {
+                    if (approved)
+                      setNotice("Đã lưu kết quả thẩm định chuyên môn.");
+                    else router.push(ROUTES.TEACHER.CURRICULUM);
+                  }}
+                />
+              </section>
+            )}
+            {canConfirm && (
+              <StickyFormFooter>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => openEditor({ kind: "request-changes" })}
+                >
+                  Trả lại để sửa
+                </Button>
+                <Button disabled={busy} onClick={() => setConfirmApply(true)}>
+                  Xác nhận áp dụng
+                </Button>
+              </StickyFormFooter>
+            )}
+            <Sheet
+              open={editor?.kind === "lesson"}
+              onOpenChange={(open) => {
+                if (!open && !formState.busy)
+                  if (formState.dirty) setDiscard(true);
+                  else closeEditor();
+              }}
+            >
+              <SheetContent
+                className="flex w-full flex-col overflow-y-auto sm:max-w-2xl"
+                showCloseButton={false}
+              >
+                <SheetHeader>
+                  <SheetTitle>
+                    {editor?.lesson
+                      ? `Sửa bài ${editor.lesson.sequence}`
+                      : "Thêm bài học"}
+                  </SheetTitle>
+                  <SheetDescription>{unit.title}</SheetDescription>
+                </SheetHeader>
+                {editor?.kind === "lesson" && canEdit && (
+                  <LessonForm
+                    key={editor.lesson?.id ?? "new"}
+                    unit={unit}
+                    lesson={editor.lesson}
+                    onStateChange={setFormState}
+                    onSaved={() =>
+                      saved(
+                        "Đã lưu bài học. Kiểm tra lại cấu trúc trước khi gửi thẩm định.",
+                      )
+                    }
+                  />
+                )}
+                <Button
+                  variant="outline"
+                  disabled={formState.busy}
+                  onClick={() =>
+                    formState.dirty ? setDiscard(true) : closeEditor()
+                  }
+                >
+                  Đóng
+                </Button>
+              </SheetContent>
+            </Sheet>
             <Dialog
-              open={!!editor}
+              open={!!editor && editor.kind !== "lesson"}
               onOpenChange={(open) => {
                 if (!open && !formState.busy) {
                   if (formState.dirty) setDiscard(true);
@@ -567,19 +740,6 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     unit={unit}
                     onStateChange={setFormState}
                     onSaved={() => saved("Đã lưu thông tin giáo trình.")}
-                  />
-                )}
-                {editor?.kind === "lesson" && canEdit && (
-                  <LessonForm
-                    key={editor.lesson?.id ?? "new"}
-                    unit={unit}
-                    lesson={editor.lesson}
-                    onStateChange={setFormState}
-                    onSaved={() =>
-                      saved(
-                        "Đã lưu bài học. Kiểm tra lại cấu trúc trước khi gửi thẩm định.",
-                      )
-                    }
                   />
                 )}
                 {editor?.kind === "import" && canEdit && user && (
@@ -616,9 +776,11 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   <CurriculumRevisionForm
                     unit={unit}
                     onStateChange={setFormState}
-                    onCreated={(id) => {
+                    onCreated={(id, source) => {
                       closeEditor();
-                      router.push(ROUTES.MANAGER.CURRICULUM_UNIT(id));
+                      router.push(
+                        `${ROUTES.MANAGER.CURRICULUM_UNIT(id)}${source === "csv" ? "?editor=import" : ""}`,
+                      );
                     }}
                   />
                 )}

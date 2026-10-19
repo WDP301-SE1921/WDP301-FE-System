@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { StickyFormFooter } from "@/components/shared/workflows/sticky-form-footer";
 import {
   ApiFeedback,
   FieldError,
@@ -116,13 +117,22 @@ export function LessonForm({
             <FieldError message={errors.content?.message} />
           </div>
         </div>
-        <Button
-          type="submit"
-          isLoading={save.isPending}
-          disabled={save.isPending}
-        >
-          Lưu bài học
-        </Button>
+        <div className="space-y-2">
+          <Label htmlFor={id + "-chapter"}>Chương</Label>
+          <Input id={id + "-chapter"} disabled placeholder="Chưa được hỗ trợ" />
+          <p className="text-xs text-muted-foreground">
+            Chương và tài liệu sẽ có khi hệ thống hỗ trợ.
+          </p>
+        </div>
+        <StickyFormFooter>
+          <Button
+            type="submit"
+            isLoading={save.isPending}
+            disabled={save.isPending}
+          >
+            Lưu bài học
+          </Button>
+        </StickyFormFooter>
       </fieldset>
       <ApiFeedback error={save.error} />
     </form>

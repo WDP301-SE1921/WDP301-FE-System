@@ -126,182 +126,196 @@ export function CurriculumImport({
     !preview.data.summary.invalidRows &&
     preview.data.expectedRevision === unit.revision &&
     Date.parse(preview.data.expiresAt) > now;
-  function download() {
-    const url = URL.createObjectURL(
-      new Blob(
-        [
-          "\uFEFFkind,sequence,title,content,monthKey\nLESSON,1,Bài học 1,Nội dung bài 1,\nLESSON,2,Bài học 2,Nội dung bài 2,\n",
-        ],
-        { type: "text/csv;charset=utf-8" },
-      ),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "giao-trinh-mau.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  }
   return (
     <Card>
       <CardHeader>
         <CardTitle>Nhập bài học từ CSV</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Button type="button" variant="outline" onClick={download}>
-          Tải CSV mẫu
-        </Button>
-        <form
-          className="space-y-3"
-          noValidate
-          onSubmit={form.handleSubmit((input) => preview.mutate(input))}
-        >
-          <Label htmlFor="curriculum-csv">
-            File CSV UTF-8 (tối đa 5 MiB, 1.000 dòng)
-          </Label>
-          <Input
-            id="curriculum-csv"
-            type="file"
-            accept=".csv,text/csv"
-            disabled={locked}
-            aria-invalid={!!form.formState.errors.file}
-            aria-describedby="curriculum-csv-help"
-            {...form.register("file", { onChange: () => preview.reset() })}
-          />
-          <div id="curriculum-csv-help">
-            <FieldError message={form.formState.errors.file?.message} />
-            <p className="text-xs text-muted-foreground">
-              CSV chỉ nhập bài học. Giáo viên tạo bài kiểm tra riêng theo buổi
-              học.
-            </p>
-          </div>
-          <Controller
-            control={form.control}
-            name="mode"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                disabled={locked}
-                items={[
-                  { value: "APPEND", label: "Thêm vào nội dung hiện có" },
-                  { value: "REPLACE", label: "Thay toàn bộ bài học" },
-                ]}
-                onValueChange={(v) => {
-                  field.onChange(v);
-                  preview.reset();
-                }}
-              >
-                <SelectTrigger aria-label="Chế độ nhập CSV">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="APPEND">
-                    Thêm vào nội dung hiện có
-                  </SelectItem>
-                  <SelectItem value="REPLACE">Thay toàn bộ bài học</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
+      <CardContent className="grid items-start gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-4">
           <Button
-            type="submit"
+            type="button"
             variant="outline"
-            disabled={locked}
-            isLoading={preview.isPending}
+            render={<a href="/templates/giao-trinh-mau.csv" download />}
           >
-            Xem trước CSV
+            Tải CSV mẫu
           </Button>
-        </form>
-        <ApiFeedback error={restored.error ?? preview.error ?? commit.error} />
-        {attempt && (
-          <p role="status" className="rounded-xl bg-muted p-3">
-            Có thao tác nhập cần xác nhận lại. Thử lại giữ nguyên nội dung đã
-            gửi.
+          <p className="text-xs text-muted-foreground">
+            Đúng 5 cột: kind, sequence, title, content, monthKey. kind là
+            LESSON; monthKey để trống. Nội dung có dấu phẩy hoặc xuống dòng phải
+            đặt trong dấu ngoặc kép. Chỉ nhận CSV UTF-8; chưa hỗ trợ XLSX,
+            chương và tài liệu.
           </p>
-        )}
-        {preview.data && (
-          <>
-            <p>
-              {preview.data.summary.validRows} dòng hợp lệ ·{" "}
-              {preview.data.summary.invalidRows} dòng lỗi
-            </p>
-            {!ready && !preview.data.summary.invalidRows && (
-              <p role="status">
-                Nháp đã thay đổi hoặc bản xem trước hết hạn. Xem trước lại.
-              </p>
-            )}
-            <div className="max-h-96 overflow-auto rounded-xl border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Dòng</TableHead>
-                    <TableHead>Nội dung</TableHead>
-                    <TableHead>Kết quả</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {preview.data.rows.map((row) => (
-                    <TableRow key={row.rowNumber}>
-                      <TableCell>{row.rowNumber}</TableCell>
-                      <TableCell>
-                        <p className="font-medium">{row.title}</p>
-                        <p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">
-                          {row.content}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {row.kind === "LESSON"
-                            ? "Bài " + row.sequence
-                            : "Loại nội dung không được hỗ trợ"}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        {row.errors.length
-                          ? row.errors.map((e) => (
-                              <p className="text-destructive" key={e.code}>
-                                {curriculumImportDiagnosticText(e)}
-                              </p>
-                            ))
-                          : "Hợp lệ"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-        {(preview.data || attempt) && (
-          <Button
-            disabled={
-              commit.isPending || !!restored.error || (!attempt && !ready)
-            }
-            isLoading={commit.isPending}
-            onClick={() => {
-              if (!attempt && form.getValues("mode") === "REPLACE")
-                setConfirm(true);
-              else commit.mutate();
-            }}
+          <form
+            className="space-y-3"
+            noValidate
+            onSubmit={form.handleSubmit((input) => preview.mutate(input))}
           >
-            {attempt ? "Thử lại nhập nội dung" : "Nhập vào bản nháp"}
-          </Button>
-        )}
-        {commit.isSuccess && (
-          <p role="status">Đã nhập {commit.data.createdCount} nội dung.</p>
-        )}
-        <ConfirmDialog
-          open={confirm}
-          onOpenChange={setConfirm}
-          title="Thay toàn bộ nội dung?"
-          description="Các bài học trong bản nháp sẽ được thay bằng danh sách vừa xem trước."
-          variant="danger"
-          isLoading={commit.isPending}
-          onConfirm={async () => {
-            try {
-              await commit.mutateAsync();
-            } catch {
-              /* feedback remains visible */
-            }
-          }}
-        />
+            <Label htmlFor="curriculum-csv">
+              File CSV UTF-8 (tối đa 5 MiB, 1.000 dòng)
+            </Label>
+            <Input
+              id="curriculum-csv"
+              type="file"
+              accept=".csv,text/csv"
+              disabled={locked}
+              aria-invalid={!!form.formState.errors.file}
+              aria-describedby="curriculum-csv-help"
+              {...form.register("file", { onChange: () => preview.reset() })}
+            />
+            <div id="curriculum-csv-help">
+              <FieldError message={form.formState.errors.file?.message} />
+              <p className="text-xs text-muted-foreground">
+                CSV chỉ nhập bài học. Giáo viên tạo bài kiểm tra riêng theo buổi
+                học.
+              </p>
+            </div>
+            <Controller
+              control={form.control}
+              name="mode"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  disabled={locked}
+                  items={[
+                    { value: "APPEND", label: "Thêm vào nội dung hiện có" },
+                    { value: "REPLACE", label: "Thay toàn bộ bài học" },
+                  ]}
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    preview.reset();
+                  }}
+                >
+                  <SelectTrigger aria-label="Chế độ nhập CSV">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="APPEND">
+                      Thêm vào nội dung hiện có
+                    </SelectItem>
+                    <SelectItem value="REPLACE">
+                      Thay toàn bộ bài học
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={locked}
+              isLoading={preview.isPending}
+            >
+              Xem trước CSV
+            </Button>
+          </form>
+          <p className="text-xs text-muted-foreground">
+            Thêm vào nội dung hiện có giữ nguyên bài cũ. Thay toàn bộ chỉ thay
+            bài trong bản nháp và luôn yêu cầu xác nhận.
+          </p>
+        </div>
+        <div className="min-w-0 space-y-4">
+          {!preview.data && !attempt && (
+            <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
+              Chọn file và bấm Xem trước để kiểm tra từng dòng trước khi nhập.
+            </p>
+          )}
+          <ApiFeedback
+            error={restored.error ?? preview.error ?? commit.error}
+          />
+          {attempt && (
+            <p role="status" className="rounded-xl bg-muted p-3">
+              Có thao tác nhập cần xác nhận lại. Thử lại giữ nguyên nội dung đã
+              gửi.
+            </p>
+          )}
+          {preview.data && (
+            <>
+              <p>
+                {preview.data.summary.validRows} dòng hợp lệ ·{" "}
+                {preview.data.summary.invalidRows} dòng lỗi
+              </p>
+              {!ready && !preview.data.summary.invalidRows && (
+                <p role="status">
+                  Nháp đã thay đổi hoặc bản xem trước hết hạn. Xem trước lại.
+                </p>
+              )}
+              <div className="max-h-96 overflow-auto rounded-xl border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Dòng</TableHead>
+                      <TableHead>STT</TableHead>
+                      <TableHead>Nội dung</TableHead>
+                      <TableHead>Kết quả</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {preview.data.rows.map((row) => (
+                      <TableRow key={row.rowNumber}>
+                        <TableCell>{row.rowNumber}</TableCell>
+                        <TableCell>{row.sequence ?? "—"}</TableCell>
+                        <TableCell className="max-w-80 whitespace-normal">
+                          <p className="font-medium">{row.title}</p>
+                          <p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">
+                            {row.content}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {row.kind === "LESSON"
+                              ? "Bài " + row.sequence
+                              : "Loại nội dung không được hỗ trợ"}
+                          </p>
+                        </TableCell>
+                        <TableCell className="max-w-72 whitespace-normal">
+                          {row.errors.length
+                            ? row.errors.map((e) => (
+                                <p className="text-destructive" key={e.code}>
+                                  {curriculumImportDiagnosticText(e)}
+                                </p>
+                              ))
+                            : "Hợp lệ"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+          {(preview.data || attempt) && (
+            <Button
+              disabled={
+                commit.isPending || !!restored.error || (!attempt && !ready)
+              }
+              isLoading={commit.isPending}
+              onClick={() => {
+                if (!attempt && form.getValues("mode") === "REPLACE")
+                  setConfirm(true);
+                else commit.mutate();
+              }}
+            >
+              {attempt ? "Thử lại nhập nội dung" : "Nhập vào bản nháp"}
+            </Button>
+          )}
+          {commit.isSuccess && (
+            <p role="status">Đã nhập {commit.data.createdCount} nội dung.</p>
+          )}
+          <ConfirmDialog
+            open={confirm}
+            onOpenChange={setConfirm}
+            title="Thay toàn bộ nội dung?"
+            description="Các bài học trong bản nháp sẽ được thay bằng danh sách vừa xem trước."
+            variant="danger"
+            isLoading={commit.isPending}
+            onConfirm={async () => {
+              try {
+                await commit.mutateAsync();
+              } catch {
+                /* feedback remains visible */
+              }
+            }}
+          />
+        </div>
       </CardContent>
     </Card>
   );

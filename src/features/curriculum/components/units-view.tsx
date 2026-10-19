@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,16 +17,27 @@ import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { StatusBadge } from "@/components/shared/feedback/status-badge";
-import { TablePagination } from "@/components/shared/data-table/table-pagination";
-import { PAGINATION_DEFAULTS } from "@/constants/ui";
-import { useCurrentRole } from "@/hooks/use-current-role";
+import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role";
 import { ROUTES } from "@/constants/routes";
-import type { CurriculumUnit } from "@/types/curriculum";
-import { useCurriculumUnitPage } from "../hooks/use-curriculum";
+import { useCurriculumUnits } from "../hooks/use-curriculum";
 import { UnitForm } from "./unit-form";
 import { calendarDateLabel } from "@/lib/calendar-date";
 import { curriculumStage } from "../presentation";
 import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  curriculumLabel,
+  curriculumNeedsAction,
+  curriculumNextStep,
+  groupCurricula,
+} from "../workspace-selectors";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { useHubTab } from "@/hooks/use-hub-tab";
 
@@ -52,7 +63,7 @@ export function CurriculumUnitsView({ programId }: { programId?: string }) {
         actions={
           role === "curriculum_designer" && (
             <Button onClick={() => setIsCreating(!isCreating)}>
-              {isCreating ? "Đóng form" : "Tạo học phần"}
+              {isCreating ? "Đóng form" : "Tạo giáo trình"}
             </Button>
           )
         }
@@ -77,7 +88,7 @@ export function CurriculumUnitsTab({
       {role === "curriculum_designer" && (
         <div className="flex justify-end">
           <Button onClick={() => setIsCreating(!isCreating)}>
-            {isCreating ? "Đóng form" : "Tạo học phần"}
+            {isCreating ? "Đóng form" : "Tạo giáo trình"}
           </Button>
         </div>
       )}
@@ -88,15 +99,16 @@ export function CurriculumUnitsTab({
   );
 }
 
-function CurriculumUnitsBody({
+export function CurriculumUnitsBody({
   programId: fixedProgramId,
-  isCreating,
+  isCreating = false,
 }: {
   programId?: string;
-  isCreating: boolean;
+  isCreating?: boolean;
 }) {
   const router = useRouter();
   const role = useCurrentRole();
+  const user = useCurrentUser();
   const [selectedProgramId] = useQueryState(
     "programId",
     parseAsString.withDefault(""),
@@ -108,7 +120,7 @@ function CurriculumUnitsBody({
   );
   const [status, setStatus] = useQueryState(
     "status",
-    parseAsString.withDefault(role === "teacher" ? "PENDING_REVIEW" : ""),
+    parseAsString.withDefault(""),
   );
   const [grade, setGrade] = useQueryState(
     "grade",
@@ -118,187 +130,220 @@ function CurriculumUnitsBody({
     "subject",
     parseAsString.withDefault(""),
   );
-  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
-  const [pageSize] = useQueryState(
-    "pageSize",
-    parseAsInteger.withDefault(PAGINATION_DEFAULTS.PAGE_SIZE),
+  const [scope, setScope] = useQueryState(
+    "curriculumScope",
+    parseAsStringLiteral([
+      "all",
+      "mine",
+      "applied",
+      "preparing",
+      "archived",
+    ]).withDefault(role === "teacher" ? "mine" : "all"),
   );
-  const statuses = ["DRAFT", "PENDING_REVIEW", "APPROVED", "ARCHIVED"];
-  const filters = {
-    programId,
-    search,
-    subject,
-    grade: ["6", "7", "8", "9"].includes(grade) ? Number(grade) : undefined,
-    status:
-      role === "teacher"
-        ? ("PENDING_REVIEW" as const)
-        : statuses.includes(status)
-          ? (status as CurriculumUnit["status"])
-          : undefined,
-    page: Math.max(1, page),
-    limit: Math.max(1, Math.min(100, pageSize)),
+  const units = useCurriculumUnits(programId);
+  const needle = search.trim().toLocaleLowerCase("vi");
+  const rows = (units.data ?? []).filter(
+    (unit) =>
+      (!needle ||
+        curriculumLabel(unit).toLocaleLowerCase("vi").includes(needle)) &&
+      (!subject ||
+        unit.track.subject
+          .toLocaleLowerCase("vi")
+          .includes(subject.toLocaleLowerCase("vi"))) &&
+      (!grade || String(unit.track.grade) === grade) &&
+      (!status || unit.status === status) &&
+      (scope !== "mine" || curriculumNeedsAction(unit, role, user?.id)) &&
+      (scope !== "applied" || unit.status === "APPROVED") &&
+      (scope !== "preparing" ||
+        ["DRAFT", "PENDING_REVIEW"].includes(unit.status)) &&
+      (scope !== "archived" || unit.status === "ARCHIVED"),
+  );
+  const scopes = {
+    all: "Tất cả",
+    mine: "Cần tôi xử lý",
+    applied: "Đã duyệt",
+    preparing: "Đang soạn & chờ duyệt",
+    archived: "Lưu trữ",
   };
-  const units = useCurriculumUnitPage(filters);
-  const labels: Record<string, string> =
-    role === "teacher"
-      ? { PENDING_REVIEW: "Chờ xác nhận giáo trình" }
-      : {
-          "": "Tất cả trạng thái",
-          DRAFT: "Bản nháp",
-          PENDING_REVIEW: "Chờ duyệt",
-          APPROVED: "Đã duyệt",
-          ARCHIVED: "Đã lưu trữ",
-        };
   return (
     <div
       className={cn(
         "grid items-start gap-5",
-        isCreating && "xl:grid-cols-[20rem_minmax(0,1fr)]",
+        isCreating && "xl:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]",
       )}
     >
-      {isCreating && (
+      {isCreating && role === "curriculum_designer" && (
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Học phần mới</CardTitle>
+            <CardTitle>Giáo trình cho kỳ mới</CardTitle>
           </CardHeader>
           <CardContent>
             <UnitForm
               programId={programId}
-              onSaved={(id) => router.push(ROUTES.MANAGER.CURRICULUM_UNIT(id))}
+              onSaved={(id, source) =>
+                router.push(
+                  `${ROUTES.MANAGER.CURRICULUM_UNIT(id)}${source === "csv" ? "?editor=import" : ""}`,
+                )
+              }
             />
           </CardContent>
         </Card>
       )}
-      <div className="min-w-0 space-y-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="min-w-0 space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
           <Input
-            aria-label="Tìm học phần"
-            placeholder="Tìm theo tên học phần…"
+            className="min-w-48 flex-1"
+            aria-label="Tìm giáo trình"
+            placeholder="Tìm khóa học, tên kỳ…"
             value={search}
-            onChange={(e) => {
-              void setSearch(e.target.value);
-              void setPage(1);
-            }}
+            onChange={(event) => void setSearch(event.target.value)}
           />
-          <Select
-            value={status || "all"}
-            items={Object.entries(labels).map(([value, label]) => ({
-              value: value || "all",
-              label,
-            }))}
-            onValueChange={(v) => {
-              void setStatus(v === "all" ? null : String(v));
-              void setPage(1);
-            }}
-          >
-            <SelectTrigger aria-label="Trạng thái học phần">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(labels).map(([value, label]) => (
-                <SelectItem key={value} value={value || "all"}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Input
+            className="w-40"
             aria-label="Lọc môn học"
             placeholder="Tên môn học"
             value={subject}
-            onChange={(e) => {
-              void setSubject(e.target.value);
-              void setPage(1);
-            }}
+            onChange={(event) => void setSubject(event.target.value)}
           />
           <Select
             value={grade || "all"}
-            items={[
-              { value: "all", label: "Tất cả khối" },
-              ...[6, 7, 8, 9].map((g) => ({
-                value: String(g),
-                label: "Khối " + g,
-              })),
-            ]}
-            onValueChange={(v) => {
-              void setGrade(v === "all" ? null : String(v));
-              void setPage(1);
+            items={{
+              all: "Tất cả khối",
+              6: "Khối 6",
+              7: "Khối 7",
+              8: "Khối 8",
+              9: "Khối 9",
             }}
+            onValueChange={(value) =>
+              void setGrade(value === "all" ? null : String(value))
+            }
           >
-            <SelectTrigger aria-label="Khối">
+            <SelectTrigger className="w-36" aria-label="Lọc khối">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả khối</SelectItem>
-              {[6, 7, 8, 9].map((g) => (
-                <SelectItem key={g} value={String(g)}>
-                  Khối {g}
+              {[6, 7, 8, 9].map((item) => (
+                <SelectItem key={item} value={String(item)}>
+                  Khối {item}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {status && (
+            <Button variant="outline" onClick={() => void setStatus(null)}>
+              Bỏ lọc trạng thái
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2" aria-label="Phạm vi giáo trình">
+          {Object.entries(scopes).map(([key, label]) => (
+            <Button
+              key={key}
+              size="sm"
+              variant={scope === key ? "secondary" : "ghost"}
+              onClick={() => {
+                void setScope(key as typeof scope);
+                void setStatus(null);
+              }}
+            >
+              {label}
+            </Button>
+          ))}
         </div>
         <AsyncBoundary
           isLoading={units.isPending}
           isError={units.isError}
           error={units.error}
           onRetry={() => void units.refetch()}
-          data={units.data?.items}
-          emptyProps={{ title: "Chưa có học phần phù hợp" }}
+          data={rows}
+          emptyProps={{
+            title: "Chưa có giáo trình phù hợp",
+            description: "Thử đổi từ khóa hoặc bộ lọc.",
+          }}
         >
-          <div
-            className={cn(
-              "grid gap-3 sm:grid-cols-2",
-              !isCreating && "xl:grid-cols-3 2xl:grid-cols-4",
-            )}
-          >
-            {units.data?.items.map((unit) => (
-              <Card key={unit.id} className="min-w-0">
-                <CardHeader className="p-4 pb-2">
-                  <div className="space-y-2">
-                    <CardTitle className="break-words text-base leading-6">
-                      {unit.title}
-                    </CardTitle>
-                    <StatusBadge
-                      category="curriculum"
-                      status={curriculumStage(unit)}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 p-4 pt-0">
-                  <p className="break-words text-sm">
-                    {unit.program?.name ?? unit.track.subject} · Khối{" "}
-                    {unit.track.grade}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
-                    {calendarDateLabel(unit.toDate.slice(0, 10))} ·{" "}
-                    {unit._count?.lessons ?? 0} nội dung
-                  </p>
-                  <Button
-                    variant="outline"
-                    render={
-                      <Link
-                        href={
-                          role === "teacher"
-                            ? ROUTES.TEACHER.CURRICULUM_UNIT(unit.id)
-                            : ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)
-                        }
-                      />
-                    }
-                  >
-                    {role === "teacher"
-                      ? unit.technicalReviewedAt
-                        ? "Xem kết quả thẩm định"
-                        : "Đọc và thẩm định"
-                      : "Xem giáo trình"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="overflow-x-auto rounded-2xl border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Giáo trình · kỳ</TableHead>
+                  <TableHead>Hiệu lực</TableHead>
+                  <TableHead>Số bài</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Bước tiếp theo</TableHead>
+                  <TableHead>Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              {groupCurricula(rows).map((group) => (
+                <TableBody key={group.id}>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={6} className="font-semibold">
+                      {group.name} · Khối {group.units[0].track.grade}
+                    </TableCell>
+                  </TableRow>
+                  {group.units.map((unit) => (
+                    <TableRow
+                      key={unit.id}
+                      className={
+                        curriculumNeedsAction(unit, role, user?.id)
+                          ? "bg-primary/5"
+                          : undefined
+                      }
+                    >
+                      <TableCell className="max-w-72 whitespace-normal">
+                        <p className="font-medium">{curriculumLabel(unit)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Phiên bản {unit.version}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
+                        {calendarDateLabel(unit.toDate.slice(0, 10))}
+                      </TableCell>
+                      <TableCell>{unit._count?.lessons ?? "—"}</TableCell>
+                      <TableCell>
+                        <StatusBadge
+                          category="curriculum"
+                          status={curriculumStage(unit)}
+                        />
+                      </TableCell>
+                      <TableCell className="max-w-64 whitespace-normal text-sm">
+                        {curriculumNextStep(unit)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          render={
+                            <Link
+                              href={
+                                role === "teacher"
+                                  ? ROUTES.TEACHER.CURRICULUM_UNIT(unit.id)
+                                  : ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)
+                              }
+                            />
+                          }
+                        >
+                          {curriculumNeedsAction(unit, role, user?.id)
+                            ? role === "teacher"
+                              ? "Thẩm định"
+                              : "Mở"
+                            : "Xem"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              ))}
+            </Table>
           </div>
         </AsyncBoundary>
-        {units.data && <TablePagination totalItems={units.data.total} />}
+        {units.data && (
+          <p className="text-xs text-muted-foreground">
+            {rows.length} phiên bản · {groupCurricula(rows).length} khóa học ·
+            dòng tô màu là việc cần bạn xử lý.
+          </p>
+        )}
       </div>
     </div>
   );

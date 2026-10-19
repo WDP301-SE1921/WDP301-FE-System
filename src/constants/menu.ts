@@ -236,10 +236,11 @@ export const MENU_TEACHER: MenuGroup[] = [
     groupTitle: "GIẢNG DẠY",
     items: [
       {
-        title: "Lịch dạy",
+        title: "Lịch dạy & điểm danh",
         href: ROUTES.TEACHER.SCHEDULE,
         iconName: "Calendar03Icon",
         area: AREA.TEACHER_PORTAL,
+        badgeKey: MENU_BADGE_KEYS.UNMARKED_SESSIONS_TODAY,
       },
       {
         title: "Lớp của tôi",
@@ -248,47 +249,22 @@ export const MENU_TEACHER: MenuGroup[] = [
         area: AREA.TEACHER_PORTAL,
       },
       {
-        title: "Thẩm định giáo trình",
+        title: "Giáo trình",
         href: ROUTES.TEACHER.CURRICULUM,
         iconName: "AssignmentsIcon",
         area: AREA.TEACHER_PORTAL,
       },
-      {
-        title: "Điểm danh",
-        href: ROUTES.TEACHER.ATTENDANCE,
-        iconName: "CheckListIcon",
-        area: AREA.TEACHER_PORTAL,
-        badgeKey: MENU_BADGE_KEYS.UNMARKED_SESSIONS_TODAY,
-      },
     ],
   },
   {
-    groupTitle: "BÀI TẬP & KIỂM TRA",
+    groupTitle: "BÀI TẬP",
     items: [
       {
-        title: "Bài tập / Đề kiểm tra",
+        title: "Bài tập & chấm bài",
         href: ROUTES.TEACHER.ASSIGNMENTS,
         iconName: "AssignmentsIcon",
         area: AREA.TEACHER_PORTAL,
-      },
-      {
-        title: "Bài nộp của học sinh",
-        href: ROUTES.TEACHER.SUBMISSIONS,
-        iconName: "InboxIcon",
-        area: AREA.TEACHER_PORTAL,
         badgeKey: MENU_BADGE_KEYS.UNGRADED_SUBMISSIONS,
-      },
-    ],
-  },
-  {
-    groupTitle: "CHẤM BÀI AI",
-    items: [
-      {
-        title: "Chấm bài",
-        href: ROUTES.TEACHER.GRADING,
-        iconName: "AiBrain01Icon",
-        area: AREA.TEACHER_PORTAL,
-        badgeKey: MENU_BADGE_KEYS.PENDING_AI_REVIEW,
       },
     ],
   },
@@ -299,12 +275,6 @@ export const MENU_TEACHER: MenuGroup[] = [
         title: "Báo cáo",
         href: ROUTES.TEACHER.REPORTS,
         iconName: "Analytics01Icon",
-        area: AREA.TEACHER_PORTAL,
-      },
-      {
-        title: "Phản hồi giáo trình",
-        href: ROUTES.TEACHER.FEEDBACK,
-        iconName: "AssignmentsIcon",
         area: AREA.TEACHER_PORTAL,
       },
     ],

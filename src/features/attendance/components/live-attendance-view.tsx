@@ -1,37 +1,39 @@
 "use client";
-import Link from "next/link";
 import { useCurrentTime } from "@/hooks/use-current-time";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { parseAsString, useQueryStates } from "nuqs";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { academicApi } from "@/features/academic/api";
 import {
   useLiveCommand,
   useLiveQuery,
 } from "@/features/academic/hooks/use-live-api";
 import {
-  LiveSelect,
   displayMoment,
   STATUS_TEXT,
 } from "@/features/academic/components/live-fields";
 import {
   attendanceSchema,
   confirmationSchema,
-  dateRangeSchema,
 } from "@/lib/validators/web-workflows";
-import { todayInVietnam } from "@/features/registration-flow/calendar";
 import type { SessionParticipant } from "@/types/academic-workflows";
 const attendanceFormSchema = z.object({
   items: attendanceSchema.shape.items,
@@ -40,102 +42,13 @@ const attendanceFormSchema = z.object({
 });
 type AttendanceForm = z.infer<typeof attendanceFormSchema>;
 
-export function LiveAttendanceList() {
-  const today = todayInVietnam();
-  const [{ fromDate, toDate }, setRange] = useQueryStates({
-    fromDate: parseAsString.withDefault(
-      new Date(Date.parse(`${today}T00:00:00Z`) - 7 * 86400000)
-        .toISOString()
-        .slice(0, 10),
-    ),
-    toDate: parseAsString.withDefault(today),
-  });
-  const range = dateRangeSchema.safeParse({ fromDate, toDate });
-  const rangeError = range.success ? undefined : range.error.issues[0]?.message;
-  // Only query a valid range; a reversed range would just return a 400 while typing.
-  const sessions = useLiveQuery(
-    ["attendance-list", fromDate, toDate],
-    (signal) => academicApi.sessions({ fromDate, toDate }, signal),
-    range.success,
-  );
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Điểm danh buổi học"
-        description="Danh sách buổi được phân công cho tài khoản đang đăng nhập."
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="attendance-from">Từ ngày</Label>
-          <Input
-            id="attendance-from"
-            type="date"
-            value={fromDate}
-            onChange={(event) =>
-              void setRange({ fromDate: event.target.value })
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="attendance-to">Đến ngày</Label>
-          <Input
-            id="attendance-to"
-            type="date"
-            value={toDate}
-            onChange={(event) => void setRange({ toDate: event.target.value })}
-            aria-invalid={!!rangeError}
-            aria-describedby={rangeError ? "attendance-range-error" : undefined}
-          />
-        </div>
-      </div>
-      {rangeError && (
-        <p
-          id="attendance-range-error"
-          role="alert"
-          className="text-sm text-destructive"
-        >
-          {rangeError}
-        </p>
-      )}
-      <AsyncBoundary
-        isLoading={range.success && sessions.isPending}
-        isError={sessions.isError}
-        error={sessions.error}
-        onRetry={() => void sessions.refetch()}
-        data={sessions.data}
-        emptyProps={{ title: "Không có buổi học trong khoảng ngày" }}
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          {sessions.data?.map((session) => (
-            <Card key={session.id}>
-              <CardHeader>
-                <CardTitle>
-                  {session.class.name} · {session.lesson?.title ?? "Buổi học"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p>
-                  {displayMoment(session.startsAt)} –{" "}
-                  {displayMoment(session.endsAt)}
-                </p>
-                <Badge>{STATUS_TEXT[session.status]}</Badge>
-                <div>
-                  <Button
-                    variant="outline"
-                    render={<Link href={`/teacher/attendance/${session.id}`} />}
-                  >
-                    Mở danh sách và điểm danh
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </AsyncBoundary>
-    </PageContainer>
-  );
-}
-export function LiveAttendanceSession({ sessionId }: { sessionId: string }) {
+export function LiveAttendanceSession({
+  sessionId,
+  embedded = false,
+}: {
+  sessionId: string;
+  embedded?: boolean;
+}) {
   const session = useLiveQuery(["attendance-session", sessionId], (signal) =>
     academicApi.session(sessionId, signal),
   );
@@ -150,15 +63,29 @@ export function LiveAttendanceSession({ sessionId }: { sessionId: string }) {
     session.data?.status === "SCHEDULED" &&
     Date.parse(session.data.endsAt) <= now;
   return (
-    <PageContainer>
-      <PageHeader
-        title={session.data?.class.name ?? "Điểm danh"}
-        description={
-          session.data
-            ? `${session.data.lesson?.title ?? "Buổi học"} · ${displayMoment(session.data.startsAt)}`
-            : undefined
-        }
-      />
+    <AttendanceContainer embedded={embedded}>
+      {embedded ? (
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold">
+            {session.data?.class.name ?? "Điểm danh"}
+          </h2>
+          {session.data && (
+            <p className="text-sm text-muted-foreground">
+              {session.data.lesson?.title ?? "Buổi học"} ·{" "}
+              {displayMoment(session.data.startsAt)}
+            </p>
+          )}
+        </div>
+      ) : (
+        <PageHeader
+          title={session.data?.class.name ?? "Điểm danh"}
+          description={
+            session.data
+              ? `${session.data.lesson?.title ?? "Buổi học"} · ${displayMoment(session.data.startsAt)}`
+              : undefined
+          }
+        />
+      )}
       <AsyncBoundary
         isLoading={session.isPending}
         isError={session.isError}
@@ -206,30 +133,57 @@ export function LiveAttendanceSession({ sessionId }: { sessionId: string }) {
                     sessionId={sessionId}
                   />
                 ) : (
-                  <div className="space-y-3">
-                    {roster.data.map((row) => (
-                      <div
-                        key={row.id}
-                        className="flex flex-wrap justify-between gap-3"
-                      >
-                        <p>
-                          {row.enrollment.studentProfile?.fullName ??
-                            "Hồ sơ học sinh"}{" "}
-                          · {row.kind === "MAKEUP" ? "Học bù" : "Buổi thường"}
-                        </p>
-                        <Badge>{STATUS_TEXT[row.attendance]}</Badge>
-                      </div>
-                    ))}
-                    {!roster.data.length && (
-                      <p>Chưa có học viên trong danh sách.</p>
-                    )}
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Học sinh</TableHead>
+                        <TableHead>Buổi học</TableHead>
+                        <TableHead>Kết quả</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {roster.data.map((row) => (
+                        <TableRow key={row.id}>
+                          <TableCell className="whitespace-normal">
+                            {row.enrollment.studentProfile?.fullName ??
+                              "Hồ sơ học sinh"}
+                          </TableCell>
+                          <TableCell>
+                            {row.kind === "MAKEUP" ? "Học bù" : "Buổi thường"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge>{STATUS_TEXT[row.attendance]}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {!roster.data.length && (
+                        <TableRow>
+                          <TableCell colSpan={3}>
+                            Chưa có học viên trong danh sách.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 ))}
             </CardContent>
           </Card>
         </AsyncBoundary>
       </AsyncBoundary>
-    </PageContainer>
+    </AttendanceContainer>
+  );
+}
+function AttendanceContainer({
+  embedded,
+  children,
+}: {
+  embedded: boolean;
+  children: React.ReactNode;
+}) {
+  return embedded ? (
+    <div className="min-w-0 space-y-4">{children}</div>
+  ) : (
+    <PageContainer>{children}</PageContainer>
   );
 }
 function AttendanceEditor({
@@ -251,6 +205,9 @@ function AttendanceEditor({
       confirmed: false,
     },
   });
+  const items = useWatch({ control: form.control, name: "items" });
+  const totals = (status: string) =>
+    items.filter((item) => item.status === status).length;
   return (
     <form
       className="space-y-4"
@@ -259,43 +216,84 @@ function AttendanceEditor({
       )}
     >
       <fieldset disabled={action.isPending} className="space-y-4">
-        {rows.map((row, index) => (
-          <div
-            key={row.id}
-            className="space-y-2 rounded-2xl border border-border p-4"
-          >
-            <Controller
-              control={form.control}
-              name={`items.${index}.status`}
-              render={({ field }) => (
-                <LiveSelect
-                  label={`${row.enrollment.studentProfile?.fullName ?? "Học sinh"}${row.kind === "MAKEUP" ? " · Học bù" : ""}`}
-                  value={field.value ?? ""}
-                  options={
-                    row.attendance === "EXCUSED"
-                      ? [
-                          {
-                            value: "EXCUSED",
-                            label: "Nghỉ được phép (đã có đơn)",
-                          },
-                        ]
-                      : [
-                          { value: "PRESENT", label: "Có mặt" },
-                          { value: "ABSENT", label: "Vắng" },
-                        ]
-                  }
-                  disabled={row.attendance === "EXCUSED"}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-            {form.formState.errors.items?.[index]?.status?.message && (
-              <p role="alert" className="text-sm text-destructive">
-                Chọn kết quả cho học viên này.
-              </p>
-            )}
-          </div>
-        ))}
+        <div className="flex flex-wrap gap-2" role="status">
+          <Badge variant="success">{totals("PRESENT")} có mặt</Badge>
+          <Badge variant="danger">{totals("ABSENT")} vắng</Badge>
+          <Badge variant="warning">{totals("EXCUSED")} có phép</Badge>
+          <Badge variant="outline">
+            {items.filter((item) => !item.status).length} chưa chọn
+          </Badge>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Học sinh</TableHead>
+              <TableHead>Kết quả điểm danh</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row, index) => (
+              <TableRow key={row.id}>
+                <TableCell className="whitespace-normal">
+                  {row.enrollment.studentProfile?.fullName ?? "Học sinh"}
+                  {row.kind === "MAKEUP" && (
+                    <Badge variant="outline" className="ml-2">
+                      Học bù
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Controller
+                    control={form.control}
+                    name={`items.${index}.status`}
+                    render={({ field }) => (
+                      <div
+                        className="flex flex-wrap gap-2"
+                        role="group"
+                        aria-label={`Điểm danh ${row.enrollment.studentProfile?.fullName ?? "học sinh"}`}
+                      >
+                        {(
+                          [
+                            ["PRESENT", "Có mặt"],
+                            ["ABSENT", "Vắng"],
+                            ["EXCUSED", "Có phép"],
+                          ] as const
+                        ).map(([status, label]) => (
+                          <Button
+                            key={status}
+                            type="button"
+                            size="sm"
+                            variant={
+                              field.value === status ? "default" : "outline"
+                            }
+                            aria-pressed={field.value === status}
+                            disabled={
+                              row.attendance === "EXCUSED" ||
+                              status === "EXCUSED"
+                            }
+                            title={
+                              status === "EXCUSED"
+                                ? "Có phép được xác định từ đơn nghỉ đã duyệt."
+                                : undefined
+                            }
+                            onClick={() => field.onChange(status)}
+                          >
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  />
+                  {form.formState.errors.items?.[index]?.status?.message && (
+                    <p role="alert" className="text-sm text-destructive">
+                      Chọn kết quả cho học viên này.
+                    </p>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
         <Label htmlFor="attendance-summary">Ghi chú buổi học</Label>
         <Textarea id="attendance-summary" {...form.register("summary")} />
         {form.formState.errors.summary && (

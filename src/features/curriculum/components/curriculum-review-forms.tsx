@@ -1,6 +1,9 @@
 "use client";
 
 import { useId } from "react";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { StickyFormFooter } from "@/components/shared/workflows/sticky-form-footer";
+import { estimateLessons } from "../workspace-selectors";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -223,13 +226,15 @@ export function CurriculumTechnicalReviewForm({
             ? "Giáo trình sẽ chuyển đến quản lý để xác nhận áp dụng."
             : "Giáo trình trở về bản nháp để người thiết kế chỉnh sửa và gửi lại."}
         </p>
-        <Button
-          type="submit"
-          isLoading={save.isPending}
-          disabled={save.isPending}
-        >
-          {approved ? "Đồng ý và chuyển quản lý" : "Gửi yêu cầu chỉnh sửa"}
-        </Button>
+        <StickyFormFooter>
+          <Button
+            type="submit"
+            isLoading={save.isPending}
+            disabled={save.isPending}
+          >
+            {approved ? "Đồng ý và chuyển quản lý" : "Gửi yêu cầu chỉnh sửa"}
+          </Button>
+        </StickyFormFooter>
       </fieldset>
       <ApiFeedback error={save.error} />
     </form>
@@ -240,8 +245,14 @@ export function CurriculumRevisionForm({
   unit,
   onCreated,
   onStateChange,
-}: Omit<ReviewFormProps, "onSaved"> & { onCreated: (id: string) => void }) {
+}: Omit<ReviewFormProps, "onSaved"> & {
+  onCreated: (id: string, source?: "csv") => void;
+}) {
   const id = useId();
+  const [source, setSource] = useQueryState(
+    "lessonSource",
+    parseAsStringLiteral(["copy", "csv", "empty"]).withDefault("copy"),
+  );
   const minDate = addCalendarDays(
     [unit.toDate.slice(0, 10), todayInVietnam()].sort().at(-1)!,
     1,
@@ -251,13 +262,18 @@ export function CurriculumRevisionForm({
     defaultValues: { title: unit.title, fromDate: minDate, toDate: "" },
   });
   const save = useCurriculumMutation(async (input: CurriculumRevisionInput) => {
-    const result = await curriculumApi.revise(unit.id, input);
-    onCreated(result.id);
+    const result =
+      source === "copy"
+        ? await curriculumApi.revise(unit.id, input)
+        : await curriculumApi.create({ ...input, programId: unit.programId });
+    onCreated(result.id, source === "csv" ? "csv" : undefined);
     return result;
   });
   useCurriculumFormState(form.formState.isDirty, save.isPending, onStateChange);
   const errors = form.formState.errors;
   const fromDate = useWatch({ control: form.control, name: "fromDate" });
+  const toDate = useWatch({ control: form.control, name: "toDate" });
+  const estimate = estimateLessons(fromDate, toDate, []);
   return (
     <form
       className="space-y-4"
@@ -278,6 +294,41 @@ export function CurriculumRevisionForm({
         {calendarDateLabel(unit.toDate.slice(0, 10))}.
       </p>
       <fieldset disabled={save.isPending} className="space-y-4">
+        <div className="space-y-2">
+          <Label>Bài học lấy từ</Label>
+          <Select
+            value={source}
+            items={{
+              copy: "Sao chép kỳ này",
+              csv: "Nhập từ CSV",
+              empty: "Soạn từ đầu",
+            }}
+            onValueChange={(value) => void setSource(value as typeof source)}
+          >
+            <SelectTrigger aria-label="Nguồn bài học kỳ mới">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="copy">
+                Sao chép kỳ này ·{" "}
+                {
+                  unit.lessons.filter((lesson) => lesson.kind === "LESSON")
+                    .length
+                }{" "}
+                bài
+              </SelectItem>
+              <SelectItem value="csv">Nhập từ CSV</SelectItem>
+              <SelectItem value="empty">Soạn từ đầu</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {source === "copy"
+              ? "Sao chép bài vào bản nháp mới bằng phiên bản kế tiếp."
+              : source === "csv"
+                ? "Tạo bản trống rồi mở bước xem trước CSV."
+                : "Tạo bản trống và soạn từng bài."}
+          </p>
+        </div>
         <div className="space-y-2">
           <Label htmlFor={id + "-title"}>Tên giáo trình / học kỳ mới</Label>
           <Input
@@ -320,6 +371,26 @@ export function CurriculumRevisionForm({
             </div>
           </div>
         </div>
+        <section className="space-y-2 rounded-xl bg-muted p-4 text-sm">
+          <p className="font-medium">Kiểm tra số bài cần</p>
+          <p>
+            {estimate
+              ? `${estimate.weeks} tuần theo khoảng hiệu lực (làm tròn lên).`
+              : "Chọn khoảng hiệu lực để tính số tuần."}
+          </p>
+          <Label htmlFor={id + "-weekly"}>Số buổi/tuần</Label>
+          <Input
+            id={id + "-weekly"}
+            disabled
+            placeholder="Chờ dữ liệu khóa học"
+          />
+          <p className="text-xs text-muted-foreground">
+            Khóa học chưa có dữ liệu số buổi/tuần. Quản lý kiểm tra số bài cần
+            khi sinh lịch. Bản nguồn có{" "}
+            {unit.lessons.filter((lesson) => lesson.kind === "LESSON").length}{" "}
+            bài.
+          </p>
+        </section>
         <Button
           type="submit"
           isLoading={save.isPending}

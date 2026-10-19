@@ -31,6 +31,7 @@ const STATUS = {
   CANCELLED: "Đã hủy",
 } as const;
 
+/** Danh sách buổi theo lớp cho vai trò không sinh lịch. Quản lý dùng `ProgramSessionGenerator`. */
 export function ScheduledSessionsView({
   classId: fixedClassId,
 }: {

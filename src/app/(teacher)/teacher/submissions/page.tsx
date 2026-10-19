@@ -1,14 +1,12 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
-import { LiveGradingQueue } from "@/features/grading/components/live-grading-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Bài nộp" };
-
-export default function Page() {
-  return (
-    <Suspense fallback={<SkeletonDetailHeader />}>
-      <LiveGradingQueue />
-    </Suspense>
-  );
+/** Bài nộp là bộ lọc Cần chấm của Bài tập & chấm bài. */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  redirect(legacyHref(ROUTES.TEACHER.ASSIGNMENTS, { filter: "need-grading" }, await searchParams));
 }

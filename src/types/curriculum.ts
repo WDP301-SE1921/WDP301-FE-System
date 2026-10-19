@@ -13,6 +13,8 @@ export interface CurriculumUnit {
   id: string;
   programId: string;
   designerId: string;
+  /** Existing BE lineage, populated by revise; absent on legacy responses. */
+  basedOnId?: string | null;
   title: string;
   fromDate: string;
   toDate: string;

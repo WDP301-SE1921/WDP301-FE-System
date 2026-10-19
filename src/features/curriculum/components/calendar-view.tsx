@@ -33,13 +33,23 @@ import { vietnamLocalInput } from "../session-contract";
 import { SessionDetailSheet } from "./session-detail-sheet";
 import { ScheduleBoard } from "./schedule-board";
 import type { ScheduleBoardEvent } from "../schedule-board-data";
+import { TeacherAttendanceWeek } from "@/features/attendance/components/teacher-attendance-week";
 
-const CALENDAR_VIEWS = ["day", "week", "board"] as const;
+const CALENDAR_VIEWS = ["day", "week", "board", "list"] as const;
 export type CalendarView = (typeof CALENDAR_VIEWS)[number];
+const VIEW_LABELS: Record<CalendarView, string> = {
+  list: "Danh sách",
+  board: "Kanban",
+  week: "Tuần",
+  day: "Ngày",
+};
+/** Giáo viên: danh sách buổi + điểm danh hoặc Kanban. Quản lý/Nhân viên: Kanban, Tuần, Ngày. */
+const TEACHER_VIEWS: readonly CalendarView[] = ["list", "board"];
+const BACK_OFFICE_VIEWS: readonly CalendarView[] = ["board", "week", "day"];
 
 /**
  * Lịch học dùng chung cho Quản lý, Nhân viên và Giáo viên. Mỗi trang chọn cách xem mặc định
- * (Quản lý và Nhân viên mặc định Kanban).
+ * (Quản lý và Nhân viên mặc định Kanban; Giáo viên mặc định Danh sách để điểm danh).
  */
 export function AcademicCalendarView({
   defaultView = "week",
@@ -56,10 +66,14 @@ export function AcademicCalendarView({
     "date",
     parseAsString.withDefault(todayInVietnam()),
   );
-  const [view, setView] = useQueryState(
+  const [queryView, setView] = useQueryState(
     "view",
     parseAsStringLiteral(CALENDAR_VIEWS).withDefault(defaultView),
   );
+  // Chọn theo trang chứ không theo role: role chỉ biết sau khi hydrate nên dễ nháy sai cách xem.
+  const isTeacherSchedule = defaultView === "list";
+  const views = isTeacherSchedule ? TEACHER_VIEWS : BACK_OFFICE_VIEWS;
+  const view = views.includes(queryView) ? queryView : defaultView;
   const [selected, setSelected] = useQueryState(
     "session",
     parseAsString.withDefault(""),
@@ -121,7 +135,7 @@ export function AcademicCalendarView({
   return (
     <PageContainer>
       <PageHeader
-        title="Lịch học"
+        title={isTeacherSchedule ? "Lịch dạy & điểm danh" : "Lịch học"}
         description="Lịch buổi học thực tế và nội dung đã được duyệt. Giờ hiển thị theo giờ Việt Nam."
         actions={
           role === "center_manager" && (
@@ -207,9 +221,11 @@ export function AcademicCalendarView({
           }}
         >
           <TabsList aria-label="Cách xem lịch học">
-            <TabsTrigger value="board">Kanban</TabsTrigger>
-            <TabsTrigger value="week">Tuần</TabsTrigger>
-            <TabsTrigger value="day">Ngày</TabsTrigger>
+            {views.map((key) => (
+              <TabsTrigger key={key} value={key}>
+                {VIEW_LABELS[key]}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
       </div>
@@ -225,7 +241,15 @@ export function AcademicCalendarView({
           error={sessions.error}
           onRetry={() => void sessions.refetch()}
         >
-          {view === "board" ? (
+          {view === "list" ? (
+            <TeacherAttendanceWeek
+              sessions={sessions.data ?? []}
+              date={day}
+              onDateChange={(value) => void setDate(value)}
+              selected={selected}
+              onSelect={(id) => void setSelected(id)}
+            />
+          ) : view === "board" ? (
             <ScheduleBoard
               events={events}
               date={day}
@@ -247,7 +271,7 @@ export function AcademicCalendarView({
           )}
         </AsyncBoundary>
       </AsyncBoundary>
-      {selected && (
+      {selected && view !== "list" && (
         <SessionDetailSheet
           key={selected}
           id={selected}

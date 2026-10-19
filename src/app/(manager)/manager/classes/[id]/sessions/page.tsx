@@ -1,15 +1,15 @@
-import { Suspense } from "react";
-import { ScheduledSessionsView } from "@/features/curriculum/components/sessions-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export default async function ClassSessionsPage({
+/** Sinh lịch theo khóa, chọn sẵn lớp. */
+export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
-  return (
-    <Suspense fallback={<p>Đang tải buổi học…</p>}>
-      <ScheduledSessionsView classId={id} />
-    </Suspense>
-  );
+  redirect(legacyHref(ROUTES.MANAGER.SESSIONS, { classId: id }, await searchParams));
 }

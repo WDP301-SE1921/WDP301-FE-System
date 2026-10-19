@@ -41,11 +41,11 @@ export function TeacherClassesView() {
         data={classes.data}
         emptyProps={{ title: "Chưa có lớp được phân công" }}
       >
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {classes.data?.map((c) => (
-            <Card key={c.id}>
+            <Card key={c.id} className="min-w-0">
               <CardHeader>
-                <CardTitle>{c.name}</CardTitle>
+                <CardTitle className="wrap-anywhere">{c.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <p>
