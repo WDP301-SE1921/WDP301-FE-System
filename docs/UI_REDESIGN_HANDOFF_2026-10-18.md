@@ -2,7 +2,7 @@
 
 Ngày: 18/10/2026. Phạm vi: **chỉ Web** (`WDP301-FE-System`), 4 vai trò Quản lý trung tâm, Nhân viên, Giáo viên, Thiết kế giáo trình. App Mobile phụ huynh chỉ bị nhắc ở phần cần làm thêm.
 
-Trạng thái (cập nhật 19/10/2026): **Phase 1–4 đã code xong và test trình duyệt trên BE/DB riêng**. Phase 1–3 đã push `dev`. Phase 4 cần 2 thay đổi BE (BE-8 một phần, BE-12) nằm ở 3 commit BE chưa push (chờ chủ dự án đồng ý). Kết quả từng phase ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
+Trạng thái (cập nhật 19/10/2026): **Phase 1–4 đã code xong và test trình duyệt trên BE/DB riêng**. Tất cả đã push `dev`; Phase 4 kèm 2 thay đổi BE (BE-8 phần chuyên cần, BE-12) đã push `WDP301-BE-System` `dev` ngày 19/10 sau khi chủ dự án đồng ý. Kết quả từng phase ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
 **Cách dùng:** nói với Claude Code _"Đọc `docs/UI_REDESIGN_HANDOFF_2026-10-18.md` rồi làm Phase 2"_ (hoặc 3, 4). Claude đọc [mục 0](#0-dành-cho-claude-code-đọc-mục-này-trước) để biết cách làm, rồi làm theo danh sách việc của phase đó ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
@@ -962,13 +962,13 @@ _Câu hỏi mở Phase 3_:
 - [x] P4-7: chip "N chờ thu · tổng tiền", "N hoàn tất · tổng tiền" trên Đăng ký & biên lai, dùng chung hàm với P4-2 (`features/dashboard/staff-summary.ts`).
 - [x] P4-8: `useMenuBadgeCounts` trong `AppShell`: Quản lý — email lỗi (mục Thông báo); Nhân viên — đơn chờ thu (Đăng ký & biên lai); Giáo viên — bài chưa chấm và buổi đã qua chưa chốt (30 ngày). Mỗi vai trò chỉ gọi API mình được phép.
 
-**Thay đổi BE (repo `WDP301-BE-System`, chưa push, chờ đồng ý):**
+**Thay đổi BE (repo `WDP301-BE-System`, đã push `dev` 19/10 theo đồng ý của chủ dự án):**
 
 - `e20101f` BE-8 (phần chuyên cần): `GET academic/classes/:id/attendance-summary` cho thêm Quản lý và Nhân viên (mọi lớp; lớp không tồn tại → 404). Giáo viên vẫn chỉ lớp mình, Phụ huynh chỉ con mình. BFF mở thêm 2 vai trò này.
 - `8e06c69` BE-12: `GET academic/email-deliveries` nhận `status`; `total` là số dòng sau lọc. FE dùng cho badge, _Cần chú ý_ và bộ lọc trạng thái của bảng Lịch sử email (`?emailStatus=`).
 - `9580428` cập nhật `ACADEMIC_API_FLOW.md`.
 - Kiểm tra BE: e2e `academic` 11/11 (thêm case Quản lý/Nhân viên đọc chuyên cần, 404, Thiết kế giáo trình 403; lọc email theo trạng thái, `status` sai → 400), unit 124/124, lint/tsc đạt.
-- FE đã gọi 2 tham số/quyền mới này: **cần push BE trước hoặc cùng lúc với FE Phase 4**; nếu BE `dev` chưa có, các khối chuyên cần và đếm email lỗi sẽ báo lỗi API (403/400) chứ không hiện số sai.
+- FE gọi 2 tham số/quyền mới này nên BE được push trước FE Phase 4. Môi trường chạy BE cũ hơn sẽ báo lỗi API (403/400) ở khối chuyên cần và đếm email lỗi, không hiện số sai.
 
 Khác thiết kế / ghi chú:
 
@@ -1040,7 +1040,6 @@ Nội dung các màn mới lấy theo artboard và [5.1](#51-dashboard). Chủ d
 
 _Câu hỏi mở Phase 4_:
 
-- Cho phép push 3 commit BE (`e20101f`, `8e06c69`, `9580428`) lên `dev`? FE Phase 4 phụ thuộc 2 thay đổi này.
 - Đổi trang chủ sau đăng nhập của Nhân viên sang `/staff/dashboard` và của Thiết kế giáo trình sang `/manager/curriculum/overview`? Mặc định giữ như cũ.
 - Làm tiếp phần còn lại của BE-8 (API sửa hồ sơ con) và một API điểm của học sinh cho Quản lý/Nhân viên để có tab _Điểm & bài tập_?
 
