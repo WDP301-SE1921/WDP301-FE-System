@@ -2,7 +2,7 @@
 
 Ngày: 18/10/2026. Phạm vi: **chỉ Web** (`WDP301-FE-System`), 4 vai trò Quản lý trung tâm, Nhân viên, Giáo viên, Thiết kế giáo trình. App Mobile phụ huynh chỉ bị nhắc ở phần cần làm thêm.
 
-Trạng thái (cập nhật 19/10/2026): **Phase 1–4 đã code xong và test trình duyệt trên BE/DB riêng**. Tất cả đã push `dev`; Phase 4 kèm 2 thay đổi BE (BE-8 phần chuyên cần, BE-12) đã push `WDP301-BE-System` `dev` ngày 19/10 sau khi chủ dự án đồng ý. Kết quả từng phase ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
+Trạng thái (cập nhật 19/10/2026 tối): **Phase 1–4 và đợt sửa sau Phase 4 đã code xong và test trình duyệt trên BE/DB riêng**. Phase 1–4 đã push `dev` (Phase 4 kèm BE-8 phần chuyên cần và BE-12, push 19/10 sau khi chủ dự án đồng ý). Đợt sửa ([mục 10.5](#105-đợt-sửa-sau-phase-4-code-xong-đã-test-19102026-tối)) kèm 10 commit BE trên `dev` **chưa push, chờ chủ dự án đồng ý**; FE của đợt này push sau BE. Kết quả từng phase ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
 **Cách dùng:** nói với Claude Code _"Đọc `docs/UI_REDESIGN_HANDOFF_2026-10-18.md` rồi làm Phase 2"_ (hoặc 3, 4). Claude đọc [mục 0](#0-dành-cho-claude-code-đọc-mục-này-trước) để biết cách làm, rồi làm theo danh sách việc của phase đó ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
@@ -654,9 +654,9 @@ Các mục dưới là việc phía BE/Mobile. Trong lúc chờ, FE làm đúng 
 | BE-5  | (Tùy chọn) Nhập file **.xlsx**                                                                                                                                     | Chỉ nhận CSV, có file mẫu                                                        |
 | BE-6  | (Tùy chọn) Xem trước/sinh lịch **nhiều lớp** trong một yêu cầu                                                                                                     | Gọi API cũ lần lượt từng lớp                                                     |
 | BE-7  | Lưu **nét chấm trên ảnh** theo từng câu, trả cho phụ huynh; file bài nộp gắn theo **từng câu** (hiện gắn cả bài nộp)                                               | Xem ảnh trong trang, ẩn công cụ vẽ                                               |
-| BE-8  | API **sửa hồ sơ con** từ Web (họ tên, khối, ngày sinh); cho Quản lý và Nhân viên gọi `GET academic/classes/:id/attendance-summary` (**phần chuyên cần đã làm 19/10, commit BE `e20101f`**) | Nút _Sửa hồ sơ_ disable                                                         |
-| BE-9  | **Xóa** tài khoản phụ huynh chưa có hồ sơ con/thanh toán                                                                                                           | Chỉ cho Khóa tài khoản                                                           |
-| BE-10 | Danh sách + quyền tạo/khóa tài khoản **Thiết kế giáo trình** cho Quản lý, chung bảng với Nhân viên                                                                 | Bảng chỉ hiện Nhân viên                                                          |
+| BE-8  | API **sửa hồ sơ con** từ Web (họ tên, khối, ngày sinh); cho Quản lý và Nhân viên gọi `GET academic/classes/:id/attendance-summary` (**đã làm 19/10**: chuyên cần `e20101f`, sửa hồ sơ `a018a35`) | Đã có Dialog _Sửa hồ sơ_ (10.5)                                                  |
+| BE-9  | **Xóa** tài khoản phụ huynh chưa có hồ sơ con/thanh toán (**đã làm 19/10, `50d8dde`**)                                                                             | Đã có nút _Xóa hẳn_ (10.5)                                                       |
+| BE-10 | Danh sách + quyền tạo/khóa tài khoản **Thiết kế giáo trình** cho Quản lý, chung bảng với Nhân viên (**đã làm 19/10, `5be6f74`**)                                   | Đã gộp bảng, có chọn vai trò (10.5)                                              |
 | BE-11 | (Tùy chọn) API **thống kê buổi dạy** theo giáo viên/tháng                                                                                                          | Đếm ở FE từ danh sách buổi (`COMPLETED` theo `teacherId`), đủ dùng               |
 | BE-12 | `GET academic/email-deliveries` nhận thêm `status` (PENDING/PROCESSING/SENT/FAILED) (**đã làm 19/10, commit BE `8e06c69`**)                                         | Đã có bộ lọc `?emailStatus=`                                                     |
 | M-1   | App phụ huynh (`WDP301-FEM-System`): **chụp/chọn ảnh** bài tự luận khi nộp (hiện chỉ nhập chữ, chưa có image picker) và gửi `fileIds`                              | Web chỉ hiện bài nhập chữ                                                        |
@@ -946,8 +946,8 @@ Khác thiết kế / ghi chú:
 
 _Câu hỏi mở Phase 3_:
 
-- Bảng báo cáo cần _Phạm vi_ và _Khoảng ngày_: BE trả thêm `studentId`, `from`, `to` (lấy từ `snapshot`) ở `GET academic/reports`? Có thể làm cùng các việc BE của Phase 4.
-- Giáo viên có cần giữ cách xem Tuần/Ngày ngoài Danh sách/Kanban không? Hiện bỏ theo P3-5.
+- Bảng báo cáo cần _Phạm vi_ và _Khoảng ngày_: BE trả thêm `studentId`, `from`, `to` (lấy từ `snapshot`) ở `GET academic/reports`? **Đã làm ở 10.5.**
+- Giáo viên có cần giữ cách xem Tuần/Ngày ngoài Danh sách/Kanban không? **Đã thêm lại ở 10.5.**
 
 ### 10.4 Phase 4: màn mới và số liệu mới (code xong, đã test 19/10/2026)
 
@@ -972,11 +972,11 @@ _Câu hỏi mở Phase 3_:
 
 Khác thiết kế / ghi chú:
 
-- Không có thẻ/tab _Điểm_ ở chi tiết học sinh: Quản lý/Nhân viên chưa có API đọc điểm của một học sinh. Cột _Chuyên cần %_ ở bảng học sinh chưa thêm vì phải gọi chuyên cần từng lớp cho từng dòng.
-- _Sửa hồ sơ_ con vẫn disable: phần "API sửa hồ sơ" của BE-8 chưa làm.
-- Cột _Dạy thay_ ở tab Giáo viên bỏ: BE không lưu cờ dạy thay cho buổi đã chốt.
+- Không có thẻ/tab _Điểm_ ở chi tiết học sinh: Quản lý/Nhân viên chưa có API đọc điểm của một học sinh. Cột _Chuyên cần %_ ở bảng học sinh chưa thêm vì phải gọi chuyên cần từng lớp cho từng dòng. **Đã làm ở 10.5** (API điểm và số liệu trong `GET students`).
+- _Sửa hồ sơ_ con vẫn disable: phần "API sửa hồ sơ" của BE-8 chưa làm. **Đã làm ở 10.5.**
+- Cột _Dạy thay_ ở tab Giáo viên bỏ: BE không lưu cờ dạy thay cho buổi đã chốt. **Đã làm ở 10.5** (đọc lịch sử xếp dạy thay).
 - Dashboard Thiết kế giáo trình chưa có "bài cần": vai trò này không đọc được lịch lớp (`GET classes` 403) và khóa chưa có số buổi/tuần (BE-1); hiện số bài đã soạn và số tuần hiệu lực.
-- Học bù chờ xếp: `academic/makeup-sources` không trả tổng, dashboard chỉ đọc 100 dòng đầu và hiện "100+" khi đầy.
+- Học bù chờ xếp: `academic/makeup-sources` không trả tổng, dashboard chỉ đọc 100 dòng đầu và hiện "100+" khi đầy. **Đã sửa ở 10.5**: đọc hết, chỉ buổi vắng đã ghi nhận.
 - Sửa thêm (Phase 2): hai bảng ở màn Thông báo gộp cột (người nhận, lần gửi, thời gian vào cột Email/Trạng thái; thời gian tạo vào cột Lớp) để cột Thao tác không bị khuất ở 1440px.
 
 Nội dung các màn mới lấy theo artboard và [5.1](#51-dashboard). Chủ dự án đã cho làm theo tài liệu này. Chỗ nào số liệu không lấy được từ API thì bỏ khối đó và ghi lại, **không dựng số giả**.
@@ -1040,17 +1040,58 @@ Nội dung các màn mới lấy theo artboard và [5.1](#51-dashboard). Chủ d
 
 _Câu hỏi mở Phase 4_:
 
-- Đổi trang chủ sau đăng nhập của Nhân viên sang `/staff/dashboard` và của Thiết kế giáo trình sang `/manager/curriculum/overview`? Mặc định giữ như cũ.
-- Làm tiếp phần còn lại của BE-8 (API sửa hồ sơ con) và một API điểm của học sinh cho Quản lý/Nhân viên để có tab _Điểm & bài tập_?
+- Đổi trang chủ sau đăng nhập của Nhân viên sang `/staff/dashboard` và của Thiết kế giáo trình sang `/manager/curriculum/overview`? Mặc định giữ như cũ. **Đã đổi ở 10.5.**
+- Làm tiếp phần còn lại của BE-8 (API sửa hồ sơ con) và một API điểm của học sinh cho Quản lý/Nhân viên để có tab _Điểm & bài tập_? **Đã làm ở 10.5.**
 
-### 10.5 Chờ BE / Mobile
+### 10.5 Đợt sửa sau Phase 4 (code xong, đã test 19/10/2026 tối)
+
+Chủ dự án yêu cầu sửa hết phần còn thiếu sau Phase 4, chỉ trong WDPFE và WDPBE (không đụng WDPFEM).
+
+**Kết quả.** FE: `npm run lint` 0 lỗi (5 cảnh báo cũ), `npx tsc --noEmit`, `npx next build --webpack` đạt. BE: e2e `academic` 11/11, `registration-flow` 37/37, unit 124/124, lint/tsc đạt. Test trình duyệt (BE build mới, DB riêng `edugrade_ui_qa`, mail tắt, 1440px, 4 vai trò) đạt 17/17; không lỗi trang, không request lỗi, không trang nào tràn ngang và bảng Học sinh không khuất cột.
+
+FE:
+
+- Nút đóng mặc định của Dialog/Sheet hiện lại. `Button` cỡ icon chỉ vẽ `leftIcon` nên làm mất icon truyền qua children; giờ không có `leftIcon` thì vẽ children (chủ dự án cho sửa `components/ui/button.tsx`). Nhãn đọc màn hình đổi thành "Đóng".
+- Trang chủ sau đăng nhập: Nhân viên vào `/staff/dashboard`, Thiết kế giáo trình vào `/manager/curriculum/overview`.
+- Lịch dạy của Giáo viên có lại Tuần và Ngày, sau Danh sách (mặc định) và Kanban.
+- Báo cáo: bảng có _Phạm vi_ (Toàn lớp hoặc tên học sinh) và _Khoảng ngày_. Báo cáo tạo trước khi BE lưu phạm vi hiện "—".
+- Tab Học sinh: cột Học sinh (khối, ngày sinh) · Phụ huynh · _Lớp đang học_ · _Chuyên cần_ · _Nghỉ / học bù_ (_Chờ học bù N_, _Nghỉ dài hạn_) · Trạng thái · Xem / Xử lý. Lọc nhanh `?quick=pending-makeup|long-leave|no-class`, BE lọc trên toàn bộ danh sách.
+  - Nút _Đăng ký học_ trên dòng học sinh bỏ để bảng không khuất cột ở 1440px. Vẫn có ở chi tiết học sinh (_Đăng ký thêm lớp_) và tab Phụ huynh.
+- Tab Phụ huynh: cột _Hồ sơ con_ hiện tên các con; thêm cột _Đã đóng_.
+- _Xóa_ phụ huynh: tài khoản chưa có hồ sơ con có nút _Xóa hẳn_. BE vẫn từ chối nếu đã có đăng ký hay hoạt động (`PARENT_IN_USE`, câu báo lỗi đề xuất khóa). Có hồ sơ con thì như cũ, chỉ khóa.
+- Chi tiết học sinh:
+  - thẻ _Điểm trung bình_ (bài đã công bố, quy về thang 10) và khối _Điểm gần đây_;
+  - tab `?tab=grades` _Điểm & bài tập_: bài, lớp, hạn nộp, bài nộp, điểm;
+  - _Sửa hồ sơ_ mở Dialog (họ tên, khối, ngày sinh). Ô Khối khóa khi còn ghi danh đang học hoặc sắp học, giống BE.
+- Số chờ học bù (Dashboard Nhân viên, chi tiết học sinh) chỉ tính buổi vắng đã ghi nhận, không tính buổi tương lai. Dashboard bỏ giới hạn "100+" và có link _Xem theo học sinh_ mở lọc _Chờ học bù_.
+- Nhân sự:
+  - tab _Nhân viên & thiết kế giáo trình_ gộp hai API vào một bảng (cột Vai trò, lọc `?role=`). Dialog tạo tài khoản có chọn vai trò; sửa/khóa gọi đúng API theo vai trò của dòng.
+  - tab Giáo viên thêm cột _Dạy thay T{tháng}_. Sheet giáo viên tách _buổi dạy thay_ và _buổi người khác dạy thay_, có nhãn trên từng buổi. Số liệu đọc từ lịch sử `SESSION_SUBSTITUTE_ASSIGNED`: giáo viên ghi ở lần xếp đầu tiên là người dạy gốc. Không cần thêm API BE.
+- Chi tiết lớp: khối _Học sinh đang học_ có dòng phụ huynh; tab Học sinh có cột _Phụ huynh_. Chỉ Quản lý và Nhân viên nhận liên hệ phụ huynh.
+- BFF mở thêm `PATCH students/:id` và `GET academic/students/:id/grades` (Quản lý, Nhân viên); `curriculum-designers` GET/POST/PATCH và `DELETE parents/:id` (Quản lý). Lịch sử thay đổi có nhãn cho `STUDENT_PROFILE_UPDATED`, `PARENT_ACCOUNT_DELETE`, `CURRICULUM_DESIGNER_ACCOUNT_CREATE/UPDATE`.
+
+**Thay đổi BE** (repo `WDP301-BE-System`, đã commit trên `dev`, **chưa push, chờ chủ dự án đồng ý**):
+
+- `dec275f`: `GET academic/makeup-sources` nhận `completedOnly=true`.
+- `c225be9`: `GET academic/reports` trả `from`, `to`, `scope`, `studentId`, `studentName`.
+- `a413f8a`: `GET academic/students/:id/grades` cho Quản lý, Nhân viên.
+- `a018a35`: BE-8 phần còn lại. `PATCH students/:id` (khóa đổi khối khi còn ghi danh, ghi audit). `GET students` thêm `currentClasses`, `attendancePercent`, `pendingMakeups`, `onLongLeave` và tham số `quick`.
+- `5be6f74`: BE-10, `curriculum-designers` cho Quản lý.
+- `f835cab`, `81567e0`: liên hệ phụ huynh trong danh sách lớp `GET classes/:id`; Giáo viên không nhận.
+- `50d8dde`: BE-9. `GET parents` có danh sách con và `paidAmount`; `DELETE parents/:id`.
+- `c4f8dd9`, `880e69f`: cập nhật `ACADEMIC_API_FLOW.md`.
+- FE gọi các tham số và quyền mới này, nên phải push BE trước FE. Chạy với BE cũ thì các khối mới báo lỗi API (400/403/404), không hiện số sai.
+
+Còn lại sau đợt này: BE-1 … BE-7, BE-11 (tùy chọn) và M-1 (app phụ huynh, ngoài phạm vi Web). Xem [mục 9](#9-việc-cần-be--mobile).
+
+### 10.6 Chờ BE / Mobile
 
 Bảng ở [mục 9](#9-việc-cần-be--mobile). Theo phase:
 
 - Phase 3: chấm trên ảnh bằng bút vẽ (BE-7, M-1); chương/tài liệu (BE-4); file `.xlsx` (BE-5); sinh lịch nhiều lớp trong một yêu cầu (BE-6); số buổi/tuần (BE-1); một giáo trình hiệu lực mỗi khóa (BE-2, BE-3).
-- Phase 2 và 4: sửa hồ sơ con (BE-8, phần chuyên cần **đã làm**); xóa phụ huynh (BE-9); tài khoản Thiết kế giáo trình chung bảng (BE-10). Lọc email theo trạng thái (BE-12) **đã làm**.
+- Phase 2 và 4: sửa hồ sơ con (BE-8), xóa phụ huynh (BE-9), tài khoản Thiết kế giáo trình chung bảng (BE-10) và lọc email theo trạng thái (BE-12) **đã làm**.
 
-### 10.6 Nghiệm thu mỗi phase
+### 10.7 Nghiệm thu mỗi phase
 
 Tóm tắt; bản đầy đủ ở [0.6](#06-kiểm-tra-trước-khi-coi-là-xong).
 
