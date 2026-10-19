@@ -17,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import type { NotificationItem } from "@/features/notifications/api";
+import { useNotificationSocket } from "@/features/notifications/hooks/use-notification-socket";
 import {
   useNotificationActions,
   useNotificationList,
@@ -37,7 +38,9 @@ import { cn } from "@/lib/utils";
 export function NotificationBell({ role }: { role: WebRole }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<NotificationTab>("all");
-  const unread = useUnreadNotificationCount();
+  // Socket mở cùng topbar trên mọi trang; mất kết nối thì quay về làm mới định kỳ.
+  const realtime = useNotificationSocket();
+  const unread = useUnreadNotificationCount(realtime === "live");
   const unreadCount = unread.data ?? 0;
   const badge = unreadCount > 99 ? "99+" : String(unreadCount);
 
@@ -55,10 +58,9 @@ export function NotificationBell({ role }: { role: WebRole }) {
               "relative rounded-full text-muted-foreground",
               open && "bg-primary/10 text-primary",
             )}
-            leftIcon={
-              <HugeiconsIcon icon={Notification01Icon} className="size-5" />
-            }
           >
+            {/* Icon đi qua children: nút cỡ icon không vẽ children khi có leftIcon, sẽ mất badge. */}
+            <HugeiconsIcon icon={Notification01Icon} className="size-5" />
             {unreadCount > 0 && (
               <span
                 aria-hidden="true"
@@ -81,6 +83,7 @@ export function NotificationBell({ role }: { role: WebRole }) {
             tab={tab}
             onTabChange={setTab}
             unreadCount={unreadCount}
+            live={realtime === "live"}
             onNavigate={() => setOpen(false)}
           />
         )}
@@ -94,12 +97,14 @@ function NotificationPanel({
   tab,
   onTabChange,
   unreadCount,
+  live,
   onNavigate,
 }: {
   role: WebRole;
   tab: NotificationTab;
   onTabChange: (tab: NotificationTab) => void;
   unreadCount: number;
+  live: boolean;
   onNavigate: () => void;
 }) {
   const list = useNotificationList(tab, true);
@@ -218,8 +223,16 @@ function NotificationPanel({
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/40 px-4 py-2.5">
-        <span className="text-xs text-muted-foreground">
-          Tự cập nhật mỗi 30 giây và khi quay lại tab
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {live && (
+            <span
+              aria-hidden="true"
+              className="size-2 rounded-full bg-emerald-500"
+            />
+          )}
+          {live
+            ? "Đang nhận thông báo tức thì"
+            : "Tự cập nhật mỗi 30 giây và khi quay lại tab"}
         </span>
         {list.hasNextPage && (
           <Button

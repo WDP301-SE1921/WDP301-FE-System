@@ -28,6 +28,8 @@ const rules: {
   },
   { method: "PATCH", path: /^notifications\/[^/]+\/read$/, roles: null },
   { method: "POST", path: /^notifications\/read-all$/, roles: null },
+  // Vé 60 giây để trình duyệt mở socket thông báo; access token vẫn ở cookie httpOnly.
+  { method: "POST", path: /^auth\/realtime-ticket$/, roles: null },
   {
     method: "GET",
     path: /^academic\/analytics(?:\/export)?$/,

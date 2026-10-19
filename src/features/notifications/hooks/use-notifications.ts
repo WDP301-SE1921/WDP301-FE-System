@@ -14,8 +14,10 @@ import {
   type NotificationPage,
 } from "../api";
 
-/** Số chưa đọc được làm mới định kỳ khi tab đang mở (BE có Socket.IO, Web chưa nối — xem docs). */
+/** Không có socket: làm mới số chưa đọc mỗi 30 giây khi tab đang mở. */
 const UNREAD_REFRESH_MS = 30_000;
+/** Có socket: sự kiện báo thay đổi ngay, chỉ đọc lại thưa để phòng sự kiện bị lỡ. */
+const UNREAD_REFRESH_LIVE_MS = 5 * 60_000;
 
 export type NotificationTab = "all" | "unread";
 
@@ -28,7 +30,7 @@ function notificationKeys(userId: string | undefined) {
   };
 }
 
-export function useUnreadNotificationCount() {
+export function useUnreadNotificationCount(live = false) {
   const user = useCurrentUser();
   return useQuery({
     queryKey: notificationKeys(user?.id).unread,
@@ -36,7 +38,7 @@ export function useUnreadNotificationCount() {
     select: (data) => data.unreadCount,
     enabled: !!user,
     retry: false,
-    refetchInterval: UNREAD_REFRESH_MS,
+    refetchInterval: live ? UNREAD_REFRESH_LIVE_MS : UNREAD_REFRESH_MS,
     refetchOnWindowFocus: true,
   });
 }

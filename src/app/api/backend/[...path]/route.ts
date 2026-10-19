@@ -20,6 +20,7 @@ import {
   forgetRefreshSession,
   isSameOriginRequest,
   readBackend,
+  realtimePublicUrl,
   SESSION_COOKIES,
   setSessionCookies,
   webUser,
@@ -247,6 +248,17 @@ async function handle(
       response = NextResponse.json({
         success: true,
         data: webUser(await readBackend<BackendUser>(upstream)),
+      });
+    else if (path === "auth/realtime-ticket" && upstream.ok)
+      // Kèm địa chỉ socket để trình duyệt không cần biết cấu hình BE lúc build.
+      response = NextResponse.json({
+        success: true,
+        data: {
+          ...(await readBackend<{ token: string; expiresIn: number }>(
+            upstream,
+          )),
+          url: realtimePublicUrl(),
+        },
       });
     else {
       const headers = new Headers({

@@ -59,6 +59,14 @@ function backendBaseUrl() {
   );
 }
 /**
+ * Địa chỉ trình duyệt dùng để mở Socket.IO thông báo. Mặc định là origin của BACKEND_API_URL;
+ * đặt REALTIME_PUBLIC_URL khi BACKEND_API_URL là địa chỉ nội bộ mà trình duyệt không tới được.
+ */
+export function realtimePublicUrl() {
+  const configured = process.env.REALTIME_PUBLIC_URL?.trim();
+  return (configured || new URL(backendBaseUrl()).origin).replace(/\/$/, "");
+}
+/**
  * Web and Nest both default to port 3000. When BACKEND_API_URL points back at this web server,
  * every BFF call gets a Next HTML 404 instead of the API, so report it instead of sending the request.
  */
