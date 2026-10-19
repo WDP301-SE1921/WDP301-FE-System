@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
@@ -150,25 +151,6 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
       ? `${ROUTES.STAFF.SCHEDULE}?${new URLSearchParams({ classId: classroom.id })}`
       : ROUTES.MANAGER.CLASS_SESSIONS(classroom.id);
     const items: RowActionItem[] = [
-      isStaff
-        ? {
-            id: "enroll",
-            label: "Thêm học sinh",
-            disabled:
-              classroom.isActive === false ||
-              !classroom.isOpen ||
-              !classroom.weeklySchedules.length,
-            onClick: () =>
-              router.push(
-                ROUTES.STAFF.ENROLLMENT_NEW_FOR({ classId: classroom.id }),
-              ),
-          }
-        : {
-            id: "detail",
-            label: "Chi tiết",
-            onClick: () =>
-              router.push(ROUTES.MANAGER.CLASS_DETAIL(classroom.id)),
-          },
       {
         id: "sessions",
         label: "Xem buổi học",
@@ -198,6 +180,35 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
     );
     return items;
   };
+  /** Thao tác chính hiện trên thẻ/dòng (thiết kế 5.3: nút Chi tiết + menu ⋯). */
+  const primaryAction = (classroom: RegistrationClass) =>
+    isStaff ? (
+      <Button
+        size="xs"
+        disabled={
+          classroom.isActive === false ||
+          !classroom.isOpen ||
+          !classroom.weeklySchedules.length
+        }
+        render={
+          <Link
+            href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({ classId: classroom.id })}
+          />
+        }
+        aria-label={`Thêm học sinh vào lớp ${classroom.name}`}
+      >
+        Thêm học sinh
+      </Button>
+    ) : (
+      <Button
+        size="xs"
+        variant="outline"
+        render={<Link href={ROUTES.MANAGER.CLASS_DETAIL(classroom.id)} />}
+        aria-label={`Chi tiết lớp ${classroom.name}`}
+      >
+        Chi tiết
+      </Button>
+    );
   const pendingText = pending
     ? pending.body.isOpen !== undefined
       ? pending.body.isOpen
@@ -405,6 +416,7 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
+                          {primaryAction(item)}
                           <RowActions items={actionsFor(item)} />
                         </div>
                       </TableCell>
@@ -494,6 +506,7 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                         </span>
                       </span>
                       <div className="flex items-center gap-1">
+                        {primaryAction(item)}
                         <RowActions items={actionsFor(item)} />
                       </div>
                     </div>

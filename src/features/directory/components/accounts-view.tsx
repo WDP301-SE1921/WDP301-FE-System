@@ -67,7 +67,7 @@ export function AccountEditForm({
         />
       </div>
       <ApiForm
-        key={`${account.id}-${account.status}-${account.displayName}`}
+        key={account.id}
         schema={accountUpdateSchema}
         defaults={{
           displayName: account.displayName ?? "",

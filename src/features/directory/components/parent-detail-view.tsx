@@ -368,7 +368,7 @@ function ParentEditBody({
               />
             </div>
             <ApiForm
-              key={`${data.id}-${data.status}-${data.displayName}-${data.parentProfile?.phone}`}
+              key={data.id}
               schema={parentUpdateSchema}
               defaults={{
                 displayName: data.displayName ?? "",
