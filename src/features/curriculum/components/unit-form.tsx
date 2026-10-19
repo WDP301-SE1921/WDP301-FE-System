@@ -28,6 +28,7 @@ import { curriculumApi } from "../api";
 import { useCurriculumMutation } from "../hooks/use-curriculum";
 import { useCurriculumUnits } from "../hooks/use-curriculum";
 import { estimateLessons } from "../workspace-selectors";
+import { sessionsInRange } from "../readiness";
 import { todayInVietnam } from "@/lib/calendar-date";
 import { useCurrentRole } from "@/hooks/use-current-role";
 import {
@@ -90,10 +91,43 @@ export function UnitForm({
         item.toDate.slice(0, 10) >= today,
     )
     .sort((a, b) => b.version - a.version)[0];
-  const programClasses = (canReadClasses ? (classes.data ?? []) : []).filter(
-    (item) => item.programId === selectedProgram,
+  // Chi tiết khóa có lớp + lịch tuần + giáo viên (BE 19/10), đọc được cả với Thiết kế giáo trình.
+  const programDetail = useQuery({
+    queryKey: ["curriculum", "program-readiness", selectedProgram],
+    queryFn: ({ signal }) => registrationApi.program(selectedProgram, signal),
+    enabled: !!selectedProgram,
+    retry: false,
+  });
+  const detailClasses = (programDetail.data?.classes ?? []).filter(
+    (item) => item.isActive,
   );
+  const detailHasSchedules =
+    !!programDetail.data?.classes &&
+    detailClasses.every((item) => item.weeklySchedules !== undefined);
+  const programClasses = detailHasSchedules
+    ? detailClasses.map((item) => ({
+        isActive: item.isActive,
+        weeklySchedules: item.weeklySchedules ?? [],
+      }))
+    : (canReadClasses ? (classes.data ?? []) : []).filter(
+        (item) => item.programId === selectedProgram,
+      );
   const estimate = estimateLessons(fromDate, toDate, programClasses);
+  const exactNeeds =
+    estimate && detailHasSchedules
+      ? detailClasses
+          .filter((item) => item.weeklySchedules?.length)
+          .map((item) =>
+            sessionsInRange(item.weeklySchedules ?? [], fromDate, toDate),
+          )
+      : [];
+  const readinessNote = !programDetail.data
+    ? ""
+    : !detailClasses.length
+      ? `Khóa ${programDetail.data.name} chưa có lớp. Vẫn soạn bản nháp được, nhưng chỉ gửi thẩm định khi khóa có lớp đã phân công giáo viên — báo Quản lý tạo lớp cho khóa này.`
+      : detailClasses.every((item) => item.teacherId === null)
+        ? `Các lớp của khóa ${programDetail.data.name} chưa có giáo viên phụ trách. Vẫn soạn bản nháp được, nhưng chỉ gửi thẩm định khi có giáo viên.`
+        : "";
   const overlapping = (sources.data ?? []).filter(
     (item) =>
       item.id !== unit?.id &&
@@ -163,6 +197,14 @@ export function UnitForm({
           error={programs.error}
           retry={() => void programs.refetch()}
         />
+        {readinessNote && (
+          <p
+            role="status"
+            className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/60 dark:text-amber-200"
+          >
+            {readinessNote}
+          </p>
+        )}
       </div>
       {!unit && (
         <div className="space-y-2">
@@ -208,7 +250,7 @@ export function UnitForm({
         aria-label="Kiểm tra số bài cần"
       >
         <p className="font-medium">Kiểm tra trước khi {unit ? "lưu" : "tạo"}</p>
-        {!canReadClasses && (
+        {!canReadClasses && !detailHasSchedules && (
           <div className="space-y-1">
             <Label htmlFor="unit-weekly-count">Số buổi/tuần</Label>
             <Input
@@ -227,7 +269,22 @@ export function UnitForm({
             <p>
               {estimate.weeks} tuần học (làm tròn lên theo khoảng hiệu lực).
             </p>
-            {estimate.min !== null ? (
+            {exactNeeds.length ? (
+              <p>
+                Cần{" "}
+                <b>
+                  {Math.min(...exactNeeds) === Math.max(...exactNeeds)
+                    ? Math.max(...exactNeeds)
+                    : `${Math.min(...exactNeeds)}–${Math.max(...exactNeeds)}`}{" "}
+                  bài
+                </b>{" "}
+                (mỗi buổi một bài) theo lịch tuần của {exactNeeds.length} lớp
+                đang hoạt động · {estimate.minWeekly === estimate.maxWeekly
+                  ? estimate.minWeekly
+                  : `${estimate.minWeekly}–${estimate.maxWeekly}`}{" "}
+                buổi/tuần.
+              </p>
+            ) : estimate.min !== null ? (
               <p>
                 Ước tính{" "}
                 {estimate.min === estimate.max

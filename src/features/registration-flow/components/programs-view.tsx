@@ -52,6 +52,8 @@ import {
   FieldError,
 } from "@/components/shared/feedback/api-feedback";
 import { StatusBadge } from "@/components/shared/feedback/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { ROUTES } from "@/constants/routes";
 import { curriculumApi } from "@/features/curriculum/api";
@@ -168,12 +170,20 @@ function ProgramsCatalog() {
       unit,
     ]);
   const classNames = new Map<string, string[]>();
+  // Lớp chưa có giáo viên: giáo trình của khóa chưa có người thẩm định.
+  const classesWithoutTeacher = new Map<string, number>();
   for (const classroom of classes.data ?? [])
-    if (classroom.isActive !== false)
+    if (classroom.isActive !== false) {
       classNames.set(classroom.programId, [
         ...(classNames.get(classroom.programId) ?? []),
         classroom.name,
       ]);
+      if (!classroom.teacherId)
+        classesWithoutTeacher.set(
+          classroom.programId,
+          (classesWithoutTeacher.get(classroom.programId) ?? 0) + 1,
+        );
+    }
   const rows = (programs.data ?? []).filter(
     (program) =>
       programFilter === "all" ||
@@ -183,7 +193,7 @@ function ProgramsCatalog() {
   );
   const start = (Math.max(1, catalogPage) - 1) * PROGRAMS_PAGE_SIZE;
   return (
-    <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
+    <div className="min-w-0 space-y-6">
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>Tạo khóa học</CardTitle>
@@ -195,15 +205,17 @@ function ProgramsCatalog() {
           />
           <ProgramForm
             key={createKey}
+            inline
             subjects={subjects.data ?? []}
             onSaved={() => {
               refresh();
               setCreateKey((value) => value + 1);
             }}
           />
-          <p className="border-t border-border pt-4 text-sm text-muted-foreground">
-            Giáo trình do Thiết kế giáo trình soạn; quản lý duyệt áp dụng và
-            sinh lịch cho các lớp.
+          <p className="text-sm text-muted-foreground">
+            Sau khi tạo khóa: tạo lớp cho khóa và phân công giáo viên thì Thiết
+            kế giáo trình mới gửi thẩm định giáo trình được. Quản lý duyệt áp
+            dụng và sinh lịch cho các lớp.
           </p>
         </CardContent>
       </Card>
@@ -270,7 +282,9 @@ function ProgramsCatalog() {
                     <TableHead>Hiệu lực</TableHead>
                     <TableHead className="text-right">Bài</TableHead>
                     <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
+                    <TableHead className="sticky right-0 bg-muted text-right">
+                      Thao tác
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -279,9 +293,11 @@ function ProgramsCatalog() {
                     .map((program) => {
                       const programUnits = unitsByProgram.get(program.id) ?? [];
                       const programClasses = classNames.get(program.id) ?? [];
+                      const withoutTeacher =
+                        classesWithoutTeacher.get(program.id) ?? 0;
                       return (
                         <Fragment key={program.id}>
-                          <TableRow className="bg-muted/50 hover:bg-muted/50">
+                          <TableRow className="bg-muted hover:bg-muted">
                             <TableCell
                               colSpan={4}
                               className="whitespace-normal"
@@ -311,10 +327,50 @@ function ProgramsCatalog() {
                                     status="inactive"
                                   />
                                 )}
+                                {classes.isSuccess &&
+                                  program.isActive !== false &&
+                                  (!programClasses.length ? (
+                                    <Badge variant="warning">
+                                      Chưa thể thẩm định giáo trình
+                                    </Badge>
+                                  ) : withoutTeacher ? (
+                                    <Badge variant="warning">
+                                      {withoutTeacher === programClasses.length
+                                        ? "Lớp chưa có giáo viên"
+                                        : `${withoutTeacher} lớp chưa có giáo viên`}
+                                    </Badge>
+                                  ) : null)}
                               </div>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="sticky right-0 bg-muted text-right">
                               <div className="flex justify-end gap-1">
+                                {classes.isSuccess &&
+                                  program.isActive !== false &&
+                                  (!programClasses.length ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      render={
+                                        <Link
+                                          href={`${ROUTES.MANAGER.CLASS_NEW}?programId=${encodeURIComponent(program.id)}`}
+                                        />
+                                      }
+                                    >
+                                      Tạo lớp cho khóa này
+                                    </Button>
+                                  ) : withoutTeacher ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      render={
+                                        <Link
+                                          href={ROUTES.MANAGER.CLASSES_UNASSIGNED}
+                                        />
+                                      }
+                                    >
+                                      Phân công giáo viên
+                                    </Button>
+                                  ) : null)}
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -385,7 +441,7 @@ function ProgramsCatalog() {
                                     status={stage}
                                   />
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="sticky right-0 bg-card text-right">
                                   <Button
                                     size="sm"
                                     variant={
@@ -393,7 +449,7 @@ function ProgramsCatalog() {
                                         ? "default"
                                         : "ghost"
                                     }
-                                    aria-label={`Mở giáo trình ${unit.title}`}
+                                    aria-label={`${stage === "PENDING_MANAGER_CONFIRMATION" ? "Duyệt" : "Xem"} giáo trình ${unit.title}`}
                                     render={
                                       <Link
                                         href={ROUTES.MANAGER.CURRICULUM_UNIT(
@@ -706,10 +762,13 @@ function ProgramForm({
   program,
   subjects,
   onSaved,
+  inline = false,
 }: {
   program?: RegistrationProgram;
   subjects: AcademicSubject[];
   onSaved: () => void;
+  /** Một hàng ngang trên trang danh sách khóa (để bảng bên dưới dùng đủ chiều ngang). */
+  inline?: boolean;
 }) {
   const form = useForm<AcademicProgramInput>({
     resolver: zodResolver(academicProgramSchema),
@@ -738,17 +797,23 @@ function ProgramForm({
   const idPrefix = program ? "program-edit" : "program";
   return (
     <form
-      className="space-y-3"
+      className={
+        inline
+          ? "grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
+          : "space-y-3"
+      }
       onSubmit={form.handleSubmit((v) => save.mutate(v))}
     >
-      <Label htmlFor={`${idPrefix}-name`}>Tên khóa học</Label>
-      <Input
-        id={`${idPrefix}-name`}
-        placeholder="Ví dụ: Toán 7"
-        {...form.register("name")}
-      />
-      <FieldError message={form.formState.errors.name?.message} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-name`}>Tên khóa học</Label>
+        <Input
+          id={`${idPrefix}-name`}
+          placeholder="Ví dụ: Toán 7"
+          {...form.register("name")}
+        />
+        <FieldError message={form.formState.errors.name?.message} />
+      </div>
+      <div className={inline ? "contents" : "grid gap-3 sm:grid-cols-2"}>
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-subject`}>Môn học</Label>
           <Controller
@@ -805,7 +870,12 @@ function ProgramForm({
         </div>
       </div>
       {!choices.length && (
-        <p className="text-sm text-muted-foreground">
+        <p
+          className={cn(
+            "text-sm text-muted-foreground",
+            inline && "md:col-span-4",
+          )}
+        >
           Tạo môn học trước khi tạo khóa.
         </p>
       )}
@@ -825,14 +895,18 @@ function ProgramForm({
           )}
         />
       )}
-      <ApiFeedback error={save.error} />
-      <Button
-        type="submit"
-        disabled={save.isPending || !choices.length}
-        isLoading={save.isPending}
-      >
-        {program ? "Lưu khóa học" : "Tạo khóa học"}
-      </Button>
+      <div className={inline ? "md:col-span-4 md:row-start-2 empty:hidden" : undefined}>
+        <ApiFeedback error={save.error} />
+      </div>
+      <div className={inline ? "md:pt-7" : undefined}>
+        <Button
+          type="submit"
+          disabled={save.isPending || !choices.length}
+          isLoading={save.isPending}
+        >
+          {program ? "Lưu khóa học" : "Tạo khóa học"}
+        </Button>
+      </div>
     </form>
   );
 }

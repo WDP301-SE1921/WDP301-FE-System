@@ -62,6 +62,10 @@ import {
 } from "../hooks/use-curriculum";
 import type { CurriculumFormState } from "../hooks/use-curriculum-form";
 import { UnitForm } from "./unit-form";
+import {
+  CurriculumReadinessCards,
+  useCurriculumReadiness,
+} from "./curriculum-readiness";
 import { LessonForm } from "./lesson-form";
 import { CurriculumImport } from "./curriculum-import";
 import {
@@ -209,6 +213,12 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
       .sort((a, b) => a.sequence - b.sequence) ?? [];
   const ready =
     !!validation.data?.ready && validation.data.revision === unit?.revision;
+  // Bản nháp: báo trước khóa đã có lớp có giáo viên (người thẩm định) và số bài cần.
+  const showReadiness =
+    unit?.status === "DRAFT" &&
+    (role === "curriculum_designer" || role === "center_manager");
+  const { readiness } = useCurriculumReadiness(unit, showReadiness);
+  const blockedReason = readiness?.blockedReason ?? "";
   const backHref =
     role === "teacher" ? ROUTES.TEACHER.CURRICULUM : ROUTES.MANAGER.CURRICULUM;
   const openEditor = (value: Editor) => {
@@ -253,7 +263,10 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
             <div className="flex flex-wrap gap-2">
               {canEdit && (
                 <Button
-                  disabled={busy}
+                  disabled={busy || (ready && !!blockedReason)}
+                  aria-describedby={
+                    blockedReason ? "curriculum-submit-blocked" : undefined
+                  }
                   isLoading={validation.isPending}
                   onClick={() =>
                     ready ? openEditor({ kind: "submit" }) : validation.mutate()
@@ -389,6 +402,24 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 )}
               </CardContent>
             </Card>
+            {canEdit && blockedReason && (
+              <p
+                id="curriculum-submit-blocked"
+                role="status"
+                className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/60 dark:text-amber-200"
+              >
+                <b>Chưa gửi thẩm định được.</b> {blockedReason}
+              </p>
+            )}
+            {showReadiness && readiness && (
+              <CurriculumReadinessCards
+                unit={unit}
+                readiness={readiness}
+                lessonCount={regular.length}
+                validated={ready}
+                canManageClasses={role === "center_manager"}
+              />
+            )}
             <ApiFeedback error={error} />
             {notice && (
               <p role="status" className="rounded-xl bg-primary/10 p-4 text-sm">
