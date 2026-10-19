@@ -80,7 +80,8 @@ function Button({
       ) : (
         leftIcon
       )}
-      {!isIconOnly && children}
+      {/* Nút cỡ icon vẽ `leftIcon` nếu có; không có thì icon đi qua children (Dialog/Sheet close, menu ⋯). */}
+      {(!isIconOnly || (!leftIcon && !isLoading)) && children}
       {!isLoading && rightIcon}
     </ButtonPrimitive>
   )

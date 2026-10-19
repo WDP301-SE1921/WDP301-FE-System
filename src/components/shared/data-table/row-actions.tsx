@@ -28,7 +28,7 @@ export interface RowActionsProps {
 function RowActions({ items }: RowActionsProps) {
   return (
     <DropdownMenu>
-      {/* `Button` cỡ icon chỉ vẽ `leftIcon` (bỏ children), nên icon và tên nút đi qua props. */}
+      {/* Nút cỡ icon: icon qua `leftIcon`, tên nút qua `aria-label`. */}
       <DropdownMenuTrigger
         render={
           <Button
