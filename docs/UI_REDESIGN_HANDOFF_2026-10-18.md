@@ -2,7 +2,7 @@
 
 Ngày: 18/10/2026. Phạm vi: **chỉ Web** (`WDP301-FE-System`), 4 vai trò Quản lý trung tâm, Nhân viên, Giáo viên, Thiết kế giáo trình. App Mobile phụ huynh chỉ bị nhắc ở phần cần làm thêm.
 
-Trạng thái (cập nhật 18/10/2026): **Phase 1 (Đợt 1) đã code xong và đã push `dev`**. Phase 2, 3, 4 **chưa làm**. Tài liệu này là đầu vào để Claude Code (hoặc người) làm tiếp từng phase.
+Trạng thái (cập nhật 19/10/2026): **Phase 1 đã push `dev`; Phase 2 đã hoàn tất code và kiểm tra tĩnh/hồi quy**. Phase 3, 4 đang được thực hiện lần lượt theo yêu cầu ngày 19/10. Kiểm thử trình duyệt với BE/DB riêng của Phase 2 đang được chuẩn bị; chưa báo nghiệm thu runtime khi môi trường chưa chạy được.
 
 **Cách dùng:** nói với Claude Code _"Đọc `docs/UI_REDESIGN_HANDOFF_2026-10-18.md` rồi làm Phase 2"_ (hoặc 3, 4). Claude đọc [mục 0](#0-dành-cho-claude-code-đọc-mục-này-trước) để biết cách làm, rồi làm theo danh sách việc của phase đó ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
@@ -369,7 +369,7 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 - Cách làm: tách `LiveStaffWorkflows` thành `StudentActionSheet` nhận `mode` từ tab (`?action=`) thay vì từ route. Các panel con giữ nguyên.
 - Đổi logic: không.
 - **Đã làm ở Phase 1** (khác thiết kế ở các điểm sau):
-  - Component là `StudentWorkflowSheet` (cùng file `live-staff-workflows.tsx`), màn danh sách là `StaffStudentsHub` (`directory-list-view.tsx`). Quản lý vẫn dùng `RegistrationStudentsView`/`RegistrationParentsView` cũ, không có nút Xử lý.
+  - Component là `StudentWorkflowSheet` (cùng file `live-staff-workflows.tsx`). Từ Phase 2, `StudentsHub` (`directory-list-view.tsx`) dùng chung cho Nhân viên và Quản lý; Quản lý không có nút Xử lý. Xem/sửa/khóa phụ huynh nằm trong Sheet/Dialog.
   - Sheet có **4 tab** chứ không phải 6: _Nghỉ & học bù_ · _Đổi lớp / lịch cố định_ · _Nghỉ dài hạn_ · _Nghỉ môn / nghỉ hẳn_. Lý do: trong code cũ, ba trang "Nghỉ học và học bù", "Đổi một buổi", "Nghỉ 1 buổi" hiện **cùng một bộ panel** (`SingleAbsence` + `MakeupPanel`), nên tách 3 tab sẽ lặp nội dung.
   - Chưa có cột _Lớp đang học_, _Chuyên cần %_, _Nghỉ/học bù_ và bộ lọc nhanh _Chờ xếp học bù / Đang nghỉ dài hạn / Chưa có lớp_. API danh sách học sinh chưa trả các số này; tính ở FE thì mỗi dòng phải gọi thêm API. Chuyển sang Phase 4, cùng màn chi tiết học sinh.
 
@@ -400,7 +400,7 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 - Bỏ: thẻ 3 cột cao ~380px, dòng lặp "Toán · Khối 8 / Toán 8", hai nút to full chiều ngang mỗi thẻ; trang Phòng học riêng có **form sửa cho từng phòng**.
 - Thêm: thẻ gọn 4 cột (tên + trạng thái, môn · khối · phòng, lịch tuần, giáo viên hoặc cảnh báo _Chưa phân công_, sĩ số dạng thanh, học phí, nút _Chi tiết_ + menu ⋯ gồm _Xem buổi học / Thêm học sinh / Đóng đăng ký / Ngừng hoạt động_); nút chuyển Thẻ/Bảng; tab **Phòng học** (chỉ Quản lý): form thêm phòng bên trái, bảng phòng bên phải (Sửa / Ngừng sử dụng bằng Dialog).
 - Đổi logic: không.
-- **Phase 1 đã làm phần Phòng học**: `LiveRoomsView` có form thêm phòng bên trái, bảng phòng bên phải, _Sửa_ và _Ngừng sử dụng / Dùng lại_ mở Dialog. Phần này vẫn nằm ở trang riêng `/manager/rooms`. Lưới lớp 4 cột và việc đưa Phòng thành tab trong Lớp học thuộc **Phase 2**.
+- **Đã làm Phase 1–2**: Phòng học nằm trong tab của Lớp học, route `/manager/rooms` chuyển về tab Phòng. `LiveRoomsView` giữ form thêm phòng, bảng phòng và Dialog sửa/ngừng/dùng lại; lưới lớp có 4 cột ở desktop và chuyển Thẻ/Bảng.
 
 **`QL-ChiTietLop`, chi tiết lớp**: `/manager/classes/[id]`, `RegistrationClassEditor` (`registration-flow/components/class-editor.tsx`)
 
@@ -411,7 +411,7 @@ Mỗi màn ghi: artboard mẫu · route · **giữ nguyên** · **bỏ khỏi UI
 
 **`QL-LichHoc`, Lịch học Kanban + Sheet buổi học**: `/manager/schedule`, `/staff/schedule`
 
-- Giữ: `AcademicCalendarView`, `ScheduleBoard`, `SessionDetailSheet` (`features/curriculum/components/`), API đổi giờ (xem trước rồi xác nhận), hủy buổi, xếp dạy thay (`LiveSubstitutesView`, `teachers/components/live-substitutes-view.tsx`).
+- Giữ: `AcademicCalendarView`, `ScheduleBoard`, `SessionDetailSheet` (`features/curriculum/components/`), API đổi giờ (xem trước rồi xác nhận), hủy buổi, xếp dạy thay (`SubstituteForm`, `teachers/components/substitute-form.tsx`, được tách ở Phase 2).
 - Bỏ: trang _Dạy thay_ riêng (danh sách buổi trong khoảng ngày).
 - Thêm: Kanban mặc định (cột Thứ 2 → CN), thẻ buổi gồm giờ · lớp · bài · giáo viên · phòng · nhãn _Dạy thay_ / _Đã hủy_; chip tổng hợp tuần; Sheet buổi học có 4 tab **Nội dung / Đổi giờ / Hủy buổi / Dạy thay** (chỉ Quản lý thấy 3 tab thao tác; Nhân viên chỉ thấy Nội dung); nút _Sinh lịch theo khóa_.
 - Đổi logic: không. Vẫn **không kéo-thả** để đổi lịch.
@@ -667,7 +667,7 @@ Chi tiết nghiệp vụ giáo trình (quan hệ dữ liệu, vòng đời theo 
 
 ## 10. Tiến độ theo đợt và nghiệm thu
 
-Chia 4 phase (đợt). Thứ tự dựa trên ba tiêu chí: không cần BE, test được ngay trên máy, và người dùng thấy thay đổi rõ nhất. **Phase 2, 3, 4 chưa bắt đầu.** Mỗi phase chỉ làm khi có lệnh "làm Phase N"; cách làm theo [mục 0](#0-dành-cho-claude-code-đọc-mục-này-trước). Mã việc `P2-1`, `P3-3`… dùng để đánh dấu tiến độ và báo cáo.
+Chia 4 phase (đợt). Ngày 19/10/2026, chủ dự án yêu cầu tiếp tục WIP của Claude và làm lần lượt Phase 2 → 3 → 4, chỉ trong WDPFE/WDPBE, không sửa WDPFEM. Mã việc `P2-1`, `P3-3`… dùng để đánh dấu tiến độ và báo cáo.
 
 ### 10.1 Phase 1: đã xong (18/10/2026)
 
@@ -695,7 +695,22 @@ Kiểm tra đã chạy:
   - Quản lý vẫn dùng màn Hồ sơ con cũ, không thấy nút _Xử lý_.
 - Phần **chưa làm** của các màn Phase 1 đã chuyển thành việc của phase sau: cột chuyên cần và lọc nhanh của bảng học sinh (P4-5), chip tổng tiền của Đăng ký & biên lai (P4-7), lọc trạng thái email (chờ BE-12), lọc người thực hiện ở lịch sử thay đổi (P2-10).
 
-### 10.2 Phase 2: gộp menu Quản lý (chưa làm)
+### 10.2 Phase 2: gộp menu Quản lý (code xong 19/10/2026)
+
+Đã tiếp tục từ WIP chưa commit của Claude, hoàn tất P2-1 đến P2-10. Kiểm tra: ESLint các file sửa đạt; `npm run lint` 0 lỗi, 4 cảnh báo import cũ ngoài phạm vi; `npx tsc --noEmit` đạt; `npx next build --webpack` đạt (63 trang tĩnh); 37 kiểm tra hồi quy local đạt. `ROLE_AREAS`, BFF permissions và schema Zod không đổi. **Chưa test giao diện với BE thật tại checkpoint này**: máy không có MySQL riêng, runtime BE cũ đang giữ DLL; đang chuẩn bị DB và runtime QA biệt lập, không dừng BE đang dùng. Kết quả runtime sẽ bổ sung khi có.
+
+- [x] P2-1: menu 8 mục, route mới, redirect giữ query lặp.
+- [x] P2-2: hub học sinh/phụ huynh, Sheet xem, Dialog sửa/khóa/mở khóa.
+- [x] P2-3: hub Nhân sự, form và Sheet tài khoản, lời mời.
+- [x] P2-4: màn Thông báo hai phần, giữ gửi lại email lỗi.
+- [x] P2-5: hub khóa học/giáo trình theo vai trò, Sheet chi tiết khóa.
+- [x] P2-6: lớp 4 cột/Thẻ/Bảng, menu thao tác, tab Phòng theo quyền.
+- [x] P2-7: chi tiết lớp chia tab, giữ các form và xác nhận cũ.
+- [x] P2-8: Kanban mặc định, chip tuần, lọc giáo viên, Sheet 4 tab.
+- [x] P2-9: tài khoản cá nhân hai cột.
+- [x] P2-10: lọc lịch sử theo người thực hiện trên URL.
+
+Khác thiết kế: chưa hiện số học viên/điểm danh trong Sheet buổi khi endpoint detail không trả; nhãn dạy thay chỉ suy ra cho buổi SCHEDULED theo phân công có ngày hiệu lực, không suy đoán lịch sử buổi đã chốt. Các phần chờ BE-8/9/10/12 giữ đúng phương án FE tạm. Lỗi API và dữ liệu thiếu được phân biệt với số 0 hoặc danh sách rỗng.
 
 Không cần BE. Vai trò chính: Quản lý trung tâm (`center_manager`). Thiết kế giáo trình chỉ bị ảnh hưởng ở P2-5. Nhân viên bị ảnh hưởng ở P2-6, P2-8 vì dùng chung màn Lớp học và Lịch học.
 
@@ -807,7 +822,7 @@ Không cần BE. Vai trò chính: Quản lý trung tâm (`center_manager`). Thi�
 - Thêm ô chọn _Người thực hiện_ vào `LiveAuditLogView`, giữ trên URL (`?actorUserId=`), gửi `actorUserId` cho `directoryApi.auditLogs`. BE đã nhận tham số này (`AuditLogQueryDto`).
 - Danh sách người để chọn lấy từ các API tài khoản Quản lý được gọi (nhân viên, giáo viên, quản lý). Có thêm lựa chọn _Tất cả_.
 
-_Câu hỏi mở Phase 2_: (Claude ghi vào đây khi làm.)
+_Câu hỏi mở Phase 2_: Không thêm quyết định nghiệp vụ; các hạn chế BE-8/9/10/12 giữ như mục 9. Kiểm thử trình duyệt/DB riêng còn chờ môi trường QA tại checkpoint này.
 
 ### 10.3 Phase 3: Giáo viên + giáo trình (chưa làm)
 
