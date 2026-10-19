@@ -76,6 +76,10 @@ export function CurriculumImport({
   const [attempt, setAttempt] =
     useState<AcademicAttempt<ImportCommitInput> | null>(restored.attempt);
   const [confirm, setConfirm] = useState(false);
+  // Đổi key để làm trống ô chọn tệp sau khi nhập xong; RHF không xóa được FileList trong DOM.
+  const [fileKey, setFileKey] = useState(0);
+  // Đã nhập xong tệp đang chọn: không còn gì chưa lưu cho tới khi chọn tệp khác.
+  const [imported, setImported] = useState(false);
   const form = useForm<CurriculumImportFileInput>({
     resolver: zodResolver(fileSchema),
     defaultValues: { mode: "APPEND" },
@@ -104,6 +108,8 @@ export function CurriculumImport({
       setAttempt(null);
       preview.reset();
       form.reset({ mode: "APPEND" });
+      setFileKey((key) => key + 1);
+      setImported(true);
       void client.invalidateQueries({ queryKey: ["curriculum"] });
     },
     onError: (error) => {
@@ -117,7 +123,7 @@ export function CurriculumImport({
   const locked =
     !!attempt || preview.isPending || commit.isPending || !!restored.error;
   useCurriculumFormState(
-    form.formState.isDirty || !!preview.data || !!attempt,
+    (form.formState.isDirty && !imported) || !!preview.data || !!attempt,
     preview.isPending || commit.isPending,
     onStateChange,
   );
@@ -155,13 +161,19 @@ export function CurriculumImport({
               File CSV UTF-8 (tối đa 5 MiB, 1.000 dòng)
             </Label>
             <Input
+              key={fileKey}
               id="curriculum-csv"
               type="file"
               accept=".csv,text/csv"
               disabled={locked}
               aria-invalid={!!form.formState.errors.file}
               aria-describedby="curriculum-csv-help"
-              {...form.register("file", { onChange: () => preview.reset() })}
+              {...form.register("file", {
+                onChange: () => {
+                  preview.reset();
+                  setImported(false);
+                },
+              })}
             />
             <div id="curriculum-csv-help">
               <FieldError message={form.formState.errors.file?.message} />

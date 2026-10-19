@@ -36,6 +36,15 @@ const FIELD_TEXT: Record<string, string> = {
   futureSessionsCancelled: "Số buổi học sắp tới đã hủy",
 };
 
+/** Trường mã tài khoản: có tên trong danh sách đã tải thì hiện tên, kèm nhãn không còn chữ "Mã". */
+const PERSON_FIELD_TEXT: Record<string, string> = {
+  teacherId: "Giáo viên",
+  reviewerTeacherId: "Giáo viên duyệt chuyên môn",
+  substituteTeacherId: "Giáo viên dạy thay",
+  previousTeacherId: "Giáo viên trước",
+  actorUserId: "Người thực hiện",
+};
+
 const VALUE_TEXT: Record<string, string> = {
   CLASS_CURRICULUM_INPUT_TEMPLATE: "Mẫu dữ liệu lớp học và giáo trình",
   MANAGER: "Quản lý trung tâm",
@@ -121,14 +130,20 @@ function displayValue(value: unknown) {
 }
 
 /** Render structured audit snapshots as readable fields, including nested data. */
-function AuditValue({ value }: { value: unknown }) {
+function AuditValue({
+  value,
+  names,
+}: {
+  value: unknown;
+  names?: Record<string, string>;
+}) {
   if (Array.isArray(value)) {
     if (value.length === 0) return <p>Không có mục nào</p>;
     return (
       <ol className="list-inside list-decimal space-y-2">
         {value.map((item, index) => (
           <li key={index}>
-            <AuditValue value={item} />
+            <AuditValue value={item} names={names} />
           </li>
         ))}
       </ol>
@@ -139,18 +154,28 @@ function AuditValue({ value }: { value: unknown }) {
     if (entries.length === 0) return <p>Không có thông tin chi tiết</p>;
     return (
       <dl className="space-y-2">
-        {entries.map(([field, item]) => (
-          <div key={field} className="grid gap-1 sm:grid-cols-2">
-            <dt className="text-muted-foreground">
-              {Object.hasOwn(FIELD_TEXT, field)
-                ? FIELD_TEXT[field]
-                : field.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ")}
-            </dt>
-            <dd className="min-w-0 wrap-anywhere whitespace-pre-wrap">
-              <AuditValue value={item} />
-            </dd>
-          </div>
-        ))}
+        {entries.map(([field, item]) => {
+          const person =
+            typeof item === "string" && Object.hasOwn(PERSON_FIELD_TEXT, field)
+              ? (names?.[item] ?? null)
+              : null;
+          return (
+            <div key={field} className="grid gap-1 sm:grid-cols-2">
+              <dt className="text-muted-foreground">
+                {person
+                  ? PERSON_FIELD_TEXT[field]
+                  : Object.hasOwn(FIELD_TEXT, field)
+                    ? FIELD_TEXT[field]
+                    : field
+                        .replace(/([a-z])([A-Z])/g, "$1 $2")
+                        .replace(/_/g, " ")}
+              </dt>
+              <dd className="min-w-0 wrap-anywhere whitespace-pre-wrap">
+                {person ?? <AuditValue value={item} names={names} />}
+              </dd>
+            </div>
+          );
+        })}
       </dl>
     );
   }
@@ -160,9 +185,12 @@ function AuditValue({ value }: { value: unknown }) {
 export function AuditChangeDetails({
   before,
   after,
+  names,
 }: {
   before: unknown;
   after: unknown;
+  /** Mã tài khoản → tên, để hiện tên thay vì mã giáo viên. */
+  names?: Record<string, string>;
 }) {
   if (before == null && after == null) return null;
   return (
@@ -173,7 +201,7 @@ export function AuditChangeDetails({
       ].map(({ label, value }) => (
         <div key={label} className="min-w-0 space-y-2">
           <p className="font-medium">{label}</p>
-          <AuditValue value={readSnapshot(value)} />
+          <AuditValue value={readSnapshot(value)} names={names} />
         </div>
       ))}
     </div>

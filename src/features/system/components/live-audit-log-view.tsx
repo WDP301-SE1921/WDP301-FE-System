@@ -81,16 +81,21 @@ function useAuditActors() {
       allAccounts(directoryApi.managers, signal),
     ]);
     const people = new Map<string, { value: string; label: string }>();
+    // Tên theo mã tài khoản, để chi tiết thay đổi hiện tên giáo viên thay vì mã.
+    const names: Record<string, string> = {};
     for (const list of lists)
       if (list.status === "fulfilled")
-        for (const user of list.value)
+        for (const user of list.value) {
+          names[user.id] = user.displayName || user.email;
           people.set(user.id, {
             value: user.id,
             label: [user.displayName || user.email, actorRoleLabel(user.role)]
               .filter(Boolean)
               .join(" · "),
           });
+        }
     return {
+      names,
       options: [...people.values()].sort((left, right) =>
         left.label.localeCompare(right.label, "vi"),
       ),
@@ -243,6 +248,7 @@ export function LiveAuditLogView() {
                   <AuditRow
                     key={log.id}
                     log={log}
+                    names={actors.data?.names}
                     isExpanded={expandedId === log.id}
                     onToggle={() =>
                       setExpandedId((current) =>
@@ -266,10 +272,12 @@ export function LiveAuditLogView() {
 
 function AuditRow({
   log,
+  names,
   isExpanded,
   onToggle,
 }: {
   log: AuditLogRecord;
+  names?: Record<string, string>;
   isExpanded: boolean;
   onToggle: () => void;
 }) {
@@ -325,7 +333,11 @@ function AuditRow({
       {isExpanded && (
         <TableRow id={detailsId} className="bg-muted/30 hover:bg-muted/30">
           <TableCell colSpan={5} className="whitespace-normal">
-            <AuditChangeDetails before={log.beforeData} after={log.afterData} />
+            <AuditChangeDetails
+              before={log.beforeData}
+              after={log.afterData}
+              names={names}
+            />
           </TableCell>
         </TableRow>
       )}

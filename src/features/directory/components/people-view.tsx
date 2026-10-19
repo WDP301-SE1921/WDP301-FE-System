@@ -216,7 +216,8 @@ export function PeopleHub({ role }: { role: WebRole }) {
         </TabsList>
       </Tabs>
       {tab === "invites" ? (
-        <div className="grid min-w-0 gap-6 xl:grid-cols-2">
+        // Xếp chồng: mỗi bảng dùng đủ chiều ngang để không cắt cột Thao tác.
+        <div className="grid min-w-0 gap-6">
           {(["teacher", "manager"] as const).map((invitationKind) => (
             <Card key={invitationKind} className="min-w-0">
               <CardHeader>

@@ -60,6 +60,13 @@ function UserMenu({
     .slice(0, 2)
     .toUpperCase();
 
+  // Tải lại hẳn trang đăng nhập: xóa cache rồi ở lại trang cũ sẽ làm các truy vấn đang hiển thị
+  // gọi lại API bằng phiên vừa hủy (401). Tải trang mới bỏ toàn bộ cache và truy vấn đang chạy.
+  const leave = () => {
+    clearSession();
+    window.location.replace(ROUTES.AUTH.LOGIN);
+  };
+
   const handleLogout = async () => {
     if (onLogout) {
       onLogout();
@@ -67,18 +74,13 @@ function UserMenu({
     }
     setIsLoggingOut(true);
     try {
+      // Dừng các truy vấn đang chạy để không gọi API bằng phiên sắp hủy (401 sau khi đăng xuất).
+      await queryClient.cancelQueries();
       await apiRequest("auth/logout", { method: "POST" });
-      clearSession();
-      queryClient.clear();
-      router.replace(ROUTES.AUTH.LOGIN);
-      router.refresh();
+      leave();
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        clearSession();
-        queryClient.clear();
-        router.replace(ROUTES.AUTH.LOGIN);
-        router.refresh();
-      } else toast.error(apiErrorMessage(error));
+      if (error instanceof ApiError && error.status === 401) leave();
+      else toast.error(apiErrorMessage(error));
     } finally {
       setIsLoggingOut(false);
     }

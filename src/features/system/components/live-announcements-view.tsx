@@ -8,6 +8,7 @@ import {
   type DataTableColumn,
 } from "@/components/shared/data-table/data-table";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -290,10 +291,21 @@ export function EmailQueueResults({
           Đã xếp hàng: {results.filter((item) => item.queued).length}/
           {results.length}
         </p>
-        <ul className="max-h-48 space-y-1 overflow-y-auto">
+        <ul className="max-h-48 divide-y divide-border overflow-y-auto rounded-xl border border-border">
           {results.map((item, index) => (
-            <li key={`${item.email}-${index}`} className="break-all">
-              {item.email} · {item.queued ? "Đã xếp hàng" : "Chưa xếp hàng"}
+            <li
+              key={`${item.email}-${index}`}
+              className="flex items-center justify-between gap-3 px-3 py-1.5"
+            >
+              <span className="min-w-0 wrap-anywhere">
+                {item.email}
+              </span>
+              <Badge
+                variant={item.queued ? "info" : "warning"}
+                className="shrink-0"
+              >
+                {item.queued ? "Đã xếp hàng" : "Chưa xếp hàng"}
+              </Badge>
             </li>
           ))}
         </ul>

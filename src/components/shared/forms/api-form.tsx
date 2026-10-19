@@ -102,7 +102,9 @@ export function ApiForm({
           const message = form.formState.errors[input.name]?.message;
           return (
             <div key={input.name} className="space-y-2">
-              <Label htmlFor={fieldId}>{input.label}</Label>
+              {input.type !== "checkbox" && (
+                <Label htmlFor={fieldId}>{input.label}</Label>
+              )}
               {input.type === "select" ? (
                 <Controller
                   name={input.name}
@@ -142,22 +144,29 @@ export function ApiForm({
                   )}
                 />
               ) : input.type === "checkbox" ? (
-                <Controller
-                  name={input.name}
-                  control={form.control}
-                  render={({ field }) => (
-                    <Checkbox
-                      id={fieldId}
-                      checked={Boolean(field.value)}
-                      onCheckedChange={field.onChange}
-                      disabled={input.disabled}
-                      aria-invalid={!!message}
-                      aria-describedby={
-                        message ? `${fieldId}-error` : undefined
-                      }
-                    />
-                  )}
-                />
+                // Ô tick đứng trước câu xác nhận, giống màn điểm danh.
+                <div className="flex items-start gap-3">
+                  <Controller
+                    name={input.name}
+                    control={form.control}
+                    render={({ field }) => (
+                      <Checkbox
+                        id={fieldId}
+                        className="mt-0.5"
+                        checked={Boolean(field.value)}
+                        onCheckedChange={field.onChange}
+                        disabled={input.disabled}
+                        aria-invalid={!!message}
+                        aria-describedby={
+                          message ? `${fieldId}-error` : undefined
+                        }
+                      />
+                    )}
+                  />
+                  <Label htmlFor={fieldId} className="leading-snug">
+                    {input.label}
+                  </Label>
+                </div>
               ) : input.type === "textarea" ? (
                 <Textarea
                   id={fieldId}
