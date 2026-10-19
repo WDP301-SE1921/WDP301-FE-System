@@ -2,7 +2,7 @@
 
 Ngày: 18/10/2026. Phạm vi: **chỉ Web** (`WDP301-FE-System`), 4 vai trò Quản lý trung tâm, Nhân viên, Giáo viên, Thiết kế giáo trình. App Mobile phụ huynh chỉ bị nhắc ở phần cần làm thêm.
 
-Trạng thái (cập nhật 19/10/2026 tối): **Phase 1–4 và đợt sửa sau Phase 4 đã code xong và test trình duyệt trên BE/DB riêng**. Phase 1–4 đã push `dev` (Phase 4 kèm BE-8 phần chuyên cần và BE-12, push 19/10 sau khi chủ dự án đồng ý). Đợt sửa ([mục 10.5](#105-đợt-sửa-sau-phase-4-code-xong-đã-test-19102026-tối)) kèm 10 commit BE trên `dev` **chưa push, chờ chủ dự án đồng ý**; FE của đợt này push sau BE. Kết quả từng phase ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
+Trạng thái (cập nhật 19/10/2026 tối): **Phase 1–4 và đợt sửa sau Phase 4 đã code xong và test trình duyệt trên BE/DB riêng**. Phase 1–4 đã push `dev` (Phase 4 kèm BE-8 phần chuyên cần và BE-12, push 19/10 sau khi chủ dự án đồng ý). Đợt sửa ([mục 10.5](#105-đợt-sửa-sau-phase-4-code-xong-đã-test-19102026-tối)) kèm 10 commit BE, đã push `dev` ngày 19/10 sau khi chủ dự án đồng ý, trước FE. Kết quả từng phase ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
 **Cách dùng:** nói với Claude Code _"Đọc `docs/UI_REDESIGN_HANDOFF_2026-10-18.md` rồi làm Phase 2"_ (hoặc 3, 4). Claude đọc [mục 0](#0-dành-cho-claude-code-đọc-mục-này-trước) để biết cách làm, rồi làm theo danh sách việc của phase đó ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
@@ -1070,7 +1070,7 @@ FE:
 - Chi tiết lớp: khối _Học sinh đang học_ có dòng phụ huynh; tab Học sinh có cột _Phụ huynh_. Chỉ Quản lý và Nhân viên nhận liên hệ phụ huynh.
 - BFF mở thêm `PATCH students/:id` và `GET academic/students/:id/grades` (Quản lý, Nhân viên); `curriculum-designers` GET/POST/PATCH và `DELETE parents/:id` (Quản lý). Lịch sử thay đổi có nhãn cho `STUDENT_PROFILE_UPDATED`, `PARENT_ACCOUNT_DELETE`, `CURRICULUM_DESIGNER_ACCOUNT_CREATE/UPDATE`.
 
-**Thay đổi BE** (repo `WDP301-BE-System`, đã commit trên `dev`, **chưa push, chờ chủ dự án đồng ý**):
+**Thay đổi BE** (repo `WDP301-BE-System`, đã push `dev` 19/10 theo đồng ý của chủ dự án, trước FE):
 
 - `dec275f`: `GET academic/makeup-sources` nhận `completedOnly=true`.
 - `c225be9`: `GET academic/reports` trả `from`, `to`, `scope`, `studentId`, `studentName`.
