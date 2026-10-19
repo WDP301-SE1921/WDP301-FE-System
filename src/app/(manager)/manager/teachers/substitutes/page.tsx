@@ -1,22 +1,22 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets";
-import { PageContainer } from "@/components/shared/layout/page-container";
-import { LiveSubstitutesView } from "@/features/teachers/components/live-substitutes-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Dạy thay" };
-
-export default function Page() {
-  // Filters and pagination live in the URL (nuqs), which needs Suspense when prerendering.
-  return (
-    <Suspense
-      fallback={
-        <PageContainer>
-          <SkeletonTable />
-        </PageContainer>
-      }
-    >
-      <LiveSubstitutesView />
-    </Suspense>
+/** Xếp dạy thay nằm trong Sheet buổi học của Lịch học; `sessionId` cũ mở đúng buổi ở tab Dạy thay. */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const query = await searchParams;
+  redirect(
+    legacyHref(
+      ROUTES.MANAGER.SCHEDULE,
+      query.sessionId
+        ? { view: "board", sessionTab: "substitute" }
+        : { view: "board" },
+      query,
+      { sessionId: "session", fromDate: "date" },
+    ),
   );
 }

@@ -143,6 +143,8 @@ export interface RegistrationClass {
     isActive: boolean;
   } | null;
   rosterCount?: number;
+  /** Giáo viên nhận lớp từ `pendingTeacherFrom` (danh sách lớp trả id, chi tiết lớp trả thêm `pendingTeacher`). */
+  pendingTeacherId?: string | null;
   pendingTeacher?: Pick<AcademicTeacher, "id" | "displayName" | "email"> | null;
   pendingTeacherFrom?: string | null;
   /** Set when the assigned teacher confirmed ("set cứng") the weekly schedule. */
@@ -178,6 +180,13 @@ export interface RegistrationOrder {
   startDate: string;
   endDate: string;
   targetStudent: { id: string; fullName: string; grade: number };
+  /** Có khi đơn đã thu tiền; BE trả kèm trong danh sách ghi danh của học sinh. */
+  payment?: {
+    id: string;
+    amount: number | string;
+    receiptNumber: string;
+    confirmedAt: string;
+  } | null;
 }
 export interface RegistrationReceipt {
   registrationId: string;

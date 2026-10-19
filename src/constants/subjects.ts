@@ -30,6 +30,16 @@ export const SUBJECT_MAP: Record<string, SubjectConfig> = {
   },
 }
 
+/** Màu chấm nhận diện môn theo tên môn BE trả (chưa có mã môn thống nhất giữa các API). */
+export function subjectDotClass(subjectName: string): string {
+  const name = subjectName.toLocaleLowerCase("vi");
+  if (name.startsWith("toán")) return "bg-blue-500";
+  if (name.startsWith("vật l")) return "bg-cyan-500";
+  if (name.startsWith("hóa") || name.startsWith("hoá")) return "bg-purple-500";
+  if (name.startsWith("sinh")) return "bg-emerald-500";
+  return "bg-zinc-400";
+}
+
 export const FALLBACK_SUBJECT: SubjectConfig = {
   code: "OTHER",
   name: "Môn khác",

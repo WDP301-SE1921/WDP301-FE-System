@@ -1,22 +1,14 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets";
-import { PageContainer } from "@/components/shared/layout/page-container";
-import { LiveRoomsView } from "@/features/catalog/components/live-rooms-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Phòng học" };
-
-export default function Page() {
-  // Filters and pagination live in the URL (nuqs), which needs Suspense when prerendering.
-  return (
-    <Suspense
-      fallback={
-        <PageContainer>
-          <SkeletonTable />
-        </PageContainer>
-      }
-    >
-      <LiveRoomsView />
-    </Suspense>
+/** Phòng học đã thành tab trên màn Lớp học. */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  redirect(
+    legacyHref(ROUTES.MANAGER.CLASSES, { tab: "rooms" }, await searchParams),
   );
 }

@@ -47,9 +47,13 @@ export const ROUTES = {
     CURRICULUM_UNIT: (id: string) => `/manager/curriculum/${id}`,
     CLASS_SESSIONS: (id: string) => `/manager/classes/${id}/sessions`,
 
+    /** Thông báo lớp, nhắc học phí và lịch sử email trên cùng một màn. */
+    NOTIFICATIONS: "/manager/notifications",
     EMAIL_LOGS: "/manager/notifications/emails",
     SEND_NOTIFICATION: "/manager/notifications/send",
 
+    /** Nhân sự: giáo viên, nhân viên, quản lý và lời mời (`?tab=`, `?person=` mở Sheet). */
+    PEOPLE: "/manager/people",
     STAFF_ACCOUNTS: "/manager/system/staff",
     MANAGERS: "/manager/system/managers",
     AUDIT_LOGS: "/manager/system/audit-logs",

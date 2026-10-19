@@ -29,7 +29,8 @@ import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { ROUTES } from "@/constants/routes";
 import { PAGINATION_DEFAULTS } from "@/constants/ui";
-import { useCurrentUser } from "@/hooks/use-current-role";
+// Bảng chỉ ghi query; Sheet và hộp thoại phụ huynh nằm ở feature directory, ghép ở trang.
+import { parentPanelParsers } from "@/features/directory/parent-panel";
 import type { ParentListItem, StudentListItem } from "@/types/backend";
 import { registrationApi } from "../api";
 import { displayDate } from "../calendar";
@@ -82,7 +83,91 @@ function DirectorySelect({
   );
 }
 
-const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
+/** Thao tác của Quản lý trên dòng phụ huynh. */
+interface ParentRowActions {
+  view: (parentId: string) => void;
+  edit: (parentId: string) => void;
+  lock: (parentId: string) => void;
+}
+
+function ManagerParentActions({
+  parent,
+  actions,
+}: {
+  parent: ParentListItem;
+  actions: ParentRowActions;
+}) {
+  const name = parent.displayName || parent.email;
+  const isActive = parent.status === "ACTIVE";
+  return (
+    <div className="flex flex-nowrap gap-1">
+      <Button
+        size="sm"
+        variant="outline"
+        aria-label={`Xem phụ huynh ${name}`}
+        onClick={() => actions.view(parent.id)}
+      >
+        Xem
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        aria-label={`Sửa phụ huynh ${name}`}
+        onClick={() => actions.edit(parent.id)}
+      >
+        Sửa
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className={isActive ? "text-destructive" : undefined}
+        aria-label={`${isActive ? "Xóa" : "Mở khóa"} phụ huynh ${name}`}
+        onClick={() => actions.lock(parent.id)}
+      >
+        {isActive ? "Xóa" : "Mở khóa"}
+      </Button>
+    </div>
+  );
+}
+
+function StaffParentActions({ parent }: { parent: ParentListItem }) {
+  const name = parent.displayName || parent.email;
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        aria-label={`Xem hồ sơ con của ${name}`}
+        render={
+          <Link
+            href={`${ROUTES.STAFF.STUDENTS}?${new URLSearchParams({ parentUserId: parent.id })}`}
+          />
+        }
+      >
+        Xem hồ sơ con
+      </Button>
+      {parent.status === "ACTIVE" &&
+        parent.emailVerifiedAt &&
+        !!parent.parentProfile?._count.students && (
+          <Button
+            size="sm"
+            aria-label={`Đăng ký học cho con của ${name}`}
+            render={
+              <Link
+                href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({ email: parent.email })}
+              />
+            }
+          >
+            Đăng ký học
+          </Button>
+        )}
+    </div>
+  );
+}
+
+const parentColumns = (
+  actions?: ParentRowActions,
+): LegacyColumnDef<ParentListItem>[] => [
   {
     id: "parent",
     header: "Phụ huynh",
@@ -108,67 +193,38 @@ const parentColumns = (isStaff: boolean): LegacyColumnDef<ParentListItem>[] => [
     id: "status",
     header: "Trạng thái",
     cell: ({ row: { original: parent } }) => (
-      <Badge variant={parent.status === "ACTIVE" ? "success" : "secondary"}>
-        {parent.status === "ACTIVE" ? "Đang hoạt động" : "Đã khóa"}
-      </Badge>
+      <div className="flex flex-wrap gap-1">
+        <Badge variant={parent.status === "ACTIVE" ? "success" : "secondary"}>
+          {parent.status === "ACTIVE" ? "Đang hoạt động" : "Đã khóa"}
+        </Badge>
+        {actions && !parent.emailVerifiedAt && (
+          <Badge variant="warning">Chưa xác minh email</Badge>
+        )}
+      </div>
     ),
   },
-  {
-    id: "verified",
-    header: "Xác minh email",
-    cell: ({ row }) => (
-      <Badge variant={row.original.emailVerifiedAt ? "info" : "warning"}>
-        {row.original.emailVerifiedAt ? "Đã xác minh" : "Chưa xác minh"}
-      </Badge>
-    ),
-  },
+  ...(actions
+    ? []
+    : [
+        {
+          id: "verified",
+          header: "Xác minh email",
+          cell: ({ row }) => (
+            <Badge variant={row.original.emailVerifiedAt ? "info" : "warning"}>
+              {row.original.emailVerifiedAt ? "Đã xác minh" : "Chưa xác minh"}
+            </Badge>
+          ),
+        } satisfies LegacyColumnDef<ParentListItem>,
+      ]),
   {
     id: "actions",
     header: "Thao tác",
-    cell: ({ row: { original: parent } }) => (
-      <div className="flex flex-wrap gap-2">
-        {!isStaff && (
-          <Button
-            size="sm"
-            variant="outline"
-            aria-label={`Xem tài khoản ${parent.displayName || parent.email}`}
-            render={<Link href={ROUTES.MANAGER.PARENT_DETAIL(parent.id)} />}
-          >
-            Xem tài khoản
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          aria-label={`Xem hồ sơ con của ${parent.displayName || parent.email}`}
-          render={
-            <Link
-              href={`${isStaff ? ROUTES.STAFF.STUDENTS : ROUTES.MANAGER.STUDENTS}?${new URLSearchParams({ parentUserId: parent.id })}`}
-            />
-          }
-        >
-          Xem hồ sơ con
-        </Button>
-        {isStaff &&
-          parent.status === "ACTIVE" &&
-          parent.emailVerifiedAt &&
-          !!parent.parentProfile?._count.students && (
-            <Button
-              size="sm"
-              aria-label={`Đăng ký học cho con của ${parent.displayName || parent.email}`}
-              render={
-                <Link
-                  href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
-                    email: parent.email,
-                  })}
-                />
-              }
-            >
-              Đăng ký học
-            </Button>
-          )}
-      </div>
-    ),
+    cell: ({ row: { original: parent } }) =>
+      actions ? (
+        <ManagerParentActions parent={parent} actions={actions} />
+      ) : (
+        <StaffParentActions parent={parent} />
+      ),
   },
 ];
 
@@ -280,20 +336,7 @@ const studentColumns = (
   },
 ];
 
-export function RegistrationParentsView() {
-  return (
-    <PageContainer maxWidth="full" className="min-w-0">
-      <PageHeader
-        title="Phụ huynh"
-        description="Danh sách tài khoản phụ huynh và hồ sơ con đã tạo trên ứng dụng."
-      />
-      <ParentsDirectory />
-    </PageContainer>
-  );
-}
-
-function ParentsDirectory() {
-  const user = useCurrentUser();
+function ParentsDirectory({ actions }: { actions?: ParentRowActions }) {
   const [search] = useQueryState("search", parseAsString.withDefault(""));
   const [{ page, pageSize, status }, setFilters] = useQueryStates({
     page: parseAsInteger.withDefault(1),
@@ -317,59 +360,48 @@ function ParentsDirectory() {
   });
   return (
     <Card className="min-w-0">
-        <CardContent className="min-w-0 space-y-4">
-          <FilterBar
-            searchPlaceholder="Tìm tên hoặc email phụ huynh…"
-            onSearchChange={resetPage}
-            onClearFilters={() => void setFilters({ status: null, page: null })}
-          >
-            <DirectorySelect
-              items={PARENT_STATUS_ITEMS}
-              value={status}
-              onChange={(next) =>
-                void setFilters({ status: next as typeof status, page: null })
-              }
-            />
-            {query.data && (
-              <span className="ml-auto text-xs text-muted-foreground">
-                {query.data.total} phụ huynh
-              </span>
-            )}
-          </FilterBar>
-          <DataTable
-            columns={parentColumns(user?.role === "staff")}
-            data={query.data?.items ?? []}
-            isLoading={query.isPending}
-            isError={query.isError}
-            error={query.error}
-            onRetry={() => void query.refetch()}
-            emptyTitle="Chưa có phụ huynh phù hợp"
-            emptyDescription="Thử đổi từ khóa hoặc trạng thái để xem danh sách."
+      <CardContent className="min-w-0 space-y-4">
+        <FilterBar
+          searchPlaceholder="Tìm tên hoặc email phụ huynh…"
+          onSearchChange={resetPage}
+          onClearFilters={() => void setFilters({ status: null, page: null })}
+        >
+          <DirectorySelect
+            items={PARENT_STATUS_ITEMS}
+            value={status}
+            onChange={(next) =>
+              void setFilters({ status: next as typeof status, page: null })
+            }
           />
-          <TablePagination totalItems={query.data?.total ?? 0} />
-        </CardContent>
-      </Card>
-  );
-}
-
-export function RegistrationStudentsView() {
-  return (
-    <PageContainer maxWidth="full" className="min-w-0">
-      <PageHeader
-        title="Hồ sơ con"
-        description="Danh sách hồ sơ con cùng thông tin phụ huynh. Chọn hồ sơ để đăng ký học."
-      />
-      <StudentsDirectory />
-    </PageContainer>
+          {query.data && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {query.data.total} phụ huynh
+            </span>
+          )}
+        </FilterBar>
+        <DataTable
+          columns={parentColumns(actions)}
+          data={query.data?.items ?? []}
+          isLoading={query.isPending}
+          isError={query.isError}
+          error={query.error}
+          onRetry={() => void query.refetch()}
+          emptyTitle="Chưa có phụ huynh phù hợp"
+          emptyDescription="Thử đổi từ khóa hoặc trạng thái để xem danh sách."
+        />
+        <TablePagination totalItems={query.data?.total ?? 0} />
+      </CardContent>
+    </Card>
   );
 }
 
 function StudentsDirectory({
+  isStaff,
   onProcess,
 }: {
+  isStaff: boolean;
   onProcess?: (studentId: string) => void;
 }) {
-  const user = useCurrentUser();
   const [search] = useQueryState("search", parseAsString.withDefault(""));
   const [{ page, pageSize, status, grade, parentUserId }, setFilters] =
     useQueryStates({
@@ -398,63 +430,61 @@ function StudentsDirectory({
   });
   return (
     <Card className="min-w-0">
-        <CardContent className="min-w-0 space-y-4">
-          <FilterBar
-            searchPlaceholder="Tìm tên con hoặc email phụ huynh…"
-            onSearchChange={resetPage}
-            onClearFilters={() =>
-              void setFilters({
-                status: null,
-                grade: null,
-                parentUserId: null,
-                page: null,
-              })
+      <CardContent className="min-w-0 space-y-4">
+        <FilterBar
+          searchPlaceholder="Tìm tên con hoặc email phụ huynh…"
+          onSearchChange={resetPage}
+          onClearFilters={() =>
+            void setFilters({
+              status: null,
+              grade: null,
+              parentUserId: null,
+              page: null,
+            })
+          }
+        >
+          <DirectorySelect
+            items={STUDENT_STATUS_ITEMS}
+            value={status}
+            onChange={(next) =>
+              void setFilters({ status: next as typeof status, page: null })
             }
-          >
-            <DirectorySelect
-              items={STUDENT_STATUS_ITEMS}
-              value={status}
-              onChange={(next) =>
-                void setFilters({ status: next as typeof status, page: null })
-              }
-            />
-            <DirectorySelect
-              items={GRADE_ITEMS}
-              value={grade}
-              onChange={(next) =>
-                void setFilters({ grade: next as typeof grade, page: null })
-              }
-            />
-            {parentUserId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  void setFilters({ parentUserId: null, page: null })
-                }
-              >
-                Xem tất cả phụ huynh
-              </Button>
-            )}
-            {query.data && (
-              <span className="ml-auto text-xs text-muted-foreground">
-                {query.data.total} hồ sơ con
-              </span>
-            )}
-          </FilterBar>
-          <DataTable
-            columns={studentColumns(user?.role === "staff", onProcess)}
-            data={query.data?.items ?? []}
-            isLoading={query.isPending}
-            isError={query.isError}
-            error={query.error}
-            onRetry={() => void query.refetch()}
-            emptyTitle="Chưa có hồ sơ con phù hợp"
-            emptyDescription="Thử đổi từ khóa, khối hoặc trạng thái để xem danh sách."
           />
-          <TablePagination totalItems={query.data?.total ?? 0} />
-        </CardContent>
-      </Card>
+          <DirectorySelect
+            items={GRADE_ITEMS}
+            value={grade}
+            onChange={(next) =>
+              void setFilters({ grade: next as typeof grade, page: null })
+            }
+          />
+          {parentUserId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void setFilters({ parentUserId: null, page: null })}
+            >
+              Xem tất cả phụ huynh
+            </Button>
+          )}
+          {query.data && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {query.data.total} hồ sơ con
+            </span>
+          )}
+        </FilterBar>
+        <DataTable
+          columns={studentColumns(isStaff, onProcess)}
+          data={query.data?.items ?? []}
+          isLoading={query.isPending}
+          isError={query.isError}
+          error={query.error}
+          onRetry={() => void query.refetch()}
+          emptyTitle="Chưa có hồ sơ con phù hợp"
+          emptyDescription="Thử đổi từ khóa, khối hoặc trạng thái để xem danh sách."
+        />
+        <TablePagination totalItems={query.data?.total ?? 0} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -463,10 +493,12 @@ type HubTab = keyof typeof HUB_TABS;
 const HUB_TAB_KEYS = Object.keys(HUB_TABS) as HubTab[];
 
 /**
- * Nhân viên: một màn "Học sinh & phụ huynh" thay cho hai trang Hồ sơ con / Phụ huynh.
- * Nút "Xử lý" trên dòng học sinh mở panel nghỉ học, học bù, đổi lớp (`?studentId=`).
+ * Một màn "Học sinh & phụ huynh" cho Nhân viên và Quản lý.
+ * - Nhân viên: nút "Xử lý" trên dòng học sinh mở panel nghỉ học, học bù, đổi lớp (`?studentId=`).
+ * - Quản lý: dòng phụ huynh có Xem (Sheet `?parentId=`), Sửa và Khóa (hộp thoại).
  */
-export function StaffStudentsHub() {
+export function StudentsHub({ role }: { role: "staff" | "center_manager" }) {
+  const isStaff = role === "staff";
   const [tab, setTab] = useQueryState(
     "tab",
     parseAsStringLiteral(HUB_TAB_KEYS).withDefault("students"),
@@ -483,11 +515,23 @@ export function StaffStudentsHub() {
     enrollmentId: parseAsString,
     action: parseAsString,
   });
+  const [, setParentPanel] = useQueryStates(parentPanelParsers);
+  const parentActions: ParentRowActions | undefined = isStaff
+    ? undefined
+    : {
+        view: (parentId) => void setParentPanel({ parentId }),
+        edit: (parentId) => void setParentPanel({ parentEdit: parentId }),
+        lock: (parentId) => void setParentPanel({ parentLock: parentId }),
+      };
   return (
     <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Học sinh & phụ huynh"
-        description="Hồ sơ con và tài khoản phụ huynh. Bấm Xử lý trên dòng học sinh để ghi nghỉ, xếp học bù, đổi lớp hoặc cho nghỉ."
+        description={
+          isStaff
+            ? "Hồ sơ con và tài khoản phụ huynh. Bấm Xử lý trên dòng học sinh để ghi nghỉ, xếp học bù, đổi lớp hoặc cho nghỉ."
+            : "Phụ huynh tự đăng ký và tạo hồ sơ con trên ứng dụng. Trung tâm xem, sửa thông tin liên hệ và khóa tài khoản."
+        }
       />
       <Tabs
         value={tab}
@@ -502,6 +546,11 @@ export function StaffStudentsHub() {
             grade: null,
             parentUserId: null,
           });
+          void setParentPanel({
+            parentId: null,
+            parentEdit: null,
+            parentLock: null,
+          });
           void setTab(next);
         }}
       >
@@ -514,12 +563,20 @@ export function StaffStudentsHub() {
         </TabsList>
       </Tabs>
       {tab === "parents" ? (
-        <ParentsDirectory key="parents" />
+        <ParentsDirectory key="parents" actions={parentActions} />
       ) : (
         <StudentsDirectory
           key="students"
-          onProcess={(studentId) =>
-            void setWorkflow({ studentId, enrollmentId: null, action: null })
+          isStaff={isStaff}
+          onProcess={
+            isStaff
+              ? (studentId) =>
+                  void setWorkflow({
+                    studentId,
+                    enrollmentId: null,
+                    action: null,
+                  })
+              : undefined
           }
         />
       )}

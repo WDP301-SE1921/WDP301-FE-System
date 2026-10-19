@@ -59,6 +59,7 @@ const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: M.ROOMS, area: AREA.ROOMS },
   { prefix: M.CURRICULUM, area: AREA.CATALOG },
   { prefix: "/manager/notifications", area: AREA.NOTIFICATIONS },
+  { prefix: M.PEOPLE, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.STAFF_ACCOUNTS, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.MANAGERS, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.AUDIT_LOGS, area: AREA.AUDIT_LOGS },

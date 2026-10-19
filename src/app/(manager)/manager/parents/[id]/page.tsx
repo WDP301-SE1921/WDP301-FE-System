@@ -1,19 +1,21 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
-import { LiveParentDetailView } from "@/features/directory/components/parent-detail-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Phụ huynh" };
-
+/** Chi tiết phụ huynh mở thành Sheet trên tab Phụ huynh của màn Học sinh & phụ huynh. */
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
-  return (
-    <Suspense fallback={<SkeletonDetailHeader />}>
-      <LiveParentDetailView id={id} />
-    </Suspense>
+  redirect(
+    legacyHref(
+      ROUTES.MANAGER.STUDENTS,
+      { tab: "parents", parentId: id },
+      await searchParams,
+    ),
   );
 }

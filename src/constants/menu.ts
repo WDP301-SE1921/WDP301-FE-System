@@ -33,7 +33,11 @@ export interface MenuGroup {
   items: MenuItem[];
 }
 
-/** Menu chung của khu back-office `/manager/*`; mỗi role thấy phần giao với `ROLE_AREAS`. */
+/**
+ * Menu chung của khu back-office `/manager/*`; mỗi role thấy phần giao với `ROLE_AREAS`.
+ * Quản lý trung tâm thấy 8 mục; các mục Đăng ký học, Lịch sử thanh toán và nghỉ/học bù
+ * chỉ vai trò `admin` vào được (BE không có admin) nên giữ nguyên.
+ */
 export const MENU_BACK_OFFICE: MenuGroup[] = [
   {
     groupTitle: "TỔNG QUAN",
@@ -47,19 +51,14 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     ],
   },
   {
-    groupTitle: "HỌC SINH & PHỤ HUYNH",
+    groupTitle: "HỌC SINH",
     items: [
       {
-        title: "Học sinh",
+        // Gồm tab Học sinh và tab Phụ huynh (`?tab=parents`).
+        title: "Học sinh & phụ huynh",
         href: ROUTES.MANAGER.STUDENTS,
         iconName: "StudentsIcon",
         area: AREA.STUDENTS,
-      },
-      {
-        title: "Phụ huynh",
-        href: ROUTES.MANAGER.PARENTS,
-        iconName: "UserGroupIcon",
-        area: AREA.PARENTS,
       },
       {
         title: "Đăng ký học",
@@ -84,21 +83,17 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     groupTitle: "LỚP HỌC & LỊCH",
     items: [
       {
+        // Gồm tab Phòng học (`?tab=rooms`) cho vai trò có quyền phòng.
         title: "Lớp học",
         href: ROUTES.MANAGER.CLASSES,
         iconName: "SchoolIcon",
         area: AREA.CLASSES,
       },
       {
-        title: "Lịch học tổng",
+        // Đổi giờ, hủy buổi và xếp dạy thay nằm trong Sheet buổi học.
+        title: "Lịch học",
         href: ROUTES.MANAGER.SCHEDULE,
         iconName: "Calendar03Icon",
-        area: AREA.SCHEDULE,
-      },
-      {
-        title: "Xếp lịch & buổi học",
-        href: ROUTES.MANAGER.SESSIONS,
-        iconName: "Clock01Icon",
         area: AREA.SCHEDULE,
       },
     ],
@@ -139,89 +134,32 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     ],
   },
   {
-    groupTitle: "GIÁO VIÊN",
+    groupTitle: "ĐÀO TẠO",
     items: [
       {
-        title: "Danh sách giáo viên",
-        href: ROUTES.MANAGER.TEACHERS,
-        iconName: "TeacherIcon",
-        area: AREA.TEACHERS,
-      },
-      {
-        title: "Lời mời & duyệt",
-        href: ROUTES.MANAGER.TEACHER_INVITATIONS,
-        iconName: "MailAdd01Icon",
-        area: AREA.TEACHERS,
-      },
-      {
-        title: "Dạy thay",
-        href: ROUTES.MANAGER.TEACHER_SUBSTITUTES,
-        iconName: "UserSwitchIcon",
-        area: AREA.TEACHERS,
-      },
-    ],
-  },
-  {
-    groupTitle: "DANH MỤC ĐÀO TẠO",
-    items: [
-      {
-        title: "Giáo trình",
+        // Quản lý: khóa học, môn học, phản hồi. Thiết kế giáo trình: giáo trình, phản hồi.
+        title: "Khóa học & giáo trình",
         href: ROUTES.MANAGER.CURRICULUM,
         iconName: "LibraryIcon",
         area: AREA.CATALOG,
       },
-      {
-        title: "Danh mục",
-        href: ROUTES.MANAGER.CATALOG,
-        iconName: "LibraryIcon",
-        area: AREA.CATALOG,
-      },
-      {
-        title: "Phản hồi giáo trình",
-        href: ROUTES.MANAGER.CURRICULUM_FEEDBACK,
-        iconName: "AssignmentsIcon",
-        area: AREA.CATALOG,
-      },
-      {
-        title: "Phòng học",
-        href: ROUTES.MANAGER.ROOMS,
-        iconName: "Door01Icon",
-        area: AREA.ROOMS,
-      },
     ],
   },
   {
-    groupTitle: "THÔNG BÁO",
+    groupTitle: "TRUNG TÂM",
     items: [
       {
-        title: "Lịch sử email",
-        href: ROUTES.MANAGER.EMAIL_LOGS,
-        iconName: "Mail01Icon",
-        area: AREA.NOTIFICATIONS,
-        badgeKey: MENU_BADGE_KEYS.FAILED_EMAILS,
-      },
-      {
-        title: "Gửi thông báo",
-        href: ROUTES.MANAGER.SEND_NOTIFICATION,
-        iconName: "Megaphone01Icon",
-        area: AREA.NOTIFICATIONS,
-      },
-    ],
-  },
-  {
-    groupTitle: "HỆ THỐNG",
-    items: [
-      {
-        title: "Nhân sự trung tâm",
-        href: ROUTES.MANAGER.STAFF_ACCOUNTS,
+        title: "Nhân sự",
+        href: ROUTES.MANAGER.PEOPLE,
         iconName: "UserSettings01Icon",
         area: AREA.STAFF_ACCOUNTS,
       },
       {
-        title: "Quản lý trung tâm",
-        href: ROUTES.MANAGER.MANAGERS,
-        iconName: "UserGroupIcon",
-        area: AREA.STAFF_ACCOUNTS,
+        title: "Thông báo",
+        href: ROUTES.MANAGER.NOTIFICATIONS,
+        iconName: "Megaphone01Icon",
+        area: AREA.NOTIFICATIONS,
+        badgeKey: MENU_BADGE_KEYS.FAILED_EMAILS,
       },
       {
         title: "Lịch sử thay đổi",
@@ -386,12 +324,7 @@ export function getNavMenu(role: WebRole): MenuGroup[] {
       ...group,
       items: group.items.filter(
         (item) =>
-          canAccessArea(role, item.area) &&
-          canAccessPath(role, item.href) &&
-          !(
-            role === ROLES.CURRICULUM_DESIGNER &&
-            item.href === ROUTES.MANAGER.CATALOG
-          ),
+          canAccessArea(role, item.area) && canAccessPath(role, item.href),
       ),
     }))
     .filter((group) => group.items.length > 0);

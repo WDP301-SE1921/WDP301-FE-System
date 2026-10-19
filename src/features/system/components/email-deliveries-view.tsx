@@ -1,7 +1,5 @@
 "use client";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { PageContainer } from "@/components/shared/layout/page-container";
-import { PageHeader } from "@/components/shared/layout/page-header";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import {
@@ -10,7 +8,13 @@ import {
 } from "@/components/shared/data-table/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
 import { userFacingMessage } from "@/lib/api/error-message";
 import { academicApi } from "@/features/academic/api";
@@ -53,9 +57,10 @@ const EVENT_TEXT: Record<string, string> = {
 
 /**
  * Persisted email deliveries (BE outbox) with automatic retry and a manual retry.
- * Gom ca thong bao lop, loi moi va email tai khoan trong outbox cua BE.
+ * Gồm cả thông báo lớp, lời mời và email tài khoản trong outbox của BE.
+ * Chưa có lọc trạng thái: API chỉ nhận `page`, `limit` (BE-12).
  */
-export function EmailDeliveriesView() {
+export function EmailDeliveriesTable() {
   const [page] = useQueryState("page", parseAsInteger.withDefault(1));
   const query = useLiveQuery(
     ["email-deliveries", page],
@@ -162,36 +167,38 @@ export function EmailDeliveriesView() {
     },
   ];
   return (
-    <PageContainer maxWidth="full" className="min-w-0">
-      <PageHeader
-        title="Lịch sử email"
-        description="Email nghiệp vụ được lưu và tự gửi lại khi lỗi. Có thể gửi lại thủ công khi chưa hết số lần thử."
-      />
-      {retry.error instanceof ApiError && retry.error.status >= 500 ? (
-        // BE da luu lan thu truoc khi tra loi gui email.
-        <p role="alert" className="text-sm text-destructive">
-          Gửi lại không thành công. Xem lỗi gần nhất của email trong danh sách.
-        </p>
-      ) : (
-        <ApiFeedback error={retry.error} />
-      )}
-      <Card className="min-w-0">
-        <CardContent className="min-w-0 space-y-4">
-          <DataTable
-            columns={columns}
-            data={query.data?.items ?? []}
-            isLoading={query.isPending}
-            isError={query.isError}
-            error={query.error}
-            onRetry={() => void query.refetch()}
-            emptyTitle="Chưa có email nào được lưu"
-          />
-          <TablePagination
-            totalItems={query.data?.total ?? 0}
-            fixedPageSize={PAGE_SIZE}
-          />
-        </CardContent>
-      </Card>
-    </PageContainer>
+    <Card className="min-w-0">
+      <CardHeader>
+        <CardTitle>Lịch sử email</CardTitle>
+        <CardDescription>
+          Email nghiệp vụ được lưu và tự gửi lại khi lỗi. Có thể gửi lại thủ
+          công khi chưa hết số lần thử.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="min-w-0 space-y-4">
+        {retry.error instanceof ApiError && retry.error.status >= 500 ? (
+          // BE đã lưu lần thử trước khi trả lỗi gửi email.
+          <p role="alert" className="text-sm text-destructive">
+            Gửi lại không thành công. Xem lỗi gần nhất của email trong danh
+            sách.
+          </p>
+        ) : (
+          <ApiFeedback error={retry.error} />
+        )}
+        <DataTable
+          columns={columns}
+          data={query.data?.items ?? []}
+          isLoading={query.isPending}
+          isError={query.isError}
+          error={query.error}
+          onRetry={() => void query.refetch()}
+          emptyTitle="Chưa có email nào được lưu"
+        />
+        <TablePagination
+          totalItems={query.data?.total ?? 0}
+          fixedPageSize={PAGE_SIZE}
+        />
+      </CardContent>
+    </Card>
   );
 }

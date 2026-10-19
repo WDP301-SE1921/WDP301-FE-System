@@ -63,7 +63,7 @@ export function NotificationBell({ role }: { role: WebRole }) {
                 href={
                   role === "teacher"
                     ? ROUTES.TEACHER.CLASS_DETAIL(item.classId)
-                    : ROUTES.MANAGER.SEND_NOTIFICATION
+                    : ROUTES.MANAGER.NOTIFICATIONS
                 }
                 onNavigate={() => setOpen(false)}
                 className="block space-y-1 rounded-xl p-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

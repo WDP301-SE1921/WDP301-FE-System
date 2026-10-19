@@ -1,14 +1,12 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
-import { LiveAnnouncementsView } from "@/features/system/components/live-announcements-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Thông báo và nhắc học phí" };
-
-export default function Page() {
-  return (
-    <Suspense fallback={<SkeletonDetailHeader />}>
-      <LiveAnnouncementsView />
-    </Suspense>
-  );
+/** Gửi thông báo đã gộp vào màn Thông báo (cột trái). */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  redirect(legacyHref(ROUTES.MANAGER.NOTIFICATIONS, {}, await searchParams));
 }

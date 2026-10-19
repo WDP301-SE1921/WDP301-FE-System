@@ -4,6 +4,7 @@ import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
+import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { directoryApi } from "@/features/directory/api";
+import {
+  directoryApi,
+  type DirectoryFilters,
+} from "@/features/directory/api";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import {
   LiveSelect,
@@ -28,6 +32,7 @@ import { dateRangeSchema } from "@/lib/validators/web-workflows";
 import { AuditChangeDetails } from "@/features/system/components/audit-change-details";
 import { ROLE_LABEL } from "@/constants/roles";
 import type { AuditLogRecord } from "@/types/academic-workflows";
+import type { BackendUser, PaginatedList } from "@/types/backend";
 
 import {
   AUDIT_ACTION_LABELS,
@@ -44,16 +49,70 @@ function actorRoleLabel(role: string) {
   const key = role.toLowerCase() === "manager" ? "center_manager" : role;
   return (ROLE_LABEL as Record<string, string>)[key.toLowerCase()];
 }
+const ACCOUNT_PAGE_SIZE = 100;
+
+async function allAccounts(
+  read: (
+    filters: DirectoryFilters,
+    signal?: AbortSignal,
+  ) => Promise<PaginatedList<BackendUser>>,
+  signal?: AbortSignal,
+) {
+  const items: BackendUser[] = [];
+  for (let page = 1; ; page++) {
+    const batch = await read({ page, limit: ACCOUNT_PAGE_SIZE }, signal);
+    items.push(...batch.items);
+    if (!batch.items.length || page * batch.limit >= batch.total) return items;
+  }
+}
+
+/** Người để lọc: nhân viên, giáo viên, quản lý (API tài khoản Quản lý được gọi). */
+function useAuditActors() {
+  return useLiveQuery(["audit-actors"], async (signal) => {
+    const lists = await Promise.allSettled([
+      allAccounts(
+        (filters, abort) => directoryApi.accounts("staff", filters, abort),
+        signal,
+      ),
+      allAccounts(
+        (filters, abort) => directoryApi.accounts("teachers", filters, abort),
+        signal,
+      ),
+      allAccounts(directoryApi.managers, signal),
+    ]);
+    const people = new Map<string, { value: string; label: string }>();
+    for (const list of lists)
+      if (list.status === "fulfilled")
+        for (const user of list.value)
+          people.set(user.id, {
+            value: user.id,
+            label: [user.displayName || user.email, actorRoleLabel(user.role)]
+              .filter(Boolean)
+              .join(" · "),
+          });
+    return {
+      options: [...people.values()].sort((left, right) =>
+        left.label.localeCompare(right.label, "vi"),
+      ),
+      error: lists.find((list) => list.status === "rejected")?.reason,
+    };
+  });
+}
+
 /** SRS §5.14: history of teacher changes, substitutes, makeups, leaves, payment, … (BE audit log). */
 export function LiveAuditLogView() {
-  const [{ page, entityType, action, fromDate, toDate }, setFilters] =
-    useQueryStates({
-      page: parseAsInteger.withDefault(1),
-      entityType: parseAsString.withDefault(ALL),
-      action: parseAsString.withDefault(ALL),
-      fromDate: parseAsString.withDefault(""),
-      toDate: parseAsString.withDefault(""),
-    });
+  const [
+    { page, actorUserId, entityType, action, fromDate, toDate },
+    setFilters,
+  ] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    actorUserId: parseAsString.withDefault(ALL),
+    entityType: parseAsString.withDefault(ALL),
+    action: parseAsString.withDefault(ALL),
+    fromDate: parseAsString.withDefault(""),
+    toDate: parseAsString.withDefault(""),
+  });
+  const actors = useAuditActors();
   const hasRange = !!fromDate && !!toDate;
   const range = dateRangeSchema.safeParse({ fromDate, toDate });
   const rangeError =
@@ -63,6 +122,7 @@ export function LiveAuditLogView() {
   const filters = {
     page: Math.max(1, page),
     limit: PAGE_SIZE,
+    ...(actorUserId !== ALL ? { actorUserId } : {}),
     ...(entityType !== ALL ? { entityType } : {}),
     ...(action !== ALL ? { action } : {}),
     // Whole local (UTC+7) days; BE compares createdAt to these instants.
@@ -86,7 +146,22 @@ export function LiveAuditLogView() {
         title="Lịch sử thay đổi"
         description="Ai đã làm gì, lúc nào: thanh toán, đổi giáo viên, dạy thay, học bù, nghỉ học, cho học lại…"
       />
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <LiveSelect
+          label="Người thực hiện"
+          value={actorUserId}
+          disabled={actors.isPending}
+          options={[
+            { value: ALL, label: "Tất cả" },
+            ...(actors.data?.options ?? []),
+            ...(actorUserId !== ALL &&
+            actors.data &&
+            !actors.data.options.some((actor) => actor.value === actorUserId)
+              ? [{ value: actorUserId, label: "Người đang lọc" }]
+              : []),
+          ]}
+          onChange={(value) => void setFilters({ actorUserId: value, page: 1 })}
+        />
         <LiveSelect
           label="Đối tượng"
           value={entityType}
@@ -134,6 +209,10 @@ export function LiveAuditLogView() {
           />
         </div>
       </div>
+      <ApiFeedback
+        error={actors.error ?? actors.data?.error}
+        retry={() => void actors.refetch()}
+      />
       {rangeError && (
         <p role="alert" className="text-sm text-destructive">
           Chọn đủ hai ngày hợp lệ: {rangeError}

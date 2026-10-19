@@ -1,19 +1,21 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
-import { AccountDetailView } from "@/features/directory/components/accounts-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Tài khoản giáo viên" };
-
+/** Chi tiết giáo viên mở thành Sheet trên tab Giáo viên của màn Nhân sự. */
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
-  return (
-    <Suspense fallback={<SkeletonDetailHeader />}>
-      <AccountDetailView kind="teachers" id={id} />
-    </Suspense>
+  redirect(
+    legacyHref(
+      ROUTES.MANAGER.PEOPLE,
+      { tab: "teachers", person: id },
+      await searchParams,
+    ),
   );
 }

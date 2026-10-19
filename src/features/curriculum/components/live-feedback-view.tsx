@@ -18,11 +18,40 @@ import {
   requiredId,
   resolveFeedbackSchema,
 } from "@/lib/validators/web-workflows";
+import type { CurriculumHubTab } from "@/constants/curriculum-hub";
+import { useHubTab } from "@/hooks/use-hub-tab";
 const createSchema = feedbackSchema.extend({ lessonId: requiredId });
 const resolveSchema = resolveFeedbackSchema
   .omit({ resolutionLessonId: true })
   .extend({ resolutionLessonId: z.string().optional() });
+/** Trang Phản hồi giáo trình riêng (Giáo viên). */
 export function LiveCurriculumFeedback() {
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Phản hồi giáo trình"
+        description="Theo dõi ý kiến về bài học và phản hồi của người soạn."
+      />
+      <CurriculumFeedbackBody />
+    </PageContainer>
+  );
+}
+
+/** Tab "Phản hồi giáo trình" trên màn Khóa học & giáo trình (Quản lý, Thiết kế giáo trình). */
+export function CurriculumFeedbackTab({
+  tabs,
+}: {
+  tabs: readonly CurriculumHubTab[];
+}) {
+  const [tab] = useHubTab(tabs);
+  return tab === "feedback" ? (
+    <div className="min-w-0 space-y-4">
+      <CurriculumFeedbackBody />
+    </div>
+  ) : null;
+}
+
+function CurriculumFeedbackBody() {
   const user = useCurrentUser();
   const data = useLiveQuery(["feedback-workspace"], async (signal) => {
     const [feedback, lessons] = await Promise.all([
@@ -32,11 +61,7 @@ export function LiveCurriculumFeedback() {
     return { feedback, lessons };
   });
   return (
-    <PageContainer>
-      <PageHeader
-        title="Phản hồi giáo trình"
-        description="Theo dõi ý kiến về bài học và phản hồi của người soạn."
-      />
+    <>
       <AsyncBoundary
         isLoading={data.isPending}
         isError={data.isError}
@@ -163,6 +188,6 @@ export function LiveCurriculumFeedback() {
           </>
         )}
       </AsyncBoundary>
-    </PageContainer>
+    </>
   );
 }

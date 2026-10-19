@@ -5,6 +5,8 @@ import { addCalendarDays, calendarWeekStart } from "@/lib/calendar-date";
 export interface ScheduleBoardEvent extends Omit<CalendarEvent, "status"> {
   classLabel: string;
   status: ScheduledSession["status"];
+  /** Buổi chưa diễn ra do giáo viên khác giáo viên phân công của lớp dạy. */
+  isSubstitute?: boolean;
 }
 
 /** Week columns use Vietnam calendar dates supplied by the API adapter. */

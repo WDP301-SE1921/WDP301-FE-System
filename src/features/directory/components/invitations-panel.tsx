@@ -10,7 +10,6 @@ import { ApiForm } from "@/components/shared/forms/api-form";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -43,13 +42,50 @@ const STATUS: Record<
   REJECTED: { label: "Đã từ chối", variant: "secondary" },
   REVOKED: { label: "Đã thu hồi", variant: "secondary" },
 };
+export const INVITATION_LABEL: Record<InvitationKind, string> = {
+  teacher: "giáo viên",
+  manager: "quản lý trung tâm",
+};
 
 /**
- * Moi → nhan link qua email → hoan tat thong tin → quan ly duyet.
+ * Mời qua email: người nhận tự hoàn tất họ tên và mật khẩu, sau đó quản lý duyệt ở tab Lời mời.
+ * Link mời chỉ hiện một lần ngay sau khi tạo.
  */
-export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
-  const [page] = useQueryState("page", parseAsInteger.withDefault(1));
+export function InvitationForm({ kind }: { kind: InvitationKind }) {
   const [created, setCreated] = useState<AccountInvitation | null>(null);
+  return (
+    <div className="space-y-4">
+      <ApiForm
+        schema={invitationSchema}
+        defaults={{ email: "" }}
+        fields={[
+          {
+            name: "email",
+            label: "Email người được mời",
+            type: "email",
+            description:
+              "Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt ở tab Lời mời.",
+          },
+        ]}
+        submitLabel="Tạo lời mời"
+        successMessage="Đã tạo lời mời và xếp email vào hàng đợi."
+        onSubmit={(value) => directoryApi.invite(kind, value)}
+        onSuccess={(result) => setCreated(result as AccountInvitation)}
+      />
+      {created?.acceptanceToken && <InvitationLink invitation={created} />}
+    </div>
+  );
+}
+
+/** Bảng lời mời một loại; `pageParamKey` riêng để hai bảng trên cùng tab không đụng nhau. */
+export function InvitationsTable({
+  kind,
+  pageParamKey,
+}: {
+  kind: InvitationKind;
+  pageParamKey: string;
+}) {
+  const [page] = useQueryState(pageParamKey, parseAsInteger.withDefault(1));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const now = useCurrentTime();
   const query = useLiveQuery(["invitations", kind, page], (signal) =>
@@ -59,20 +95,19 @@ export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
       signal,
     ),
   );
-  const label = kind === "teacher" ? "giáo viên" : "quản lý trung tâm";
   const selected = query.data?.items.find(
     (invitation) => invitation.id === selectedId,
   );
   const columns: DataTableColumn<AccountInvitation>[] = [
     {
       id: "recipient",
-      header: "Người nhận",
+      header: "Email",
       cell: ({ row }) => (
         <div className="space-y-1">
           <p className="font-medium">{row.original.email}</p>
           {row.original.acceptedUser?.displayName && (
             <p className="text-xs text-muted-foreground">
-              {row.original.acceptedUser.displayName}
+              Đã đặt họ tên: {row.original.acceptedUser.displayName}
             </p>
           )}
         </div>
@@ -87,7 +122,7 @@ export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
     },
     {
       id: "created",
-      header: "Ngày mời",
+      header: "Gửi lúc",
       cell: ({ row }) => displayMoment(row.original.createdAt),
     },
     {
@@ -109,55 +144,22 @@ export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
   ];
   return (
     <>
-      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>Mời {label}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ApiForm
-              schema={invitationSchema}
-              defaults={{ email: "" }}
-              fields={[
-                {
-                  name: "email",
-                  label: "Email người được mời",
-                  type: "email",
-                  description:
-                    "Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt.",
-                },
-              ]}
-              submitLabel="Tạo lời mời"
-              successMessage="Đã tạo lời mời và xếp email vào hàng đợi."
-              onSubmit={(value) => directoryApi.invite(kind, value)}
-              onSuccess={(result) => setCreated(result as AccountInvitation)}
-            />
-            {created?.acceptanceToken && (
-              <InvitationLink invitation={created} />
-            )}
-          </CardContent>
-        </Card>
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>Danh sách lời mời</CardTitle>
-          </CardHeader>
-          <CardContent className="min-w-0 space-y-4">
-            <DataTable
-              columns={columns}
-              data={query.data?.items ?? []}
-              isLoading={query.isPending}
-              isError={query.isError}
-              error={query.error}
-              onRetry={() => void query.refetch()}
-              emptyTitle="Chưa có lời mời"
-              emptyDescription={`Mời ${label} bằng email ở biểu mẫu bên cạnh.`}
-            />
-            <TablePagination
-              totalItems={query.data?.total ?? 0}
-              fixedPageSize={PAGE_SIZE}
-            />
-          </CardContent>
-        </Card>
+      <div className="min-w-0 space-y-4">
+        <DataTable
+          columns={columns}
+          data={query.data?.items ?? []}
+          isLoading={query.isPending}
+          isError={query.isError}
+          error={query.error}
+          onRetry={() => void query.refetch()}
+          emptyTitle="Chưa có lời mời"
+          emptyDescription={`Mời ${INVITATION_LABEL[kind]} bằng nút ở đầu trang.`}
+        />
+        <TablePagination
+          totalItems={query.data?.total ?? 0}
+          pageParamKey={pageParamKey}
+          fixedPageSize={PAGE_SIZE}
+        />
       </div>
       <Dialog
         open={!!selected}
@@ -181,11 +183,6 @@ export function InvitationsPanel({ kind }: { kind: InvitationKind }) {
               key={selected.id}
               invitation={selected}
               now={now}
-              onResent={() =>
-                setCreated((previous) =>
-                  previous?.id === selected.id ? null : previous,
-                )
-              }
             />
           )}
           <DialogFooter>
@@ -257,11 +254,9 @@ function InvitationStatus({
 function InvitationDetails({
   invitation,
   now,
-  onResent,
 }: {
   invitation: AccountInvitation;
   now: number;
-  onResent: () => void;
 }) {
   const expired =
     invitation.status === "INVITED" && Date.parse(invitation.expiresAt) <= now;
@@ -329,7 +324,6 @@ function InvitationDetails({
           submitLabel="Gửi lại lời mời"
           successMessage="Đã xếp email mời mới vào hàng đợi. Link cũ đã hết hiệu lực."
           onSubmit={() => directoryApi.resendInvitation(invitation.id)}
-          onSuccess={onResent}
         />
       )}
       {invitation.status === "INVITED" && (

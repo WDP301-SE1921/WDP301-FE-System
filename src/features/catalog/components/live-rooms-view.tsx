@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { PageContainer } from "@/components/shared/layout/page-container";
-import { PageHeader } from "@/components/shared/layout/page-header";
+import { useQuery } from "@tanstack/react-query";
 import {
   DataTable,
   type DataTableColumn,
@@ -22,17 +21,38 @@ import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { confirmationSchema, roomSchema } from "@/lib/validators/web-workflows";
 import type { RoomRecord } from "@/types/academic-workflows";
+import type { ClassHubTab } from "@/constants/class-hub";
+import { useHubTab } from "@/hooks/use-hub-tab";
+import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 
 interface RoomDialogState {
   room: RoomRecord;
   mode: "edit" | "toggle";
 }
 
+/** Thân tab "Phòng học" trên màn Lớp học (chỉ vai trò có quyền phòng). */
+export function RoomsTab({ tabs }: { tabs: readonly ClassHubTab[] }) {
+  const [tab] = useHubTab(tabs);
+  return tab === "rooms" ? <RoomsPanel /> : null;
+}
+
 /** SRS §3.1, §6.2: rooms the manager chooses when creating a class. */
-export function LiveRoomsView() {
+function RoomsPanel() {
   const rooms = useLiveQuery(["rooms"], (signal) =>
     registrationApi.rooms(signal),
   );
+  const classes = useQuery({
+    queryKey: ["registration-classes", "all"],
+    queryFn: () => registrationApi.classes(),
+    retry: false,
+  });
+  const classesByRoom = new Map<string, string[]>();
+  for (const classroom of classes.data ?? [])
+    if (classroom.roomId && classroom.isActive !== false)
+      classesByRoom.set(classroom.roomId, [
+        ...(classesByRoom.get(classroom.roomId) ?? []),
+        classroom.name,
+      ]);
   const [dialog, setDialog] = useState<RoomDialogState | null>(null);
   const columns: DataTableColumn<RoomRecord>[] = [
     {
@@ -48,6 +68,26 @@ export function LiveRoomsView() {
       cell: ({ row }) => (
         <span className="tabular-nums">{row.original.capacity} chỗ</span>
       ),
+    },
+    {
+      id: "classes",
+      header: "Lớp đang dùng",
+      cell: ({ row }) => {
+        if (classes.isPending)
+          return <span className="text-muted-foreground">Đang tải…</span>;
+        if (classes.isError)
+          return (
+            <span className="text-muted-foreground">Chưa tải được lớp</span>
+          );
+        const names = classesByRoom.get(row.original.id) ?? [];
+        return names.length ? (
+          <span className="block max-w-64 whitespace-normal">
+            {names.join(" · ")}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">Chưa có lớp</span>
+        );
+      },
     },
     {
       id: "status",
@@ -84,12 +124,8 @@ export function LiveRoomsView() {
     },
   ];
   return (
-    <PageContainer maxWidth="full" className="min-w-0">
-      <PageHeader
-        title="Phòng học"
-        description="Phòng dùng khi tạo lớp. Sức chứa phòng phải từ sĩ số lớp trở lên; phòng đang có buổi sắp tới không thể ngừng sử dụng."
-      />
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+    <>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
         <Card>
           <CardHeader>
             <CardTitle>Thêm phòng</CardTitle>
@@ -100,7 +136,12 @@ export function LiveRoomsView() {
               defaults={{ name: "", capacity: 20 }}
               fields={[
                 { name: "name", label: "Tên phòng" },
-                { name: "capacity", label: "Sức chứa", type: "number" },
+                {
+                  name: "capacity",
+                  label: "Sức chứa",
+                  type: "number",
+                  description: "Phải từ sĩ số lớp trở lên, tối đa 10.000.",
+                },
               ]}
               submitLabel="Thêm phòng"
               onSubmit={(value) => registrationApi.createRoom(value)}
@@ -111,7 +152,11 @@ export function LiveRoomsView() {
           <CardHeader>
             <CardTitle>Danh sách phòng</CardTitle>
           </CardHeader>
-          <CardContent className="min-w-0">
+          <CardContent className="min-w-0 space-y-3">
+            <ApiFeedback
+              error={classes.error}
+              retry={() => void classes.refetch()}
+            />
             <DataTable
               columns={columns}
               data={rooms.data ?? []}
@@ -122,6 +167,10 @@ export function LiveRoomsView() {
               emptyTitle="Chưa có phòng học"
               emptyDescription="Thêm phòng ở cột bên trái để dùng khi tạo lớp."
             />
+            <p className="text-xs text-muted-foreground">
+              Phòng dùng khi tạo lớp. Phòng có buổi học sắp tới thì không ngừng
+              sử dụng được.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -141,7 +190,7 @@ export function LiveRoomsView() {
           )}
         </DialogContent>
       </Dialog>
-    </PageContainer>
+    </>
   );
 }
 
