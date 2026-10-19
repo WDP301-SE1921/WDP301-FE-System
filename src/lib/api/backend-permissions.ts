@@ -27,9 +27,16 @@ const rules: {
   },
   { method: "GET", path: /^staff(?:\/[^/]+)?$/, roles: manager },
   { method: "POST", path: /^staff$/, roles: manager },
+  // Tài khoản Thiết kế giáo trình, chung bảng với Nhân viên (BE-10).
+  {
+    method: "GET",
+    path: /^curriculum-designers(?:\/[^/]+)?$/,
+    roles: manager,
+  },
+  { method: "POST", path: /^curriculum-designers$/, roles: manager },
   {
     method: "PATCH",
-    path: /^(staff|teachers|parents)\/[^/]+$/,
+    path: /^(staff|teachers|parents|curriculum-designers)\/[^/]+$/,
     roles: manager,
   },
   {
@@ -37,10 +44,20 @@ const rules: {
     path: /^parents\/(?!lookup$|search$)[^/]+$/,
     roles: manager,
   },
+  // Xóa hẳn tài khoản phụ huynh chưa dùng; còn dữ liệu thì BE trả 409 PARENT_IN_USE (BE-9).
+  { method: "DELETE", path: /^parents\/[^/]+$/, roles: manager },
   {
     method: "GET",
     path: /^students\/[^/]+\/(enrollments|schedule)$/,
     roles: ["center_manager", "staff"],
+  },
+  // Sửa hồ sơ con (họ tên, khối, ngày sinh) từ Web; BE khóa đổi khối khi đang có lớp.
+  { method: "PATCH", path: /^students\/[^/]+$/, roles: managerOrStaff },
+  // Điểm đã công bố của một học sinh (chi tiết học sinh).
+  {
+    method: "GET",
+    path: /^academic\/students\/[^/]+\/grades$/,
+    roles: managerOrStaff,
   },
   { method: "GET", path: /^(registrations|payments)$/, roles: staff },
   {

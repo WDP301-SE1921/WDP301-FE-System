@@ -170,6 +170,8 @@ export function LiveReportsView() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Lớp</TableHead>
+                    <TableHead>Phạm vi</TableHead>
+                    <TableHead>Khoảng ngày</TableHead>
                     <TableHead>Tạo lúc</TableHead>
                     <TableHead>Tải báo cáo</TableHead>
                   </TableRow>
@@ -181,6 +183,18 @@ export function LiveReportsView() {
                         {context.data?.classes.find(
                           (item) => item.id === report.classId,
                         )?.name ?? "Báo cáo lớp học"}
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        {report.scope === "STUDENT"
+                          ? (report.studentName ?? "Một học sinh")
+                          : report.scope === "CLASS"
+                            ? "Toàn lớp"
+                            : "—"}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {report.from && report.to
+                          ? `${reportDay(report.from)} – ${reportDay(report.to)}`
+                          : "—"}
                       </TableCell>
                       <TableCell>{displayMoment(report.createdAt)}</TableCell>
                       <TableCell>
@@ -196,6 +210,13 @@ export function LiveReportsView() {
       </div>
     </PageContainer>
   );
+}
+/** Ngày `YYYY-MM-DD` hoặc mốc ISO (đầu/cuối ngày giờ Việt Nam) → dd/mm/yyyy. */
+function reportDay(value: string) {
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? value
+    : new Date(Date.parse(value) + 7 * 3600000).toISOString().slice(0, 10);
+  return day.split("-").reverse().join("/");
 }
 function ReportDownloads({ id }: { id: string }) {
   const action = useMutation({

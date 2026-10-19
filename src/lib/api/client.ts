@@ -195,6 +195,8 @@ const ERROR_TEXT: Record<string, string> = {
   PARENT_EMAIL_UNVERIFIED:
     "Phụ huynh cần xác minh email trên ứng dụng trước khi đăng ký học.",
   PARENT_DISABLED: "Tài khoản phụ huynh đã bị khóa.",
+  PARENT_IN_USE:
+    "Tài khoản đã có hồ sơ con, đăng ký học hoặc hoạt động nên không xóa hẳn được. Khóa tài khoản thay vì xóa.",
   STUDENT_INACTIVE: "Hồ sơ con không còn hoạt động.",
   FORBIDDEN: "Tài khoản không có quyền thực hiện thao tác này.",
   CLASS_NOT_FOUND: "Lớp không còn tồn tại. Vui lòng tải lại danh sách.",

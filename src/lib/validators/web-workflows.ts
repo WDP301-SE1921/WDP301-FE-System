@@ -42,6 +42,22 @@ export const dateRangeSchema = z
     path: ["toDate"],
     message: "Ngày cuối phải từ ngày đầu trở đi.",
   });
+/** Sửa hồ sơ con từ Web (`PATCH students/:id`); để trống ngày sinh thì xóa ngày sinh. */
+export const studentUpdateSchema = z.object({
+  fullName: requiredText(255),
+  grade: z.coerce
+    .number({ error: "Chọn khối." })
+    .int()
+    .min(6, "Khối từ 6 đến 9.")
+    .max(9, "Khối từ 6 đến 9."),
+  dateOfBirth: z
+    .union([z.literal(""), z.null(), dateSchema])
+    .transform((value) => value || null)
+    .refine(
+      (value) => !value || value <= todayLocalDate(),
+      "Ngày sinh không được sau hôm nay.",
+    ),
+});
 export const leaveSchema = z
   .object({
     enrollmentId: requiredId,

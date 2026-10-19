@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable } from "@/components/shared/data-table/data-table";
 import { FilterBar } from "@/components/shared/data-table/filter-bar";
+import { StatusTabs } from "@/components/shared/data-table/status-tabs";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
@@ -33,7 +34,7 @@ import { PAGINATION_DEFAULTS } from "@/constants/ui";
 import { parentPanelParsers } from "@/features/directory/parent-panel";
 import type { ParentListItem, StudentListItem } from "@/types/backend";
 import { registrationApi } from "../api";
-import { displayDate } from "../calendar";
+import { displayDate, money } from "../calendar";
 
 const ALL = "all";
 const PARENT_STATUS_ITEMS = {
@@ -43,8 +44,8 @@ const PARENT_STATUS_ITEMS = {
 };
 const STUDENT_STATUS_ITEMS = {
   all: "Tất cả trạng thái",
-  ACTIVE: "Đang hoạt động",
-  INACTIVE: "Ngừng hoạt động",
+  ACTIVE: "Đang học",
+  INACTIVE: "Ngừng học",
 };
 const GRADE_ITEMS = {
   all: "Tất cả khối",
@@ -53,6 +54,14 @@ const GRADE_ITEMS = {
   "8": "Khối 8",
   "9": "Khối 9",
 };
+/** Lọc nhanh học sinh (`?quick=`), BE tính trên toàn bộ danh sách. */
+const QUICK_FILTERS = [
+  { value: ALL, label: "Tất cả" },
+  { value: "pending-makeup", label: "Chờ học bù" },
+  { value: "long-leave", label: "Nghỉ dài hạn" },
+  { value: "no-class", label: "Chưa có lớp" },
+];
+const QUICK_KEYS = [ALL, "pending-makeup", "long-leave", "no-class"] as const;
 
 function DirectorySelect({
   items,
@@ -186,8 +195,28 @@ const parentColumns = (
   {
     id: "children",
     header: "Hồ sơ con",
+    cell: ({ row: { original: parent } }) => {
+      const children = parent.parentProfile?.students;
+      if (!children)
+        return `${parent.parentProfile?._count.students ?? 0} hồ sơ`;
+      return children.length ? (
+        <span className="block max-w-56 whitespace-normal">
+          {children.map((child) => child.fullName).join(" · ")}
+        </span>
+      ) : (
+        <span className="text-muted-foreground">Chưa có hồ sơ con</span>
+      );
+    },
+  },
+  {
+    id: "paid",
+    header: "Đã đóng",
     cell: ({ row }) =>
-      `${row.original.parentProfile?._count.students ?? 0} hồ sơ`,
+      row.original.paidAmount === undefined ? (
+        "—"
+      ) : (
+        <span className="tabular-nums">{money(row.original.paidAmount)}</span>
+      ),
   },
   {
     id: "status",
@@ -234,33 +263,30 @@ const studentColumns = (
 ): LegacyColumnDef<StudentListItem>[] => [
   {
     accessorKey: "fullName",
-    header: "Họ tên con",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.fullName}</span>
+    header: "Học sinh",
+    cell: ({ row: { original: child } }) => (
+      <div className="min-w-36 space-y-1">
+        <p className="font-medium">{child.fullName}</p>
+        <p className="text-xs text-muted-foreground">
+          Khối {child.grade}
+          {child.dateOfBirth ? ` · Sinh ${displayDate(child.dateOfBirth)}` : ""}
+        </p>
+      </div>
     ),
-  },
-  {
-    id: "grade",
-    header: "Khối",
-    cell: ({ row }) => `Khối ${row.original.grade}`,
-  },
-  {
-    id: "dateOfBirth",
-    header: "Ngày sinh",
-    cell: ({ row }) =>
-      row.original.dateOfBirth
-        ? displayDate(row.original.dateOfBirth)
-        : "Chưa cập nhật",
   },
   {
     id: "parent",
     header: "Phụ huynh",
+    // Giới hạn bề rộng (email dài) để cột Thao tác không bị khuất ở 1440px.
     cell: ({ row: { original: child } }) => (
-      <div className="space-y-1">
-        <p className="font-medium">
+      <div className="max-w-48 space-y-0.5">
+        <p className="truncate font-medium">
           {child.parentProfile.user.displayName || "Chưa có tên"}
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p
+          className="truncate text-xs text-muted-foreground"
+          title={child.parentProfile.user.email}
+        >
           {child.parentProfile.user.email}
         </p>
         {child.parentProfile.phone && (
@@ -272,15 +298,55 @@ const studentColumns = (
     ),
   },
   {
+    id: "classes",
+    header: "Lớp đang học",
+    cell: ({ row }) => {
+      const classes = row.original.currentClasses;
+      if (!classes) return "—";
+      return classes.length ? (
+        <span className="block max-w-44 whitespace-normal">
+          {classes.map((classroom) => classroom.name).join(" · ")}
+        </span>
+      ) : (
+        <span className="text-muted-foreground">Chưa có lớp</span>
+      );
+    },
+  },
+  {
+    id: "attendance",
+    header: "Chuyên cần",
+    cell: ({ row }) => {
+      const value = row.original.attendancePercent;
+      return value === null || value === undefined ? (
+        <span className="text-muted-foreground">—</span>
+      ) : (
+        <span className="tabular-nums">{Math.round(value)}%</span>
+      );
+    },
+  },
+  {
+    id: "absences",
+    header: "Nghỉ / học bù",
+    cell: ({ row: { original: child } }) =>
+      child.onLongLeave || child.pendingMakeups ? (
+        <div className="flex flex-wrap gap-1">
+          {child.onLongLeave && <Badge variant="info">Nghỉ dài hạn</Badge>}
+          {!!child.pendingMakeups && (
+            <Badge variant="warning">Chờ học bù {child.pendingMakeups}</Badge>
+          )}
+        </div>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+  },
+  {
     id: "status",
     header: "Trạng thái",
     cell: ({ row }) => (
       <Badge
         variant={row.original.status === "ACTIVE" ? "success" : "secondary"}
       >
-        {row.original.status === "ACTIVE"
-          ? "Đang hoạt động"
-          : "Ngừng hoạt động"}
+        {row.original.status === "ACTIVE" ? "Đang học" : "Ngừng học"}
       </Badge>
     ),
   },
@@ -288,11 +354,11 @@ const studentColumns = (
     id: "actions",
     header: "Thao tác",
     cell: ({ row: { original: child } }) => (
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-nowrap gap-1">
         <Button
           size="sm"
           variant="outline"
-          aria-label={`Xem ghi danh của ${child.fullName}`}
+          aria-label={`Xem hồ sơ của ${child.fullName}`}
           render={
             <Link
               href={
@@ -303,7 +369,7 @@ const studentColumns = (
             />
           }
         >
-          Xem ghi danh
+          Xem
         </Button>
         {onProcess && (
           <Button
@@ -313,22 +379,6 @@ const studentColumns = (
             onClick={() => onProcess(child.id)}
           >
             Xử lý
-          </Button>
-        )}
-        {isStaff && child.status === "ACTIVE" && (
-          <Button
-            size="sm"
-            aria-label={`Đăng ký học cho ${child.fullName}`}
-            render={
-              <Link
-                href={ROUTES.STAFF.ENROLLMENT_NEW_FOR({
-                  email: child.parentProfile.user.email,
-                  studentId: child.id,
-                })}
-              />
-            }
-          >
-            Đăng ký học
           </Button>
         )}
       </div>
@@ -403,7 +453,7 @@ function StudentsDirectory({
   onProcess?: (studentId: string) => void;
 }) {
   const [search] = useQueryState("search", parseAsString.withDefault(""));
-  const [{ page, pageSize, status, grade, parentUserId }, setFilters] =
+  const [{ page, pageSize, status, grade, parentUserId, quick }, setFilters] =
     useQueryStates({
       page: parseAsInteger.withDefault(1),
       pageSize: parseAsInteger.withDefault(PAGINATION_DEFAULTS.PAGE_SIZE),
@@ -412,6 +462,7 @@ function StudentsDirectory({
       ),
       grade: parseAsStringLiteral([ALL, "6", "7", "8", "9"]).withDefault(ALL),
       parentUserId: parseAsString,
+      quick: parseAsStringLiteral(QUICK_KEYS).withDefault(ALL),
     });
   const resetPage = useCallback(() => {
     void setFilters({ page: null });
@@ -423,6 +474,7 @@ function StudentsDirectory({
     status: status === ALL ? undefined : status,
     grade: grade === ALL ? undefined : Number(grade),
     parentUserId: parentUserId || undefined,
+    quick: quick === ALL ? undefined : quick,
   };
   const query = useQuery({
     queryKey: ["registration-students", filters],
@@ -431,6 +483,12 @@ function StudentsDirectory({
   return (
     <Card className="min-w-0">
       <CardContent className="min-w-0 space-y-4">
+        <StatusTabs
+          paramKey="quick"
+          defaultValue={ALL}
+          options={QUICK_FILTERS}
+          onChange={resetPage}
+        />
         <FilterBar
           searchPlaceholder="Tìm tên con hoặc email phụ huynh…"
           onSearchChange={resetPage}
@@ -439,6 +497,7 @@ function StudentsDirectory({
               status: null,
               grade: null,
               parentUserId: null,
+              quick: null,
               page: null,
             })
           }
@@ -480,7 +539,7 @@ function StudentsDirectory({
           error={query.error}
           onRetry={() => void query.refetch()}
           emptyTitle="Chưa có hồ sơ con phù hợp"
-          emptyDescription="Thử đổi từ khóa, khối hoặc trạng thái để xem danh sách."
+          emptyDescription="Thử đổi từ khóa, khối, trạng thái hoặc lọc nhanh để xem danh sách."
         />
         <TablePagination totalItems={query.data?.total ?? 0} />
       </CardContent>
@@ -509,6 +568,7 @@ export function StudentsHub({ role }: { role: "staff" | "center_manager" }) {
     status: parseAsString,
     grade: parseAsString,
     parentUserId: parseAsString,
+    quick: parseAsString,
   });
   const [, setWorkflow] = useQueryStates({
     studentId: parseAsString,
@@ -530,7 +590,7 @@ export function StudentsHub({ role }: { role: "staff" | "center_manager" }) {
         description={
           isStaff
             ? "Hồ sơ con và tài khoản phụ huynh. Bấm Xử lý trên dòng học sinh để ghi nghỉ, xếp học bù, đổi lớp hoặc cho nghỉ."
-            : "Phụ huynh tự đăng ký và tạo hồ sơ con trên ứng dụng. Trung tâm xem, sửa thông tin liên hệ và khóa tài khoản."
+            : "Phụ huynh tự đăng ký và tạo hồ sơ con trên ứng dụng. Trung tâm xem, sửa thông tin liên hệ, khóa hoặc xóa tài khoản chưa dùng."
         }
       />
       <Tabs
@@ -545,6 +605,7 @@ export function StudentsHub({ role }: { role: "staff" | "center_manager" }) {
             status: null,
             grade: null,
             parentUserId: null,
+            quick: null,
           });
           void setParentPanel({
             parentId: null,

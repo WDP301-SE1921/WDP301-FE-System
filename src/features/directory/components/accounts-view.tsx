@@ -1,4 +1,5 @@
 "use client";
+import { z } from "zod";
 import { ApiForm } from "@/components/shared/forms/api-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,22 +9,47 @@ import {
   accountCreateSchema,
   accountUpdateSchema,
 } from "@/lib/validators/web-workflows";
-import { directoryApi } from "../api";
+import { directoryApi, type AccountKind } from "../api";
 
 export const ACCOUNT_STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Hoạt động" },
   { value: "DISABLED", label: "Đã khóa" },
 ];
 
-export type AccountKind = "staff" | "teachers";
+export type { AccountKind };
 
-/** Quản lý tạo tài khoản Nhân viên; Thiết kế giáo trình chờ BE-10 nên không có ô chọn vai trò. */
+/** Vai trò BE → nhãn hiển thị của tài khoản nội bộ. */
+export const ACCOUNT_ROLE_LABEL: Record<string, string> = {
+  STAFF: "Nhân viên",
+  CURRICULUM_DESIGNER: "Thiết kế giáo trình",
+  TEACHER: "Giáo viên",
+};
+/** `kind` chọn API tạo tài khoản; `accountCreateSchema` bỏ trường này trước khi gửi. */
+const staffAccountCreateSchema = accountCreateSchema.extend({
+  kind: z.enum(["staff", "curriculum-designers"]),
+});
+
+/** Quản lý tạo tài khoản Nhân viên hoặc Thiết kế giáo trình (BE-10). */
 export function StaffAccountCreateForm({ onDone }: { onDone: () => void }) {
   return (
     <ApiForm
-      schema={accountCreateSchema}
-      defaults={{ email: "", displayName: "", password: "" }}
+      schema={staffAccountCreateSchema}
+      defaults={{ kind: "staff", email: "", displayName: "", password: "" }}
       fields={[
+        {
+          name: "kind",
+          label: "Vai trò",
+          type: "select",
+          options: [
+            { value: "staff", label: ACCOUNT_ROLE_LABEL.STAFF },
+            {
+              value: "curriculum-designers",
+              label: ACCOUNT_ROLE_LABEL.CURRICULUM_DESIGNER,
+            },
+          ],
+          description:
+            "Nhân viên vận hành ghi danh, nghỉ học, học bù. Thiết kế giáo trình soạn khóa học và giáo trình.",
+        },
         { name: "displayName", label: "Họ tên" },
         { name: "email", label: "Email", type: "email" },
         {
@@ -36,16 +62,24 @@ export function StaffAccountCreateForm({ onDone }: { onDone: () => void }) {
       ]}
       submitLabel="Tạo tài khoản"
       successMessage={false}
-      onSubmit={(value) => directoryApi.createAccount("staff", value)}
-      onSuccess={() => {
-        toast.success("Đã tạo tài khoản nhân viên.");
+      onSubmit={({ kind, ...value }) =>
+        directoryApi.createAccount(
+          kind === "curriculum-designers" ? kind : "staff",
+          value,
+        )
+      }
+      onSuccess={(result) => {
+        const role = (result as BackendUser | undefined)?.role;
+        toast.success(
+          `Đã tạo tài khoản ${(ACCOUNT_ROLE_LABEL[role ?? "STAFF"] ?? "nhân viên").toLowerCase()}.`,
+        );
         onDone();
       }}
     />
   );
 }
 
-/** Sửa họ tên và khóa / mở tài khoản giáo viên hoặc nhân viên. Email chỉ đọc. */
+/** Sửa họ tên và khóa / mở tài khoản giáo viên, nhân viên, thiết kế giáo trình. Email chỉ đọc. */
 export function AccountEditForm({
   kind,
   account,

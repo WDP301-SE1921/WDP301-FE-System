@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
@@ -54,7 +55,7 @@ import { parentPanelParsers } from "../parent-panel";
 import { ACCOUNT_STATUS_OPTIONS } from "./accounts-view";
 
 /**
- * Sheet xem phụ huynh và hộp thoại Sửa / Khóa của Quản lý, mở theo query trên URL
+ * Sheet xem phụ huynh và hộp thoại Sửa / Xóa (khóa) của Quản lý, mở theo query trên URL
  * (`?parentId=`, `?parentEdit=`, `?parentLock=`). Hộp thoại mở chồng lên Sheet được.
  */
 export function ParentAccountPanels() {
@@ -110,6 +111,13 @@ export function ParentAccountPanels() {
               key={parentLock}
               parentId={parentLock}
               onDone={() => void setPanel({ parentLock: null })}
+              onDeleted={() =>
+                void setPanel({
+                  parentId: null,
+                  parentEdit: null,
+                  parentLock: null,
+                })
+              }
             />
           )}
         </DialogContent>
@@ -402,22 +410,39 @@ function ParentEditBody({
 }
 
 /**
- * BE chưa có API xóa hẳn tài khoản phụ huynh (BE-9): "Xóa" giải thích lý do và đề xuất khóa.
- * PATCH kiểm đủ `parentUpdateSchema`, nên gửi lại họ tên và số điện thoại hiện tại.
+ * "Xóa" của Quản lý. Tài khoản chưa có hồ sơ con thì xóa hẳn được (BE-9); BE vẫn từ chối
+ * (`PARENT_IN_USE`) nếu đã có đăng ký hay hoạt động. Còn lại thì khóa, đã khóa thì mở khóa.
+ * PATCH kiểm đủ `parentUpdateSchema`, nên khóa/mở gửi lại họ tên và số điện thoại hiện tại.
  */
 function ParentLockBody({
   parentId,
   onDone,
+  onDeleted,
 }: {
   parentId: string;
   onDone: () => void;
+  onDeleted: () => void;
 }) {
   const parent = useParent(parentId);
   const action = useLiveCommand();
+  const client = useQueryClient();
   const data = parent.data;
   const isActive = data?.status === "ACTIVE";
   const name = data ? data.displayName || data.email : "phụ huynh";
   const childCount = data?.parentProfile?.students.length ?? 0;
+  const canDelete = !!data && childCount === 0;
+  const removal = useMutation({
+    mutationFn: () => directoryApi.deleteParent(parentId),
+    onSuccess: async () => {
+      // Không đọc lại tài khoản vừa xóa (sẽ 404); làm mới mọi bảng còn lại.
+      await client.invalidateQueries({
+        predicate: (query) => !query.queryKey.includes(parentId),
+      });
+      toast.success(`Đã xóa tài khoản ${name}.`);
+      onDeleted();
+    },
+  });
+  const busy = action.isPending || removal.isPending;
   return (
     <>
       <DialogHeader>
@@ -440,18 +465,20 @@ function ParentLockBody({
       >
         {data && (
           <div className="space-y-3 text-sm">
-            {isActive && (
-              <>
+            {canDelete ? (
+              <p className="text-muted-foreground">
+                Tài khoản chưa có hồ sơ con nên xóa hẳn được, nếu phụ huynh
+                chưa đăng ký học và chưa dùng tài khoản. Xóa rồi thì không khôi
+                phục được.
+              </p>
+            ) : (
+              isActive && (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900">
-                  {childCount
-                    ? `Tài khoản đã có ${childCount} hồ sơ con nên không xóa hẳn được, để giữ biên lai, điểm danh và điểm số. Bạn có thể khóa tài khoản thay vì xóa.`
-                    : "Trung tâm chưa xóa hẳn được tài khoản phụ huynh. Bạn có thể khóa tài khoản thay vì xóa."}
+                  Tài khoản đã có {childCount} hồ sơ con nên không xóa hẳn
+                  được, để giữ biên lai, điểm danh và điểm số. Bạn có thể khóa
+                  tài khoản thay vì xóa.
                 </p>
-                <p className="text-muted-foreground">
-                  Xóa hẳn chỉ dùng cho tài khoản chưa có hồ sơ con và chưa có
-                  thanh toán, chức năng này chưa có trên hệ thống.
-                </p>
-              </>
+              )
             )}
             {!data.displayName && (
               <p className="text-destructive" role="alert">
@@ -459,7 +486,7 @@ function ParentLockBody({
                 trạng thái.
               </p>
             )}
-            <ApiFeedback error={action.error} />
+            <ApiFeedback error={action.error ?? removal.error} />
           </div>
         )}
       </AsyncBoundary>
@@ -467,12 +494,26 @@ function ParentLockBody({
         <Button variant="outline" onClick={onDone}>
           Hủy
         </Button>
+        {canDelete && (
+          <Button
+            variant="danger"
+            disabled={busy}
+            isLoading={removal.isPending}
+            onClick={() => {
+              action.reset();
+              removal.mutate();
+            }}
+          >
+            Xóa hẳn
+          </Button>
+        )}
         <Button
-          variant={isActive ? "danger" : "default"}
-          disabled={!data?.displayName}
+          variant={!isActive ? "default" : canDelete ? "outline" : "danger"}
+          disabled={!data?.displayName || busy}
           isLoading={action.isPending}
           onClick={() => {
             if (!data) return;
+            removal.reset();
             action.mutate(
               () =>
                 directoryApi.updateParent(parentId, {

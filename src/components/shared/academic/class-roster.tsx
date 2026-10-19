@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import type { RegistrationClass } from "@/types/backend";
+/** Danh sách ghi danh của lớp; cột Phụ huynh chỉ có khi API trả liên hệ (Quản lý, Nhân viên). */
 export function ClassRoster({
   roster,
   onPageChange,
@@ -19,6 +20,7 @@ export function ClassRoster({
   onPageChange: (page: number) => void;
 }) {
   if (!roster) return null;
+  const showParent = roster.items.some((row) => row.studentProfile.parentProfile);
   return (
     <Card>
       <CardHeader>
@@ -29,6 +31,7 @@ export function ClassRoster({
           <TableHeader>
             <TableRow>
               <TableHead>Học sinh</TableHead>
+              {showParent && <TableHead>Phụ huynh</TableHead>}
               <TableHead>Khối</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead>Thời hạn</TableHead>
@@ -38,6 +41,28 @@ export function ClassRoster({
             {roster.items.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>{row.studentProfile.fullName}</TableCell>
+                {showParent && (
+                  <TableCell className="whitespace-normal">
+                    {row.studentProfile.parentProfile ? (
+                      <>
+                        <span className="block">
+                          {row.studentProfile.parentProfile.user.displayName ||
+                            row.studentProfile.parentProfile.user.email}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {[
+                            row.studentProfile.parentProfile.phone,
+                            row.studentProfile.parentProfile.user.email,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                )}
                 <TableCell>{row.studentProfile.grade}</TableCell>
                 <TableCell>
                   {(

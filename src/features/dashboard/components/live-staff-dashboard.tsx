@@ -45,8 +45,6 @@ import { DashboardStatCard } from "./dashboard-stat-card";
 import { ColumnChart, HorizontalBars } from "./column-chart";
 
 const CHART_DAYS = 14;
-/** API học bù chờ xếp không trả tổng: đọc một trang, đủ trang thì hiện "100+". */
-const MAKEUP_PAGE = 100;
 
 /**
  * Dashboard Nhân viên: việc cần làm trong ngày. Chỉ đọc từ API Nhân viên được gọi
@@ -66,12 +64,11 @@ export function LiveStaffDashboard() {
     ["staff-dashboard", "sessions", today],
     (signal) => academicApi.sessions({ fromDate: today, toDate: today }, signal),
   );
+  // Chỉ buổi vắng đã ghi nhận (buổi đã chốt), không tính buổi tương lai được xếp bù trước.
   const makeups = useLiveQuery(["staff-dashboard", "makeups"], (signal) =>
-    academicApi.pendingMakeupSources(MAKEUP_PAGE, signal),
+    academicApi.recordedMakeupSources(undefined, signal),
   );
-  const makeupCount = makeups.data
-    ? `${makeups.data.length}${makeups.data.length >= MAKEUP_PAGE ? "+" : ""}`
-    : undefined;
+  const makeupCount = makeups.data?.length;
   const classes = useQuery({
     queryKey: ["registration-classes", "all"],
     queryFn: () => registrationApi.classes(),
@@ -318,8 +315,13 @@ export function LiveStaffDashboard() {
               </ul>
               {(makeups.data?.length ?? 0) > 5 && (
                 <p className="text-xs text-muted-foreground">
-                  Tổng {makeupCount} buổi chờ xếp. Mở hồ sơ học sinh để xếp từng
-                  buổi.
+                  Tổng {makeupCount} buổi chờ xếp.{" "}
+                  <Link
+                    href={`${ROUTES.STAFF.STUDENTS}?quick=pending-makeup`}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Xem theo học sinh
+                  </Link>
                 </p>
               )}
             </AsyncBoundary>

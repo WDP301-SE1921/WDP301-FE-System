@@ -1183,8 +1183,23 @@ function RosterSummary({
                   const label = enrollmentLabel(row, today);
                   return (
                     <TableRow key={row.id}>
-                      <TableCell className="font-medium">
-                        {row.studentProfile.fullName}
+                      <TableCell className="whitespace-normal">
+                        <span className="block font-medium">
+                          {row.studentProfile.fullName}
+                        </span>
+                        {row.studentProfile.parentProfile && (
+                          <span className="block text-xs text-muted-foreground">
+                            PH{" "}
+                            {[
+                              row.studentProfile.parentProfile.user
+                                .displayName ||
+                                row.studentProfile.parentProfile.user.email,
+                              row.studentProfile.parentProfile.phone,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {row.startDate

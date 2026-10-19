@@ -13,6 +13,7 @@ import {
   type DataTableColumn,
 } from "@/components/shared/data-table/data-table";
 import { FilterBar } from "@/components/shared/data-table/filter-bar";
+import { StatusTabs } from "@/components/shared/data-table/status-tabs";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { DescriptionList } from "@/components/shared/display/description-list";
 import { UserCell } from "@/components/shared/display/user-cell";
@@ -50,15 +51,19 @@ import {
   useLiveQuery,
 } from "@/features/academic/hooks/use-live-api";
 import { registrationApi } from "@/features/registration-flow/api";
+import { ApiError } from "@/lib/api/client";
 import type { BackendUser, RegistrationClass } from "@/types/backend";
-import { directoryApi } from "../api";
+import { accountKindOf, directoryApi } from "../api";
 import {
   currentMonth,
+  substitutionOrigins,
   teacherMonthStats,
   TeacherMonthSessions,
   useMonthSessions,
+  useMonthSubstitutions,
 } from "./teacher-month-sessions";
 import {
+  ACCOUNT_ROLE_LABEL,
   AccountEditForm,
   StaffAccountCreateForm,
   type AccountKind,
@@ -72,7 +77,7 @@ import {
 const PAGE_SIZE = 20;
 const PEOPLE_TABS = {
   teachers: "Giáo viên",
-  staff: "Nhân viên",
+  staff: "Nhân viên & thiết kế giáo trình",
   managers: "Quản lý",
   invites: "Lời mời",
 } as const;
@@ -83,9 +88,20 @@ const PRIMARY_ACTION: Partial<Record<PeopleTab, string>> = {
   staff: "Tạo tài khoản",
   managers: "Mời quản lý",
 };
+/** Lọc vai trò của tab Nhân viên & thiết kế giáo trình (`?role=`). */
+const STAFF_ROLE_TABS = [
+  { value: "all", label: "Tất cả" },
+  { value: "staff", label: ACCOUNT_ROLE_LABEL.STAFF },
+  {
+    value: "curriculum-designers",
+    label: ACCOUNT_ROLE_LABEL.CURRICULUM_DESIGNER,
+  },
+];
+const STAFF_ROLES = ["all", "staff", "curriculum-designers"] as const;
 /** Query riêng của từng tab; đổi tab thì xóa hết để bảng mới bắt đầu sạch. */
 const LIST_RESET = {
   search: null,
+  role: null,
   page: null,
   managersPage: null,
   teacherInvitesPage: null,
@@ -130,6 +146,7 @@ export function PeopleHub({ role }: { role: WebRole }) {
   );
   const [, setListState] = useQueryStates({
     search: parseAsString,
+    role: parseAsString,
     page: parseAsInteger,
     managersPage: parseAsInteger,
     teacherInvitesPage: parseAsInteger,
@@ -140,19 +157,25 @@ export function PeopleHub({ role }: { role: WebRole }) {
   const [editing, setEditing] = useState<BackendUser | null>(null);
   const [toggling, setToggling] = useState<BackendUser | null>(null);
   const counts = useLiveQuery(["people-counts"], async (signal) => {
-    const [teachers, staff, managers, teacherInvites, managerInvites] =
-      await Promise.all([
-        canSeeTeachers
-          ? directoryApi.accounts("teachers", { page: 1, limit: 1 }, signal)
-          : null,
-        directoryApi.accounts("staff", { page: 1, limit: 1 }, signal),
-        directoryApi.managers({ page: 1, limit: 1 }, signal),
-        directoryApi.invitations("teacher", { page: 1, limit: 1 }, signal),
-        directoryApi.invitations("manager", { page: 1, limit: 1 }, signal),
-      ]);
+    const first = { page: 1, limit: 1 };
+    const [
+      teachers,
+      staff,
+      designers,
+      managers,
+      teacherInvites,
+      managerInvites,
+    ] = await Promise.all([
+      canSeeTeachers ? directoryApi.accounts("teachers", first, signal) : null,
+      directoryApi.accounts("staff", first, signal),
+      directoryApi.accounts("curriculum-designers", first, signal),
+      directoryApi.managers(first, signal),
+      directoryApi.invitations("teacher", first, signal),
+      directoryApi.invitations("manager", first, signal),
+    ]);
     return {
       teachers: teachers?.total,
-      staff: staff.total,
+      staff: staff.total + designers.total,
       managers: managers.total,
       invites: teacherInvites.total + managerInvites.total,
     } satisfies Record<PeopleTab, number | undefined>;
@@ -163,7 +186,7 @@ export function PeopleHub({ role }: { role: WebRole }) {
     <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Nhân sự"
-        description="Giáo viên, nhân viên vận hành và quản lý trung tâm. Mời giáo viên, quản lý qua email; tạo tài khoản nhân viên; khóa hoặc mở tài khoản."
+        description="Giáo viên, nhân viên vận hành, thiết kế giáo trình và quản lý trung tâm. Mời giáo viên, quản lý qua email; tạo tài khoản nhân viên, thiết kế giáo trình; khóa hoặc mở tài khoản."
         actions={
           actionLabel ? (
             <Button onClick={() => setCreating(true)}>{actionLabel}</Button>
@@ -219,7 +242,15 @@ export function PeopleHub({ role }: { role: WebRole }) {
               onSearchChange={() =>
                 void setListState({ page: null, managersPage: null })
               }
-            />
+            >
+              {tab === "staff" && (
+                <StatusTabs
+                  paramKey="role"
+                  options={STAFF_ROLE_TABS}
+                  onChange={() => void setListState({ page: null })}
+                />
+              )}
+            </FilterBar>
             {tab === "managers" ? (
               <ManagersTable />
             ) : (
@@ -242,7 +273,7 @@ export function PeopleHub({ role }: { role: WebRole }) {
             <DialogTitle>{actionLabel}</DialogTitle>
             <DialogDescription>
               {tab === "staff"
-                ? "Tạo tài khoản đăng nhập cho nhân viên vận hành."
+                ? "Tạo tài khoản đăng nhập cho nhân viên vận hành hoặc thiết kế giáo trình."
                 : "Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt ở tab Lời mời."}
             </DialogDescription>
           </DialogHeader>
@@ -273,7 +304,7 @@ export function PeopleHub({ role }: { role: WebRole }) {
           {editing && (
             <AccountEditForm
               key={editing.id}
-              kind={kind}
+              kind={accountKindOf(editing)}
               account={editing}
               onDone={() => setEditing(null)}
             />
@@ -290,7 +321,7 @@ export function PeopleHub({ role }: { role: WebRole }) {
           {toggling && (
             <AccountStatusBody
               key={toggling.id}
-              kind={kind}
+              kind={accountKindOf(toggling)}
               account={toggling}
               onDone={() => setToggling(null)}
             />
@@ -310,17 +341,43 @@ function AccountsTable({
   onEdit: (account: BackendUser) => void;
   onToggle: (account: BackendUser) => void;
 }) {
-  const [{ search, page }] = useQueryStates({
+  const [{ search, page, role }] = useQueryStates({
     search: parseAsString.withDefault(""),
     page: parseAsInteger.withDefault(1),
+    role: parseAsStringLiteral(STAFF_ROLES).withDefault("all"),
   });
   const [, setPerson] = useQueryState("person", parseAsString);
-  const query = useLiveQuery(["accounts", kind, search, page], (signal) =>
-    directoryApi.accounts(
-      kind,
-      { search: search.trim() || undefined, page: Math.max(1, page), limit: PAGE_SIZE },
-      signal,
-    ),
+  const query = useLiveQuery(
+    ["accounts", kind, search, page, kind === "staff" ? role : null],
+    async (signal) => {
+      const filters = { search: search.trim() || undefined };
+      if (kind !== "staff")
+        return directoryApi.accounts(
+          kind,
+          { ...filters, page: Math.max(1, page), limit: PAGE_SIZE },
+          signal,
+        );
+      // Nhân viên và Thiết kế giáo trình là hai API: đọc hết cả hai (danh sách ngắn), gộp
+      // theo họ tên rồi chia trang ở đây.
+      const [staff, designers] = await Promise.all([
+        role === "curriculum-designers"
+          ? []
+          : directoryApi.allAccounts("staff", filters, signal),
+        role === "staff"
+          ? []
+          : directoryApi.allAccounts("curriculum-designers", filters, signal),
+      ]);
+      const items = [...staff, ...designers].sort(
+        (a, b) =>
+          (a.displayName ?? "").localeCompare(b.displayName ?? "", "vi") ||
+          a.email.localeCompare(b.email),
+      );
+      const start = (Math.max(1, page) - 1) * PAGE_SIZE;
+      return {
+        items: items.slice(start, start + PAGE_SIZE),
+        total: items.length,
+      };
+    },
   );
   const classes = useLiveQuery(
     ["people-teacher-classes"],
@@ -330,14 +387,26 @@ function AccountsTable({
   const byTeacher = classesByTeacher(classes.data);
   const month = currentMonth();
   const monthSessions = useMonthSessions(month, kind === "teachers");
+  const substitutions = useMonthSubstitutions(month, kind === "teachers");
+  const origins = substitutions.data
+    ? substitutionOrigins(substitutions.data)
+    : undefined;
   const monthLabel = `T${Number(month.slice(5, 7))}`;
   const statsFor = (teacherId: string) =>
-    teacherMonthStats(monthSessions.data, teacherId, monthSessions.dataUpdatedAt);
-  const sessionCell = (value: (id: string) => number) =>
+    teacherMonthStats(
+      monthSessions.data,
+      teacherId,
+      monthSessions.dataUpdatedAt,
+      origins,
+    );
+  const sessionCell = (
+    value: (id: string) => number,
+    extra?: { isPending: boolean; isError: boolean },
+  ) =>
     function SessionCountCell({ row }: { row: { original: BackendUser } }) {
-      if (monthSessions.isPending)
+      if (monthSessions.isPending || extra?.isPending)
         return <span className="text-muted-foreground">…</span>;
-      if (monthSessions.isError)
+      if (monthSessions.isError || extra?.isError)
         return <span className="text-muted-foreground">—</span>;
       return <span className="tabular-nums">{value(row.original.id)}</span>;
     };
@@ -384,13 +453,28 @@ function AccountsTable({
             header: "Chờ điểm danh",
             cell: sessionCell((id) => statsFor(id).pending),
           } satisfies DataTableColumn<BackendUser>,
+          {
+            id: "substituted",
+            header: `Dạy thay ${monthLabel}`,
+            cell: sessionCell((id) => statsFor(id).substituted, substitutions),
+          } satisfies DataTableColumn<BackendUser>,
         ]
       : [
           { accessorKey: "email", header: "Email" } satisfies DataTableColumn<BackendUser>,
           {
             id: "role",
             header: "Vai trò",
-            cell: () => <Badge variant="warning">Nhân viên</Badge>,
+            cell: ({ row }) => (
+              <Badge
+                variant={
+                  row.original.role === "CURRICULUM_DESIGNER"
+                    ? "info"
+                    : "warning"
+                }
+              >
+                {ACCOUNT_ROLE_LABEL[row.original.role] ?? "Nhân viên"}
+              </Badge>
+            ),
           } satisfies DataTableColumn<BackendUser>,
         ]),
     {
@@ -457,10 +541,10 @@ function AccountsTable({
         totalItems={query.data?.total ?? 0}
         fixedPageSize={PAGE_SIZE}
       />
-      {kind === "staff" && (
+      {kind === "teachers" && (
         <p className="text-xs text-muted-foreground">
-          Danh sách hiện chỉ gồm tài khoản Nhân viên; tài khoản Thiết kế giáo
-          trình chưa quản lý được trên màn này.
+          Số buổi trong tháng {Number(month.slice(5, 7))}: buổi dạy thay tính
+          cho người dạy thay, buổi hủy không tính.
         </p>
       )}
     </>
@@ -568,9 +652,17 @@ function PersonSheetContent({
   id: string;
   onEdit: (account: BackendUser) => void;
 }) {
-  const account = useLiveQuery(["account", kind, id], (signal) =>
-    directoryApi.account(kind, id, signal),
-  );
+  const account = useLiveQuery(["account", kind, id], async (signal) => {
+    if (kind !== "staff") return directoryApi.account(kind, id, signal);
+    // Tab Nhân viên gồm cả Thiết kế giáo trình: không phải nhân viên thì đọc API thiết kế giáo trình.
+    try {
+      return await directoryApi.account("staff", id, signal);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404)
+        return directoryApi.account("curriculum-designers", id, signal);
+      throw error;
+    }
+  });
   const classes = useLiveQuery(
     ["people-teacher-classes"],
     () => registrationApi.classes(),
@@ -586,7 +678,7 @@ function PersonSheetContent({
             ? data.displayName || data.email
             : kind === "teachers"
               ? "Thông tin giáo viên"
-              : "Thông tin nhân viên"}
+              : "Thông tin tài khoản"}
         </SheetTitle>
         <SheetDescription className="break-all">
           {data?.email ?? "Thông tin tài khoản tại trung tâm."}
@@ -610,7 +702,7 @@ function PersonSheetContent({
               items={[
                 {
                   label: "Vai trò",
-                  value: kind === "teachers" ? "Giáo viên" : "Nhân viên",
+                  value: ACCOUNT_ROLE_LABEL[data.role] ?? "Nhân viên",
                 },
                 {
                   label: "Xác minh email",
@@ -675,7 +767,7 @@ function PersonSheetContent({
   );
 }
 
-/** Khóa / mở tài khoản nhân viên. PATCH kiểm đủ `accountUpdateSchema` nên gửi lại họ tên. */
+/** Khóa / mở tài khoản nhân viên, thiết kế giáo trình. PATCH kiểm đủ `accountUpdateSchema` nên gửi lại họ tên. */
 function AccountStatusBody({
   kind,
   account,

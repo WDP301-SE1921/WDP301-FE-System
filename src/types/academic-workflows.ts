@@ -156,6 +156,26 @@ export interface ReportRecord {
   id: string;
   classId: string;
   createdAt: string;
+  /** Khoảng thời gian khi tạo (ngày `YYYY-MM-DD` hoặc ISO). */
+  from?: string;
+  to?: string;
+  /** `null`: báo cáo cũ chưa lưu phạm vi. */
+  scope?: "CLASS" | "STUDENT" | null;
+  studentId?: string | null;
+  studentName?: string | null;
+}
+/** `GET academic/students/:id/grades`: bài được giao kèm lần nộp mới nhất và điểm đã công bố. */
+export interface StudentGradeRecord {
+  id: string;
+  title: string;
+  kind: "HOMEWORK" | "TEST";
+  testType: "FIFTEEN_MINUTES" | "ONE_PERIOD" | "MIDTERM" | "FINAL" | null;
+  dueAt: string;
+  status: "PUBLISHED" | "CLOSED";
+  class: { id: string; name: string };
+  maxScore: number;
+  submission: { id: string; attemptNo: number; submittedAt: string } | null;
+  grade: { totalScore: number; publishedAt: string | null } | null;
 }
 export interface CurriculumFeedbackRecord {
   id: string;

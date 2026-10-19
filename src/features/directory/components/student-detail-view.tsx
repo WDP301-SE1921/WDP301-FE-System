@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
@@ -6,12 +7,14 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   CheckmarkCircle02Icon,
   Invoice01Icon,
+  StarIcon,
   UserRemove01Icon,
 } from "@hugeicons/core-free-icons";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { RowActions } from "@/components/shared/data-table/row-actions";
+import { ApiForm } from "@/components/shared/forms/api-form";
 import {
   Card,
   CardContent,
@@ -22,6 +25,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -30,11 +40,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/toast";
 import { ROUTES } from "@/constants/routes";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
 import { displayMoment } from "@/features/academic/components/live-fields";
+import { TEST_TYPE_TEXT } from "@/features/assignments/assessment-labels";
 import { DashboardStatCard } from "@/features/dashboard/components/dashboard-stat-card";
 import {
   displayDate,
@@ -43,12 +55,17 @@ import {
 } from "@/features/registration-flow/calendar";
 import { addCalendarDays, todayInVietnam } from "@/lib/calendar-date";
 import { cn } from "@/lib/utils";
-import type { ClassAttendanceSummary } from "@/types/academic-workflows";
+import { studentUpdateSchema } from "@/lib/validators/web-workflows";
+import type {
+  ClassAttendanceSummary,
+  StudentGradeRecord,
+} from "@/types/academic-workflows";
 import { directoryApi } from "../api";
 
 const TABS = {
   overview: "Tổng quan",
   schedule: "Lịch học",
+  grades: "Điểm & bài tập",
   tuition: "Học phí",
   absences: "Nghỉ & học bù",
 } as const;
@@ -70,17 +87,38 @@ const day = new Intl.DateTimeFormat("vi-VN", {
   month: "2-digit",
   timeZone: "Asia/Ho_Chi_Minh",
 });
+const scoreFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
+const GRADE_OPTIONS = [6, 7, 8, 9].map((grade) => ({
+  value: String(grade),
+  label: `Khối ${grade}`,
+}));
+const STAT_COLUMNS = ["", "xl:grid-cols-1", "xl:grid-cols-2", "xl:grid-cols-3", "xl:grid-cols-4"];
+
+type GradedRecord = StudentGradeRecord & {
+  grade: NonNullable<StudentGradeRecord["grade"]>;
+};
+function assignmentKind(row: StudentGradeRecord) {
+  return row.kind === "TEST"
+    ? row.testType
+      ? TEST_TYPE_TEXT[row.testType]
+      : "Bài kiểm tra"
+    : "Bài tập";
+}
+function scoreText(row: GradedRecord) {
+  return `${scoreFormat.format(row.grade.totalScore)}/${scoreFormat.format(row.maxScore)}`;
+}
 
 /**
- * Chi tiết học sinh (Quản lý, Nhân viên). Chuyên cần từ `attendance-summary` từng lớp (BE-8):
- * BE chưa nhận thì ẩn các khối chuyên cần. Chưa có API điểm cho Quản lý/Nhân viên nên không
- * có thẻ/tab Điểm; sửa hồ sơ chờ API (BE-8).
+ * Chi tiết học sinh (Quản lý, Nhân viên). Chuyên cần từ `attendance-summary` từng lớp (BE-8),
+ * điểm từ `academic/students/:id/grades`; API nào lỗi thì ẩn khối của API đó. Sửa hồ sơ gọi
+ * `PATCH students/:id`, BE khóa đổi khối khi còn ghi danh hiện tại hoặc sắp học.
  */
 export function LiveStudentDetailView({ id }: { id: string }) {
   const user = useCurrentUser();
   const router = useRouter();
   const isStaff = user?.role === "staff";
   const today = todayInVietnam();
+  const [editing, setEditing] = useState(false);
   const [tab, setTab] = useQueryState(
     "tab",
     parseAsStringLiteral(TAB_KEYS).withDefault("overview"),
@@ -156,8 +194,13 @@ export function LiveStudentDetailView({ id }: { id: string }) {
   );
   const makeups = useLiveQuery(
     ["student-makeup-sources", id],
-    (signal) => academicApi.makeupSources(id, signal),
+    (signal) => academicApi.recordedMakeupSources(id, signal),
     isStaff,
+  );
+  const grades = useLiveQuery(
+    ["student-grades", id],
+    (signal) => academicApi.studentGrades(id, signal),
+    !!data.data,
   );
 
   const student = data.data?.student;
@@ -195,6 +238,29 @@ export function LiveStudentDetailView({ id }: { id: string }) {
     .sort()
     .at(-1);
   const attendanceReady = attendance.isSuccess;
+  const graded = (grades.data ?? []).filter(
+    (row): row is GradedRecord => !!row.grade && row.maxScore > 0,
+  );
+  const average = graded.length
+    ? graded.reduce(
+        (sum, row) => sum + (row.grade.totalScore / row.maxScore) * 10,
+        0,
+      ) / graded.length
+    : null;
+  const recentGrades = [...graded]
+    .sort((a, b) =>
+      (b.grade.publishedAt ?? b.dueAt).localeCompare(
+        a.grade.publishedAt ?? a.dueAt,
+      ),
+    )
+    .slice(0, 5);
+  const statCount = (attendanceReady ? 2 : 0) + (grades.isSuccess ? 1 : 0) + 1;
+  // Mốc "đã quá hạn" lấy lúc dữ liệu điểm về.
+  const gradesAt = grades.dataUpdatedAt;
+  // Giống BE: đổi khối bị khóa khi còn ghi danh đang học hoặc sắp học.
+  const gradeLocked = active.some(
+    (item) => !item.endDate || item.endDate.slice(0, 10) > today,
+  );
 
   return (
     <PageContainer maxWidth="full" className="min-w-0">
@@ -249,9 +315,8 @@ export function LiveStudentDetailView({ id }: { id: string }) {
                 items={[
                   {
                     id: "edit",
-                    label: "Sửa hồ sơ (chờ hệ thống hỗ trợ)",
-                    disabled: true,
-                    onClick: () => undefined,
+                    label: "Sửa hồ sơ",
+                    onClick: () => setEditing(true),
                   },
                   ...(isStaff
                     ? [
@@ -300,10 +365,7 @@ export function LiveStudentDetailView({ id }: { id: string }) {
               <Badge variant="outline">{studying.length} lớp đang học</Badge>
             </div>
             <div
-              className={cn(
-                "grid gap-4 sm:grid-cols-2",
-                attendanceReady ? "xl:grid-cols-3" : "xl:grid-cols-2",
-              )}
+              className={cn("grid gap-4 sm:grid-cols-2", STAT_COLUMNS[statCount])}
             >
               {attendanceReady && (
                 <>
@@ -332,6 +394,22 @@ export function LiveStudentDetailView({ id }: { id: string }) {
                     icon={<HugeiconsIcon icon={UserRemove01Icon} />}
                   />
                 </>
+              )}
+              {grades.isSuccess && (
+                <DashboardStatCard
+                  label="Điểm trung bình"
+                  value={
+                    average === null
+                      ? "—"
+                      : `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(average)}/10`
+                  }
+                  note={
+                    graded.length
+                      ? `${graded.length} bài đã công bố điểm, quy về thang 10`
+                      : "Chưa có bài công bố điểm"
+                  }
+                  icon={<HugeiconsIcon icon={StarIcon} />}
+                />
               )}
               <DashboardStatCard
                 label="Học phí đã đóng"
@@ -562,6 +640,50 @@ export function LiveStudentDetailView({ id }: { id: string }) {
                       )}
                     </CardContent>
                   </Card>
+                  {grades.isSuccess && (
+                    <Card className="min-w-0">
+                      <CardHeader>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <CardTitle>Điểm gần đây</CardTitle>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => void setTab("grades")}
+                          >
+                            Xem tất cả
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {recentGrades.length ? (
+                          <ul className="divide-y divide-border text-sm">
+                            {recentGrades.map((row) => (
+                              <li
+                                key={row.id}
+                                className="flex items-center justify-between gap-3 py-2"
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate font-medium">
+                                    {row.title}
+                                  </span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {row.class.name} · {assignmentKind(row)}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 font-medium tabular-nums">
+                                  {scoreText(row)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Chưa có bài công bố điểm.
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </div>
             )}
@@ -609,6 +731,91 @@ export function LiveStudentDetailView({ id }: { id: string }) {
                       </ul>
                     </details>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {tab === "grades" && (
+              <Card className="min-w-0">
+                <CardHeader>
+                  <CardTitle>Điểm & bài tập</CardTitle>
+                  <CardDescription>
+                    Bài đã giao cho học sinh, mới nhất trước. Điểm chỉ hiện khi
+                    giáo viên đã công bố.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="min-w-0">
+                  <AsyncBoundary
+                    isLoading={grades.isPending}
+                    isError={grades.isError}
+                    error={grades.error}
+                    onRetry={() => void grades.refetch()}
+                    data={grades.data}
+                    emptyProps={{ title: "Chưa có bài được giao" }}
+                  >
+                    <div className="overflow-x-auto rounded-xl border border-border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Bài</TableHead>
+                            <TableHead>Lớp</TableHead>
+                            <TableHead>Hạn nộp</TableHead>
+                            <TableHead>Bài nộp</TableHead>
+                            <TableHead className="text-right">Điểm</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {grades.data?.map((row) => (
+                            <TableRow key={row.id}>
+                              <TableCell className="max-w-80 whitespace-normal">
+                                <span className="font-medium">{row.title}</span>
+                                <span className="block text-xs text-muted-foreground">
+                                  {assignmentKind(row)}
+                                </span>
+                              </TableCell>
+                              <TableCell>{row.class.name}</TableCell>
+                              <TableCell className="tabular-nums">
+                                {displayMoment(row.dueAt)}
+                              </TableCell>
+                              <TableCell>
+                                {row.submission ? (
+                                  <span className="tabular-nums">
+                                    {displayMoment(row.submission.submittedAt)}
+                                    {row.submission.attemptNo > 1
+                                      ? ` · lần ${row.submission.attemptNo}`
+                                      : ""}
+                                  </span>
+                                ) : (
+                                  <Badge
+                                    variant={
+                                      Date.parse(row.dueAt) < gradesAt
+                                        ? "danger"
+                                        : "outline"
+                                    }
+                                  >
+                                    {Date.parse(row.dueAt) < gradesAt
+                                      ? "Không nộp"
+                                      : "Chưa nộp"}
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {row.grade && row.maxScore > 0 ? (
+                                  <span className="font-medium">
+                                    {scoreText(row as GradedRecord)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    {row.submission ? "Chưa công bố" : "—"}
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </AsyncBoundary>
                 </CardContent>
               </Card>
             )}
@@ -777,6 +984,53 @@ export function LiveStudentDetailView({ id }: { id: string }) {
           </>
         )}
       </AsyncBoundary>
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sửa hồ sơ học sinh</DialogTitle>
+            <DialogDescription>
+              Phụ huynh cũng sửa được hồ sơ trên ứng dụng. Thay đổi được ghi
+              vào lịch sử thay đổi.
+            </DialogDescription>
+          </DialogHeader>
+          {editing && student && (
+            <ApiForm
+              key={student.id}
+              schema={studentUpdateSchema}
+              defaults={{
+                fullName: student.fullName,
+                grade: String(student.grade),
+                dateOfBirth: student.dateOfBirth?.slice(0, 10) ?? "",
+              }}
+              fields={[
+                { name: "fullName", label: "Họ tên" },
+                {
+                  name: "grade",
+                  label: "Khối",
+                  type: "select",
+                  options: GRADE_OPTIONS,
+                  disabled: gradeLocked,
+                  description: gradeLocked
+                    ? "Học sinh đang học hoặc sắp học một lớp nên không đổi khối được."
+                    : "Lớp học theo khối; chỉ đổi khối khi chưa có ghi danh.",
+                },
+                {
+                  name: "dateOfBirth",
+                  label: "Ngày sinh",
+                  type: "date",
+                  description: "Để trống nếu chưa rõ.",
+                },
+              ]}
+              successMessage={false}
+              onSubmit={(value) => directoryApi.updateStudent(id, value)}
+              onSuccess={() => {
+                toast.success("Đã lưu hồ sơ học sinh.");
+                setEditing(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

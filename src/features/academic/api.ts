@@ -11,6 +11,7 @@ import type {
   AssignmentSummary,
   AttendanceSummary,
   ClassAttendanceSummary,
+  StudentGradeRecord,
   CurriculumFeedbackRecord,
   EmailDelivery,
   EnrollmentRecord,
@@ -168,12 +169,19 @@ export const academicApi = {
       { signal },
     ),
   /**
-   * Trang đầu buổi vắng chờ xếp học bù của cả trung tâm (Nhân viên; không truyền `studentId`).
-   * API không trả tổng nên chỉ đọc một trang; đủ `limit` dòng nghĩa là còn nữa.
+   * Buổi vắng đã ghi nhận (buổi đã chốt) chưa xếp học bù — cả trung tâm hoặc một học sinh.
+   * `completedOnly` bỏ các buổi tương lai mà danh sách học bù cho xếp trước.
    */
-  pendingMakeupSources: (limit: number, signal?: AbortSignal) =>
-    apiRequest<MakeupSource[]>(
-      queryPath("academic/makeup-sources", { page: 1, limit }),
+  recordedMakeupSources: (studentId?: string, signal?: AbortSignal) =>
+    readArrayPages<MakeupSource>(
+      "academic/makeup-sources",
+      { completedOnly: "true", studentId },
+      signal,
+    ),
+  /** Bài được giao của một học sinh kèm điểm đã công bố (Quản lý, Nhân viên). */
+  studentGrades: (studentId: string, signal?: AbortSignal) =>
+    apiRequest<StudentGradeRecord[]>(
+      `${itemPath("students", studentId)}/grades`,
       { signal },
     ),
   makeupSources: (studentId: string, signal?: AbortSignal) =>

@@ -5,6 +5,7 @@ import {
   invitationSchema,
   parentUpdateSchema,
   reviewInvitationSchema,
+  studentUpdateSchema,
 } from "@/lib/validators/web-workflows";
 import { queryPath, readDirectoryPages } from "@/features/academic/api";
 import type {
@@ -13,6 +14,7 @@ import type {
   ParentLookup,
   RegistrationOrder,
   StudentListItem,
+  StudentProfile,
 } from "@/types/backend";
 import type {
   AccountInvitation,
@@ -23,6 +25,17 @@ import type {
 
 /** Path prefix of the invitation endpoints: `/teacher-invitations`, `/manager-invitations`. */
 export type InvitationKind = "teacher" | "manager";
+/** Đường dẫn tài khoản nội bộ; Thiết kế giáo trình có API riêng (BE-10). */
+export type AccountKind = "staff" | "teachers" | "curriculum-designers";
+
+/** API tài khoản theo vai trò BE của tài khoản (`STAFF`, `TEACHER`, `CURRICULUM_DESIGNER`). */
+export function accountKindOf(account: Pick<BackendUser, "role">): AccountKind {
+  return account.role === "CURRICULUM_DESIGNER"
+    ? "curriculum-designers"
+    : account.role === "TEACHER"
+      ? "teachers"
+      : "staff";
+}
 
 export interface DashboardRecord {
   range: { fromDate: string; toDate: string };
@@ -52,21 +65,27 @@ export interface PaymentRecord {
 export type DirectoryFilters = Record<string, string | number | undefined>;
 export const directoryApi = {
   accounts: (
-    kind: "staff" | "teachers",
+    kind: AccountKind,
     filters: DirectoryFilters,
     signal?: AbortSignal,
   ) =>
     apiRequest<PaginatedList<BackendUser>>(queryPath(kind, filters), {
       signal,
     }),
-  account: (kind: "staff" | "teachers", id: string, signal?: AbortSignal) =>
+  /** Đọc hết các trang (danh sách Nhân viên, Thiết kế giáo trình ngắn). */
+  allAccounts: (
+    kind: AccountKind,
+    filters: DirectoryFilters,
+    signal?: AbortSignal,
+  ) => readDirectoryPages<BackendUser>(kind, filters, signal),
+  account: (kind: AccountKind, id: string, signal?: AbortSignal) =>
     apiRequest<BackendUser>(`${kind}/${encodeURIComponent(id)}`, { signal }),
-  createAccount: (kind: "staff", body: unknown) =>
+  createAccount: (kind: Exclude<AccountKind, "teachers">, body: unknown) =>
     apiRequest<BackendUser>(kind, {
       method: "POST",
       body: accountCreateSchema.parse(body),
     }),
-  updateAccount: (kind: "staff" | "teachers", id: string, body: unknown) =>
+  updateAccount: (kind: AccountKind, id: string, body: unknown) =>
     apiRequest<BackendUser>(`${kind}/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: accountUpdateSchema.parse(body),
@@ -77,6 +96,17 @@ export const directoryApi = {
     apiRequest<ParentLookup>(`parents/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: parentUpdateSchema.parse(body),
+    }),
+  /** Xóa hẳn tài khoản chưa dùng; còn hồ sơ con, đăng ký hay hoạt động thì 409 `PARENT_IN_USE`. */
+  deleteParent: (id: string) =>
+    apiRequest<{ id: string; deleted: true }>(
+      `parents/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
+  updateStudent: (id: string, body: unknown) =>
+    apiRequest<StudentProfile>(`students/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: studentUpdateSchema.parse(body),
     }),
   students: (signal?: AbortSignal) =>
     readDirectoryPages<StudentListItem>("students", {}, signal),
@@ -155,5 +185,15 @@ export const directoryApi = {
     apiRequest<PaginatedList<AuditLogRecord>>(
       queryPath("audit-logs", filters),
       { signal },
+    ),
+  /**
+   * Các lần xếp dạy thay tạo đến `to` (ISO). BE chỉ cho xếp dạy thay buổi tương lai, nên mọi lần
+   * xếp cho buổi bắt đầu trước `to` đều nằm trong danh sách này.
+   */
+  substituteAudits: (to: string, signal?: AbortSignal) =>
+    readDirectoryPages<AuditLogRecord>(
+      "audit-logs",
+      { action: "SESSION_SUBSTITUTE_ASSIGNED", to },
+      signal,
     ),
 };

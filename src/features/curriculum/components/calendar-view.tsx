@@ -43,8 +43,8 @@ const VIEW_LABELS: Record<CalendarView, string> = {
   week: "Tuần",
   day: "Ngày",
 };
-/** Giáo viên: danh sách buổi + điểm danh hoặc Kanban. Quản lý/Nhân viên: Kanban, Tuần, Ngày. */
-const TEACHER_VIEWS: readonly CalendarView[] = ["list", "board"];
+/** Giáo viên: danh sách buổi + điểm danh (mặc định), Kanban, Tuần, Ngày. Quản lý/Nhân viên: Kanban, Tuần, Ngày. */
+const TEACHER_VIEWS: readonly CalendarView[] = ["list", "board", "week", "day"];
 const BACK_OFFICE_VIEWS: readonly CalendarView[] = ["board", "week", "day"];
 
 /**
