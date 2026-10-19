@@ -2,7 +2,7 @@
 
 Ngày: 18/10/2026. Phạm vi: **chỉ Web** (`WDP301-FE-System`), 4 vai trò Quản lý trung tâm, Nhân viên, Giáo viên, Thiết kế giáo trình. App Mobile phụ huynh chỉ bị nhắc ở phần cần làm thêm.
 
-Trạng thái (cập nhật 19/10/2026): **Phase 1 đã push `dev`; Phase 2 đã hoàn tất code và kiểm tra tĩnh/hồi quy**. Phase 3, 4 đang được thực hiện lần lượt theo yêu cầu ngày 19/10. Kiểm thử trình duyệt với BE/DB riêng của Phase 2 đang được chuẩn bị; chưa báo nghiệm thu runtime khi môi trường chưa chạy được.
+Trạng thái (cập nhật 19/10/2026): **Phase 1, 2, 3 đã code xong, đã test trình duyệt trên BE/DB riêng và push `dev`**. Phase 4 chưa làm. Kết quả từng phase ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
 **Cách dùng:** nói với Claude Code _"Đọc `docs/UI_REDESIGN_HANDOFF_2026-10-18.md` rồi làm Phase 2"_ (hoặc 3, 4). Claude đọc [mục 0](#0-dành-cho-claude-code-đọc-mục-này-trước) để biết cách làm, rồi làm theo danh sách việc của phase đó ở [mục 10](#10-tiến-độ-theo-đợt-và-nghiệm-thu).
 
@@ -697,7 +697,15 @@ Kiểm tra đã chạy:
 
 ### 10.2 Phase 2: gộp menu Quản lý (code xong 19/10/2026)
 
-Đã tiếp tục từ WIP chưa commit của Claude, hoàn tất P2-1 đến P2-10. Kiểm tra: ESLint các file sửa đạt; `npm run lint` 0 lỗi, 4 cảnh báo import cũ ngoài phạm vi; `npx tsc --noEmit` đạt; `npx next build --webpack` đạt (63 trang tĩnh); 37 kiểm tra hồi quy local đạt. `ROLE_AREAS`, BFF permissions và schema Zod không đổi. **Chưa test giao diện với BE thật tại checkpoint này**: máy không có MySQL riêng, runtime BE cũ đang giữ DLL; đang chuẩn bị DB và runtime QA biệt lập, không dừng BE đang dùng. Kết quả runtime sẽ bổ sung khi có.
+Đã tiếp tục từ WIP chưa commit của Claude, hoàn tất P2-1 đến P2-10. Kiểm tra: ESLint các file sửa đạt; `npm run lint` 0 lỗi, 4 cảnh báo import cũ ngoài phạm vi; `npx tsc --noEmit` đạt; `npx next build --webpack` đạt (63 trang tĩnh); 37 kiểm tra hồi quy local đạt. `ROLE_AREAS`, BFF permissions và schema Zod không đổi. **Test trình duyệt (19/10/2026)**: BE build hiện tại chạy cổng riêng với DB riêng `edugrade_ui_qa` (migrate + `seed:dashboard`), tắt mail (`SMTP_URL=''`, `MAIL_FROM=''`); FE bản build `next start`; Playwright 1440×900 với 4 vai trò. Đạt 43/45 kiểm tra: menu 8 mục, 17 redirect giữ query, Sheet/Dialog phụ huynh (xem, khóa/mở khóa), Nhân sự (tạo nhân viên, khóa/mở), Thông báo, Khóa học & giáo trình, lưới lớp 4 cột + tab Phòng (thêm phòng), chi tiết lớp (tab, Dialog đổi giáo viên, menu ⋯, đóng/mở đăng ký), Kanban + Sheet 4 tab (đổi giờ xem trước rồi xác nhận, hủy buổi, xếp dạy thay → thẻ có nhãn _Dạy thay_), tài khoản 2 cột, lọc lịch sử theo người thực hiện (gửi `actorUserId`); Nhân viên không thấy tab Phòng, Sheet buổi chỉ có Nội dung, vào `/manager/people` bị 403; Thiết kế giáo trình chỉ thấy 1 mục menu. Không trang nào tràn ngang ở 1440px, không lỗi hydration. Lượt chạy lại sau khi sửa: Dialog sửa phụ huynh đạt; _Hủy buổi_ chỉ báo lỗi do dữ liệu test dùng lại (buổi đã hủy ở lượt đầu, lượt đầu đạt).
+
+Sửa thêm sau khi test runtime:
+
+- `RowActions` (`components/shared/data-table/row-actions.tsx`): nút ⋯ trước đây render rỗng ở **mọi nơi** vì `Button` cỡ `icon-*` chỉ vẽ `leftIcon` và bỏ `children`. Đã chuyển icon sang `leftIcon` và thêm `aria-label="Hành động"`.
+- Nút đóng mặc định của `SheetContent`/`DialogContent` (`components/ui`) mắc cùng lỗi (nút vô hình, không có tên). Không sửa tay `components/ui`; các Sheet mới dùng `SheetCloseButton` (`components/shared/actions/sheet-close-button.tsx`) với `showCloseButton={false}`. Dialog vẫn đóng bằng Esc/bấm ngoài. Xem câu hỏi mở.
+- Danh sách lớp/buổi học chỉ trả `teacherId`: tên giáo viên lấy từ danh sách giáo viên đang hoạt động (`registration-flow/teacher-names.ts`).
+- Dialog _Sửa thông tin phụ huynh_ và _Sửa tài khoản_: lưu xong dữ liệu đã đổi nhưng Dialog không đóng, không có toast. Nguyên nhân: `key` của `ApiForm` gồm cả tên/SĐT/trạng thái, refetch sau khi lưu làm form remount trước khi `onSuccess` chạy. Đã đổi `key` chỉ theo id.
+- Thẻ lớp: giữ nút chính hiện sẵn (Quản lý _Chi tiết_, Nhân viên _Thêm học sinh_) cạnh menu ⋯ theo thiết kế 5.3; các thao tác còn lại trong ⋯.
 
 - [x] P2-1: menu 8 mục, route mới, redirect giữ query lặp.
 - [x] P2-2: hub học sinh/phụ huynh, Sheet xem, Dialog sửa/khóa/mở khóa.
@@ -822,11 +830,34 @@ Không cần BE. Vai trò chính: Quản lý trung tâm (`center_manager`). Thi�
 - Thêm ô chọn _Người thực hiện_ vào `LiveAuditLogView`, giữ trên URL (`?actorUserId=`), gửi `actorUserId` cho `directoryApi.auditLogs`. BE đã nhận tham số này (`AuditLogQueryDto`).
 - Danh sách người để chọn lấy từ các API tài khoản Quản lý được gọi (nhân viên, giáo viên, quản lý). Có thêm lựa chọn _Tất cả_.
 
-_Câu hỏi mở Phase 2_: Không thêm quyết định nghiệp vụ; các hạn chế BE-8/9/10/12 giữ như mục 9. Kiểm thử trình duyệt/DB riêng còn chờ môi trường QA tại checkpoint này.
+_Câu hỏi mở Phase 2_:
 
-### 10.3 Phase 3: Giáo viên + giáo trình (chưa làm)
+- `src/components/ui/button.tsx` bỏ `children` khi `size` là `icon-*`, nên nút đóng mặc định của mọi `Dialog`/`Sheet` vô hình và không có tên cho trình đọc màn hình. Sửa đúng gốc là một dòng trong `components/ui` (vẽ `children` khi không có `leftIcon`), nhưng quy định không sửa tay thư mục này. Cần chủ dự án cho phép sửa (hoặc cập nhật qua CLI).
+- Các hạn chế BE-8/9/10/12 giữ như mục 9.
+
+### 10.3 Phase 3: Giáo viên + giáo trình (code xong, đã test 19/10/2026)
 
 Có đổi logic nhỏ đã chốt ở [mục 6](#6-những-chỗ-có-đổi-logic).
+
+**Kết quả.** Tiếp tục từ WIP chưa commit (ChatGPT) và hoàn thiện; P3-1 đến P3-9 xong. `npm run lint` 0 lỗi (4 cảnh báo cũ ngoài phạm vi), `npx tsc --noEmit` và `npx next build --webpack` đạt. Test trình duyệt cùng môi trường như 10.2 đạt 20/20:
+
+- [x] P3-1: menu 6 mục; 5 redirect giữ query; `/teacher/grading/[submissionId]` giữ.
+- [x] P3-2: bảng bài tập (Bài · Lớp · Hạn nộp · Đã nộp · Chưa chấm · Trạng thái), lọc `?filter=`; trang bài nộp có thẻ tổng hợp, tab lọc, cột _Bài tự luận_; Đề bài + giao bài/đóng/mở lại/công bố đáp án giữ nguyên.
+- [x] P3-3: chấm bài 2 phần, khung chấm `sticky`; **Gửi điểm** từ chưa chấm và từ nháp đều ra _Đã công bố_ với đúng 1 phiên bản (không tạo bản trùng); Lưu nháp, chấm trắc nghiệm, gợi ý AI giữ; ảnh bài làm hiện trong trang; nút _Bài chưa chấm tiếp theo_.
+- [x] P3-4: tạo/sửa bài tập 2 phần, _Thông tin chung_ cố định khi cuộn, có tổng điểm và nút Lưu nháp.
+- [x] P3-5: `/teacher/schedule?view=list|board`, mặc định Danh sách; buổi chưa diễn ra không có nút chốt.
+- [x] P3-6: Lớp của tôi 4 cột ở ≥1280px.
+- [x] P3-7: Báo cáo: form trái (cố định), bảng phải.
+- [x] P3-8: danh sách giáo trình nhóm theo khóa, cột Hiệu lực/Số bài/Trạng thái/Bước tiếp theo, lọc _Cần tôi xử lý_; chi tiết có thanh tiến trình duyệt, bảng bài + cột so sánh với bản gốc, sửa bài trong Sheet, cột Chương disable (BE-4); tạo kỳ mới; nhập CSV 2 phần + file mẫu `public/templates/giao-trinh-mau.csv` (UTF-8 có BOM để Excel đọc đúng); Giáo viên có tab _Phản hồi_. Quản lý không có nút tạo giáo trình.
+- [x] P3-9: `/manager/sessions` (Quản lý) sinh lịch theo khóa, tự chọn giáo trình đã duyệt phủ khoảng ngày, xem trước và sinh lần lượt từng lớp, mỗi lớp một idempotency key. Test: sinh 2 lớp Sinh học 6 (8 + 9 buổi tháng 12), sau đó nút còn _0 lớp_ và bị khóa, DB không có buổi trùng.
+
+Khác thiết kế / ghi chú:
+
+- Bảng báo cáo chưa có cột _Phạm vi_ và _Khoảng ngày_: `GET academic/reports` chỉ trả `id`, `classId`, `createdAt` (phạm vi nằm trong `snapshot`, không trả ở danh sách). Không dựng số giả.
+- Cột _Bài tự luận_ ghi "N tệp đính kèm" thay vì "N ảnh" vì tệp có thể là PDF.
+- Giáo viên chỉ còn 2 cách xem lịch (Danh sách / Kanban) theo P3-5; cách xem Tuần/Ngày vẫn có cho Quản lý và Nhân viên. Cách xem được chọn theo trang (`defaultView`), không theo role, để không nháy màn khi hydrate. `/manager/sessions` cũng chọn màn theo role phía server.
+- Gỡ code chết sau redirect: `LiveGradingQueue`/`live-grading-view.tsx`, `LiveAttendanceList`, `LiveCurriculumFeedback`.
+- Môi trường: `node_modules` của BE trên máy này từng được trỏ (junction) sang `tests/ui-redesign/be-deps` của repo FE; đã cài lại bằng `pnpm install --frozen-lockfile` + `npx prisma generate` trong BE (không sửa code, không commit BE). Để test sinh lịch, DB test riêng đã xóa 17 buổi tháng 12 chưa diễn ra của khóa Sinh học 6 (không đụng DB thật).
 
 **Chuẩn bị môi trường test**
 
@@ -913,7 +944,10 @@ Có đổi logic nhỏ đã chốt ở [mục 6](#6-những-chỗ-có-đổi-log
 - Redirect `/manager/classes/[id]/sessions` → `/manager/sessions?classId=<id>`.
 - Nghiệm thu: sinh lịch 2 lớp cùng khóa; một lớp lỗi không ảnh hưởng lớp kia; bấm lại không sinh trùng.
 
-_Câu hỏi mở Phase 3_: (Claude ghi vào đây khi làm.)
+_Câu hỏi mở Phase 3_:
+
+- Bảng báo cáo cần _Phạm vi_ và _Khoảng ngày_: BE trả thêm `studentId`, `from`, `to` (lấy từ `snapshot`) ở `GET academic/reports`? Có thể làm cùng các việc BE của Phase 4.
+- Giáo viên có cần giữ cách xem Tuần/Ngày ngoài Danh sách/Kanban không? Hiện bỏ theo P3-5.
 
 ### 10.4 Phase 4: màn mới và số liệu mới (chưa làm)
 
