@@ -29,17 +29,16 @@ import {
 } from "@/features/academic/components/live-fields";
 import { curriculumApi } from "@/features/curriculum/api";
 import { estimateLessons } from "@/features/curriculum/workspace-selectors";
-import { todayInVietnam } from "@/lib/calendar-date";
+import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import { DashboardStatCard } from "./dashboard-stat-card";
 
 const OPEN_FEEDBACK = ["OPEN", "IN_PROGRESS"];
 
 /**
- * Dashboard Thiết kế giáo trình (artboard TK-Dashboard). Vai trò này không đọc được lịch lớp
- * nên "bài cần" chờ BE-1 (số buổi/tuần của khóa); hiện số bài đã soạn và số tuần hiệu lực.
+ * Course frequency gives a planning estimate; schedule previews remain authoritative.
  */
 export function LiveDesignerDashboard() {
-  const today = todayInVietnam();
+  const today = useVietnamDate();
   const units = useLiveQuery(["designer-dashboard-units"], (signal) =>
     curriculumApi.units(undefined, signal),
   );
@@ -68,13 +67,13 @@ export function LiveDesignerDashboard() {
         nextByProgram.set(unit.programId, unit);
     }
   const readiness = [...nextByProgram.values()].map((unit) => {
-    // Thiết kế giáo trình không đọc được lịch lớp: chỉ có số tuần, chưa ước được số bài cần (BE-1).
     const estimate = estimateLessons(
       unit.fromDate.slice(0, 10),
       unit.toDate.slice(0, 10),
       [],
+      unit.program?.sessionsPerWeek,
     );
-    return { unit, lessons: unit._count?.lessons ?? 0, weeks: estimate?.weeks };
+    return { unit, lessons: unit._count?.lessons ?? 0, weeks: estimate?.weeks, needed: estimate?.max ?? null };
   });
   const stat = (value: number) => (units.isPending ? "…" : value);
 
@@ -121,8 +120,8 @@ export function LiveDesignerDashboard() {
           <CardHeader>
             <CardTitle>Sẵn sàng cho kỳ sau theo khóa</CardTitle>
             <CardDescription>
-              Giáo trình kỳ sau của từng khóa: số bài đã soạn và số tuần hiệu
-              lực. Số bài cần sẽ có khi khóa học có số buổi/tuần (BE-1).
+              Bài đã soạn và số bài dự kiến theo chuẩn số buổi/tuần của khóa.
+              Số buổi thực tế phụ thuộc lịch lớp và khoảng ngày.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -138,7 +137,7 @@ export function LiveDesignerDashboard() {
               }}
             >
               <ul className="space-y-4">
-                {readiness.map(({ unit, lessons, weeks }) => {
+                {readiness.map(({ unit, lessons, weeks, needed }) => {
                   return (
                     <li key={unit.id} className="space-y-1.5 text-sm">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -149,7 +148,7 @@ export function LiveDesignerDashboard() {
                           {unit.program?.name ?? unit.title} · {unit.title}
                         </Link>
                         <span className="tabular-nums text-muted-foreground">
-                          {lessons} bài
+                          {lessons} bài{needed !== null ? ` / dự kiến ${needed}` : " · Khóa chưa cấu hình số buổi/tuần"}
                           {weeks ? ` · ${weeks} tuần hiệu lực` : ""}
                         </span>
                       </div>

@@ -4,6 +4,7 @@ import { useId } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { StickyFormFooter } from "@/components/shared/workflows/sticky-form-footer";
 import { estimateLessons } from "../workspace-selectors";
+import { registrationApi } from "@/features/registration-flow/api";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -249,6 +250,7 @@ export function CurriculumRevisionForm({
   onCreated: (id: string, source?: "csv") => void;
 }) {
   const id = useId();
+  const program = useQuery({ queryKey: ["curriculum", "program-readiness", unit.programId], queryFn: ({ signal }) => registrationApi.program(unit.programId, signal), retry: false });
   const [source, setSource] = useQueryState(
     "lessonSource",
     parseAsStringLiteral(["copy", "csv", "empty"]).withDefault("copy"),
@@ -273,7 +275,8 @@ export function CurriculumRevisionForm({
   const errors = form.formState.errors;
   const fromDate = useWatch({ control: form.control, name: "fromDate" });
   const toDate = useWatch({ control: form.control, name: "toDate" });
-  const estimate = estimateLessons(fromDate, toDate, []);
+  const frequency = program.data?.sessionsPerWeek ?? unit.program?.sessionsPerWeek;
+  const estimate = estimateLessons(fromDate, toDate, [], frequency);
   return (
     <form
       className="space-y-4"
@@ -381,16 +384,17 @@ export function CurriculumRevisionForm({
           <Label htmlFor={id + "-weekly"}>Số buổi/tuần</Label>
           <Input
             id={id + "-weekly"}
-            disabled
-            placeholder="Chờ dữ liệu khóa học"
+            readOnly
+            value={frequency ?? ""}
+            placeholder="Chưa cấu hình"
           />
           <p className="text-xs text-muted-foreground">
-            Khóa học chưa có dữ liệu số buổi/tuần. Quản lý kiểm tra số bài cần
-            khi sinh lịch. Bản nguồn có{" "}
+            {estimate?.max == null ? "Quản lý cần cấu hình số buổi/tuần tại khóa học." : `Dự kiến ${estimate.max} bài theo số tuần làm tròn. Số buổi thực tế được kiểm tra theo lịch lớp khi sinh lịch.`} Bản nguồn có{" "}
             {unit.lessons.filter((lesson) => lesson.kind === "LESSON").length}{" "}
             bài.
           </p>
         </section>
+        <ApiFeedback error={program.error} retry={() => void program.refetch()} />
         <Button
           type="submit"
           isLoading={save.isPending}

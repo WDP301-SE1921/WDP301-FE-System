@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -815,6 +815,7 @@ function ClassSchedules({ classroom }: { classroom: RegistrationClass }) {
               slots.data,
               classroom.scheduleLocked,
               classroom.isOpen,
+              classroom.program.sessionsPerWeek,
             ])}
             classroom={classroom}
             slots={slots.data}
@@ -925,6 +926,7 @@ function ClassSchedulesForm({
   slots: WeeklySchedule[];
 }) {
   const qc = useQueryClient();
+  const frequency = classroom.program.sessionsPerWeek;
   const form = useForm<SchedulesInput>({
     resolver: zodResolver(schedulesSchema),
     defaultValues: {
@@ -938,16 +940,15 @@ function ClassSchedulesForm({
     },
   });
   const fields = useFieldArray({ control: form.control, name: "schedules" });
-  const [ids, setIds] = useState<(string | undefined)[]>(
-    slots.length ? slots.map((s) => s.id) : [undefined],
-  );
-  const [deleting, setDeleting] = useState<number | null>(null);
+  const schedules = useWatch({ control: form.control, name: "schedules" });
   const refresh = () => {
     void qc.invalidateQueries({
       queryKey: ["academic-schedules", classroom.id],
     });
     void qc.invalidateQueries({ queryKey: ["registration-class"] });
     void qc.invalidateQueries({ queryKey: ["registration-classes"] });
+    void qc.invalidateQueries({ queryKey: ["curriculum"] });
+    void qc.invalidateQueries({ queryKey: ["registration-programs"] });
     toast.success("Đã lưu lịch tuần.");
   };
   const save = useMutation({
@@ -956,25 +957,13 @@ function ClassSchedulesForm({
     retry: false,
     onSuccess: refresh,
   });
-  const edit = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: WeeklySchedule }) =>
-      registrationApi.updateSchedule(classroom.id, id, body),
-    retry: false,
-    onSuccess: refresh,
-  });
-  const remove = useMutation({
-    mutationFn: (id: string) =>
-      registrationApi.deleteSchedule(classroom.id, id),
-    retry: false,
-    onSuccess: refresh,
-  });
-  const busy = save.isPending || edit.isPending || remove.isPending;
+  const busy = save.isPending;
   return (
     <Card>
       <CardHeader>
         <CardTitle>Lịch cố định</CardTitle>
         <CardDescription>
-          Giờ Việt Nam. Lưu toàn bộ lịch hoặc cập nhật từng khung giờ.
+          Giờ Việt Nam. Thêm hoặc xóa khung giờ rồi lưu toàn bộ lịch.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -988,10 +977,21 @@ function ClassSchedulesForm({
               });
               return;
             }
+            if (v.schedules.length && (frequency == null || v.schedules.length !== frequency)) {
+              form.setError("schedules", { message: frequency == null
+                ? "Khóa chưa cấu hình số buổi/tuần. Quản lý cần cập nhật khóa trước khi lưu lịch."
+                : `Khóa yêu cầu ${frequency} buổi/tuần; hiện đã nhập ${v.schedules.length}.` });
+              return;
+            }
             save.mutate(v);
           })}
         >
           <fieldset disabled={busy} className="space-y-4">
+            <p role="status" className="text-sm text-muted-foreground">
+              Đã nhập {schedules.length} / {frequency ?? "chưa cấu hình"} buổi/tuần.
+              {frequency == null && " Cập nhật số buổi/tuần ở khóa học trước khi cấu hình lịch."}
+              {!classroom.isOpen && " Lớp đóng đăng ký được giữ lịch trống."}
+            </p>
             {fields.fields.map((field, i) => (
               <div
                 key={field.id}
@@ -1052,33 +1052,14 @@ function ClassSchedulesForm({
                   />
                 </div>
                 <div className="flex flex-wrap gap-2 sm:col-span-3">
-                  {ids[i] && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        if (await form.trigger("schedules"))
-                          edit.mutate({
-                            id: ids[i]!,
-                            body: form.getValues("schedules")[i],
-                          });
-                      }}
-                    >
-                      Lưu khung giờ
-                    </Button>
-                  )}
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
                     disabled={classroom.isOpen && fields.fields.length === 1}
                     onClick={() => {
-                      if (ids[i]) setDeleting(i);
-                      else {
-                        fields.remove(i);
-                        setIds((rows) => rows.filter((_, n) => n !== i));
-                      }
+                      fields.remove(i);
+                      form.clearErrors("schedules");
                     }}
                   >
                     Xóa khung giờ
@@ -1097,7 +1078,7 @@ function ClassSchedulesForm({
                     startTime: "18:00",
                     endTime: "20:00",
                   });
-                  setIds((rows) => [...rows, undefined]);
+                  form.clearErrors("schedules");
                 }}
               >
                 Thêm khung giờ
@@ -1108,24 +1089,8 @@ function ClassSchedulesForm({
             </div>
           </fieldset>
           <FieldError message={form.formState.errors.schedules?.message} />
-          <ApiFeedback error={save.error ?? edit.error ?? remove.error} />
+          <ApiFeedback error={save.error} />
         </form>
-        <ConfirmDialog
-          open={deleting !== null}
-          onOpenChange={(open) => {
-            if (!open) setDeleting(null);
-          }}
-          title="Xóa khung giờ đã lưu?"
-          variant="danger"
-          isLoading={remove.isPending}
-          onConfirm={async () => {
-            try {
-              await remove.mutateAsync(ids[deleting!]!);
-            } catch {
-              /* API feedback */
-            }
-          }}
-        />
       </CardContent>
     </Card>
   );

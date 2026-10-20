@@ -34,12 +34,14 @@ import {
 } from "@/components/ui/table";
 import {
   curriculumLabel,
+  curriculumEffectiveLabel,
   curriculumNeedsAction,
   curriculumNextStep,
   groupCurricula,
 } from "../workspace-selectors";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { useHubTab } from "@/hooks/use-hub-tab";
+import { useVietnamDate } from "@/hooks/use-vietnam-date";
 
 /** Trang danh sách giáo trình (Giáo viên thẩm định, admin). */
 export function CurriculumUnitsView({ programId }: { programId?: string }) {
@@ -107,6 +109,7 @@ export function CurriculumUnitsBody({
   isCreating?: boolean;
 }) {
   const router = useRouter();
+  const today = useVietnamDate();
   const role = useCurrentRole();
   const user = useCurrentUser();
   const [selectedProgramId] = useQueryState(
@@ -306,6 +309,7 @@ export function CurriculumUnitsBody({
                           category="curriculum"
                           status={curriculumStage(unit)}
                         />
+                        {curriculumEffectiveLabel(unit, today) && <p className="mt-1 text-xs text-muted-foreground">{curriculumEffectiveLabel(unit, today)}</p>}
                       </TableCell>
                       <TableCell className="max-w-64 whitespace-normal text-sm">
                         {curriculumNextStep(unit)}

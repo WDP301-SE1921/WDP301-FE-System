@@ -104,6 +104,8 @@ export interface RegistrationProgram {
   name: string;
   subject: string;
   grade: number;
+  /** Null while legacy courses await frequency configuration. */
+  sessionsPerWeek?: number | null;
   subjectId?: string | null;
   isActive?: boolean;
   subjectRecord?: AcademicSubject | null;

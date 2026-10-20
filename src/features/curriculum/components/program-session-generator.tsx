@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseAsArrayOf, parseAsString, useQueryStates } from "nuqs";
-import { useForm, useWatch, Controller } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
@@ -170,6 +170,7 @@ export function ProgramSessionGenerator({
                 key={`${user.id}:${programId}`}
                 userId={user.id}
                 units={units.data}
+                sessionsPerWeek={context.data?.programs.find((item) => item.id === programId)?.sessionsPerWeek}
                 classes={(context.data?.classes ?? []).filter(
                   (item) =>
                     item.programId === programId && item.isActive !== false,
@@ -200,6 +201,7 @@ function GenerationWorkspace({
   selectedIds,
   onSelection,
   selector,
+  sessionsPerWeek,
 }: {
   userId: string;
   units: CurriculumUnit[];
@@ -207,6 +209,7 @@ function GenerationWorkspace({
   selectedIds: string[];
   onSelection: (ids: string[]) => void;
   selector: React.ReactNode;
+  sessionsPerWeek?: number | null;
 }) {
   const approved = units.filter((unit) => unit.status === "APPROVED");
   const first = approved[0];
@@ -220,21 +223,32 @@ function GenerationWorkspace({
   });
   const values = useWatch({ control: form.control }) as ScheduleRangeInput;
   const covering = applicableUnits(units, values.fromDate, values.toDate);
-  const unitId =
-    covering.length === 1 ? covering[0].id : values.curriculumUnitId;
+  const unitId = covering.length === 1 ? covering[0].id : "";
   const input = { ...values, curriculumUnitId: unitId };
   const selected = classes.filter((item) => selectedIds.includes(item.id));
-  const [results, setResults] = useState<Record<string, ClassResult>>({});
+  const [results, setResults] = useState<Record<string, ClassResult>>(() => {
+    const restored: Record<string, ClassResult> = {};
+    if (typeof sessionStorage === "undefined") return restored;
+    for (const classroom of classes) {
+      try {
+        const attempt = readGenerationAttempt(userId, classroom.id);
+        if (attempt) restored[classroom.id] = { input: attempt.body, attempt };
+      } catch { /* Storage problems are shown when preview is requested. */ }
+    }
+    return restored;
+  });
   const [busy, setBusy] = useState<"preview" | "generate" | null>(null);
   const [notice, setNotice] = useState("");
   const lock = useRef(false);
   const client = useQueryClient();
   const now = useCurrentTime();
   const counts = new Set(classes.map((item) => item.weeklySchedules.length));
+  const contextVersion = JSON.stringify([sessionsPerWeek, units.map((unit) => [unit.id, unit.revision, unit.status, unit.fromDate, unit.toDate]), classes.map((item) => [item.id, item.weeklySchedules])]);
+  const selectionValid = covering.length === 1 && sessionsPerWeek != null && selected.every((item) => item.weeklySchedules.length === sessionsPerWeek);
   const ready = (result: ClassResult | undefined) =>
-    generationReady(result, input, now);
+    generationReady(result, input, now) && (!!result?.attempt || (selectionValid && result?.contextVersion === contextVersion));
   async function previewAll(value: ScheduleRangeInput) {
-    if (lock.current || !selected.length) return;
+    if (lock.current || !selected.length || !selectionValid) return;
     lock.current = true;
     setBusy("preview");
     setNotice("");
@@ -245,13 +259,14 @@ function GenerationWorkspace({
           sameInput(results[classroom.id].input, value)
         )
           continue;
-        let row: ClassResult = { input: value };
+        let row: ClassResult = { input: value, contextVersion };
         try {
           const attempt = readGenerationAttempt(userId, classroom.id);
           row = attempt
             ? { input: attempt.body, attempt }
             : {
                 input: value,
+                contextVersion,
                 preview: await curriculumApi.preview(classroom.id, value),
               };
         } catch (error) {
@@ -271,7 +286,7 @@ function GenerationWorkspace({
     setNotice("");
     try {
       const { succeeded, failed } = await generateSelectedClasses(
-        selected.map((item) => item.id),
+        selected.filter((item) => ready(results[item.id])).map((item) => item.id),
         results,
         input,
         {
@@ -349,34 +364,10 @@ function GenerationWorkspace({
                   <Label htmlFor="generation-unit">Giáo trình áp dụng</Label>
                   <p className="text-xs text-muted-foreground">
                     {covering.length > 1
-                      ? "Có nhiều giáo trình cùng hiệu lực. Chọn bản cần áp dụng."
-                      : "Không có đúng một bản phủ khoảng ngày. Chọn giáo trình và kiểm tra lại hiệu lực."}
+                      ? "Có nhiều giáo trình cùng hiệu lực. Tải lại dữ liệu và báo Quản lý xử lý xung đột trước khi sinh lịch."
+                      : "Không có giáo trình đã duyệt phủ trọn khoảng ngày. Nếu khoảng đi qua hai kỳ, chia thành từng khoảng thuộc một giáo trình."}
                   </p>
-                  <Controller
-                    control={form.control}
-                    name="curriculumUnitId"
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || null}
-                        items={approved.map((unit) => ({
-                          value: unit.id,
-                          label: unit.title,
-                        }))}
-                        onValueChange={(value) => field.onChange(value ?? "")}
-                      >
-                        <SelectTrigger id="generation-unit">
-                          <SelectValue placeholder="Chọn giáo trình đã duyệt" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {approved.map((unit) => (
-                            <SelectItem key={unit.id} value={unit.id}>
-                              {unit.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
+                  <Button type="button" size="sm" variant="outline" onClick={() => void client.invalidateQueries({ queryKey: ["curriculum"] })}>Tải lại giáo trình</Button>
                 </div>
               )}
               <FieldError
@@ -387,6 +378,9 @@ function GenerationWorkspace({
                   Khóa chưa có giáo trình đã duyệt.
                 </p>
               )}
+              <p className="text-sm text-muted-foreground">
+                {sessionsPerWeek == null ? "Khóa chưa cấu hình số buổi/tuần. Quản lý cần cập nhật khóa trước khi sinh lịch." : `Chuẩn khóa: ${sessionsPerWeek} buổi/tuần. Lớp lệch chuẩn cần sửa lịch trước khi sinh.`}
+              </p>
               <fieldset className="space-y-3">
                 <legend className="mb-2 text-sm font-medium">
                   Lớp của khóa
@@ -414,6 +408,7 @@ function GenerationWorkspace({
                       <span className="block">{classroom.name}</span>
                       <span className="block text-xs font-normal text-muted-foreground">
                         {classroom.weeklySchedules.length} buổi/tuần
+                        {sessionsPerWeek != null && classroom.weeklySchedules.length !== sessionsPerWeek && ` · Chưa đủ chuẩn ${sessionsPerWeek} buổi`}
                       </span>
                     </Label>
                   </div>
@@ -432,7 +427,7 @@ function GenerationWorkspace({
               )}
               <Button
                 type="submit"
-                disabled={!selected.length || !approved.length}
+                disabled={!selected.length || !selectionValid}
                 isLoading={busy === "preview"}
               >
                 Xem trước {selected.length} lớp

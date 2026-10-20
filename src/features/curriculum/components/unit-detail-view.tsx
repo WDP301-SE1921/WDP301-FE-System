@@ -52,7 +52,8 @@ import {
   LessonChangeContent,
   useCurriculumComparison,
 } from "./curriculum-comparison";
-import { LESSON_CHANGE_LABELS } from "../workspace-selectors";
+import { canCopyCurriculum, curriculumEffectiveLabel, LESSON_CHANGE_LABELS } from "../workspace-selectors";
+import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import type { CurriculumLesson } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { curriculumStage } from "../presentation";
@@ -98,6 +99,7 @@ const editorTitles: Record<Editor["kind"], string> = {
 
 export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   const role = useCurrentRole();
+  const today = useVietnamDate();
   const user = useCurrentUser();
   const router = useRouter();
   const query = useCurriculumUnit(unitId);
@@ -191,7 +193,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   const canRevise =
     role === "curriculum_designer" &&
     unit?.designerId === user?.id &&
-    unit?.status === "APPROVED";
+    !!unit && canCopyCurriculum(unit);
   const canTechnicalReview =
     role === "teacher" &&
     unit?.status === "PENDING_REVIEW" &&
@@ -382,6 +384,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     category="curriculum"
                     status={curriculumStage(unit)}
                   />
+                  {curriculumEffectiveLabel(unit, today) && <p className="text-sm text-muted-foreground">{curriculumEffectiveLabel(unit, today)}</p>}
                   <p className="text-sm text-muted-foreground">
                     {regular.length} bài học · Mỗi buổi một bài
                   </p>
@@ -849,7 +852,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
               open={confirmApply}
               onOpenChange={setConfirmApply}
               title="Xác nhận áp dụng giáo trình?"
-              description="Giáo viên đã đồng ý về chuyên môn. Giáo trình được dùng để tạo lịch học sau khi xác nhận."
+              description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản tương lai chờ đến ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi đã sinh được giữ nguyên.`}
               confirmText="Xác nhận áp dụng"
               isLoading={approve.isPending}
               onConfirm={async () => {

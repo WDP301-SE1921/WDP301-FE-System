@@ -30,6 +30,7 @@ const FIELD_LABELS: Record<string, string> = {
   teacherId: "Giáo viên",
   reviewerTeacherId: "Giáo viên thẩm định",
   programId: "Khóa học",
+  sessionsPerWeek: "Số buổi/tuần",
   roomId: "Phòng học",
   sessionId: "Buổi học",
   subjectId: "Môn học",

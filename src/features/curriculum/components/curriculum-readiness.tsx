@@ -188,6 +188,10 @@ export function CurriculumReadinessCards({
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
+            Chuẩn khóa: {readiness.sessionsPerWeek == null ? "chưa cấu hình" : `${readiness.sessionsPerWeek} buổi/tuần`}.
+            {readiness.plannedNeed !== null && ` Dự kiến ${readiness.plannedNeed} bài theo số tuần làm tròn; số thực tế từng lớp ở dưới.`}
+          </p>
+          <p className="text-sm text-muted-foreground">
             Mỗi buổi một bài, tính theo lịch tuần của từng lớp trong {range}.
           </p>
           {readiness.needs === null ? (

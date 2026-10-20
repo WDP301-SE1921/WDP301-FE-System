@@ -68,6 +68,8 @@ import {
   type AcademicProgramInput,
 } from "@/lib/validators/academic-catalog";
 import type { AcademicSubject, RegistrationProgram } from "@/types/backend";
+import { curriculumEffectiveLabel } from "@/features/curriculum/workspace-selectors";
+import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { registrationApi } from "../api";
 
@@ -88,6 +90,9 @@ function useCatalogRefresh() {
       ["registration-programs"],
       ["academic-program"],
       ["registration-classes"],
+      ["registration-class"],
+      ["curriculum"],
+      ["web-api"],
     ])
       void client.invalidateQueries({ queryKey: key });
   };
@@ -118,6 +123,7 @@ export function SubjectsCatalogTab({
  * Quản lý chỉ xem / duyệt giáo trình ở trang chi tiết, không có nút tạo giáo trình.
  */
 function ProgramsCatalog() {
+  const today = useVietnamDate();
   const refresh = useCatalogRefresh();
   const [{ search, catalogPage, programFilter }, setFilters] = useQueryStates({
     search: parseAsString.withDefault(""),
@@ -313,6 +319,7 @@ function ProgramsCatalog() {
                                 </Button>
                                 <span className="text-sm text-muted-foreground">
                                   {program.subject} · Khối {program.grade} ·{" "}
+                                  {program.sessionsPerWeek == null ? "Chưa cấu hình số buổi/tuần" : `${program.sessionsPerWeek} buổi/tuần`} ·{" "}
                                   {classes.isPending
                                     ? "đang tải lớp…"
                                     : classes.isError
@@ -440,6 +447,7 @@ function ProgramsCatalog() {
                                     category="curriculum"
                                     status={stage}
                                   />
+                                  {curriculumEffectiveLabel(unit, today) && <p className="mt-1 text-xs text-muted-foreground">{curriculumEffectiveLabel(unit, today)}</p>}
                                 </TableCell>
                                 <TableCell className="sticky right-0 bg-card text-right">
                                   <Button
@@ -771,11 +779,15 @@ function ProgramForm({
   inline?: boolean;
 }) {
   const form = useForm<AcademicProgramInput>({
-    resolver: zodResolver(academicProgramSchema),
+    resolver: zodResolver(academicProgramSchema.superRefine((value, context) => {
+      if (!program && value.sessionsPerWeek === undefined)
+        context.addIssue({ code: "custom", path: ["sessionsPerWeek"], message: "Nhập số buổi/tuần của khóa." });
+    })),
     defaultValues: {
       name: program?.name ?? "",
       subjectId: program?.subjectId ?? "",
       grade: program?.grade ?? 6,
+      sessionsPerWeek: program?.sessionsPerWeek ?? undefined,
       isActive: program?.isActive ?? true,
     },
   });
@@ -799,7 +811,7 @@ function ProgramForm({
     <form
       className={
         inline
-          ? "grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
+          ? "grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
           : "space-y-3"
       }
       onSubmit={form.handleSubmit((v) => save.mutate(v))}
@@ -869,11 +881,24 @@ function ProgramForm({
           />
         </div>
       </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-weekly`}>Số buổi/tuần</Label>
+        <Input id={`${idPrefix}-weekly`} type="number" min={1} max={14} step={1}
+          aria-invalid={!!form.formState.errors.sessionsPerWeek}
+          aria-describedby={`${idPrefix}-weekly-help`}
+          placeholder="Chưa cấu hình"
+          {...form.register("sessionsPerWeek", { setValueAs: (value) => value === "" ? undefined : Number(value) })}
+        />
+        <p id={`${idPrefix}-weekly-help`} className="text-xs text-muted-foreground">
+          Mỗi khung giờ học tính là một buổi. {program && program.sessionsPerWeek == null ? "Để trống để giữ nguyên khóa chưa cấu hình." : "Từ 1 đến 14 buổi/tuần."}
+        </p>
+        <FieldError message={form.formState.errors.sessionsPerWeek?.message} />
+      </div>
       {!choices.length && (
         <p
           className={cn(
             "text-sm text-muted-foreground",
-            inline && "md:col-span-4",
+            inline && "md:col-span-5",
           )}
         >
           Tạo môn học trước khi tạo khóa.
@@ -895,7 +920,7 @@ function ProgramForm({
           )}
         />
       )}
-      <div className={inline ? "md:col-span-4 md:row-start-2 empty:hidden" : undefined}>
+      <div className={inline ? "md:col-span-5 md:row-start-2 empty:hidden" : undefined}>
         <ApiFeedback error={save.error} />
       </div>
       <div className={inline ? "md:pt-7" : undefined}>

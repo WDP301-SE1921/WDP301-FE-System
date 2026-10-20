@@ -30,9 +30,10 @@ export function useClassStateMutation() {
   });
 }
 
-/** Lớp chỉ mở đăng ký được khi đang hoạt động và đã có lịch tuần. */
+/** Opening requires a configured course and a complete weekly schedule. */
 export function canOpenRegistration(
-  classroom: Pick<RegistrationClass, "isActive" | "weeklySchedules">,
+  classroom: Pick<RegistrationClass, "isActive" | "weeklySchedules" | "program">,
 ) {
-  return classroom.isActive !== false && classroom.weeklySchedules.length > 0;
+  return classroom.isActive !== false && classroom.program.sessionsPerWeek != null &&
+    classroom.weeklySchedules.length === classroom.program.sessionsPerWeek;
 }
