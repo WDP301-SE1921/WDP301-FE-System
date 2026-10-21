@@ -4,7 +4,7 @@ import { AcademicCalendarView } from "@/features/curriculum/components/calendar-
 export default function StaffSchedulePage() {
   return (
     <Suspense fallback={<p>Đang tải buổi học…</p>}>
-      <AcademicCalendarView />
+      <AcademicCalendarView defaultView="board" />
     </Suspense>
   );
 }

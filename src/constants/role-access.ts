@@ -48,6 +48,7 @@ const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: S.STUDENTS, area: AREA.STUDENTS },
   { prefix: S.PROFILE, area: AREA.PROFILE },
   { prefix: S.CLASSES, area: AREA.CLASSES },
+  { prefix: S.DASHBOARD, area: AREA.DASHBOARD },
   { prefix: S.SCHEDULE, area: AREA.SCHEDULE },
   { prefix: "/staff/absences", area: AREA.ABSENCES },
   { prefix: "/manager/absences", area: AREA.ABSENCES },
@@ -59,6 +60,7 @@ const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: M.ROOMS, area: AREA.ROOMS },
   { prefix: M.CURRICULUM, area: AREA.CATALOG },
   { prefix: "/manager/notifications", area: AREA.NOTIFICATIONS },
+  { prefix: M.PEOPLE, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.STAFF_ACCOUNTS, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.MANAGERS, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.AUDIT_LOGS, area: AREA.AUDIT_LOGS },
@@ -120,8 +122,8 @@ export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
 export const ROLE_HOME_ROUTE: Record<WebRole, string> = {
   [ROLES.ADMIN]: ROUTES.MANAGER.DASHBOARD,
   [ROLES.CENTER_MANAGER]: ROUTES.MANAGER.DASHBOARD,
-  [ROLES.CURRICULUM_DESIGNER]: ROUTES.MANAGER.CURRICULUM,
-  [ROLES.STAFF]: ROUTES.STAFF.ENROLLMENT_NEW,
+  [ROLES.CURRICULUM_DESIGNER]: ROUTES.MANAGER.CURRICULUM_OVERVIEW,
+  [ROLES.STAFF]: ROUTES.STAFF.DASHBOARD,
   [ROLES.TEACHER]: ROUTES.TEACHER.DASHBOARD,
 };
 

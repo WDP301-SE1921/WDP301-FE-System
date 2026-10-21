@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tạo giáo trình cho kỳ mới</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="designer" active="curriculum" hint-size="256px,400px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Hoàng Thị Lan" role-label="Thiết kế giáo trình" email="curriculum-designer.qa@edugrade.test" initials="HL" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page" style="gap: 20px">
+<nav class="eg-crumb" aria-label="Đường dẫn"><a href="GT-DanhSach.dc.html">Giáo trình</a><span aria-hidden="true">›</span><span style="color: #0a0a0a">Tạo giáo trình</span></nav>
+<div class="eg-ph"><div><h1 class="eg-h1">Tạo giáo trình cho kỳ mới</h1><p class="eg-sub">Một khóa học dùng một giáo trình cho mọi lớp. Tạo xong là bản nháp, soạn tiếp ở bảng bài học.</p></div></div>
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Thông tin giáo trình">
+<div class="eg-field"><label class="eg-label" for="nt-p">Khóa học</label><select id="nt-p" class="eg-select"><option>Toán 9 · Khối 9 · 3 buổi/tuần</option><option>Toán 6 · Khối 6 · 2 buổi/tuần</option></select></div>
+<div class="eg-field"><label class="eg-label" for="nt-t">Tên kỳ</label><input id="nt-t" class="eg-input" value="HK2 2026–2027"><p class="eg-help">Tên giáo trình sẽ là “Toán 9 · HK2 2026–2027”.</p></div>
+<div class="eg-two">
+<div class="eg-field"><label class="eg-label" for="nt-f">Áp dụng từ</label><input id="nt-f" class="eg-input" type="date" value="2027-01-18"></div>
+<div class="eg-field"><label class="eg-label" for="nt-e">Đến ngày</label><input id="nt-e" class="eg-input" type="date" value="2027-05-16"></div>
+</div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><legend class="eg-label" style="padding: 0; margin-bottom: 8px">Bài học lấy từ</legend>
+<label class="eg-choice on"><input type="radio" name="src" checked><span><b>Sao chép từ kỳ đang dùng</b><br><span class="eg-xs eg-muted">Toán 9 · HK1 2026–2027 · 57 bài. Sửa, thêm, bớt sau khi tạo.</span></span></label>
+<label class="eg-choice"><input type="radio" name="src"><span><b>Nhập từ file CSV</b><br><span class="eg-xs eg-muted">Tạo bản trống rồi mở bước nhập file có xem trước.</span></span></label>
+<label class="eg-choice"><input type="radio" name="src"><span><b>Soạn từ đầu</b><br><span class="eg-xs eg-muted">Tạo bản trống, thêm từng bài trong bảng.</span></span></label>
+</fieldset>
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><a class="eg-btn eg-btn-o" href="GT-DanhSach.dc.html">Hủy</a><a class="eg-btn eg-btn-p" href="GT-ChiTiet.dc.html">Tạo bản nháp</a></div>
+</section>
+
+<section class="eg-right eg-col" style="gap: 16px" aria-label="Kiểm tra trước khi tạo">
+<div class="eg-card" style="gap: 14px">
+<p class="eg-ct">Kiểm tra trước khi tạo</p>
+<div class="eg-row" style="gap: 12px; align-items: stretch">
+<div class="eg-stat"><span class="eg-xs eg-muted">Số tuần học</span><b>17</b><span class="eg-xs eg-muted">18/01 → 16/05/2027</span></div>
+<div class="eg-stat"><span class="eg-xs eg-muted">Số buổi/tuần</span><b>3</b><span class="eg-xs eg-muted">theo khóa Toán 9</span></div>
+<div class="eg-stat" style="border-color: #bedbff; background: #eff6ff"><span class="eg-xs" style="color: #1447e6">Số bài cần</span><b style="color: #1447e6">51</b><span class="eg-xs" style="color: #1447e6">17 × 3</span></div>
+<div class="eg-stat" style="border-color: #fee685; background: #fffbeb"><span class="eg-xs" style="color: #7b3306">Bản nguồn có</span><b style="color: #7b3306">57</b><span class="eg-xs" style="color: #7b3306">thừa 6 bài</span></div>
+</div>
+<div class="eg-col" style="gap: 8px">
+<p class="eg-note eg-ok" style="display: flex; gap: 8px; align-items: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6 9 17l-5-5"></path></svg><span>Không chồng ngày với bản đang dùng (HK1 kết thúc 16/01/2027).</span></p>
+<p class="eg-note eg-ok" style="display: flex; gap: 8px; align-items: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6 9 17l-5-5"></path></svg><span>Ngày bắt đầu sau kỳ gốc và sau hôm nay.</span></p>
+<p class="eg-note eg-warn" style="display: flex; gap: 8px; align-items: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M12 3 2 20h20Z"></path><path d="M12 10v4M12 17h.01"></path></svg><span>Bản nguồn nhiều hơn 6 bài so với số buổi. Sau khi tạo, gộp hoặc xóa bớt để mỗi buổi đúng một bài.</span></p>
+</div>
+</div>
+<div class="eg-card" style="gap: 12px">
+<div class="eg-row-sb"><p class="eg-ct">Lớp sẽ dùng giáo trình này</p><span class="eg-badge eg-b-gray">1 lớp</span></div>
+<div class="eg-row-sb" style="padding: 12px 14px; border: 1px solid #e5e5e5; border-radius: 14px"><span><b>Toán 9A - Tối 3, 5, 7</b><br><span class="eg-xs eg-muted">3 buổi/tuần · Bùi Đức Long · P.201</span></span><span class="eg-badge eg-b-green">Đúng số buổi</span></div>
+<p class="eg-help">Quy trình sau khi tạo: soạn bài → kiểm tra cấu trúc → giáo viên thẩm định → quản lý duyệt → quản lý sinh lịch theo khóa.</p>
+</div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

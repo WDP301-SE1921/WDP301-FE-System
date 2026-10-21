@@ -22,7 +22,7 @@ cp .env.example .env.local   # fill in API URL, etc.
 npm run dev
 ```
 
-Open http://localhost:3000
+Open http://localhost:3001 (the backend keeps port 3000)
 
 ## Scripts
 

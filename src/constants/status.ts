@@ -73,6 +73,14 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
   curriculum: {
     DRAFT: { label: "Bản nháp", variant: "secondary" },
     PENDING_REVIEW: { label: "Chờ duyệt", variant: "warning" },
+    PENDING_TECHNICAL_REVIEW: {
+      label: "Chờ thẩm định chuyên môn",
+      variant: "warning",
+    },
+    PENDING_MANAGER_CONFIRMATION: {
+      label: "Chờ xác nhận áp dụng",
+      variant: "info",
+    },
     APPROVED: { label: "Đã duyệt", variant: "success" },
     ARCHIVED: { label: "Đã lưu trữ", variant: "neutral" },
   },

@@ -2,10 +2,21 @@
 import Link from "next/link";
 import { useState } from "react";
 import { z } from "zod";
-import { parseAsString, useQueryState, useQueryStates } from "nuqs";
+import {
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+  useQueryStates,
+} from "nuqs";
 import { Button } from "@/components/ui/button";
-import { PageContainer } from "@/components/shared/layout/page-container";
-import { PageHeader } from "@/components/shared/layout/page-header";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { ApiForm } from "@/components/shared/forms/api-form";
@@ -60,86 +71,170 @@ const transferFormSchema = z.object({
   effectiveAt: localDateTimeSchema,
   reason: reasonSchema.shape.reason,
 });
-const TITLES = {
-  makeup: "Nghỉ học và học bù",
-  swap: "Đổi một buổi học",
-  change: "Đổi lớp và lịch cố định",
+
+/**
+ * Các thao tác trong panel "Xử lý" của học sinh. Trước đây mỗi thao tác là một trang riêng
+ * dưới /staff/absences; "Đổi một buổi" và "Nghỉ học và học bù" hiển thị cùng các panel
+ * nên gộp chung tab makeup.
+ */
+export const STUDENT_ACTIONS = {
+  makeup: "Nghỉ & học bù",
+  change: "Đổi lớp / lịch cố định",
   leave: "Nghỉ dài hạn",
-  withdraw: "Nghỉ môn / Nghỉ hẳn",
+  withdraw: "Nghỉ môn / nghỉ hẳn",
+} as const;
+export type StudentAction = keyof typeof STUDENT_ACTIONS;
+const ACTION_KEYS = Object.keys(STUDENT_ACTIONS) as StudentAction[];
+
+/** Query của panel Xử lý (`?studentId=&enrollmentId=&action=`). */
+export const studentWorkflowParsers = {
+  studentId: parseAsString.withDefault(""),
+  enrollmentId: parseAsString.withDefault(""),
+  action: parseAsStringLiteral(ACTION_KEYS).withDefault("makeup"),
 };
-export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
-  const [{ studentId, enrollmentId }, setSelection] = useQueryStates({
-    studentId: parseAsString.withDefault(""),
-    enrollmentId: parseAsString.withDefault(""),
-  });
-  const students = useLiveQuery(["workflow-students"], (signal) =>
-    directoryApi.students(signal),
+/** Query riêng của từng panel con; đổi tab hoặc đóng panel thì xóa để lần sau bắt đầu sạch. */
+const panelParsers = {
+  sessionId: parseAsString,
+  sourceId: parseAsString,
+  targetSessionId: parseAsString,
+};
+const CLEARED_PANEL = { sessionId: null, sourceId: null, targetSessionId: null };
+
+/** Panel bên phải mở từ nút "Xử lý" trên bảng học sinh. */
+export function StudentWorkflowSheet() {
+  const [{ studentId, enrollmentId, action }, setSelection] = useQueryStates(
+    studentWorkflowParsers,
   );
+  const [, setPanel] = useQueryStates(panelParsers);
+  const student = useLiveQuery(
+    ["workflow-student", studentId],
+    (signal) => directoryApi.student(studentId, signal),
+    !!studentId,
+  );
+  return (
+    <Sheet
+      open={!!studentId}
+      onOpenChange={(open) => {
+        if (open) return;
+        void setSelection({ studentId: null, enrollmentId: null, action: null });
+        void setPanel(CLEARED_PANEL);
+      }}
+    >
+      <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+        <SheetHeader className="pr-12">
+          <SheetTitle>
+            {student.data?.fullName ?? "Xử lý cho học sinh"}
+          </SheetTitle>
+          <SheetDescription>
+            {student.data
+              ? `Khối ${student.data.grade} · Phụ huynh ${student.data.parentProfile.user.displayName || student.data.parentProfile.user.email}`
+              : "Ghi nghỉ, xếp học bù, đổi lớp hoặc cho nghỉ. Các thay đổi được lưu tại trung tâm."}
+          </SheetDescription>
+        </SheetHeader>
+        <div className="space-y-4 pt-4">
+          <AsyncBoundary
+            isLoading={!!studentId && student.isPending}
+            isError={student.isError}
+            error={student.error}
+            onRetry={() => void student.refetch()}
+          >
+            {studentId && (
+              <StudentWorkflowBody
+                key={studentId}
+                studentId={studentId}
+                student={student.data}
+                enrollmentId={enrollmentId}
+                action={action}
+                onEnrollmentChange={(value) =>
+                  void setSelection({ enrollmentId: value })
+                }
+                onActionChange={(value) => {
+                  void setSelection({ action: value });
+                  void setPanel(CLEARED_PANEL);
+                }}
+              />
+            )}
+          </AsyncBoundary>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function StudentWorkflowBody({
+  studentId,
+  student,
+  enrollmentId,
+  action,
+  onEnrollmentChange,
+  onActionChange,
+}: {
+  studentId: string;
+  student?: StudentListItem;
+  enrollmentId: string;
+  action: StudentAction;
+  onEnrollmentChange: (value: string) => void;
+  onActionChange: (value: StudentAction) => void;
+}) {
   const enrollments = useLiveQuery(
     ["student-enrollments", studentId],
     (signal) => directoryApi.studentEnrollments(studentId, signal),
-    !!studentId,
   );
-  const student = students.data?.find((item) => item.id === studentId);
   const enrollment = enrollments.data?.find((item) => item.id === enrollmentId);
   return (
-    <PageContainer>
-      <PageHeader
-        title={TITLES[mode]}
-        description="Chọn hồ sơ con và ghi danh cần xử lý. Các thay đổi được lưu tại trung tâm."
-      />
+    <>
       <AsyncBoundary
-        isLoading={students.isPending}
-        isError={students.isError}
-        error={students.error}
-        onRetry={() => void students.refetch()}
-        data={students.data}
-        emptyProps={{ title: "Chưa có hồ sơ học sinh" }}
+        isLoading={enrollments.isPending}
+        isError={enrollments.isError}
+        error={enrollments.error}
+        onRetry={() => void enrollments.refetch()}
+        data={enrollments.data}
+        emptyProps={{ title: "Học sinh chưa có ghi danh" }}
       >
         <LiveSelect
-          label="Học sinh"
-          value={studentId}
-          options={(students.data ?? []).map((item) => ({
+          label="Ghi danh cần xử lý"
+          value={enrollmentId}
+          options={(enrollments.data ?? []).map((item) => ({
             value: item.id,
-            label: `${item.fullName} · Khối ${item.grade} · ${item.parentProfile.user.email}`,
+            label: `${item.class.name} · ${STATUS_TEXT[item.status] ?? "Chưa xác định trạng thái"} · ${item.startDate ? displayDate(item.startDate) : ""}–${item.endDate ? displayDate(item.endDate) : ""}`,
           }))}
-          onChange={(value) =>
-            void setSelection({ studentId: value, enrollmentId: "" })
-          }
+          onChange={onEnrollmentChange}
         />
       </AsyncBoundary>
-      {!!studentId && (
-        <AsyncBoundary
-          isLoading={enrollments.isPending}
-          isError={enrollments.isError}
-          error={enrollments.error}
-          onRetry={() => void enrollments.refetch()}
-          data={enrollments.data}
-          emptyProps={{ title: "Học sinh chưa có ghi danh" }}
+      <Tabs
+        value={action}
+        onValueChange={(value) => {
+          const next = ACTION_KEYS.find((key) => key === value);
+          if (next) onActionChange(next);
+        }}
+      >
+        <TabsList
+          aria-label="Chọn thao tác"
+          className="h-auto flex-wrap justify-start"
         >
-          <LiveSelect
-            label="Ghi danh"
-            value={enrollmentId}
-            options={(enrollments.data ?? []).map((item) => ({
-              value: item.id,
-              label: `${item.class.name} · ${STATUS_TEXT[item.status] ?? item.status} · ${item.startDate ? displayDate(item.startDate) : ""}–${item.endDate ? displayDate(item.endDate) : ""}`,
-            }))}
-            onChange={(value) => void setSelection({ enrollmentId: value })}
-          />
-        </AsyncBoundary>
+          {ACTION_KEYS.map((key) => (
+            <TabsTrigger key={key} value={key}>
+              {STUDENT_ACTIONS[key]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      {!enrollmentId && action !== "makeup" && (
+        <p className="text-sm text-muted-foreground">
+          Chọn ghi danh ở trên để thực hiện thao tác này.
+        </p>
       )}
-      {enrollment?.status === "ACTIVE" &&
-        (mode === "makeup" || mode === "swap") && (
-          <SingleAbsence key={enrollment.id} enrollment={enrollment} />
-        )}
-      {studentId && (mode === "makeup" || mode === "swap") && (
+      {enrollment?.status === "ACTIVE" && action === "makeup" && (
+        <SingleAbsence key={enrollment.id} enrollment={enrollment} />
+      )}
+      {action === "makeup" && (
         <MakeupPanel
           key={`makeup-${studentId}`}
           studentId={studentId}
           enrollments={enrollments.data ?? []}
         />
       )}
-      {enrollment?.status === "ACTIVE" && mode === "leave" && (
+      {enrollment?.status === "ACTIVE" && action === "leave" && (
         <Card>
           <CardHeader>
             <CardTitle>Tạo kỳ nghỉ</CardTitle>
@@ -164,10 +259,10 @@ export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
           </CardContent>
         </Card>
       )}
-      {enrollment?.status === "ACTIVE" && mode === "change" && (
+      {enrollment?.status === "ACTIVE" && action === "change" && (
         <TransferPanel key={enrollment.id} enrollment={enrollment} />
       )}
-      {enrollment?.status === "ACTIVE" && mode === "withdraw" && (
+      {enrollment?.status === "ACTIVE" && action === "withdraw" && (
         <Card>
           <CardHeader>
             <CardTitle>Kết thúc môn học</CardTitle>
@@ -189,7 +284,7 @@ export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
           </CardContent>
         </Card>
       )}
-      {student?.status === "ACTIVE" && mode === "withdraw" && (
+      {student?.status === "ACTIVE" && action === "withdraw" && (
         <Card>
           <CardHeader>
             <CardTitle>Ngừng toàn bộ việc học của {student.fullName}</CardTitle>
@@ -218,13 +313,8 @@ export function LiveStaffWorkflows({ mode }: { mode: keyof typeof TITLES }) {
       {student && (
         <ReactivatePanel key={`reactivate-${student.id}`} student={student} />
       )}
-      {studentId && (
-        <LeaveHistory
-          key={`leave-history-${studentId}`}
-          studentId={studentId}
-        />
-      )}
-    </PageContainer>
+      <LeaveHistory key={`leave-history-${studentId}`} studentId={studentId} />
+    </>
   );
 }
 function SingleAbsence({ enrollment }: { enrollment: EnrollmentRecord }) {
@@ -395,7 +485,11 @@ function MakeupPanel({
                   <li key={item.id}>
                     {item.class.name} · {displayMoment(item.startsAt)}:{" "}
                     {item.reasonCodes
-                      .map((code) => MAKEUP_REASON_TEXT[code] ?? code)
+                      .map(
+                        (code) =>
+                          MAKEUP_REASON_TEXT[code] ??
+                          "chưa đủ điều kiện học bù, hãy tải lại để kiểm tra",
+                      )
                       .join("; ")}
                   </li>
                 ))}
@@ -453,7 +547,9 @@ function MakeupPanel({
                   className="space-y-3 rounded-2xl border border-border p-4"
                 >
                   <p>{displayMoment(booking.replacement.session.startsAt)}</p>
-                  <Badge>{STATUS_TEXT[booking.status]}</Badge>
+                  <Badge>
+                    {STATUS_TEXT[booking.status] ?? "Chưa xác định trạng thái"}
+                  </Badge>
                   {booking.status === "BOOKED" && (
                     <RescheduleMakeup booking={booking} />
                   )}
@@ -572,7 +668,9 @@ function LeaveHistory({ studentId }: { studentId: string }) {
                   {displayDate(leave.fromDate)} – {displayDate(leave.toDate)}
                 </p>
                 <p className="whitespace-pre-wrap">{leave.reason}</p>
-                <Badge>{STATUS_TEXT[leave.status]}</Badge>
+                <Badge>
+                  {STATUS_TEXT[leave.status] ?? "Chưa xác định trạng thái"}
+                </Badge>
                 {leave.decisionNote && leave.decisionNote !== leave.reason && (
                   <p>{leave.decisionNote}</p>
                 )}

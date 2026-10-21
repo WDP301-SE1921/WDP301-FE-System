@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,21 +17,98 @@ import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { StatusBadge } from "@/components/shared/feedback/status-badge";
-import { TablePagination } from "@/components/shared/data-table/table-pagination";
-import { PAGINATION_DEFAULTS } from "@/constants/ui";
-import { useCurrentRole } from "@/hooks/use-current-role";
+import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role";
 import { ROUTES } from "@/constants/routes";
-import type { CurriculumUnit } from "@/types/curriculum";
-import { useCurriculumUnitPage } from "../hooks/use-curriculum";
+import { useCurriculumUnits } from "../hooks/use-curriculum";
 import { UnitForm } from "./unit-form";
+import { calendarDateLabel } from "@/lib/calendar-date";
+import { curriculumStage } from "../presentation";
+import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  curriculumLabel,
+  curriculumNeedsAction,
+  curriculumNextStep,
+  groupCurricula,
+} from "../workspace-selectors";
+import type { CurriculumHubTab } from "@/constants/curriculum-hub";
+import { useHubTab } from "@/hooks/use-hub-tab";
 
-export function CurriculumUnitsView({
+/** Trang danh sách giáo trình (Giáo viên thẩm định, admin). */
+export function CurriculumUnitsView({ programId }: { programId?: string }) {
+  const role = useCurrentRole();
+  const [isCreating, setIsCreating] = useState(false);
+  return (
+    <PageContainer maxWidth="full">
+      <PageHeader
+        title={
+          role === "teacher"
+            ? "Thẩm định giáo trình"
+            : role === "center_manager"
+              ? "Xác nhận giáo trình"
+              : "Thiết kế giáo trình"
+        }
+        description={
+          role === "teacher"
+            ? "Đọc và thẩm định nội dung chuyên môn của giáo trình được phân công."
+            : "Người thiết kế soạn nội dung, giáo viên thẩm định chuyên môn, quản lý xác nhận áp dụng."
+        }
+        actions={
+          role === "curriculum_designer" && (
+            <Button onClick={() => setIsCreating(!isCreating)}>
+              {isCreating ? "Đóng form" : "Tạo giáo trình"}
+            </Button>
+          )
+        }
+      />
+      <CurriculumUnitsBody programId={programId} isCreating={isCreating} />
+    </PageContainer>
+  );
+}
+
+/** Tab "Giáo trình" của Thiết kế giáo trình trên màn Khóa học & giáo trình. */
+export function CurriculumUnitsTab({
+  tabs,
+}: {
+  tabs: readonly CurriculumHubTab[];
+}) {
+  const [tab] = useHubTab(tabs);
+  const role = useCurrentRole();
+  const [isCreating, setIsCreating] = useState(false);
+  if (tab !== "curriculum") return null;
+  return (
+    <div className="min-w-0 space-y-5">
+      {role === "curriculum_designer" && (
+        <div className="flex justify-end">
+          <Button onClick={() => setIsCreating(!isCreating)}>
+            {isCreating ? "Đóng form" : "Tạo giáo trình"}
+          </Button>
+        </div>
+      )}
+      <CurriculumUnitsBody
+        isCreating={role === "curriculum_designer" && isCreating}
+      />
+    </div>
+  );
+}
+
+export function CurriculumUnitsBody({
   programId: fixedProgramId,
+  isCreating = false,
 }: {
   programId?: string;
+  isCreating?: boolean;
 }) {
   const router = useRouter();
   const role = useCurrentRole();
+  const user = useCurrentUser();
   const [selectedProgramId] = useQueryState(
     "programId",
     parseAsString.withDefault(""),
@@ -53,168 +130,221 @@ export function CurriculumUnitsView({
     "subject",
     parseAsString.withDefault(""),
   );
-  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
-  const [pageSize] = useQueryState(
-    "pageSize",
-    parseAsInteger.withDefault(PAGINATION_DEFAULTS.PAGE_SIZE),
+  const [scope, setScope] = useQueryState(
+    "curriculumScope",
+    parseAsStringLiteral([
+      "all",
+      "mine",
+      "applied",
+      "preparing",
+      "archived",
+    ]).withDefault(role === "teacher" ? "mine" : "all"),
   );
-  const [isCreating, setIsCreating] = useState(false);
-  const statuses = ["DRAFT", "PENDING_REVIEW", "APPROVED", "ARCHIVED"];
-  const filters = {
-    programId,
-    search,
-    subject,
-    grade: ["6", "7", "8", "9"].includes(grade) ? Number(grade) : undefined,
-    status: statuses.includes(status)
-      ? (status as CurriculumUnit["status"])
-      : undefined,
-    page: Math.max(1, page),
-    limit: Math.max(1, Math.min(100, pageSize)),
-  };
-  const units = useCurriculumUnitPage(filters);
-  const labels: Record<string, string> = {
-    "": "Tất cả trạng thái",
-    DRAFT: "Bản nháp",
-    PENDING_REVIEW: "Chờ duyệt",
-    APPROVED: "Đã duyệt",
-    ARCHIVED: "Đã lưu trữ",
+  const units = useCurriculumUnits(programId);
+  const needle = search.trim().toLocaleLowerCase("vi");
+  const rows = (units.data ?? []).filter(
+    (unit) =>
+      (!needle ||
+        curriculumLabel(unit).toLocaleLowerCase("vi").includes(needle)) &&
+      (!subject ||
+        unit.track.subject
+          .toLocaleLowerCase("vi")
+          .includes(subject.toLocaleLowerCase("vi"))) &&
+      (!grade || String(unit.track.grade) === grade) &&
+      (!status || unit.status === status) &&
+      (scope !== "mine" || curriculumNeedsAction(unit, role, user?.id)) &&
+      (scope !== "applied" || unit.status === "APPROVED") &&
+      (scope !== "preparing" ||
+        ["DRAFT", "PENDING_REVIEW"].includes(unit.status)) &&
+      (scope !== "archived" || unit.status === "ARCHIVED"),
+  );
+  const scopes = {
+    all: "Tất cả",
+    mine: "Cần tôi xử lý",
+    applied: "Đã duyệt",
+    preparing: "Đang soạn & chờ duyệt",
+    archived: "Lưu trữ",
   };
   return (
-    <PageContainer>
-      <PageHeader
-        title={
-          role === "center_manager" ? "Duyệt giáo trình" : "Thiết kế giáo trình"
-        }
-        description="Giáo trình theo từng khóa học: soạn nháp, gửi duyệt và áp dụng khi sinh lịch."
-        actions={
-          role === "curriculum_designer" && (
-            <Button onClick={() => setIsCreating(!isCreating)}>
-              {isCreating ? "Đóng form" : "Tạo học phần"}
-            </Button>
-          )
-        }
-      />
-      {isCreating && (
-        <Card>
+    <div
+      className={cn(
+        "grid items-start gap-5",
+        isCreating && "xl:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]",
+      )}
+    >
+      {isCreating && role === "curriculum_designer" && (
+        <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Học phần mới</CardTitle>
+            <CardTitle>Giáo trình cho kỳ mới</CardTitle>
           </CardHeader>
           <CardContent>
             <UnitForm
               programId={programId}
-              onSaved={(id) => router.push(ROUTES.MANAGER.CURRICULUM_UNIT(id))}
+              onSaved={(id, source) =>
+                router.push(
+                  `${ROUTES.MANAGER.CURRICULUM_UNIT(id)}${source === "csv" ? "?editor=import" : ""}`,
+                )
+              }
             />
           </CardContent>
         </Card>
       )}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Input
-          aria-label="Tìm học phần"
-          placeholder="Tìm theo tên học phần…"
-          value={search}
-          onChange={(e) => {
-            void setSearch(e.target.value);
-            void setPage(1);
-          }}
-        />
-        <Select
-          value={status || "all"}
-          items={Object.entries(labels).map(([value, label]) => ({
-            value: value || "all",
-            label,
-          }))}
-          onValueChange={(v) => {
-            void setStatus(v === "all" ? null : String(v));
-            void setPage(1);
-          }}
-        >
-          <SelectTrigger aria-label="Trạng thái học phần">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(labels).map(([value, label]) => (
-              <SelectItem key={value} value={value || "all"}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          aria-label="Lọc môn học"
-          placeholder="Tên môn học"
-          value={subject}
-          onChange={(e) => {
-            void setSubject(e.target.value);
-            void setPage(1);
-          }}
-        />
-        <Select
-          value={grade || "all"}
-          items={[
-            { value: "all", label: "Tất cả khối" },
-            ...[6, 7, 8, 9].map((g) => ({
-              value: String(g),
-              label: "Khối " + g,
-            })),
-          ]}
-          onValueChange={(v) => {
-            void setGrade(v === "all" ? null : String(v));
-            void setPage(1);
-          }}
-        >
-          <SelectTrigger aria-label="Khối">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả khối</SelectItem>
-            {[6, 7, 8, 9].map((g) => (
-              <SelectItem key={g} value={String(g)}>
-                Khối {g}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <AsyncBoundary
-        isLoading={units.isPending}
-        isError={units.isError}
-        error={units.error}
-        onRetry={() => void units.refetch()}
-        data={units.data?.items}
-        emptyProps={{ title: "Chưa có học phần phù hợp" }}
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          {units.data?.items.map((unit) => (
-            <Card key={unit.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <CardTitle>{unit.title}</CardTitle>
-                  <StatusBadge category="curriculum" status={unit.status} />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p>
-                  {unit.program?.name ?? unit.track.subject} · Khối{" "}
-                  {unit.track.grade} · Phiên bản {unit.version}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {unit.fromDate.slice(0, 10)} · {unit.toDate.slice(0, 10)} ·{" "}
-                  {unit._count?.lessons ?? 0} nội dung
-                </p>
-                <Button
-                  variant="outline"
-                  render={
-                    <Link href={ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)} />
-                  }
-                >
-                  Xem học phần
-                </Button>
-              </CardContent>
-            </Card>
+      <div className="min-w-0 space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            className="min-w-48 flex-1"
+            aria-label="Tìm giáo trình"
+            placeholder="Tìm khóa học, tên kỳ…"
+            value={search}
+            onChange={(event) => void setSearch(event.target.value)}
+          />
+          <Input
+            className="w-40"
+            aria-label="Lọc môn học"
+            placeholder="Tên môn học"
+            value={subject}
+            onChange={(event) => void setSubject(event.target.value)}
+          />
+          <Select
+            value={grade || "all"}
+            items={{
+              all: "Tất cả khối",
+              6: "Khối 6",
+              7: "Khối 7",
+              8: "Khối 8",
+              9: "Khối 9",
+            }}
+            onValueChange={(value) =>
+              void setGrade(value === "all" ? null : String(value))
+            }
+          >
+            <SelectTrigger className="w-36" aria-label="Lọc khối">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả khối</SelectItem>
+              {[6, 7, 8, 9].map((item) => (
+                <SelectItem key={item} value={String(item)}>
+                  Khối {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {status && (
+            <Button variant="outline" onClick={() => void setStatus(null)}>
+              Bỏ lọc trạng thái
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2" aria-label="Phạm vi giáo trình">
+          {Object.entries(scopes).map(([key, label]) => (
+            <Button
+              key={key}
+              size="sm"
+              variant={scope === key ? "secondary" : "ghost"}
+              onClick={() => {
+                void setScope(key as typeof scope);
+                void setStatus(null);
+              }}
+            >
+              {label}
+            </Button>
           ))}
         </div>
-      </AsyncBoundary>
-      {units.data && <TablePagination totalItems={units.data.total} />}
-    </PageContainer>
+        <AsyncBoundary
+          isLoading={units.isPending}
+          isError={units.isError}
+          error={units.error}
+          onRetry={() => void units.refetch()}
+          data={rows}
+          emptyProps={{
+            title: "Chưa có giáo trình phù hợp",
+            description: "Thử đổi từ khóa hoặc bộ lọc.",
+          }}
+        >
+          <div className="overflow-x-auto rounded-2xl border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Giáo trình · kỳ</TableHead>
+                  <TableHead>Hiệu lực</TableHead>
+                  <TableHead>Số bài</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Bước tiếp theo</TableHead>
+                  <TableHead>Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              {groupCurricula(rows).map((group) => (
+                <TableBody key={group.id}>
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={6} className="font-semibold">
+                      {group.name} · Khối {group.units[0].track.grade}
+                    </TableCell>
+                  </TableRow>
+                  {group.units.map((unit) => (
+                    <TableRow
+                      key={unit.id}
+                      className={
+                        curriculumNeedsAction(unit, role, user?.id)
+                          ? "bg-primary/5"
+                          : undefined
+                      }
+                    >
+                      <TableCell className="max-w-72 whitespace-normal">
+                        <p className="font-medium">{curriculumLabel(unit)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Phiên bản {unit.version}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
+                        {calendarDateLabel(unit.toDate.slice(0, 10))}
+                      </TableCell>
+                      <TableCell>{unit._count?.lessons ?? "—"}</TableCell>
+                      <TableCell>
+                        <StatusBadge
+                          category="curriculum"
+                          status={curriculumStage(unit)}
+                        />
+                      </TableCell>
+                      <TableCell className="max-w-64 whitespace-normal text-sm">
+                        {curriculumNextStep(unit)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          render={
+                            <Link
+                              href={
+                                role === "teacher"
+                                  ? ROUTES.TEACHER.CURRICULUM_UNIT(unit.id)
+                                  : ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)
+                              }
+                            />
+                          }
+                        >
+                          {curriculumNeedsAction(unit, role, user?.id)
+                            ? role === "teacher"
+                              ? "Thẩm định"
+                              : "Mở"
+                            : "Xem"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              ))}
+            </Table>
+          </div>
+        </AsyncBoundary>
+        {units.data && (
+          <p className="text-xs text-muted-foreground">
+            {rows.length} phiên bản · {groupCurricula(rows).length} khóa học ·
+            dòng tô màu là việc cần bạn xử lý.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

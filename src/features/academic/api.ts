@@ -7,8 +7,11 @@ import type {
 import type {
   AnnouncementRecord,
   AssignmentDetail,
+  AssignmentImportPreview,
   AssignmentSummary,
   AttendanceSummary,
+  ClassAttendanceSummary,
+  StudentGradeRecord,
   CurriculumFeedbackRecord,
   EmailDelivery,
   EnrollmentRecord,
@@ -20,6 +23,7 @@ import type {
   MakeupRecord,
   MakeupSource,
   ReportRecord,
+  QueuedEmailResult,
   SessionParticipant,
   SubmissionRecord,
   SubstituteCandidate,
@@ -43,6 +47,7 @@ import {
   substitutionSchema,
   transferSchema,
 } from "@/lib/validators/web-workflows";
+import { assignmentImportPreviewSchema } from "@/lib/validators/assignment-import";
 
 export function queryPath(
   path: string,
@@ -113,15 +118,9 @@ export async function readDirectoryPages<T>(
 }
 const itemPath = (collection: string, id: string) =>
   `academic/${collection}/${encodeURIComponent(id)}`;
-/**
- * Attendance summary bounds for whole local (UTC+7) days. BE parses a bare YYYY-MM-DD as
- * 00:00 UTC, which would drop the evening sessions of the last day, so send exact instants.
- */
+/** BE hieu ngay YYYY-MM-DD la ca ngay theo UTC+7. */
 export function attendanceRange(fromDate: string, toDate: string) {
-  return {
-    fromDate: `${fromDate}T00:00:00.000+07:00`,
-    toDate: `${toDate}T23:59:59.999+07:00`,
-  };
+  return { fromDate, toDate };
 }
 const command = <T = unknown>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: "POST", body });
@@ -163,6 +162,28 @@ export const academicApi = {
   decideLeave: (id: string, approve: boolean, reason: string) =>
     command(`${itemPath("leaves", id)}/decide`, { approve, reason }),
   cancelLeave: (id: string) => command(`${itemPath("leaves", id)}/cancel`),
+  /** Chuyên cần một học sinh trong một lớp (Giáo viên lớp đó; Quản lý, Nhân viên — BE-8). */
+  classAttendance: (classId: string, studentId: string, signal?: AbortSignal) =>
+    apiRequest<ClassAttendanceSummary>(
+      `${itemPath("classes", classId)}/attendance-summary?${new URLSearchParams({ studentId })}`,
+      { signal },
+    ),
+  /**
+   * Buổi vắng đã ghi nhận (buổi đã chốt) chưa xếp học bù — cả trung tâm hoặc một học sinh.
+   * `completedOnly` bỏ các buổi tương lai mà danh sách học bù cho xếp trước.
+   */
+  recordedMakeupSources: (studentId?: string, signal?: AbortSignal) =>
+    readArrayPages<MakeupSource>(
+      "academic/makeup-sources",
+      { completedOnly: "true", studentId },
+      signal,
+    ),
+  /** Bài được giao của một học sinh kèm điểm đã công bố (Quản lý, Nhân viên). */
+  studentGrades: (studentId: string, signal?: AbortSignal) =>
+    apiRequest<StudentGradeRecord[]>(
+      `${itemPath("students", studentId)}/grades`,
+      { signal },
+    ),
   makeupSources: (studentId: string, signal?: AbortSignal) =>
     readArrayPages<MakeupSource>(
       "academic/makeup-sources",
@@ -211,9 +232,15 @@ export const academicApi = {
       ),
       { signal },
     ),
-  emailDeliveries: (page: number, limit: number, signal?: AbortSignal) =>
+  /** `status` lọc một trạng thái; `total` là số dòng sau lọc (BE-12). */
+  emailDeliveries: (
+    page: number,
+    limit: number,
+    signal?: AbortSignal,
+    status?: EmailDelivery["status"],
+  ) =>
     apiRequest<PaginatedList<EmailDelivery>>(
-      queryPath("academic/email-deliveries", { page, limit }),
+      queryPath("academic/email-deliveries", { page, limit, status }),
       { signal },
     ),
   retryEmail: (id: string) =>
@@ -232,6 +259,23 @@ export const academicApi = {
     readArrayPages<AssignmentSummary>("academic/assignments", {}, signal),
   assignment: (id: string, signal?: AbortSignal) =>
     apiRequest<AssignmentDetail>(itemPath("assignments", id), { signal }),
+  importAssignment: async (classId: string, file: File) => {
+    const body = new FormData();
+    body.set("classId", classId);
+    body.set("file", file);
+    const preview = await apiRequest<AssignmentImportPreview>(
+      "academic/assignments/import-preview",
+      { method: "POST", body },
+    );
+    const parsed = assignmentImportPreviewSchema.safeParse(preview);
+    if (!parsed.success)
+      throw new ApiError(
+        "INVALID_API_RESPONSE",
+        "Nội dung nhập từ file không hợp lệ. Vui lòng thử lại.",
+        502,
+      );
+    return preview;
+  },
   createAssignment: (body: unknown) =>
     command<AssignmentDetail>(
       "academic/assignments",
@@ -298,21 +342,22 @@ export const academicApi = {
     ),
   announcements: (signal?: AbortSignal) =>
     readArrayPages<AnnouncementRecord>("academic/announcements", {}, signal),
+  recentAnnouncements: (signal?: AbortSignal) =>
+    apiRequest<AnnouncementRecord[]>("academic/announcements?page=1&limit=5", {
+      signal,
+    }),
   createAnnouncement: (body: unknown) =>
     command<AnnouncementRecord>(
       "academic/announcements",
       announcementSchema.parse(body),
     ),
   sendAnnouncement: (id: string) =>
-    command<{
-      results: { email: string; sent: boolean }[];
-      automaticRetry: boolean;
-    }>(`${itemPath("announcements", id)}/send-email`),
+    command<QueuedEmailResult>(`${itemPath("announcements", id)}/send-email`),
   reminders: (body: unknown) =>
-    command<{
-      results: { email: string; sent: boolean }[];
-      automaticRetry: boolean;
-    }>("academic/tuition-reminders/send-email", reminderSchema.parse(body)),
+    command<QueuedEmailResult>(
+      "academic/tuition-reminders/send-email",
+      reminderSchema.parse(body),
+    ),
 };
 export function currentEnrollmentClass(
   enrollment: Pick<EnrollmentRecord, "classId" | "placements">,

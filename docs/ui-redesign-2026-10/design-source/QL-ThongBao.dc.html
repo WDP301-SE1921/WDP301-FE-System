@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thông báo và lịch sử email</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="manager" active="notifications" hint-size="256px,640px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Trần Minh Quân" role-label="Quản lý trung tâm" email="manager.qa@edugrade.test" initials="TQ" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Thông báo</h1><p class="eg-sub">Soạn email cho phụ huynh bên trái, theo dõi trạng thái gửi bên phải.</p></div></div>
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Soạn thông báo">
+<div class="eg-tabs" role="tablist" aria-label="Loại thông báo"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Thông báo lớp</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Nhắc học phí</button></div>
+<div class="eg-field"><label class="eg-label" for="tb-c">Lớp nhận thông báo</label><select id="tb-c" class="eg-select"><option>Toán 8A - Tối 2, 4, 6 · 5 phụ huynh</option><option>Vật lý 8A - Tối 2, 5 · 3 phụ huynh</option></select></div>
+<div class="eg-field"><label class="eg-label" for="tb-t">Tiêu đề</label><input id="tb-t" class="eg-input" value="Đổi giờ buổi học thứ 2, 19/10"></div>
+<div class="eg-field"><label class="eg-label" for="tb-b">Nội dung email</label><textarea id="tb-b" class="eg-textarea" style="min-height: 160px">Kính gửi phụ huynh lớp Toán 8A,
+Buổi học thứ 2 ngày 19/10/2026 dời sang 18:30–20:00 do phòng P.101 bảo trì điện. Trung tâm xin cảm ơn.</textarea></div>
+<button type="button" class="eg-btn eg-btn-p" style="align-self: flex-start">Lưu thông báo</button>
+<p class="eg-help">Email vào hàng đợi gửi; trạng thái hiện ở bảng bên phải.</p>
+</section>
+
+<section class="eg-right eg-col" style="gap: 12px" aria-label="Lịch sử email">
+<div class="eg-row-sb"><p class="eg-ct">Lịch sử email</p><div class="eg-tabs" role="tablist" aria-label="Lọc trạng thái"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Tất cả</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Chờ gửi</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Đã gửi</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Lỗi <span class="eg-count" style="background: #e7000b">1</span></button></div></div>
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Tiêu đề</th><th>Người nhận</th><th>Trạng thái</th><th class="r">Lần gửi</th><th>Tạo lúc</th><th class="r"><span style="position: absolute; left: -9999px">Thao tác</span></th></tr></thead>
+<tbody>
+<tr><td><b>Xác nhận thanh toán · Nguyễn Minh Bình</b><div class="eg-xs eg-muted">Xác nhận thanh toán</div></td><td class="eg-sm">phuhuynh.qa.mvdfarne@gmail.com</td><td><span class="eg-badge eg-b-amber">Chờ gửi</span></td><td class="r eg-num">0/5</td><td class="nw eg-sm">13:35 18/10</td><td class="r"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Gửi lại</button></td></tr>
+<tr><td><b>Xác nhận thanh toán · Châu Gia Huy</b><div class="eg-xs eg-muted">Xác nhận thanh toán</div></td><td class="eg-sm">chau.tuan.ph@gmail.com</td><td><span class="eg-badge eg-b-amber">Chờ gửi</span></td><td class="r eg-num">0/5</td><td class="nw eg-sm">13:35 18/10</td><td class="r"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Gửi lại</button></td></tr>
+<tr><td><b>Xác nhận thanh toán · Đinh Khánh Linh</b><div class="eg-xs eg-muted">Xác nhận thanh toán</div></td><td class="eg-sm">dinh.thanh.ph@gmail.com</td><td><span class="eg-badge eg-b-green">Đã gửi</span></td><td class="r eg-num">1/5</td><td class="nw eg-sm">13:35 18/10</td><td class="r eg-muted">—</td></tr>
+<tr style="background: #fef2f2"><td><b>Xác nhận thanh toán · Trịnh Đức Anh</b><div class="eg-xs" style="color: #c10007">Kiểm tra địa chỉ người nhận hoặc cấu hình gửi mail</div></td><td class="eg-sm">ly.kim.ph@gmail.com</td><td><span class="eg-badge eg-b-red">Lỗi</span></td><td class="r eg-num">5/5</td><td class="nw eg-sm">13:35 18/10</td><td class="r eg-muted">Hết lượt</td></tr>
+<tr><td><b>Xác nhận thanh toán · Đỗ Hoàng Nam</b><div class="eg-xs eg-muted">Xác nhận thanh toán</div></td><td class="eg-sm">hoang.thao.ph@gmail.com</td><td><span class="eg-badge eg-b-green">Đã gửi</span></td><td class="r eg-num">1/5</td><td class="nw eg-sm">13:35 18/10</td><td class="r eg-muted">—</td></tr>
+<tr><td><b>Xác nhận thanh toán · Lê Gia Hân</b><div class="eg-xs eg-muted">Xác nhận thanh toán</div></td><td class="eg-sm">tran.hong.ph@gmail.com</td><td><span class="eg-badge eg-b-green">Đã gửi</span></td><td class="r eg-num">1/5</td><td class="nw eg-sm">13:35 18/10</td><td class="r eg-muted">—</td></tr>
+<tr><td><b>Xác nhận thanh toán · Lê Gia Bảo</b><div class="eg-xs eg-muted">Xác nhận thanh toán</div></td><td class="eg-sm">tran.hong.ph@gmail.com</td><td><span class="eg-badge eg-b-green">Đã gửi</span></td><td class="r eg-num">1/5</td><td class="nw eg-sm">13:35 18/10</td><td class="r eg-muted">—</td></tr>
+</tbody></table></div>
+<div class="eg-tfoot"><span>Hiển thị 1–7 trên 11 email</span><div class="eg-row" style="gap: 8px"><button type="button" class="eg-btn eg-btn-o eg-btn-sm" disabled>Trước</button><span>1 / 2</span><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Sau</button></div></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

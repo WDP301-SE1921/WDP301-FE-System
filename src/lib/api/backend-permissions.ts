@@ -20,11 +20,33 @@ const rules: {
   roles: readonly WebRole[] | null;
 }[] = [
   { method: "GET", path: /^dashboard$/, roles: manager },
+  // Hộp thư thông báo của chính tài khoản đang đăng nhập; BE lọc theo người nhận.
+  {
+    method: "GET",
+    path: /^notifications(?:\/unread-count)?$/,
+    roles: null,
+  },
+  { method: "PATCH", path: /^notifications\/[^/]+\/read$/, roles: null },
+  { method: "POST", path: /^notifications\/read-all$/, roles: null },
+  // Vé 60 giây để trình duyệt mở socket thông báo; access token vẫn ở cookie httpOnly.
+  { method: "POST", path: /^auth\/realtime-ticket$/, roles: null },
+  {
+    method: "GET",
+    path: /^academic\/analytics(?:\/export)?$/,
+    roles: contentReaders,
+  },
   { method: "GET", path: /^staff(?:\/[^/]+)?$/, roles: manager },
-  { method: "POST", path: /^(staff|teachers)$/, roles: manager },
+  { method: "POST", path: /^staff$/, roles: manager },
+  // Tài khoản Thiết kế giáo trình, chung bảng với Nhân viên (BE-10).
+  {
+    method: "GET",
+    path: /^curriculum-designers(?:\/[^/]+)?$/,
+    roles: manager,
+  },
+  { method: "POST", path: /^curriculum-designers$/, roles: manager },
   {
     method: "PATCH",
-    path: /^(staff|teachers|parents)\/[^/]+$/,
+    path: /^(staff|teachers|parents|curriculum-designers)\/[^/]+$/,
     roles: manager,
   },
   {
@@ -32,10 +54,20 @@ const rules: {
     path: /^parents\/(?!lookup$|search$)[^/]+$/,
     roles: manager,
   },
+  // Xóa hẳn tài khoản phụ huynh chưa dùng; còn dữ liệu thì BE trả 409 PARENT_IN_USE (BE-9).
+  { method: "DELETE", path: /^parents\/[^/]+$/, roles: manager },
   {
     method: "GET",
     path: /^students\/[^/]+\/(enrollments|schedule)$/,
     roles: ["center_manager", "staff"],
+  },
+  // Sửa hồ sơ con (họ tên, khối, ngày sinh) từ Web; BE khóa đổi khối khi đang có lớp.
+  { method: "PATCH", path: /^students\/[^/]+$/, roles: managerOrStaff },
+  // Điểm đã công bố của một học sinh (chi tiết học sinh).
+  {
+    method: "GET",
+    path: /^academic\/students\/[^/]+\/grades$/,
+    roles: managerOrStaff,
   },
   { method: "GET", path: /^(registrations|payments)$/, roles: staff },
   {
@@ -98,7 +130,8 @@ const rules: {
   {
     method: "GET",
     path: /^academic\/classes\/[^/]+\/attendance-summary$/,
-    roles: teacher,
+    // BE-8: Quản lý và Nhân viên đọc chuyên cần ở chi tiết học sinh.
+    roles: sessionReaders,
   },
   {
     method: "GET",
@@ -131,7 +164,7 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^(teacher|manager)-invitations$|^account-invitations\/[^/]+\/(review|revoke)$/,
+    path: /^(teacher|manager)-invitations$|^account-invitations\/[^/]+\/(review|revoke|resend)$/,
     roles: manager,
   },
   {
@@ -145,6 +178,11 @@ const rules: {
     roles: teacher,
   },
   { method: "PATCH", path: /^academic\/assignments\/[^/]+$/, roles: teacher },
+  {
+    method: "POST",
+    path: /^academic\/assignments\/import-preview$/,
+    roles: teacher,
+  },
   {
     method: "POST",
     path: /^academic\/submissions\/[^/]+\/(grades|grade-objective|grade-ai)$/,
@@ -261,8 +299,18 @@ const rules: {
     roles: contentReaders,
   },
   {
+    method: "GET",
+    path: /^academic\/curriculum-units\/[^/]+\/reviewers$/,
+    roles: [...manager, ...designer],
+  },
+  {
     method: "POST",
-    path: /^academic\/curriculum-units(?:\/[^/]+\/(lessons|monthly-tests|submit|revisions|import-preview|import-commit))?$/,
+    path: /^academic\/curriculum-units\/[^/]+\/technical-review$/,
+    roles: teacher,
+  },
+  {
+    method: "POST",
+    path: /^academic\/curriculum-units(?:\/[^/]+\/(lessons|submit|revisions|import-preview|import-commit))?$/,
     roles: designer,
   },
   {

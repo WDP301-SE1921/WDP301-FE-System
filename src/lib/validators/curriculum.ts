@@ -38,11 +38,22 @@ export const curriculumLessonSchema = z.object({
   title,
   content,
 });
-export const monthlyTestSchema = z.object({
-  monthKey: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Chọn tháng kiểm tra."),
-  title,
-  content,
+export const curriculumSubmitSchema = z.object({
+  reviewerTeacherId: z.string().min(1, "Chọn giáo viên thẩm định chuyên môn."),
 });
+export const curriculumTechnicalReviewSchema = z
+  .object({
+    approved: z.boolean(),
+    note: z.string().trim().max(2000, "Ghi chú tối đa 2.000 ký tự.").optional(),
+    expectedRevision: z.number().int().min(1),
+  })
+  .refine((value) => value.approved || !!value.note, {
+    path: ["note"],
+    message: "Nhập nội dung cần sửa trước khi trả lại giáo trình.",
+  });
+export const curriculumRevisionSchema = z
+  .object({ title, ...range })
+  .refine(validRange, rangeError);
 export const scheduleRangeSchema = z
   .object({
     curriculumUnitId: z.string().min(1, "Chọn học phần đã duyệt."),
@@ -53,7 +64,11 @@ export const scheduleRangeSchema = z
 
 export type CurriculumUnitInput = z.infer<typeof curriculumUnitSchema>;
 export type CurriculumLessonInput = z.infer<typeof curriculumLessonSchema>;
-export type MonthlyTestInput = z.infer<typeof monthlyTestSchema>;
+export type CurriculumSubmitInput = z.infer<typeof curriculumSubmitSchema>;
+export type CurriculumTechnicalReviewInput = z.infer<
+  typeof curriculumTechnicalReviewSchema
+>;
+export type CurriculumRevisionInput = z.infer<typeof curriculumRevisionSchema>;
 export type ScheduleRangeInput = z.infer<typeof scheduleRangeSchema>;
 
 export const reviewReasonSchema = z.object({
@@ -71,7 +86,7 @@ export const importCommitSchema = z.object({
     .array(
       z.object({
         rowNumber: z.number().int().min(1),
-        kind: z.enum(["LESSON", "MONTHLY_TEST"]),
+        kind: z.literal("LESSON"),
         sequence: z.number().int().min(1).nullable(),
         title: z.string().min(1).max(255),
         content: z.string().min(1).max(50000),

@@ -52,6 +52,7 @@ export interface ScheduleCalendarProps {
   onDateSelect?: (dateStr: string) => void;
   className?: string;
   showGroupBy?: boolean;
+  showViewSwitcher?: boolean;
 }
 
 const SAMPLE_ROOMS = ["P.101", "P.102", "P.201", "P.202", "P.301"];
@@ -72,6 +73,7 @@ function ScheduleCalendar({
   onDateSelect,
   className,
   showGroupBy = true,
+  showViewSwitcher = true,
 }: ScheduleCalendarProps) {
   const [internalView, setInternalView] =
     React.useState<CalendarViewMode>("week");
@@ -176,9 +178,10 @@ function ScheduleCalendar({
                   addCalendarDays(currentDate, currentView === "day" ? -1 : -7),
                 )
               }
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
-            </Button>
+              leftIcon={
+                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
+              }
+            />
             <Button
               variant="ghost"
               size="icon-sm"
@@ -189,9 +192,10 @@ function ScheduleCalendar({
                   addCalendarDays(currentDate, currentView === "day" ? 1 : 7),
                 )
               }
-            >
-              <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
-            </Button>
+              leftIcon={
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+              }
+            />
           </div>
 
           {/* GroupBy Switcher (Thời gian | Phòng) */}
@@ -227,27 +231,31 @@ function ScheduleCalendar({
           )}
 
           {/* View Mode Switcher (Ngày | Tuần) */}
-          <div className="flex items-center gap-1.5 border-l border-border pl-3">
-            <Tabs
-              value={currentView}
-              onValueChange={(val) => handleViewChange(val as CalendarViewMode)}
-            >
-              <TabsList className="h-8 p-0.5 rounded-full">
-                <TabsTrigger
-                  value="day"
-                  className="h-7 rounded-full text-xs px-3"
-                >
-                  Ngày
-                </TabsTrigger>
-                <TabsTrigger
-                  value="week"
-                  className="h-7 rounded-full text-xs px-3"
-                >
-                  Tuần
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          {showViewSwitcher && (
+            <div className="flex items-center gap-1.5 border-l border-border pl-3">
+              <Tabs
+                value={currentView}
+                onValueChange={(val) =>
+                  handleViewChange(val as CalendarViewMode)
+                }
+              >
+                <TabsList className="h-8 p-0.5 rounded-full">
+                  <TabsTrigger
+                    value="day"
+                    className="h-7 rounded-full text-xs px-3"
+                  >
+                    Ngày
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="week"
+                    className="h-7 rounded-full text-xs px-3"
+                  >
+                    Tuần
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
         </div>
       </div>
 

@@ -237,7 +237,7 @@ export function RegistrationClassPicker({
           return (
             <label
               key={item.id}
-              className={`flex items-start gap-3 rounded-xl border p-4 ${selectedClassId === item.id ? "border-primary bg-primary/5" : "border-border"} ${eligible ? "cursor-pointer" : "opacity-60"}`}
+              className={`flex items-start gap-3 rounded-xl border p-4 ${selectedClassId === item.id && item.isEligible !== false ? "border-primary bg-primary/5" : "border-border"} ${eligible ? "cursor-pointer" : "opacity-60"}`}
             >
               <input
                 className="mt-1"

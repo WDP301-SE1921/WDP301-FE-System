@@ -1,75 +1,123 @@
 "use client";
+import { Fragment, useState } from "react";
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
+import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { directoryApi } from "@/features/directory/api";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  directoryApi,
+  type DirectoryFilters,
+} from "@/features/directory/api";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import {
   LiveSelect,
   displayMoment,
 } from "@/features/academic/components/live-fields";
 import { dateRangeSchema } from "@/lib/validators/web-workflows";
+import { AuditChangeDetails } from "@/features/system/components/audit-change-details";
+import { ROLE_LABEL } from "@/constants/roles";
+import type { AuditLogRecord } from "@/types/academic-workflows";
+import type { BackendUser, PaginatedList } from "@/types/backend";
+
+import {
+  AUDIT_ACTION_LABELS,
+  AUDIT_ENTITY_LABELS,
+  auditActionLabel,
+  auditEntityLabel,
+} from "@/constants/audit-events";
 
 const PAGE_SIZE = 20;
 const ALL = "all";
-const ACTION_TEXT: Record<string, string> = {
-  REGISTRATION_CONFIRM_PAYMENT: "Xác nhận thanh toán",
-  REGISTRATION_CANCEL_DRAFT: "Hủy đăng ký nháp",
-  ENROLLMENT_END: "Kết thúc môn học",
-  STUDENT_END_STUDY: "Nghỉ hẳn",
-  STUDENT_REACTIVATE: "Cho học lại",
-  LEAVE_END_EARLY: "Kết thúc nghỉ dài hạn sớm",
-  MAKEUP_RESCHEDULE: "Đổi buổi học bù",
-  CLASS_TEACHER_ASSIGNED: "Đổi giáo viên phụ trách",
-  SESSION_SUBSTITUTE_ASSIGNED: "Xếp giáo viên dạy thay",
-  CLASS_SESSIONS_GENERATED: "Sinh buổi học",
-  CLASS_SESSION_RESCHEDULED: "Đổi giờ buổi học",
-  CLASS_SESSION_CANCELLED: "Hủy buổi học",
-  CURRICULUM_UNIT_SUBMITTED: "Gửi duyệt giáo trình",
-  CURRICULUM_UNIT_CHANGES_REQUESTED: "Yêu cầu sửa giáo trình",
-  CURRICULUM_UNIT_APPROVED: "Duyệt giáo trình",
-  PROGRAM_DELETE: "Xóa khóa học",
-  PROFILE_UPDATED: "Cập nhật hồ sơ",
-  PASSWORD_CHANGED: "Đổi mật khẩu",
-  PARENT_ACCOUNT_UPDATE: "Cập nhật tài khoản phụ huynh",
-  STAFF_ACCOUNT_CREATE: "Tạo tài khoản nhân viên",
-  STAFF_ACCOUNT_UPDATE: "Cập nhật tài khoản nhân viên",
-  TEACHER_ACCOUNT_CREATE: "Tạo tài khoản giáo viên",
-  TEACHER_ACCOUNT_UPDATE: "Cập nhật tài khoản giáo viên",
-  ACCOUNT_INVITATION_APPROVED: "Duyệt tài khoản được mời",
-  ACCOUNT_INVITATION_REJECTED: "Từ chối tài khoản được mời",
-};
-const ENTITY_TEXT: Record<string, string> = {
-  RegistrationOrder: "Đăng ký",
-  Enrollment: "Ghi danh",
-  StudentProfile: "Hồ sơ học sinh",
-  LeaveRequest: "Đơn nghỉ",
-  MakeupBooking: "Học bù",
-  Class: "Lớp",
-  ClassSession: "Buổi học",
-  ScheduleGeneration: "Đợt sinh lịch",
-  CurriculumUnit: "Giáo trình",
-  Program: "Khóa học",
-  User: "Tài khoản",
-  AccountInvitation: "Lời mời",
-};
+
+/** BE trả role dạng enum (`MANAGER`, `STAFF`…); FE dùng `center_manager`, `staff`… */
+function actorRoleLabel(role: string) {
+  const key = role.toLowerCase() === "manager" ? "center_manager" : role;
+  return (ROLE_LABEL as Record<string, string>)[key.toLowerCase()];
+}
+const ACCOUNT_PAGE_SIZE = 100;
+
+async function allAccounts(
+  read: (
+    filters: DirectoryFilters,
+    signal?: AbortSignal,
+  ) => Promise<PaginatedList<BackendUser>>,
+  signal?: AbortSignal,
+) {
+  const items: BackendUser[] = [];
+  for (let page = 1; ; page++) {
+    const batch = await read({ page, limit: ACCOUNT_PAGE_SIZE }, signal);
+    items.push(...batch.items);
+    if (!batch.items.length || page * batch.limit >= batch.total) return items;
+  }
+}
+
+/** Người để lọc: nhân viên, giáo viên, quản lý (API tài khoản Quản lý được gọi). */
+function useAuditActors() {
+  return useLiveQuery(["audit-actors"], async (signal) => {
+    const lists = await Promise.allSettled([
+      allAccounts(
+        (filters, abort) => directoryApi.accounts("staff", filters, abort),
+        signal,
+      ),
+      allAccounts(
+        (filters, abort) => directoryApi.accounts("teachers", filters, abort),
+        signal,
+      ),
+      allAccounts(directoryApi.managers, signal),
+    ]);
+    const people = new Map<string, { value: string; label: string }>();
+    // Tên theo mã tài khoản, để chi tiết thay đổi hiện tên giáo viên thay vì mã.
+    const names: Record<string, string> = {};
+    for (const list of lists)
+      if (list.status === "fulfilled")
+        for (const user of list.value) {
+          names[user.id] = user.displayName || user.email;
+          people.set(user.id, {
+            value: user.id,
+            label: [user.displayName || user.email, actorRoleLabel(user.role)]
+              .filter(Boolean)
+              .join(" · "),
+          });
+        }
+    return {
+      names,
+      options: [...people.values()].sort((left, right) =>
+        left.label.localeCompare(right.label, "vi"),
+      ),
+      error: lists.find((list) => list.status === "rejected")?.reason,
+    };
+  });
+}
 
 /** SRS §5.14: history of teacher changes, substitutes, makeups, leaves, payment, … (BE audit log). */
 export function LiveAuditLogView() {
-  const [{ page, entityType, action, fromDate, toDate }, setFilters] =
-    useQueryStates({
-      page: parseAsInteger.withDefault(1),
-      entityType: parseAsString.withDefault(ALL),
-      action: parseAsString.withDefault(ALL),
-      fromDate: parseAsString.withDefault(""),
-      toDate: parseAsString.withDefault(""),
-    });
+  const [
+    { page, actorUserId, entityType, action, fromDate, toDate },
+    setFilters,
+  ] = useQueryStates({
+    page: parseAsInteger.withDefault(1),
+    actorUserId: parseAsString.withDefault(ALL),
+    entityType: parseAsString.withDefault(ALL),
+    action: parseAsString.withDefault(ALL),
+    fromDate: parseAsString.withDefault(""),
+    toDate: parseAsString.withDefault(""),
+  });
+  const actors = useAuditActors();
   const hasRange = !!fromDate && !!toDate;
   const range = dateRangeSchema.safeParse({ fromDate, toDate });
   const rangeError =
@@ -79,6 +127,7 @@ export function LiveAuditLogView() {
   const filters = {
     page: Math.max(1, page),
     limit: PAGE_SIZE,
+    ...(actorUserId !== ALL ? { actorUserId } : {}),
     ...(entityType !== ALL ? { entityType } : {}),
     ...(action !== ALL ? { action } : {}),
     // Whole local (UTC+7) days; BE compares createdAt to these instants.
@@ -94,19 +143,36 @@ export function LiveAuditLogView() {
     (signal) => directoryApi.auditLogs(filters, signal),
     !rangeError,
   );
+  // Dòng đang mở xem trước/sau; chỉ là trạng thái hiển thị tạm trên trang hiện tại.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   return (
-    <PageContainer>
+    <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Lịch sử thay đổi"
         description="Ai đã làm gì, lúc nào: thanh toán, đổi giáo viên, dạy thay, học bù, nghỉ học, cho học lại…"
       />
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <LiveSelect
+          label="Người thực hiện"
+          value={actorUserId}
+          disabled={actors.isPending}
+          options={[
+            { value: ALL, label: "Tất cả" },
+            ...(actors.data?.options ?? []),
+            ...(actorUserId !== ALL &&
+            actors.data &&
+            !actors.data.options.some((actor) => actor.value === actorUserId)
+              ? [{ value: actorUserId, label: "Người đang lọc" }]
+              : []),
+          ]}
+          onChange={(value) => void setFilters({ actorUserId: value, page: 1 })}
+        />
         <LiveSelect
           label="Đối tượng"
           value={entityType}
           options={[
             { value: ALL, label: "Tất cả" },
-            ...Object.entries(ENTITY_TEXT).map(([value, label]) => ({
+            ...Object.entries(AUDIT_ENTITY_LABELS).map(([value, label]) => ({
               value,
               label,
             })),
@@ -118,7 +184,7 @@ export function LiveAuditLogView() {
           value={action}
           options={[
             { value: ALL, label: "Tất cả" },
-            ...Object.entries(ACTION_TEXT).map(([value, label]) => ({
+            ...Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => ({
               value,
               label,
             })),
@@ -148,6 +214,10 @@ export function LiveAuditLogView() {
           />
         </div>
       </div>
+      <ApiFeedback
+        error={actors.error ?? actors.data?.error}
+        retry={() => void actors.refetch()}
+      />
       {rangeError && (
         <p role="alert" className="text-sm text-destructive">
           Chọn đủ hai ngày hợp lệ: {rangeError}
@@ -161,61 +231,116 @@ export function LiveAuditLogView() {
         data={query.data?.items}
         emptyProps={{ title: "Chưa có thay đổi phù hợp bộ lọc" }}
       >
-        <div className="grid gap-4">
-          {query.data?.items.map((log) => (
-            <Card key={log.id}>
-              <CardHeader>
-                <CardTitle>{ACTION_TEXT[log.action] ?? log.action}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">
-                    {ENTITY_TEXT[log.entityType] ?? log.entityType}
-                  </Badge>
-                  <Badge variant="secondary">
-                    {displayMoment(log.createdAt)}
-                  </Badge>
-                </div>
-                <p>
-                  Người thực hiện:{" "}
-                  {log.actor
-                    ? `${log.actor.displayName ?? log.actor.email} (${log.actor.email})`
-                    : "Hệ thống"}
-                </p>
-                <p className="break-all text-muted-foreground">
-                  Mã đối tượng: {log.entityId}
-                </p>
-                {(log.beforeData != null || log.afterData != null) && (
-                  <details className="rounded-xl border border-border p-3">
-                    <summary className="cursor-pointer">
-                      Chi tiết thay đổi
-                    </summary>
-                    <div className="mt-2 grid gap-3 md:grid-cols-2">
-                      {[
-                        ["Trước", log.beforeData],
-                        ["Sau", log.afterData],
-                      ].map(([label, value]) => (
-                        <div key={String(label)}>
-                          <p className="font-medium">{String(label)}</p>
-                          <pre className="overflow-x-auto whitespace-pre-wrap break-all text-xs">
-                            {value == null
-                              ? "—"
-                              : JSON.stringify(value, null, 2)}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card className="min-w-0">
+          <CardContent className="min-w-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Thời gian</TableHead>
+                  <TableHead>Hành động</TableHead>
+                  <TableHead>Đối tượng</TableHead>
+                  <TableHead>Người thực hiện</TableHead>
+                  <TableHead>Chi tiết</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {query.data?.items.map((log) => (
+                  <AuditRow
+                    key={log.id}
+                    log={log}
+                    names={actors.data?.names}
+                    isExpanded={expandedId === log.id}
+                    onToggle={() =>
+                      setExpandedId((current) =>
+                        current === log.id ? null : log.id,
+                      )
+                    }
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </AsyncBoundary>
       <TablePagination
         totalItems={query.data?.total ?? 0}
         fixedPageSize={PAGE_SIZE}
       />
     </PageContainer>
+  );
+}
+
+function AuditRow({
+  log,
+  names,
+  isExpanded,
+  onToggle,
+}: {
+  log: AuditLogRecord;
+  names?: Record<string, string>;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasChanges = log.beforeData != null || log.afterData != null;
+  const detailsId = `audit-details-${log.id}`;
+  const roleLabel = log.actor ? actorRoleLabel(log.actor.role) : undefined;
+  return (
+    <Fragment>
+      <TableRow>
+        <TableCell className="whitespace-nowrap tabular-nums">
+          {displayMoment(log.createdAt)}
+        </TableCell>
+        <TableCell className="font-medium">
+          {auditActionLabel(log.action)}
+        </TableCell>
+        <TableCell>
+          <div className="min-w-40 space-y-1">
+            <Badge variant="outline">{auditEntityLabel(log.entityType)}</Badge>
+            <p className="text-xs text-muted-foreground">
+              Mã {log.entityId}
+            </p>
+          </div>
+        </TableCell>
+        <TableCell>
+          {log.actor ? (
+            <div className="min-w-44 space-y-1">
+              <p>{log.actor.displayName ?? log.actor.email}</p>
+              <p className="text-xs text-muted-foreground">
+                {roleLabel ? `${roleLabel} · ` : ""}
+                {log.actor.email}
+              </p>
+            </div>
+          ) : (
+            "Hệ thống"
+          )}
+        </TableCell>
+        <TableCell>
+          {hasChanges ? (
+            <Button
+              size="sm"
+              variant="outline"
+              aria-expanded={isExpanded}
+              aria-controls={detailsId}
+              onClick={onToggle}
+            >
+              {isExpanded ? "Thu gọn" : "Xem thay đổi"}
+            </Button>
+          ) : (
+            <span className="text-muted-foreground">Không có</span>
+          )}
+        </TableCell>
+      </TableRow>
+      {isExpanded && (
+        <TableRow id={detailsId} className="bg-muted/30 hover:bg-muted/30">
+          <TableCell colSpan={5} className="whitespace-normal">
+            <AuditChangeDetails
+              before={log.beforeData}
+              after={log.afterData}
+              names={names}
+            />
+          </TableCell>
+        </TableRow>
+      )}
+    </Fragment>
   );
 }

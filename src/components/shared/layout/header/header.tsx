@@ -16,14 +16,9 @@ import { Menu01Icon } from "@hugeicons/core-free-icons";
 export interface HeaderProps {
   role: WebRole;
   onToggleMobileSidebar?: () => void;
-  onOpenGlobalSearch?: () => void;
 }
 
-function Header({
-  role,
-  onToggleMobileSidebar,
-  onOpenGlobalSearch,
-}: HeaderProps) {
+function Header({ role, onToggleMobileSidebar }: HeaderProps) {
   const user = useCurrentUser();
   const quickCreateItems = getQuickCreateItems(role);
   const accountHref =
@@ -38,26 +33,26 @@ function Header({
       data-slot="header"
       className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-xs sm:px-6"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <Button
           variant="ghost"
           size="icon-sm"
           onClick={onToggleMobileSidebar}
           className="lg:hidden rounded-full text-muted-foreground"
-        >
-          <HugeiconsIcon icon={Menu01Icon} className="size-5" />
-          <span className="sr-only">Toggle sidebar</span>
-        </Button>
-        <div className="w-48 sm:w-64">
-          <GlobalSearch onClick={onOpenGlobalSearch} />
+          aria-label="Mở menu"
+          leftIcon={<HugeiconsIcon icon={Menu01Icon} className="size-5" />}
+        />
+        <div className="min-w-0 sm:w-64 lg:w-80">
+          <GlobalSearch role={role} />
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
         {quickCreateItems.length > 0 && (
           <QuickCreateMenu items={quickCreateItems} />
         )}
-        <NotificationBell />
+        {/* Hộp thư thông báo của BE dành cho mọi vai trò Web (đơn nghỉ, giáo trình, dạy thay…). */}
+        <NotificationBell role={role} />
         <div className="h-6 w-px bg-border hidden sm:block" />
         <UserMenu
           name={user?.name}

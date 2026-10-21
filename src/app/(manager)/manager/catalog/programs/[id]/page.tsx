@@ -1,21 +1,23 @@
-import type { Metadata } from "next";
-import { CATALOG_MSG } from "@/constants/messages/events/catalog";
-import { Suspense } from "react";
-import { AcademicProgramDetailView } from "@/features/registration-flow/components/program-detail-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = {
-  title: CATALOG_MSG.TAB_PROGRAMS,
-};
-
-export default async function ProgramDetailPage({
+/** Chi tiết khóa học mở thành Sheet trên tab Khóa học & giáo trình. */
+export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
-  return (
-    <Suspense fallback={<p>Đang tải giáo trình…</p>}>
-      <AcademicProgramDetailView programId={id} />
-    </Suspense>
+  redirect(
+    legacyHref(
+      ROUTES.MANAGER.CURRICULUM,
+      { tab: "programs", program: id },
+      await searchParams,
+      // Tab bên trong chi tiết khóa đổi tên để không đụng tab của màn gộp.
+      { tab: "programTab" },
+    ),
   );
 }

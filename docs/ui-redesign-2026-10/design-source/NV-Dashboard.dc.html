@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Dashboard nhân viên</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="staff" active="dashboard" hint-size="256px,560px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Lê Thu Hà" role-label="Nhân viên" email="staff.qa@edugrade.test" initials="LH" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph">
+<div><h1 class="eg-h1">Việc hôm nay</h1><p class="eg-sub">Thứ 2, 19/10/2026 · thu học phí, học bù và lịch học trong ngày.</p></div>
+<a class="eg-btn eg-btn-p" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Đăng ký học mới</a>
+</div>
+
+<div class="eg-grid4">
+<a href="NV-ThanhToan.dc.html" class="eg-card eg-card-sm" style="gap: 6px; text-decoration: none; color: inherit"><span class="eg-sm eg-muted">Đơn chờ thu phí</span><b style="font-size: 28px; letter-spacing: -0.02em">6</b><span class="eg-xs eg-muted">dự kiến 14,3 tr đ</span></a>
+<div class="eg-card eg-card-sm" style="gap: 6px"><span class="eg-sm eg-muted">Đã thu hôm nay</span><b style="font-size: 28px; letter-spacing: -0.02em">5,4 tr đ</b><span class="eg-xs eg-muted">2 khoản thu</span></div>
+<a href="NV-HocSinh.dc.html" class="eg-card eg-card-sm" style="gap: 6px; text-decoration: none; color: inherit"><span class="eg-sm eg-muted">Chờ xếp học bù</span><b style="font-size: 28px; letter-spacing: -0.02em">1</b><span class="eg-xs eg-muted">Nguyễn Minh An · Toán 8A</span></a>
+<div class="eg-card eg-card-sm" style="gap: 6px"><span class="eg-sm eg-muted">Buổi học hôm nay</span><b style="font-size: 28px; letter-spacing: -0.02em">3</b><span class="eg-xs eg-muted">16:00 → 21:15</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px">
+<section class="eg-card" aria-label="Đơn chờ thu phí">
+<div class="eg-row-sb"><div><p class="eg-ct">Đơn chờ thu phí</p><p class="eg-cs">Bản nháp chưa xác nhận đã nhận tiền</p></div><a class="eg-link eg-sm" href="NV-ThanhToan.dc.html">Tất cả</a></div>
+<div class="eg-tw"><table class="eg-t" style="font-size: 13px">
+<thead><tr><th>Học sinh</th><th>Lớp</th><th class="r">Học phí</th><th class="r"><span style="position: absolute; left: -9999px">Thao tác</span></th></tr></thead>
+<tbody>
+<tr><td><b>Võ Nhật Minh</b></td><td>Toán 9A</td><td class="r eg-num">5.700.000 đ</td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+<tr><td><b>Ngô Bảo Anh</b></td><td>Toán 9A</td><td class="r eg-num">2.850.000 đ</td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+<tr><td><b>Châu Gia Huy</b></td><td>Vật lý 8A</td><td class="r eg-num">2.250.000 đ</td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+<tr><td><b>Ngô Bảo Ngọc</b></td><td>Sinh học 7A</td><td class="r eg-num">1.800.000 đ</td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+<tr><td><b>Phạm Minh Khang</b></td><td>Toán 9A</td><td class="r eg-num">950.000 đ</td><td class="r"><button type="button" class="eg-btn eg-btn-p eg-btn-xs">Thu phí</button></td></tr>
+</tbody></table></div>
+</section>
+
+<section class="eg-card" aria-label="Học phí đã thu theo ngày">
+<div><p class="eg-ct">Học phí đã thu theo ngày</p><p class="eg-cs">14 ngày gần nhất, triệu đồng · rê chuột để xem</p></div>
+<div style="display: flex; gap: 8px">
+<div style="display: flex; flex-direction: column; justify-content: space-between; height: 180px; font-size: 11px; color: #737373; text-align: right; width: 20px; font-variant-numeric: tabular-nums"><span>6</span><span>4</span><span>2</span><span>0</span></div>
+<div style="flex: 1 1 auto; position: relative; height: 180px">
+<div style="position: absolute; left: 0; right: 0; top: 0; border-top: 1px solid #f0f0f0"></div>
+<div style="position: absolute; left: 0; right: 0; top: 60px; border-top: 1px solid #f0f0f0"></div>
+<div style="position: absolute; left: 0; right: 0; top: 120px; border-top: 1px solid #f0f0f0"></div>
+<div style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid #d4d4d4"></div>
+<div style="position: absolute; inset: 0; display: flex; align-items: flex-end">
+<sc-for list="{{days}}" as="b" hint-placeholder-count="14"><div style="flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; justify-content: center" onMouseEnter="{{b.enter}}"><div style="{{b.bar}}"></div></div></sc-for>
+</div>
+<div style="{{tipStyle}}"><b>{{tip.day}}</b><br>{{tip.value}}</div>
+</div>
+</div>
+<div style="display: flex; gap: 8px"><span style="width: 20px"></span><div style="flex: 1 1 auto; display: flex; justify-content: space-between; font-size: 11px; color: #737373"><span>06/10</span><span>12/10</span><span>19/10</span></div></div>
+</section>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px">
+<section class="eg-card" aria-label="Chỗ trống theo lớp">
+<div><p class="eg-ct">Chỗ trống theo lớp</p><p class="eg-cs">Để tư vấn phụ huynh tại quầy</p></div>
+<div class="eg-col" style="gap: 10px">
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-sm"><span>Vật lý 8A · T2, T5 19:45</span><b class="eg-num">12 chỗ</b></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 80%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-sm"><span>Hóa học 9A · T4, T6 19:45</span><b class="eg-num">12 chỗ</b></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 100%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-sm"><span>Toán 8A · T2, T4, T6 18:00</span><b class="eg-num">15 chỗ</b></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 75%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div></div>
+<div class="eg-col" style="gap: 4px"><div class="eg-row-sb eg-sm"><span>Toán 6A · T2, T4 16:00</span><b class="eg-num">17 chỗ</b></div><div style="height: 8px; border-radius: 999px; background: #cde2fb"><div style="width: 85%; height: 8px; border-radius: 999px; background: #2a78d6"></div></div></div>
+<p class="eg-help">Thanh xanh = phần còn trống so với sức chứa. 4 lớp còn lại trống hoàn toàn.</p>
+</div>
+</section>
+
+<section class="eg-card" aria-label="Buổi học hôm nay">
+<div class="eg-row-sb"><p class="eg-ct">Buổi học hôm nay</p><a class="eg-link eg-sm" href="QL-LichHoc.dc.html">Lịch học</a></div>
+<div class="eg-col" style="gap: 10px">
+<div class="eg-row-sb"><span class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><span><b class="eg-sm">16:00 · Toán 6A</b><br><span class="eg-xs eg-muted">P.201 · Bùi Đức Long · 3 học sinh</span></span></span></div>
+<div class="eg-row-sb"><span class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-toan"></span><span><b class="eg-sm">18:00 · Toán 8A</b><br><span class="eg-xs eg-muted">P.101 · Phạm Văn Hùng · 5 học sinh</span></span></span></div>
+<div class="eg-row-sb"><span class="eg-row" style="gap: 8px"><span class="eg-dot eg-d-ly"></span><span><b class="eg-sm">19:45 · Vật lý 8A</b><br><span class="eg-xs eg-muted">P.202 · Nguyễn Thị Mai · 3 học sinh</span></span></span></div>
+</div>
+</section>
+
+<section class="eg-card" aria-label="Học bù chờ xếp">
+<div class="eg-row-sb"><p class="eg-ct">Học bù chờ xếp</p><span class="eg-badge eg-b-amber">1</span></div>
+<div class="eg-row-sb" style="padding: 12px; border: 1px solid #e5e5e5; border-radius: 14px"><span><b class="eg-sm">Nguyễn Minh An</b><br><span class="eg-xs eg-muted">Nghỉ T2 19/10 · Toán 8A · Bài 19</span></span><a class="eg-btn eg-btn-p eg-btn-xs" href="NV-HocSinh.dc.html">Xếp học bù</a></div>
+<p class="eg-help">Mở thẳng panel Xử lý của học sinh, tab Học bù.</p>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1260}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { hov: 13 };
+}
+renderVals() {
+const vals = [1.8, 2.7, 0, 0.9, 3.6, 0, 0, 2.1, 4.5, 0.7, 2.25, 0, 0, 5.4];
+const start = 6;
+const hov = this.state.hov;
+const days = vals.map((v, i) => ({
+bar: 'width: 16px; height: ' + Math.max(v > 0 ? 3 : 0, Math.round(v / 6 * 180)) + 'px; background: #2a78d6; border-radius: 4px 4px 0 0; opacity: ' + (i === hov ? '1' : '0.55') + ';',
+enter: () => this.setState({ hov: i })
+}));
+const v = vals[hov];
+const day = String(start + hov).padStart(2, '0') + '/10/2026';
+const left = (hov + 0.5) / vals.length * 100;
+return {
+days,
+tip: { day, value: v ? v.toLocaleString('vi-VN') + ' triệu đồng' : 'Không có khoản thu' },
+tipStyle: 'position: absolute; top: ' + Math.max(0, 180 - Math.round(v / 6 * 180) - 56) + 'px; left: ' + Math.min(85, Math.max(12, left)) + '%; transform: translateX(-50%); background: #ffffff; border: 1px solid #e5e5e5; border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.08); padding: 6px 10px; font-size: 12px; line-height: 1.45; white-space: nowrap; pointer-events: none;'
+};
+}
+}
+</script>
+</body>
+</html>

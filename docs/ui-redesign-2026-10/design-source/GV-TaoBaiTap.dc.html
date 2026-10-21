@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tạo bài tập</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="teacher" active="assignments" hint-size="256px,520px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Phạm Văn Hùng" role-label="Giáo viên" email="teacher.qa@edugrade.test" initials="PH" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page" style="gap: 20px">
+<nav class="eg-crumb" aria-label="Đường dẫn"><a href="GV-BaiTap.dc.html">Bài tập &amp; chấm bài</a><span aria-hidden="true">›</span><span style="color: #0a0a0a">Tạo bài tập / đề kiểm tra</span></nav>
+<div class="eg-ph"><div><h1 class="eg-h1">Tạo bài tập / đề kiểm tra</h1><p class="eg-sub">Soạn câu hỏi, đáp án và tiêu chí chấm. Lưu nháp xong mới chọn học sinh và giao bài.</p></div></div>
+
+<div class="eg-split">
+<section class="eg-left eg-card eg-sticky" aria-label="Thông tin chung">
+<p class="eg-ct">Thông tin chung</p>
+<div class="eg-field"><label class="eg-label" for="as-c">Lớp được giao</label><select id="as-c" class="eg-select"><option>Toán 8A - Tối 2, 4, 6</option><option>Toán 8B - Tối 3, 5</option></select></div>
+<div class="eg-field"><span class="eg-label">Loại nội dung</span><div class="eg-tabs" role="tablist" aria-label="Loại nội dung"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Bài tập</button><button type="button" role="tab" aria-selected="false" class="eg-tab">Kiểm tra</button></div><p class="eg-help">Chọn Kiểm tra thì chọn thêm buổi tổ chức và loại 15 phút / một tiết / giữa kỳ / học kỳ.</p></div>
+<div class="eg-field"><label class="eg-label" for="as-t">Tiêu đề</label><input id="as-t" class="eg-input" value="Phân thức đại số"></div>
+<div class="eg-field"><label class="eg-label" for="as-i">Hướng dẫn</label><textarea id="as-i" class="eg-textarea">Làm đủ các câu, trình bày lời giải rõ ràng.</textarea></div>
+<div class="eg-two">
+<div class="eg-field"><label class="eg-label" for="as-d">Hạn nộp</label><input id="as-d" class="eg-input" type="datetime-local" value="2026-11-10T23:59"></div>
+<div class="eg-field"><label class="eg-label" for="as-m">Số lần nộp tối đa</label><input id="as-m" class="eg-input" value="2"></div>
+</div>
+<hr class="eg-divider">
+<div class="eg-row-sb"><span class="eg-muted">Tổng điểm</span><b class="eg-num" style="font-size: 18px">10</b></div>
+<div class="eg-row" style="justify-content: flex-end; gap: 8px"><a class="eg-btn eg-btn-o" href="GV-BaiTap.dc.html">Hủy</a><button type="button" class="eg-btn eg-btn-p">Lưu nháp</button></div>
+</section>
+
+<section class="eg-right eg-col" style="gap: 16px" aria-label="Câu hỏi">
+<div class="eg-row-sb"><p class="eg-ct">Câu hỏi · 2 câu</p><div class="eg-row" style="gap: 8px"><button type="button" class="eg-btn eg-btn-o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m17 8-5-5-5 5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>Nhập câu hỏi từ file</button><button type="button" class="eg-btn eg-btn-o"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Thêm câu hỏi</button></div></div>
+
+<article class="eg-card" style="gap: 14px">
+<div class="eg-row-sb"><p class="eg-strong" style="margin: 0">Câu 1</p><div class="eg-row" style="gap: 8px"><select class="eg-select" style="width: 160px" aria-label="Loại câu 1"><option>Trắc nghiệm</option><option>Tự luận</option></select><div class="eg-row" style="gap: 6px"><label class="eg-sm eg-muted" for="q1-s">Điểm</label><input id="q1-s" class="eg-input eg-num" value="4" style="width: 72px"></div><button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Xóa câu 1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg></button></div></div>
+<div class="eg-field"><label class="eg-label" for="q1-p">Đề bài</label><textarea id="q1-p" class="eg-textarea" style="min-height: 64px">Phân thức nào bằng phân thức (x + 1)/(x² − 1)?</textarea></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><legend class="eg-label" style="padding: 0; margin-bottom: 8px">Lựa chọn · chọn đáp án đúng</legend>
+<label class="eg-choice"><input type="radio" name="q1"><input class="eg-input" value="1/(x + 1)" aria-label="Lựa chọn A"></label>
+<label class="eg-choice on"><input type="radio" name="q1" checked><input class="eg-input" value="1/(x − 1)" aria-label="Lựa chọn B"></label>
+<label class="eg-choice"><input type="radio" name="q1"><input class="eg-input" value="x + 1" aria-label="Lựa chọn C"></label>
+<label class="eg-choice"><input type="radio" name="q1"><input class="eg-input" value="x − 1" aria-label="Lựa chọn D"></label>
+</fieldset>
+</article>
+
+<article class="eg-card" style="gap: 14px">
+<div class="eg-row-sb"><p class="eg-strong" style="margin: 0">Câu 2</p><div class="eg-row" style="gap: 8px"><select class="eg-select" style="width: 160px" aria-label="Loại câu 2"><option>Tự luận</option><option>Trắc nghiệm</option></select><div class="eg-row" style="gap: 6px"><label class="eg-sm eg-muted" for="q2-s">Điểm</label><input id="q2-s" class="eg-input eg-num" value="6" style="width: 72px"></div><button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Xóa câu 2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg></button></div></div>
+<div class="eg-field"><label class="eg-label" for="q2-p">Đề bài</label><textarea id="q2-p" class="eg-textarea" style="min-height: 64px">Rút gọn phân thức (x² − 9)/(x² + 3x) và nêu điều kiện xác định.</textarea></div>
+<div class="eg-field"><label class="eg-label" for="q2-r">Tiêu chí chấm</label><textarea id="q2-r" class="eg-textarea" style="min-height: 64px">Điều kiện xác định 2 điểm; phân tích tử và mẫu 2 điểm; kết quả rút gọn 2 điểm.</textarea><p class="eg-help">AI dùng tiêu chí này để đề xuất điểm; giáo viên vẫn là người chấm.</p></div>
+<p class="eg-note">Câu tự luận: học sinh nhập chữ hoặc chụp ảnh bài làm trên ứng dụng. Bài nộp bằng ảnh được chấm bằng bút vẽ trên ảnh.</p>
+</article>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

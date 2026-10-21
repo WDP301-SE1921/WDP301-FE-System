@@ -2,11 +2,10 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SkeletonCardList } from "@/components/shared/feedback/skeleton-presets";
 import { PageContainer } from "@/components/shared/layout/page-container";
-import { TEACHER_SCHEDULE_MSG } from "@/constants/messages/events/teacher-portal";
 import { AcademicCalendarView } from "@/features/curriculum/components/calendar-view";
 
 export const metadata: Metadata = {
-  title: TEACHER_SCHEDULE_MSG.TITLE,
+  title: "Lịch dạy & điểm danh",
 };
 
 export default function TeacherSchedulePage() {
@@ -19,7 +18,7 @@ export default function TeacherSchedulePage() {
         </PageContainer>
       }
     >
-      <AcademicCalendarView />
+      <AcademicCalendarView defaultView="list" />
     </Suspense>
   );
 }

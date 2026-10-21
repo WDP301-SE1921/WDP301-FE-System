@@ -18,7 +18,6 @@ import {
   dateRangeSchema,
   todayLocalDate,
 } from "@/lib/validators/web-workflows";
-import { attendanceByStudent } from "../attendance-by-student";
 
 function percentText(value: number | null) {
   return value === null ? "Chưa có buổi" : `${value}%`;
@@ -49,9 +48,7 @@ export function ClassAttendanceSummary({ classId }: { classId: string }) {
       ),
     range.success,
   );
-  const students = summary.data
-    ? attendanceByStudent(summary.data.history)
-    : [];
+  const students = summary.data?.students ?? [];
   return (
     <Card>
       <CardHeader>

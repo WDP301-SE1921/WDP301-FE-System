@@ -12,7 +12,8 @@ export const REGEX = {
 export const FIELD_LIMITS = {
   EMAIL_MAX: 255,
   PASSWORD_MIN: 8,
-  PASSWORD_MAX: 64,
+  /** BE nhận 8–72 ký tự và bcrypt chỉ đọc 72 byte UTF-8; schema còn kiểm thêm số byte. */
+  PASSWORD_MAX: 72,
   FULL_NAME_MIN: 2,
   FULL_NAME_MAX: 100,
 } as const

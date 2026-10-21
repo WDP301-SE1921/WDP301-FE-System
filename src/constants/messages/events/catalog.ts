@@ -35,7 +35,8 @@ export const CATALOG_MSG = {
   PROGRAM_CREATE_SUCCESS: "Thêm chương trình thành công",
   PROGRAM_UPDATE_SUCCESS: "Cập nhật chương trình thành công",
   PROGRAM_NOT_FOUND_TITLE: "Không tìm thấy chương trình",
-  PROGRAM_NOT_FOUND_DESC: "Chương trình này không tồn tại hoặc đã bị xóa khỏi hệ thống.",
+  PROGRAM_NOT_FOUND_DESC:
+    "Chương trình này không tồn tại hoặc đã bị xóa khỏi hệ thống.",
 
   // Modal Thêm/Sửa chương trình (12C)
   PROGRAM_MODAL_CREATE_TITLE: "Thêm chương trình",
@@ -48,7 +49,8 @@ export const CATALOG_MSG = {
   PROGRAM_FIELD_GRADE_PLACEHOLDER: "Chọn khối",
   PROGRAM_FIELD_FEE: "Học phí/tháng",
   PROGRAM_FIELD_TOTAL_LESSONS: "Tổng số bài học",
-  PROGRAM_FIELD_TOTAL_LESSONS_HINT: "Mỗi buổi học một bài; số buổi của lớp sinh theo số bài này",
+  PROGRAM_FIELD_TOTAL_LESSONS_HINT:
+    "Mỗi buổi học một bài; số buổi của lớp sinh theo số bài này",
   PROGRAM_FIELD_TEXTBOOK: "Sách giáo khoa",
   PROGRAM_FIELD_TEXTBOOK_PLACEHOLDER: "Toán 8 — Cánh Diều",
   PROGRAM_FIELD_DESCRIPTION: "Mô tả",
@@ -65,10 +67,11 @@ export const CATALOG_MSG = {
   LESSON_MISSING_DESC: (missing: number, total: number) =>
     `Đã có bài học cho một phần chương trình — còn thiếu ${missing}/${total} bài. Buổi học thiếu bài sẽ hiển thị tên chung "Bài N".`,
   LESSON_MONTHLY_TEST_NOTE:
-    "Bài kiểm tra tháng không nằm trong danh sách bài học: hệ thống tự chèn vào buổi cuối mỗi tháng khi tạo lớp.",
+    "Giáo trình gồm các bài học theo thứ tự. Giáo viên tạo bài kiểm tra riêng và chọn buổi học phù hợp.",
   LESSONS_SECTION_TITLE: "Danh sách bài học",
   LESSON_CREATE: "Thêm bài học",
-  LESSON_ORDER_HINT_TITLE: "Thứ tự bài học quyết định bài được gắn vào buổi học khi tạo lớp",
+  LESSON_ORDER_HINT_TITLE:
+    "Thứ tự bài học quyết định bài được gắn vào buổi học khi tạo lớp",
   LESSON_EMPTY_TITLE: "Chưa có bài học nào",
   LESSON_EMPTY_DESC: "Thêm bài học đầu tiên cho chương trình này.",
   LESSON_ACTION_EDIT: "Sửa bài học",
@@ -82,7 +85,8 @@ export const CATALOG_MSG = {
   LESSON_FIELD_TITLE: "Tên bài học",
   LESSON_FIELD_TITLE_PLACEHOLDER: "Bài 1: Nhân đơn thức với đa thức",
   LESSON_FIELD_CHAPTER: "Chương / phần sách giáo khoa",
-  LESSON_FIELD_CHAPTER_PLACEHOLDER: "Chương 1: Phép nhân và phép chia các đa thức",
+  LESSON_FIELD_CHAPTER_PLACEHOLDER:
+    "Chương 1: Phép nhân và phép chia các đa thức",
   LESSON_FIELD_DESCRIPTION: "Mô tả ngắn",
   LESSON_FIELD_DESCRIPTION_PLACEHOLDER: "Nội dung chính của bài học",
   LESSON_DELETE_CONFIRM_TITLE: "Xóa bài học?",
@@ -101,4 +105,4 @@ export const CATALOG_MSG = {
   ROOM_FIELD_CAPACITY: "Sức chứa",
   ROOM_FIELD_CAPACITY_UNIT: "học sinh",
   ROOM_FIELD_ACTIVE: "Đang sử dụng",
-} as const
+} as const;

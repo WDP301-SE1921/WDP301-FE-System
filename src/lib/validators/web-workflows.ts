@@ -42,6 +42,22 @@ export const dateRangeSchema = z
     path: ["toDate"],
     message: "Ngày cuối phải từ ngày đầu trở đi.",
   });
+/** Sửa hồ sơ con từ Web (`PATCH students/:id`); để trống ngày sinh thì xóa ngày sinh. */
+export const studentUpdateSchema = z.object({
+  fullName: requiredText(255),
+  grade: z.coerce
+    .number({ error: "Chọn khối." })
+    .int()
+    .min(6, "Khối từ 6 đến 9.")
+    .max(9, "Khối từ 6 đến 9."),
+  dateOfBirth: z
+    .union([z.literal(""), z.null(), dateSchema])
+    .transform((value) => value || null)
+    .refine(
+      (value) => !value || value <= todayLocalDate(),
+      "Ngày sinh không được sau hôm nay.",
+    ),
+});
 export const leaveSchema = z
   .object({
     enrollmentId: requiredId,
@@ -96,7 +112,7 @@ export const roomSchema = z.object({
     .number({ error: "Nhập sức chứa." })
     .int("Sức chứa là số nguyên.")
     .min(1, "Sức chứa ít nhất 1.")
-    .max(10000),
+    .max(10000, "Sức chứa tối đa 10000."),
 });
 export const roomUpdateSchema = roomSchema
   .partial()
@@ -167,7 +183,40 @@ export const questionSchema = z
         message: "Bài tự luận cần tiêu chí chấm.",
       });
   });
-export const assignmentSchema = z.object({
+const assessmentFields = {
+  kind: z.enum(["HOMEWORK", "TEST"]).optional(),
+  sessionId: requiredId.optional(),
+  testType: z
+    .enum(["FIFTEEN_MINUTES", "ONE_PERIOD", "MIDTERM", "FINAL"])
+    .optional(),
+};
+function validateAssessment(
+  value: { kind?: string; sessionId?: string; testType?: string },
+  context: z.RefinementCtx,
+) {
+  if (value.kind === "TEST") {
+    if (!value.sessionId)
+      context.addIssue({
+        code: "custom",
+        path: ["sessionId"],
+        message: "Chọn buổi học tổ chức kiểm tra.",
+      });
+    if (!value.testType)
+      context.addIssue({
+        code: "custom",
+        path: ["testType"],
+        message: "Chọn loại bài kiểm tra.",
+      });
+  } else if (value.testType) {
+    context.addIssue({
+      code: "custom",
+      path: ["testType"],
+      message: "Loại kiểm tra chỉ dùng cho bài kiểm tra.",
+    });
+  }
+}
+const assignmentBaseSchema = z.object({
+  ...assessmentFields,
   classId: requiredId,
   title: requiredText(255),
   instructions: z.string().max(10000),
@@ -180,7 +229,9 @@ export const assignmentSchema = z.object({
   maxAttempts: z.coerce.number().int().min(1).max(10),
   questions: z.array(questionSchema).min(1).max(100),
 });
-export const submissionWindowSchema = assignmentSchema.pick({
+export const assignmentSchema =
+  assignmentBaseSchema.superRefine(validateAssessment);
+export const submissionWindowSchema = assignmentBaseSchema.pick({
   dueAt: true,
   maxAttempts: true,
 });
@@ -250,40 +301,44 @@ export const localDateTimeSchema = z
       !Number.isNaN(Date.parse(`${value}:00+07:00`)),
     "Ngày giờ không hợp lệ.",
   );
-export const assignmentEditorSchema = z.object({
-  classId: requiredId,
-  title: assignmentSchema.shape.title,
-  instructions: assignmentSchema.shape.instructions,
-  dueAt: localDateTimeSchema.refine(
-    (value) => Date.parse(`${value}:00+07:00`) > Date.now(),
-    "Hạn nộp phải ở tương lai.",
-  ),
-  maxAttempts: z.number().int().min(1).max(10),
-  questions: z
-    .array(
-      z
-        .object({
-          kind: z.enum(["MULTIPLE_CHOICE", "ESSAY"]),
-          prompt: requiredText(10000),
-          choices: z.string(),
-          correctAnswer: z.string(),
-          rubric: z.string(),
-          maxScore: z.number().min(0.01).max(100),
-        })
-        .superRefine((value, context) => {
-          const parsed = questionSchema.safeParse(toQuestionPayload(value));
-          if (!parsed.success)
-            for (const issue of parsed.error.issues)
-              context.addIssue({
-                code: "custom",
-                path: issue.path,
-                message: issue.message,
-              });
-        }),
-    )
-    .min(1)
-    .max(100),
-});
+export const assignmentEditorSchema = z
+  .object({
+    ...assessmentFields,
+    kind: z.enum(["HOMEWORK", "TEST"]),
+    classId: requiredId,
+    title: assignmentSchema.shape.title,
+    instructions: assignmentSchema.shape.instructions,
+    dueAt: localDateTimeSchema.refine(
+      (value) => Date.parse(`${value}:00+07:00`) > Date.now(),
+      "Hạn nộp phải ở tương lai.",
+    ),
+    maxAttempts: z.number().int().min(1).max(10),
+    questions: z
+      .array(
+        z
+          .object({
+            kind: z.enum(["MULTIPLE_CHOICE", "ESSAY"]),
+            prompt: requiredText(10000),
+            choices: z.string(),
+            correctAnswer: z.string(),
+            rubric: z.string(),
+            maxScore: z.number().min(0.01).max(100),
+          })
+          .superRefine((value, context) => {
+            const parsed = questionSchema.safeParse(toQuestionPayload(value));
+            if (!parsed.success)
+              for (const issue of parsed.error.issues)
+                context.addIssue({
+                  code: "custom",
+                  path: issue.path,
+                  message: issue.message,
+                });
+          }),
+      )
+      .min(1)
+      .max(100),
+  })
+  .superRefine(validateAssessment);
 export function toQuestionPayload(value: {
   kind: "MULTIPLE_CHOICE" | "ESSAY";
   prompt: string;

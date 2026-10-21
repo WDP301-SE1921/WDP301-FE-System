@@ -19,7 +19,7 @@ export default function SchedulePage() {
         </PageContainer>
       }
     >
-      <AcademicCalendarView />
+      <AcademicCalendarView defaultView="board" />
     </Suspense>
   );
 }

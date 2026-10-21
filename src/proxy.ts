@@ -15,7 +15,29 @@ import {
 } from "@/lib/api/server";
 import type { BackendUser } from "@/types/backend";
 
+/** A valid session reopening /login (Back, typed URL) goes to its home instead of the form. */
+async function redirectSignedIn(request: NextRequest) {
+  const access = request.cookies.get(SESSION_COOKIES.ACCESS)?.value;
+  const form = NextResponse.next();
+  form.headers.set("Cache-Control", "no-store");
+  if (!access) return form;
+  try {
+    const upstream = await backendFetch("auth/me", {
+      headers: { Authorization: `Bearer ${access}` },
+    });
+    const user = webUser(await readBackend<BackendUser>(upstream));
+    return NextResponse.redirect(
+      browserRedirectUrl(request, ROLE_HOME_ROUTE[user.role]),
+    );
+  } catch {
+    // Expired, revoked or unreachable: keep the login form usable.
+    return form;
+  }
+}
+
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === ROUTES.AUTH.LOGIN)
+    return redirectSignedIn(request);
   try {
     const access = request.cookies.get(SESSION_COOKIES.ACCESS)?.value;
     if (!access)
@@ -77,5 +99,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/manager/:path*", "/staff/:path*", "/teacher/:path*"],
+  matcher: ["/login", "/manager/:path*", "/staff/:path*", "/teacher/:path*"],
 };

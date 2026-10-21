@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sidebar EduGrade</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<nav aria-label="Menu chính" style="width: 100%; min-width: 0; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0a0a0a; background: #fafafa; display: flex; flex-direction: column">
+<div style="height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid #e5e5e5">
+<span style="width: 40px; height: 40px; border-radius: 14px; background: #155dfc; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; flex: none">EG</span>
+<span style="display: flex; flex-direction: column; line-height: 1.2"><b style="font-size: 16px">EduGrade</b><span style="font-size: 11px; color: #737373">Hệ thống Quản lý Trung tâm</span></span>
+</div>
+<div style="padding: 16px 12px; display: flex; flex-direction: column; gap: 24px">
+<sc-for list="{{groups}}" as="group" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0 0 4px; padding: 0 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: #737373">{{group.title}}</p>
+<sc-for list="{{group.items}}" as="item" hint-placeholder-count="2">
+<a href="#" style="{{item.style}}"><img src="{{item.icon}}" alt="" style="width: 20px; height: 20px; flex: none"><span style="flex: 1 1 auto">{{item.label}}</span><sc-if value="{{item.badge}}" hint-placeholder-val="{{false}}"><span style="{{item.badgeStyle}}">{{item.badge}}</span></sc-if></a>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"menu":{"editor":"enum","options":["manager","staff","teacher","designer"],"default":"staff"},"active":{"editor":"text","default":"students"},"$preview":{"width":256,"height":720}}'>
+class Component extends DCLogic {
+renderVals() {
+const ic = {
+dashboard: ['/_blob/640be894bf72e122079bf4d120760c97', '/_blob/27ca07bb34be3a9f1b8e59a6b0dc4e4d'],
+students: ['/_blob/e3a6085100803d8f79caf77512d6dda8', '/_blob/bae9a2be51075de009f2160049da4768'],
+parents: ['/_blob/93732f9c274d139ca55b4656cd404e75', '/_blob/40f48f9c3428916b2b2f922c0fe6d4fb'],
+enroll: ['/_blob/f711c9bec22113a0fc6e49729ead9aa3', '/_blob/1706fe0a168bb0a79d89ecb9a137dc4e'],
+receipt: ['/_blob/10f71501586826e0c09a47de510aefe1', '/_blob/e9cf78564cc7fa79cd566507ba49393f'],
+classes: ['/_blob/9ee9d80348c5aaad0176c7c37267c594', '/_blob/edddc773962d01e70f182ffbb250e8a5'],
+schedule: ['/_blob/f927a326133ab63b2d2890ec5cd65191', '/_blob/ebf2f88180eb7a2c1e47c20f1563ff4d'],
+curriculum: ['/_blob/f50001cfa22f5d93e0a8e66f190db3a4', '/_blob/2043ac5d1f1aa681f397042c8e08f413'],
+catalog: ['/_blob/b9341897d7413e8acd32cb392e300abc', '/_blob/3ad1e03f69f0833554bb6facce5b3e35'],
+mail: ['/_blob/99b47f30a0a2a34cdf7abc8a3aac75c9', '/_blob/ad88b690e6c4346b4b319d5a43e8a35b'],
+staff: ['/_blob/615f893b342300156e27e7d108d6f3af', '/_blob/8326aa3343c599e44042f35aa63d92c1'],
+history: ['/_blob/942d3af343aa9900e93dcbbb058aab71', '/_blob/2b56a9ac8fe4e8282df77a04e6095bf7'],
+attendance: ['/_blob/b2659f3d26009b89353c0c0d229019d1', '/_blob/31586aac9e698584dde5b251cf0f3de0'],
+assignments: ['/_blob/3e30c158f9c97c80be02067d26599a70', '/_blob/ee9fea81c650435dd5af61cc415a77f4'],
+reports: ['/_blob/be8d0787c1e4b187b7b998c095da052a', '/_blob/ac440fe88f6121a16e5a59c957c92fc6']
+};
+const menus = {
+manager: [
+['TỔNG QUAN', [['dashboard', 'Dashboard', 'dashboard']]],
+['HỌC SINH', [['students', 'Học sinh & phụ huynh', 'students']]],
+['LỚP HỌC & LỊCH', [['classes', 'Lớp học', 'classes'], ['schedule', 'Lịch học', 'schedule']]],
+['ĐÀO TẠO', [['curriculum', 'Khóa học & giáo trình', 'curriculum', 1]]],
+['VẬN HÀNH', [['notifications', 'Thông báo', 'mail'], ['people', 'Nhân sự', 'staff'], ['audit', 'Lịch sử thay đổi', 'history']]]
+],
+staff: [
+['TỔNG QUAN', [['dashboard', 'Dashboard', 'dashboard']]],
+['HỌC SINH', [['students', 'Học sinh & phụ huynh', 'students', 1]]],
+['ĐĂNG KÝ & HỌC PHÍ', [['enroll', 'Đăng ký học', 'enroll'], ['payments', 'Đăng ký & biên lai', 'receipt', 6]]],
+['LỚP HỌC & LỊCH', [['classes', 'Lớp học', 'classes'], ['schedule', 'Lịch học', 'schedule']]]
+],
+teacher: [
+['TỔNG QUAN', [['dashboard', 'Dashboard', 'dashboard']]],
+['GIẢNG DẠY', [['teach', 'Lịch dạy & điểm danh', 'attendance', 1], ['classes', 'Lớp của tôi', 'classes'], ['curriculum', 'Giáo trình', 'curriculum', 1]]],
+['BÀI TẬP & BÁO CÁO', [['assignments', 'Bài tập & chấm bài', 'assignments', 2], ['reports', 'Báo cáo', 'reports']]]
+],
+designer: [
+['TỔNG QUAN', [['dashboard', 'Dashboard', 'dashboard']]],
+['GIÁO TRÌNH', [['curriculum', 'Giáo trình', 'curriculum', 1]]]
+]
+};
+const key = menus[this.props.menu] ? this.props.menu : 'staff';
+const active = this.props.active ?? 'students';
+const base = 'display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 18px; font-size: 14px; font-weight: 500; text-decoration: none;';
+const groups = menus[key].map(([title, items]) => ({
+title,
+items: items.map(([id, label, icon, badge]) => {
+const on = id === active;
+return {
+label,
+icon: ic[icon][on ? 1 : 0],
+badge: badge ? String(badge) : '',
+style: base + (on ? ' background: #155dfc; color: #ffffff;' : ' color: #262626;'),
+badgeStyle: 'display: inline-flex; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; ' + (on ? 'background: #ffffff; color: #155dfc;' : 'background: #155dfc; color: #ffffff;')
+};
+})
+}));
+return { groups };
+}
+}
+</script>
+</body>
+</html>

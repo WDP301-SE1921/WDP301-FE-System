@@ -1,10 +1,12 @@
 import { Suspense } from "react";
-import { RegistrationStudentsView } from "@/features/registration-flow/components/directory-list-view";
-export const metadata = { title: "Hồ sơ con" };
+import { StudentsHub } from "@/features/registration-flow/components/directory-list-view";
+import { StudentWorkflowSheet } from "@/features/absences/components/live-staff-workflows";
+export const metadata = { title: "Học sinh & phụ huynh" };
 export default function StaffStudentsPage() {
   return (
-    <Suspense fallback={<p className="p-6">Đang tải hồ sơ con…</p>}>
-      <RegistrationStudentsView />
+    <Suspense fallback={<p className="p-6">Đang tải học sinh…</p>}>
+      <StudentsHub role="staff" />
+      <StudentWorkflowSheet />
     </Suspense>
   );
 }

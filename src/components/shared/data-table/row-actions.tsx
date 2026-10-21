@@ -28,18 +28,18 @@ export interface RowActionsProps {
 function RowActions({ items }: RowActionsProps) {
   return (
     <DropdownMenu>
+      {/* Nút cỡ icon: icon qua `leftIcon`, tên nút qua `aria-label`. */}
       <DropdownMenuTrigger
         render={
           <Button
             variant="ghost"
             size="icon-xs"
+            aria-label="Hành động"
             className="rounded-full text-muted-foreground hover:text-foreground"
+            leftIcon={<HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />}
           />
         }
-      >
-        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-        <span className="sr-only">Hành động</span>
-      </DropdownMenuTrigger>
+      />
       <DropdownMenuContent align="end" className="w-44">
         {items.map((item, idx) => {
           if (item === "separator") {

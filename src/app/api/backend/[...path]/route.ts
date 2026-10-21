@@ -20,6 +20,7 @@ import {
   forgetRefreshSession,
   isSameOriginRequest,
   readBackend,
+  realtimePublicUrl,
   SESSION_COOKIES,
   setSessionCookies,
   webUser,
@@ -143,42 +144,29 @@ async function handle(
           "VALIDATION_ERROR",
           "Kiểm tra lại mật khẩu đã nhập.",
         );
-      // Resolve (and refresh) the session first: BE answers a wrong current password with
-      // 401, which must not be mistaken for an expired session or end the web login.
-      const session = await authorizedBackendFetch(request, "auth/me");
-      webUser(await readBackend<BackendUser>(session.response));
-      const access =
-        session.renewed?.tokens.accessToken ??
-        request.cookies.get(SESSION_COOKIES.ACCESS)?.value;
-      const upstream = await backendFetch(path, {
-        method: "POST",
-        body: JSON.stringify(parsed.data),
-        headers: { Authorization: `Bearer ${access ?? ""}` },
+      const { response: upstream, renewed } = await authorizedBackendFetch(
+        request,
+        path,
+        {
+          method: "POST",
+          body: JSON.stringify(parsed.data),
+        },
+      );
+      const response = new NextResponse(await upstream.arrayBuffer(), {
+        status: upstream.status,
+        headers: {
+          "Content-Type":
+            upstream.headers.get("content-type") ?? "application/json",
+        },
       });
-      const response =
-        upstream.status === 401
-          ? NextResponse.json(
-              backendError(
-                400,
-                "AUTH_CURRENT_PASSWORD_INVALID",
-                "Mật khẩu hiện tại không đúng.",
-              ).body,
-              { status: 400 },
-            )
-          : new NextResponse(await upstream.arrayBuffer(), {
-              status: upstream.status,
-              headers: {
-                "Content-Type":
-                  upstream.headers.get("content-type") ?? "application/json",
-              },
-            });
-      if (session.renewed)
+      if (renewed)
         setSessionCookies(
           response,
-          session.renewed,
+          renewed,
           request.cookies.get(SESSION_COOKIES.REMEMBER)?.value === "1",
         );
       response.headers.set("Cache-Control", "no-store");
+      if (upstream.status === 401) clearSessionCookies(response);
       return response;
     }
     const permittedRoles = rule.roles;
@@ -204,7 +192,31 @@ async function handle(
         "VALIDATION_ERROR",
         "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
       );
-    if (path.endsWith("/import-preview")) {
+    if (path === "academic/assignments/import-preview") {
+      const data = await request.formData();
+      const file = data.get("file");
+      const classId = data.get("classId");
+      if (
+        !(file instanceof File) ||
+        !file.size ||
+        file.size > 5 * 1024 * 1024 ||
+        !/\.(csv|docx|pdf)$/i.test(file.name) ||
+        typeof classId !== "string" ||
+        !classId.trim() ||
+        classId.length > 191 ||
+        data.getAll("file").length !== 1 ||
+        data.getAll("classId").length !== 1 ||
+        [...data.keys()].some(
+          (field) => field !== "file" && field !== "classId",
+        )
+      )
+        throw backendError(
+          400,
+          "VALIDATION_ERROR",
+          "Chọn lớp và một file CSV, DOCX hoặc PDF tối đa 5 MiB.",
+        );
+      init.body = data;
+    } else if (path.endsWith("/import-preview")) {
       const data = await request.formData();
       const file = data.get("file");
       const mode = data.get("mode");
@@ -236,6 +248,17 @@ async function handle(
       response = NextResponse.json({
         success: true,
         data: webUser(await readBackend<BackendUser>(upstream)),
+      });
+    else if (path === "auth/realtime-ticket" && upstream.ok)
+      // Kèm địa chỉ socket để trình duyệt không cần biết cấu hình BE lúc build.
+      response = NextResponse.json({
+        success: true,
+        data: {
+          ...(await readBackend<{ token: string; expiresIn: number }>(
+            upstream,
+          )),
+          url: realtimePublicUrl(),
+        },
       });
     else {
       const headers = new Headers({

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Báo cáo học tập</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="teacher" active="reports" hint-size="256px,520px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Phạm Văn Hùng" role-label="Giáo viên" email="teacher.qa@edugrade.test" initials="PH" show-create="{{false}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph"><div><h1 class="eg-h1">Báo cáo học tập</h1><p class="eg-sub">Tổng hợp điểm đã công bố, chuyên cần và tiến độ. Tải Excel hoặc PDF.</p></div></div>
+<div class="eg-split">
+<section class="eg-left eg-card" aria-label="Tạo báo cáo">
+<p class="eg-ct">Tạo báo cáo</p>
+<div class="eg-field"><label class="eg-label" for="rp-c">Lớp</label><select id="rp-c" class="eg-select"><option>Toán 8A - Tối 2, 4, 6</option><option>Toán 8B - Tối 3, 5</option></select></div>
+<div class="eg-field"><label class="eg-label" for="rp-s">Học sinh</label><select id="rp-s" class="eg-select"><option>Toàn lớp</option><option>Nguyễn Minh An</option><option>Lê Gia Bảo</option></select></div>
+<div class="eg-two">
+<div class="eg-field"><label class="eg-label" for="rp-f">Từ ngày</label><input id="rp-f" class="eg-input" type="date" value="2026-10-19"></div>
+<div class="eg-field"><label class="eg-label" for="rp-t">Đến ngày</label><input id="rp-t" class="eg-input" type="date" value="2026-10-31"></div>
+</div>
+<label class="eg-check"><input type="checkbox" checked><span>Yêu cầu AI viết nhận xét từ số liệu</span></label>
+<button type="button" class="eg-btn eg-btn-p" style="align-self: flex-start">Tạo báo cáo</button>
+</section>
+<section class="eg-right eg-col" style="gap: 12px" aria-label="Báo cáo đã tạo">
+<div class="eg-row-sb"><p class="eg-ct">Báo cáo đã tạo</p><span class="eg-sm eg-muted">3 báo cáo</span></div>
+<div class="eg-tw"><table class="eg-t">
+<thead><tr><th>Lớp</th><th>Phạm vi</th><th>Khoảng ngày</th><th>Tạo lúc</th><th class="r">Tải về</th></tr></thead>
+<tbody>
+<tr><td><b>Toán 8A</b></td><td>Toàn lớp</td><td class="nw">19/10 → 31/10/2026</td><td class="nw">08:12 01/11/2026</td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Excel</button><button type="button" class="eg-btn eg-btn-o eg-btn-xs">PDF</button></div></td></tr>
+<tr><td><b>Toán 8A</b></td><td>Nguyễn Minh An</td><td class="nw">19/10 → 31/10/2026</td><td class="nw">08:15 01/11/2026</td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Excel</button><button type="button" class="eg-btn eg-btn-o eg-btn-xs">PDF</button></div></td></tr>
+<tr><td><b>Toán 8B</b></td><td>Toàn lớp</td><td class="nw">19/10 → 31/10/2026</td><td class="nw">08:20 01/11/2026</td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end"><button type="button" class="eg-btn eg-btn-o eg-btn-xs">Excel</button><button type="button" class="eg-btn eg-btn-o eg-btn-xs">PDF</button></div></td></tr>
+</tbody></table></div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

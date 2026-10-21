@@ -1,8 +1,32 @@
 import axios from "axios";
 import { emitSessionExpired } from "@/lib/auth-events";
 import type { ApiEnvelope } from "@/types/backend";
+import { userFacingMessage } from "./error-message";
 
 const ERROR_TEXT: Record<string, string> = {
+  UNIT_REVISION_REQUIRED:
+    "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
+  UNIT_APPROVAL_REQUIRED:
+    "Giáo trình cần được giáo viên duyệt chuyên môn và Quản lý xác nhận trước khi sử dụng bài học.",
+  INVALID_ASSESSMENT_TYPE:
+    "Bài kiểm tra cần chọn loại kiểm tra và buổi học; bài tập không dùng loại kiểm tra.",
+  INVALID_ASSESSMENT_SESSION:
+    "Chọn buổi học thuộc đúng lớp, được phân công cho bạn, còn lên lịch và chưa kết thúc.",
+  ASSIGNMENT_IMPORT_AI_UNAVAILABLE:
+    "Chưa cấu hình AI để đọc Word/PDF. Bạn có thể nhập CSV hoặc soạn câu hỏi thủ công.",
+  ASSIGNMENT_IMPORT_AI_FAILED:
+    "Chưa trích được câu hỏi từ file. Thử lại hoặc dùng CSV mẫu.",
+  INVALID_CURRICULUM_REVIEWER:
+    "Chọn giáo viên đang phụ trách lớp thuộc khóa học này để duyệt chuyên môn.",
+  UNIT_NOT_PENDING_TECHNICAL_REVIEW:
+    "Giáo trình không còn chờ duyệt chuyên môn. Tải lại để xem trạng thái mới.",
+  REVIEW_NOTE_REQUIRED: "Nhập nội dung cần sửa trước khi trả lại giáo trình.",
+  TECHNICAL_REVIEW_REQUIRED:
+    "Giáo viên phụ trách cần duyệt chuyên môn trước khi Quản lý xác nhận sử dụng.",
+  FUTURE_CURRICULUM_PERIOD_REQUIRED:
+    "Bản sửa cần áp dụng cho kỳ tiếp theo, sau kỳ hiện tại và sau hôm nay.",
+  TESTS_MANAGED_BY_TEACHER:
+    "Bài kiểm tra được tạo riêng trong phần bài tập của giáo viên.",
   RESOURCE_CONFLICT:
     "Dữ liệu đã thay đổi hoặc thao tác đã tồn tại. Tải lại để kiểm tra trước khi thực hiện lại.",
   SESSION_NOT_FINISHED: "Chỉ chốt điểm danh sau khi buổi học kết thúc.",
@@ -37,7 +61,7 @@ const ERROR_TEXT: Record<string, string> = {
   INVITATION_INVALID: "Mã mời không hợp lệ, đã dùng hoặc đã hết hạn.",
   INVITATION_NOT_FOUND: "Không tìm thấy lời mời.",
   INVITATION_NOT_ACCEPTED: "Người được mời chưa hoàn tất thông tin.",
-  INVITATION_LOCKED: "Chỉ thu hồi lời mời chưa được sử dụng.",
+  INVITATION_LOCKED: "Chỉ gửi lại hoặc thu hồi lời mời chưa được sử dụng.",
   AUTH_CURRENT_PASSWORD_INVALID: "Mật khẩu hiện tại không đúng.",
   AUTH_INVALID_RESET_TOKEN: "Mã đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.",
   PROFILE_PHONE_NOT_ALLOWED: "Chỉ hồ sơ phụ huynh có số điện thoại.",
@@ -46,6 +70,9 @@ const ERROR_TEXT: Record<string, string> = {
   EMAIL_NOT_CONFIGURED: "Máy chủ chưa cấu hình gửi email.",
   EMAIL_DELIVERY_BUSY: "Email đang được gửi. Tải lại sau ít phút.",
   EMAIL_DELIVERY_NOT_FOUND: "Không tìm thấy email.",
+  EMAIL_DELIVERY_FAILED:
+    "Gửi email không thành công. Xem lịch sử email để kiểm tra và thử lại.",
+  TEACHER_INVITATION_REQUIRED: "Tạo giáo viên qua lời mời và duyệt tài khoản.",
   OUTSIDE_ENROLLMENT: "Ngày đã chọn nằm ngoài kỳ học đang có hiệu lực.",
   ENROLLMENT_ENDED: "Ghi danh đã kết thúc. Tải lại trạng thái trước khi xử lý.",
   LEAVE_OVERLAP: "Khoảng nghỉ trùng với một đơn đã duyệt.",
@@ -168,6 +195,8 @@ const ERROR_TEXT: Record<string, string> = {
   PARENT_EMAIL_UNVERIFIED:
     "Phụ huynh cần xác minh email trên ứng dụng trước khi đăng ký học.",
   PARENT_DISABLED: "Tài khoản phụ huynh đã bị khóa.",
+  PARENT_IN_USE:
+    "Tài khoản đã có hồ sơ con, đăng ký học hoặc hoạt động nên không xóa hẳn được. Khóa tài khoản thay vì xóa.",
   STUDENT_INACTIVE: "Hồ sơ con không còn hoạt động.",
   FORBIDDEN: "Tài khoản không có quyền thực hiện thao tác này.",
   CLASS_NOT_FOUND: "Lớp không còn tồn tại. Vui lòng tải lại danh sách.",
@@ -194,6 +223,70 @@ const ERROR_TEXT: Record<string, string> = {
   VALIDATION_ERROR: "Dữ liệu chưa hợp lệ. Kiểm tra lại các trường đã nhập.",
   INTERNAL_ERROR:
     "Máy chủ gặp lỗi. Vui lòng thử lại và cung cấp mã yêu cầu nếu cần hỗ trợ.",
+  // Mã BE chưa có câu tiếng Việt theo ma trận lỗi QA_FE_TEST_REPORT.md (13/10/2026).
+  HTTP_ERROR:
+    "Máy chủ từ chối yêu cầu. Tải lại trang rồi thử lại; nếu vẫn lỗi, gửi mã yêu cầu cho quản trị.",
+  INVALID_REFERENCE:
+    "Dữ liệu liên kết không còn tồn tại. Tải lại trang rồi chọn lại.",
+  INVALID_FILTER: "Bộ lọc không hợp lệ. Chọn lại điều kiện lọc.",
+  ACCOUNT_NOT_FOUND: "Không tìm thấy tài khoản. Tải lại danh sách.",
+  PARENT_PROFILE_NOT_FOUND: "Không tìm thấy hồ sơ phụ huynh của tài khoản này.",
+  AUTH_INVALID_EMAIL_TOKEN: "Mã xác minh email không hợp lệ hoặc đã hết hạn.",
+  ACCOUNT_TOKEN_INVALID:
+    "Mã trong email đã được thay bằng mã mới hoặc đã hết hạn. Gửi lại lời mời để tạo email mới.",
+  TOO_MANY_RECIPIENTS:
+    "Quá nhiều người nhận trong một lần gửi. Chia nhỏ danh sách rồi gửi lại.",
+  INVALID_REMINDER_RANGE: "Khoảng ngày nhắc học phí không hợp lệ.",
+  REQUEST_DECIDED: "Yêu cầu đã được xử lý trước đó. Tải lại trạng thái.",
+  INVALID_LEAVE: "Đơn nghỉ không hợp lệ. Kiểm tra loại nghỉ, ngày và buổi học.",
+  ENROLLMENT_NOT_FOUND: "Không tìm thấy ghi danh. Tải lại danh sách.",
+  INVALID_REGISTRATION:
+    "Thông tin đăng ký không hợp lệ. Tải lại đăng ký và kiểm tra lại.",
+  STUDENT_GRADE_LOCKED: "Hồ sơ con đã có đăng ký học nên không thể đổi khối.",
+  STUDENT_ID_REQUIRED: "Chọn học sinh.",
+  SUBJECT_REQUIRED: "Chọn môn học.",
+  SUBJECT_MISMATCH: "Khóa học hoặc lớp không cùng môn đã chọn.",
+  SCHEDULE_NOT_FOUND: "Không tìm thấy lịch tuần của lớp. Tải lại lớp.",
+  ROOM_SCHEDULE_CONFLICT:
+    "Phòng đã có buổi khác trùng giờ. Chọn phòng hoặc giờ khác.",
+  ROSTER_MAKEUP_CONFLICT:
+    "Học viên đang có lịch học bù liên quan đến buổi này. Xử lý lịch học bù trước.",
+  GENERATION_NOT_FOUND:
+    "Không tìm thấy đợt sinh lịch. Tải lại lịch sử sinh lịch.",
+  INVALID_DESIGNER:
+    "Người soạn phải là tài khoản Thiết kế giáo trình đang hoạt động.",
+  INVALID_LESSON: "Bài học không hợp lệ hoặc không thuộc khóa học đã chọn.",
+  INVALID_LESSON_ORDER: "Thứ tự bài học phải liên tục và không trùng.",
+  INVALID_RESOLUTION:
+    "Cách xử lý phản hồi không hợp lệ. Tải lại phản hồi rồi thử lại.",
+  CSV_REQUIRED: "Chọn file CSV để nhập.",
+  INVALID_IMPORT: "Dữ liệu nhập không hợp lệ. Chọn file và xem trước lại.",
+  INVALID_IMPORT_MODE: "Chế độ nhập CSV phải là thêm vào hoặc thay toàn bộ.",
+  INVALID_KIND: "Loại nội dung phải là bài học hoặc kiểm tra tháng.",
+  INVALID_TITLE: "Tên nội dung bắt buộc, tối đa 255 ký tự.",
+  INVALID_CONTENT: "Nội dung bắt buộc, tối đa 50.000 ký tự.",
+  INVALID_SEQUENCE: "Số thứ tự bài phải liên tục theo chế độ nhập.",
+  INVALID_MONTH: "Tháng kiểm tra phải nằm trong học phần và không trùng.",
+  INVALID_ANSWER_KEY: "Đáp án đúng của câu hỏi không hợp lệ. Kiểm tra lại đề.",
+  RUBRIC_REQUIRED: "Câu tự luận cần có tiêu chí chấm.",
+  INVALID_CHOICE: "Lựa chọn trắc nghiệm không hợp lệ.",
+  INVALID_ANSWERS: "Bài làm thiếu hoặc sai định dạng câu trả lời.",
+  ATTEMPTS_EXHAUSTED: "Đã hết số lần nộp của bài tập này.",
+  INVALID_FILES: "Danh sách file đính kèm không hợp lệ.",
+  INVALID_FILE_SIZE: "File vượt dung lượng cho phép.",
+  INVALID_FILE_TYPE: "Định dạng file không được hỗ trợ.",
+  INVALID_AI_RESULT:
+    "AI trả về kết quả chấm không hợp lệ. Chấm tay hoặc chạy chấm AI lại.",
+  INVALID_AI_REPORT:
+    "AI trả về nhận xét báo cáo không hợp lệ. Tạo lại báo cáo sau ít phút.",
+  INVALID_FORMAT: "Chỉ tải báo cáo dạng PDF hoặc XLSX.",
+  INVALID_REPORT_SNAPSHOT:
+    "Dữ liệu báo cáo đã lưu không đọc được. Tạo lại báo cáo.",
+  REPORTS_NOT_FOUND: "Không tìm thấy báo cáo. Tải lại danh sách báo cáo.",
+  REPORT_TOO_LARGE: "Báo cáo quá lớn. Thu hẹp khoảng ngày hoặc số học sinh.",
+  INVALID_ANALYTICS_RANGE: "Khoảng ngày thống kê không hợp lệ.",
+  ANALYTICS_TOO_LARGE:
+    "Dữ liệu thống kê quá lớn. Thu hẹp khoảng ngày hoặc bộ lọc.",
 };
 export class ApiError extends Error {
   constructor(
@@ -204,9 +297,11 @@ export class ApiError extends Error {
     public details?: unknown,
   ) {
     super(
-      status === 429
-        ? "Thao tác quá nhiều lần. Vui lòng thử lại sau."
-        : (ERROR_TEXT[code] ?? message),
+      userFacingMessage(
+        status === 429
+          ? "Thao tác quá nhiều lần. Vui lòng thử lại sau."
+          : (ERROR_TEXT[code] ?? message),
+      ),
     );
   }
 }
@@ -267,9 +362,7 @@ export async function apiRequest<T>(
   }
 }
 export function apiErrorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "Không thể hoàn tất thao tác. Vui lòng thử lại.";
+  return userFacingMessage(error);
 }
 export async function downloadReport(id: string, format: "xlsx" | "pdf") {
   try {

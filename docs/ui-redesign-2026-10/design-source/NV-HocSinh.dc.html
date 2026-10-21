@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Học sinh và xử lý nghỉ học</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root eg-app" style="position: relative">
+<div style="flex: 1 1 256px; background: #fafafa; border-right: 1px solid #e5e5e5"><dc-import name="Sidebar" menu="staff" active="students" hint-size="256px,520px"></dc-import></div>
+<div class="eg-main">
+<dc-import name="Topbar" person="Lê Thu Hà" role-label="Nhân viên" email="staff.qa@edugrade.test" initials="LH" show-create="{{true}}" hint-size="100%,64px"></dc-import>
+<main class="eg-page">
+<div class="eg-ph">
+<div><h1 class="eg-h1">Học sinh &amp; phụ huynh</h1><p class="eg-sub">Hồ sơ con do phụ huynh tạo trên ứng dụng. Bấm “Xử lý” để ghi nghỉ, xếp học bù, đổi lớp hoặc cho nghỉ.</p></div>
+<a class="eg-btn eg-btn-p" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Đăng ký học mới</a>
+</div>
+<div class="eg-tabs" role="tablist" aria-label="Xem theo"><button type="button" role="tab" aria-selected="true" class="eg-tab on">Học sinh <span class="eg-count eg-count-gray">12</span></button><a role="tab" aria-selected="false" class="eg-tab" href="QL-HocSinhPhuHuynh.dc.html" style="text-decoration: none">Phụ huynh <span class="eg-count eg-count-gray">10</span></a></div>
+<div class="eg-toolbar">
+<label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input class="eg-input" type="search" placeholder="Tên con hoặc email phụ huynh…" aria-label="Tìm học sinh"></label>
+<select class="eg-select" style="width: 140px" aria-label="Lọc khối"><option>Tất cả khối</option><option>Khối 6</option><option>Khối 7</option><option>Khối 8</option><option>Khối 9</option></select>
+<select class="eg-select" style="width: 180px" aria-label="Lọc lớp"><option>Tất cả lớp</option><option>Toán 8A - Tối 2, 4, 6</option><option>Vật lý 8A - Tối 2, 5</option><option>Toán 6A - Chiều 2, 4</option></select>
+<select class="eg-select" style="width: 170px" aria-label="Lọc việc cần làm"><option>Tất cả</option><option>Chờ xếp học bù</option><option>Đang nghỉ dài hạn</option><option>Chưa có lớp</option></select>
+<span style="flex: 1 1 auto"></span><span class="eg-sm eg-muted">12 hồ sơ con</span>
+</div>
+<div class="eg-tw">
+<table class="eg-t">
+<thead><tr><th>Học sinh</th><th>Phụ huynh</th><th>Lớp đang học</th><th>Chuyên cần</th><th>Nghỉ / học bù</th><th>Trạng thái</th><th class="r">Thao tác</th></tr></thead>
+<tbody>
+<tr class="on"><td><b>Nguyễn Minh An</b><div class="eg-xs eg-muted">Khối 8 · 15/06/2013</div></td><td>Nguyễn Văn Minh<div class="eg-xs eg-muted">phuhuynh.qa.mvdfarne@gmail.com</div></td><td>Toán 8A · Vật lý 8A</td><td><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><div style="width: 56px; height: 6px; border-radius: 999px; background: #cde2fb"><div style="width: 92%; height: 6px; border-radius: 999px; background: #2a78d6"></div></div><b class="eg-sm eg-num">92%</b></div><div class="eg-xs eg-muted">vắng 1 / 13 buổi</div></td><td><span class="eg-badge eg-b-amber">1 buổi chờ học bù</span></td><td><span class="eg-badge eg-b-green">Đang học</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-p eg-btn-sm">Xử lý</button></div></td></tr>
+<tr><td><b>Lê Gia Bảo</b><div class="eg-xs eg-muted">Khối 8 · 11/03/2013</div></td><td>Trần Thị Hồng<div class="eg-xs eg-muted">tran.hong.ph@gmail.com</div></td><td>Toán 8A · Vật lý 8A</td><td><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><div style="width: 56px; height: 6px; border-radius: 999px; background: #cde2fb"><div style="width: 100%; height: 6px; border-radius: 999px; background: #2a78d6"></div></div><b class="eg-sm eg-num">100%</b></div><div class="eg-xs eg-muted">13 / 13 buổi</div></td><td class="eg-muted">—</td><td><span class="eg-badge eg-b-green">Đang học</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Xử lý</button></div></td></tr>
+<tr><td><b>Lê Gia Hân</b><div class="eg-xs eg-muted">Khối 6 · 02/07/2015</div></td><td>Trần Thị Hồng<div class="eg-xs eg-muted">tran.hong.ph@gmail.com</div></td><td>Toán 6A</td><td><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><div style="width: 56px; height: 6px; border-radius: 999px; background: #cde2fb"><div style="width: 100%; height: 6px; border-radius: 999px; background: #2a78d6"></div></div><b class="eg-sm eg-num">100%</b></div><div class="eg-xs eg-muted">6 / 6 buổi</div></td><td class="eg-muted">—</td><td><span class="eg-badge eg-b-green">Đang học</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Xử lý</button></div></td></tr>
+<tr><td><b>Đỗ Hoàng Nam</b><div class="eg-xs eg-muted">Khối 8 · 05/10/2013</div></td><td>Hoàng Thu Thảo<div class="eg-xs eg-muted">hoang.thao.ph@gmail.com</div></td><td>Toán 8A</td><td><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><div style="width: 56px; height: 6px; border-radius: 999px; background: #cde2fb"><div style="width: 100%; height: 6px; border-radius: 999px; background: #2a78d6"></div></div><b class="eg-sm eg-num">100%</b></div><div class="eg-xs eg-muted">6 / 6 · 2 có phép</div></td><td><span class="eg-badge eg-b-gray">Nghỉ dài hạn tới 30/11</span></td><td><span class="eg-badge eg-b-green">Đang học</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Xử lý</button></div></td></tr>
+<tr><td><b>Trịnh Đức Anh</b><div class="eg-xs eg-muted">Khối 8 · 30/08/2013</div></td><td>Lý Thị Kim<div class="eg-xs eg-muted">ly.kim.ph@gmail.com</div></td><td>Toán 8A · Vật lý 8A</td><td><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><div style="width: 56px; height: 6px; border-radius: 999px; background: #cde2fb"><div style="width: 85%; height: 6px; border-radius: 999px; background: #2a78d6"></div></div><b class="eg-sm eg-num">85%</b></div><div class="eg-xs eg-muted">vắng 2 / 13 buổi</div></td><td class="eg-muted">—</td><td><span class="eg-badge eg-b-green">Đang học</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Xử lý</button></div></td></tr>
+<tr><td><b>Châu Gia Huy</b><div class="eg-xs eg-muted">Khối 8 · 12/11/2013</div></td><td>Châu Minh Tuấn<div class="eg-xs eg-muted">chau.tuan.ph@gmail.com</div></td><td>Toán 8A</td><td><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><div style="width: 56px; height: 6px; border-radius: 999px; background: #cde2fb"><div style="width: 100%; height: 6px; border-radius: 999px; background: #2a78d6"></div></div><b class="eg-sm eg-num">100%</b></div><div class="eg-xs eg-muted">8 / 8 buổi</div></td><td class="eg-muted">—</td><td><span class="eg-badge eg-b-green">Đang học</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Xử lý</button></div></td></tr>
+<tr><td><b>Đinh Khánh Linh</b><div class="eg-xs eg-muted">Khối 6 · 14/02/2015</div></td><td>Đinh Công Thành<div class="eg-xs eg-muted">dinh.thanh.ph@gmail.com</div></td><td>Toán 6A</td><td><div class="eg-row" style="gap: 8px; flex-wrap: nowrap"><div style="width: 56px; height: 6px; border-radius: 999px; background: #cde2fb"><div style="width: 83%; height: 6px; border-radius: 999px; background: #2a78d6"></div></div><b class="eg-sm eg-num">83%</b></div><div class="eg-xs eg-muted">vắng 1 / 6 buổi</div></td><td class="eg-muted">—</td><td><span class="eg-badge eg-b-green">Đang học</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Xử lý</button></div></td></tr>
+<tr><td><b>Phạm Minh Khang</b><div class="eg-xs eg-muted">Khối 9 · 21/01/2012</div></td><td>Phạm Quốc Việt<div class="eg-xs eg-muted">pham.viet.ph@gmail.com</div></td><td class="eg-muted">Toán 9A (chờ thu phí)</td><td class="eg-muted">—<div class="eg-xs eg-muted">chưa có buổi</div></td><td class="eg-muted">—</td><td><span class="eg-badge eg-b-gray">Chưa có lớp</span></td><td class="r"><div class="eg-row" style="gap: 4px; justify-content: flex-end; flex-wrap: nowrap"><a class="eg-btn eg-btn-o eg-btn-sm" href="QL-HocSinhChiTiet.dc.html">Xem</a><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Xử lý</button></div></td></tr>
+</tbody>
+</table>
+</div>
+<div class="eg-tfoot"><span>Hiển thị 1–8 trên 12 dòng</span><div class="eg-row" style="gap: 8px"><button type="button" class="eg-btn eg-btn-o eg-btn-sm" disabled>Trước</button><span>1 / 2</span><button type="button" class="eg-btn eg-btn-o eg-btn-sm">Sau</button></div></div>
+</main>
+</div>
+
+<div class="eg-overlay" aria-hidden="true"></div>
+<aside class="eg-drawer" role="dialog" aria-label="Xử lý cho Nguyễn Minh An">
+<div class="eg-dh">
+<div class="eg-row" style="gap: 12px; align-items: flex-start"><span class="eg-avatar" style="width: 40px; height: 40px; font-size: 14px">NA</span><div><p class="eg-ct">Nguyễn Minh An</p><p class="eg-cs">Khối 8 · Phụ huynh Nguyễn Văn Minh · 0900000000</p></div></div>
+<button type="button" class="eg-btn eg-btn-g eg-btn-icon" aria-label="Đóng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<div class="eg-db">
+<div class="eg-field"><label class="eg-label" for="hs-enroll">Ghi danh cần xử lý</label><select id="hs-enroll" class="eg-select"><option>Toán 8A - Tối 2, 4, 6 · Đang học · 19/10/2026 → 19/01/2027</option><option>Vật lý 8A - Tối 2, 5 · Đang học · 19/10/2026 → 19/01/2027</option></select></div>
+<div class="eg-tabs" role="tablist" aria-label="Chọn thao tác" style="border-radius: 18px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="6"><button type="button" role="tab" aria-selected="{{t.selected}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+
+<sc-if value="{{isNghi}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-field"><label class="eg-label" for="hs-s1">Buổi nghỉ</label><select id="hs-s1" class="eg-select"><option>T4 21/10/2026 · 18:00–19:30 · Bài 20 · Phương trình tích</option><option>T6 23/10/2026 · 18:00–19:30 · Bài 21</option></select><p class="eg-help">Chỉ hiện buổi đang lên lịch trong kỳ học của ghi danh.</p></div>
+<div class="eg-field"><label class="eg-label" for="hs-r1">Lý do nghỉ</label><textarea id="hs-r1" class="eg-textarea" placeholder="Ví dụ: con bị ốm, phụ huynh báo qua điện thoại"></textarea></div>
+<div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-p">Ghi nhận nghỉ</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isHocBu}}" hint-placeholder-val="{{true}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-field"><label class="eg-label" for="hs-src">Buổi đã nghỉ cần học bù</label><select id="hs-src" class="eg-select"><option>T2 19/10/2026 · Toán 8A · Bài 19 · Phương trình tích</option></select></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><legend class="eg-label" style="padding: 0; margin-bottom: 8px">Chọn buổi học bù</legend>
+<label class="eg-choice on"><input type="radio" name="mk" checked><span><b>Toán 8B · T3 20/10/2026 · 18:00–19:30</b><br><span class="eg-xs eg-muted">P.102 · Phạm Văn Hùng · cùng bài 19 · còn 20 chỗ</span></span></label>
+<label class="eg-choice"><input type="radio" name="mk"><span><b>Toán 8B · T5 22/10/2026 · 18:00–19:30</b><br><span class="eg-xs eg-muted">P.102 · Phạm Văn Hùng · bài 20 · còn 20 chỗ</span></span></label>
+<p class="eg-help">Danh sách lấy từ hệ thống: cùng khóa, còn chỗ, không trùng lịch của học sinh.</p>
+</fieldset>
+<div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-p">Xếp học bù</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDoiBuoi}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-field"><label class="eg-label" for="hs-sw1">Buổi sắp tới muốn đổi</label><select id="hs-sw1" class="eg-select"><option>T6 23/10/2026 · Toán 8A · 18:00–19:30 · Bài 21</option></select></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><legend class="eg-label" style="padding: 0; margin-bottom: 8px">Đổi sang buổi</legend>
+<label class="eg-choice on"><input type="radio" name="sw" checked><span><b>Toán 8B · T5 22/10/2026 · 18:00–19:30</b><br><span class="eg-xs eg-muted">P.102 · còn 20 chỗ</span></span></label>
+</fieldset>
+<div class="eg-field"><label class="eg-label" for="hs-sw2">Lý do</label><textarea id="hs-sw2" class="eg-textarea" placeholder="Ví dụ: trùng lịch thi ở trường"></textarea></div>
+<div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-p">Đổi buổi</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDoiLop}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-field"><label class="eg-label" for="hs-cl1">Lớp mới</label><select id="hs-cl1" class="eg-select"><option>Toán 8B - Tối 3, 5 · T3, T5 18:00–19:30 · còn 20 chỗ</option></select><p class="eg-help">Chỉ hiện lớp cùng khóa và cùng học phí.</p></div>
+<div class="eg-field"><label class="eg-label" for="hs-cl2">Hiệu lực từ (giờ Việt Nam)</label><input id="hs-cl2" class="eg-input" type="datetime-local" value="2026-10-26T00:00"></div>
+<div class="eg-field"><label class="eg-label" for="hs-cl3">Lý do</label><textarea id="hs-cl3" class="eg-textarea" placeholder="Ví dụ: đổi giờ học thêm ở trường"></textarea></div>
+<div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-p">Chuyển lớp</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDaiHan}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-two">
+<div class="eg-field"><label class="eg-label" for="hs-l1">Ngày bắt đầu</label><input id="hs-l1" class="eg-input" type="date" value="2026-11-02"></div>
+<div class="eg-field"><label class="eg-label" for="hs-l2">Ngày kết thúc</label><input id="hs-l2" class="eg-input" type="date" value="2026-11-30"></div>
+</div>
+<div class="eg-field"><label class="eg-label" for="hs-l3">Lý do</label><textarea id="hs-l3" class="eg-textarea" placeholder="Ví dụ: về quê một tháng"></textarea></div>
+<div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-p">Xác nhận nghỉ dài hạn</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isKetThuc}}" hint-placeholder-val="{{false}}">
+<div class="eg-col" style="gap: 16px">
+<div class="eg-card eg-card-sm"><p class="eg-strong" style="margin: 0">Kết thúc môn Toán 8A</p><label class="eg-check"><input type="checkbox"><span>Tôi xác nhận kết thúc ghi danh tại Toán 8A - Tối 2, 4, 6 ngay bây giờ.</span></label><div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-d">Kết thúc môn</button></div></div>
+<div class="eg-card eg-card-sm" style="border-color: #ffc9c9"><p class="eg-strong" style="margin: 0">Ngừng toàn bộ việc học của Nguyễn Minh An</p><p class="eg-cs">Kết thúc các ghi danh của riêng học sinh này và ngừng hồ sơ. Tài khoản phụ huynh và các con khác vẫn được giữ.</p><label class="eg-check"><input type="checkbox"><span>Tôi xác nhận ngừng toàn bộ việc học ngay bây giờ.</span></label><div class="eg-row" style="justify-content: flex-end"><button type="button" class="eg-btn eg-btn-dp">Xác nhận nghỉ hẳn</button></div></div>
+</div>
+</sc-if>
+
+<hr class="eg-divider">
+<div class="eg-col" style="gap: 10px">
+<p class="eg-strong" style="margin: 0">Lịch sử nghỉ &amp; học bù</p>
+<div class="eg-tw">
+<table class="eg-t" style="font-size: 13px">
+<thead><tr><th>Ngày</th><th>Loại</th><th>Lớp</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr><td class="nw">19/10/2026</td><td>Nghỉ 1 buổi</td><td>Toán 8A</td><td><span class="eg-badge eg-b-amber">Chờ học bù</span></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { tab: 'hocbu' };
+}
+renderVals() {
+const tab = this.state.tab;
+const list = [
+['nghi', 'Nghỉ 1 buổi'],
+['hocbu', 'Học bù'],
+['doibuoi', 'Đổi 1 buổi'],
+['doilop', 'Đổi lớp / lịch cố định'],
+['daihan', 'Nghỉ dài hạn'],
+['ketthuc', 'Nghỉ môn / nghỉ hẳn']
+];
+return {
+tabs: list.map(([id, label]) => ({
+label,
+selected: id === tab ? 'true' : 'false',
+cls: id === tab ? 'eg-tab on' : 'eg-tab',
+pick: () => this.setState({ tab: id })
+})),
+isNghi: tab === 'nghi',
+isHocBu: tab === 'hocbu',
+isDoiBuoi: tab === 'doibuoi',
+isDoiLop: tab === 'doilop',
+isDaiHan: tab === 'daihan',
+isKetThuc: tab === 'ketthuc'
+};
+}
+}
+</script>
+</body>
+</html>

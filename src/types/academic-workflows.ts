@@ -89,6 +89,15 @@ export interface AssignmentSummary {
   dueAt: string;
   status: "DRAFT" | "PUBLISHED" | "CLOSED";
   maxAttempts: number;
+  kind: "HOMEWORK" | "TEST";
+  testType: "FIFTEEN_MINUTES" | "ONE_PERIOD" | "MIDTERM" | "FINAL" | null;
+  sessionId: string | null;
+  session?: {
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    status: string;
+  } | null;
 }
 export interface AssignmentQuestion {
   id: string;
@@ -103,6 +112,15 @@ export interface AssignmentDetail extends AssignmentSummary {
   instructions: string;
   recipients: { id: string; enrollmentId: string }[];
   questions: AssignmentQuestion[];
+}
+export interface AssignmentImportPreview {
+  fileName: string;
+  format: "CSV" | "DOCX" | "PDF";
+  title?: string;
+  instructions?: string;
+  questions: Omit<AssignmentQuestion, "id">[];
+  warnings: string[];
+  usedAi: boolean;
 }
 export interface GradeScore {
   questionId: string;
@@ -138,6 +156,26 @@ export interface ReportRecord {
   id: string;
   classId: string;
   createdAt: string;
+  /** Khoảng thời gian khi tạo (ngày `YYYY-MM-DD` hoặc ISO). */
+  from?: string;
+  to?: string;
+  /** `null`: báo cáo cũ chưa lưu phạm vi. */
+  scope?: "CLASS" | "STUDENT" | null;
+  studentId?: string | null;
+  studentName?: string | null;
+}
+/** `GET academic/students/:id/grades`: bài được giao kèm lần nộp mới nhất và điểm đã công bố. */
+export interface StudentGradeRecord {
+  id: string;
+  title: string;
+  kind: "HOMEWORK" | "TEST";
+  testType: "FIFTEEN_MINUTES" | "ONE_PERIOD" | "MIDTERM" | "FINAL" | null;
+  dueAt: string;
+  status: "PUBLISHED" | "CLOSED";
+  class: { id: string; name: string };
+  maxScore: number;
+  submission: { id: string; attemptNo: number; submittedAt: string } | null;
+  grade: { totalScore: number; publishedAt: string | null } | null;
 }
 export interface CurriculumFeedbackRecord {
   id: string;
@@ -186,6 +224,16 @@ export interface AttendanceSummary {
   counts: AttendanceCounts;
   attendancePercent: number | null;
   history: AttendanceHistoryRow[];
+  students: {
+    studentId: string;
+    fullName: string;
+    counts: AttendanceCounts;
+    attendancePercent: number | null;
+  }[];
+}
+export interface QueuedEmailResult {
+  results: { email: string; queued: boolean }[];
+  automaticRetry: boolean;
 }
 export interface EmailDelivery {
   id: string;
@@ -225,7 +273,12 @@ export interface AccountInvitation {
   reviewedAt: string | null;
   reviewNote: string | null;
   createdAt: string;
-  /** Returned once by POST; BE does not email the invitation yet. */
+  acceptedUser?: {
+    id: string;
+    displayName: string | null;
+    email: string;
+  } | null;
+  /** Chi tra mot lan khi tao; BE cung xep email moi vao outbox. */
   acceptanceToken?: string;
 }
 export interface RoomRecord {
@@ -252,4 +305,28 @@ export interface StudentSchedule {
   weekday: number;
   startTime: string;
   endTime: string;
+}
+
+/** `GET academic/classes/:id/attendance-summary` (buổi đã chốt; `effectiveStatus` tính cả học bù). */
+export interface ClassAttendanceSummary {
+  counts: {
+    present: number;
+    absent: number;
+    madeUp: number;
+    excused: number;
+    required: number;
+    attended: number;
+  };
+  attendancePercent: number | null;
+  students: {
+    studentId: string;
+    fullName: string;
+    attendancePercent: number | null;
+  }[];
+  history: {
+    id: string;
+    attendance: SessionParticipant["attendance"];
+    effectiveStatus: "PRESENT" | "ABSENT" | "EXCUSED" | "MADE_UP";
+    session: { id: string; classId: string; startsAt: string; endsAt: string };
+  }[];
 }

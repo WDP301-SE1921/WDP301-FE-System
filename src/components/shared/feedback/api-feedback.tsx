@@ -2,7 +2,8 @@
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { ApiError, apiErrorMessage } from "@/lib/api/client";
+import { apiErrorMessage } from "@/lib/api/client";
+import { userFacingMessage } from "@/lib/api/error-message";
 
 export function ApiFeedback({
   error,
@@ -15,16 +16,13 @@ export function ApiFeedback({
   return (
     <Alert variant="destructive">
       <AlertTitle>{apiErrorMessage(error)}</AlertTitle>
-      <AlertDescription>
-        {error instanceof ApiError && error.requestId && (
-          <p className="text-xs">Mã yêu cầu: {error.requestId}</p>
-        )}
-        {retry && (
+      {retry && (
+        <AlertDescription>
           <Button className="mt-2" variant="outline" size="sm" onClick={retry}>
             Thử lại
           </Button>
-        )}
-      </AlertDescription>
+        </AlertDescription>
+      )}
     </Alert>
   );
 }
@@ -32,7 +30,7 @@ export function ApiFeedback({
 export function FieldError({ message }: { message?: string }) {
   return message ? (
     <p role="alert" className="text-xs text-destructive">
-      {message}
+      {userFacingMessage(message, "Vui lòng kiểm tra lại thông tin đã nhập.")}
     </p>
   ) : null;
 }

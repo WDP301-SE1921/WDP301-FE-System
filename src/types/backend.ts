@@ -72,6 +72,8 @@ export interface DirectoryListFilters {
   status?: string;
   grade?: number;
   parentUserId?: string;
+  /** Học sinh: `no-class`, `long-leave`, `pending-makeup`. */
+  quick?: string;
 }
 export interface ParentListItem extends BackendUser {
   createdAt: string;
@@ -79,13 +81,23 @@ export interface ParentListItem extends BackendUser {
     id: string;
     phone: string | null;
     _count: { students: number };
+    students?: StudentProfile[];
   } | null;
+  /** Tổng thanh toán đã xác nhận của các con. */
+  paidAmount?: number;
 }
 export interface StudentListItem extends StudentProfile {
   parentProfile: {
     phone: string | null;
     user: { id: string; email: string; displayName: string | null };
   };
+  /** Lớp của ghi danh đang hiệu lực hôm nay (BE tính theo lớp xếp hiện tại). */
+  currentClasses?: { id: string; name: string }[];
+  /** % có mặt trên buổi đã chốt; `null` khi chưa có buổi nào. */
+  attendancePercent?: number | null;
+  /** Buổi vắng đã ghi nhận chưa xếp học bù. */
+  pendingMakeups?: number;
+  onLongLeave?: boolean;
 }
 export interface RegistrationProgram {
   id: string;
@@ -95,7 +107,15 @@ export interface RegistrationProgram {
   subjectId?: string | null;
   isActive?: boolean;
   subjectRecord?: AcademicSubject | null;
-  classes?: { id: string; name: string; isActive: boolean; isOpen: boolean }[];
+  classes?: {
+    id: string;
+    name: string;
+    isActive: boolean;
+    isOpen: boolean;
+    /** Chi tiết khóa (`GET programs/:id`) từ BE 19/10; bản cũ không có. */
+    teacherId?: string | null;
+    weeklySchedules?: Pick<WeeklySchedule, "weekday" | "startTime" | "endTime">[];
+  }[];
   curriculumUnits?: {
     id: string;
     title: string;
@@ -136,6 +156,17 @@ export interface RegistrationClass {
   isActive?: boolean;
   scheduleLocked?: boolean;
   roomId?: string | null;
+  room?: {
+    id: string;
+    name: string;
+    capacity: number;
+    isActive: boolean;
+  } | null;
+  rosterCount?: number;
+  /** Giáo viên nhận lớp từ `pendingTeacherFrom` (danh sách lớp trả id, chi tiết lớp trả thêm `pendingTeacher`). */
+  pendingTeacherId?: string | null;
+  pendingTeacher?: Pick<AcademicTeacher, "id" | "displayName" | "email"> | null;
+  pendingTeacherFrom?: string | null;
   /** Set when the assigned teacher confirmed ("set cứng") the weekly schedule. */
   scheduleConfirmedAt?: string | null;
   rosterAt?: string;
@@ -145,7 +176,15 @@ export interface RegistrationClass {
     status: string;
     startDate: string | null;
     endDate: string | null;
-    studentProfile: { id: string; fullName: string; grade: number };
+    studentProfile: {
+      id: string;
+      fullName: string;
+      grade: number;
+      parentProfile?: {
+        phone: string | null;
+        user: { email: string; displayName: string | null };
+      };
+    };
   }>;
   weeklySchedules: WeeklySchedule[];
   _count?: { enrollments: number };
@@ -169,6 +208,13 @@ export interface RegistrationOrder {
   startDate: string;
   endDate: string;
   targetStudent: { id: string; fullName: string; grade: number };
+  /** Có khi đơn đã thu tiền; BE trả kèm trong danh sách ghi danh của học sinh. */
+  payment?: {
+    id: string;
+    amount: number | string;
+    receiptNumber: string;
+    confirmedAt: string;
+  } | null;
 }
 export interface RegistrationReceipt {
   registrationId: string;

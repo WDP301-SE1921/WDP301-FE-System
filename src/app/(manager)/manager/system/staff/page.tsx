@@ -1,14 +1,14 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
-import { AccountsView } from "@/features/directory/components/accounts-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Nhân viên" };
-
-export default function Page() {
-  return (
-    <Suspense fallback={<SkeletonDetailHeader />}>
-      <AccountsView kind="staff" />
-    </Suspense>
+/** Nhân sự trung tâm đã thành tab Nhân viên trên màn Nhân sự. */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  redirect(
+    legacyHref(ROUTES.MANAGER.PEOPLE, { tab: "staff" }, await searchParams),
   );
 }

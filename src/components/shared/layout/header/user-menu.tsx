@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,33 +12,33 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ACTION_LABEL } from "@/constants/messages"
-import { ROUTES } from "@/constants/routes"
-import { clearSession } from "@/lib/auth/session"
-import { apiRequest, ApiError, apiErrorMessage } from "@/lib/api/client"
-import { useQueryClient } from "@tanstack/react-query"
-import { toast } from "@/components/ui/toast"
-import { HugeiconsIcon } from "@hugeicons/react"
+} from "@/components/ui/dropdown-menu";
+import { ACTION_LABEL } from "@/constants/messages";
+import { ROUTES } from "@/constants/routes";
+import { clearSession } from "@/lib/auth/session";
+import { apiRequest, ApiError, apiErrorMessage } from "@/lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/toast";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   UserIcon,
   SecurityPasswordIcon,
   Logout01Icon,
   ArrowDown01Icon,
-} from "@hugeicons/core-free-icons"
+} from "@hugeicons/core-free-icons";
 
 export interface UserMenuProps {
   /** Tên người dùng; chưa biết (trước khi hydrate) thì hiện nhãn trung tính. */
-  name?: string
-  roleLabel?: string
-  avatarUrl?: string
-  email?: string
+  name?: string;
+  roleLabel?: string;
+  avatarUrl?: string;
+  email?: string;
   /** Dòng nhỏ dưới tên — mặc định hiện `email`, truyền vào để hiện thứ khác. */
-  subtitleLine?: string
+  subtitleLine?: string;
   /** Route "Tài khoản"/"Đổi mật khẩu" trỏ tới — mặc định trang hồ sơ khu back-office. */
-  accountHref?: string
+  accountHref?: string;
   /** Mặc định: xóa phiên (cookie role + hồ sơ đã lưu) rồi về trang đăng nhập. */
-  onLogout?: () => void
+  onLogout?: () => void;
 }
 
 function UserMenu({
@@ -50,39 +50,48 @@ function UserMenu({
   accountHref = ROUTES.MANAGER.PROFILE,
   onLogout,
 }: UserMenuProps) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
-  const [isLoggingOut, setIsLoggingOut] = React.useState(false)
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const initials = name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .slice(0, 2)
-    .toUpperCase()
+    .toUpperCase();
+
+  // Tải lại hẳn trang đăng nhập: xóa cache rồi ở lại trang cũ sẽ làm các truy vấn đang hiển thị
+  // gọi lại API bằng phiên vừa hủy (401). Tải trang mới bỏ toàn bộ cache và truy vấn đang chạy.
+  const leave = () => {
+    clearSession();
+    window.location.replace(ROUTES.AUTH.LOGIN);
+  };
 
   const handleLogout = async () => {
     if (onLogout) {
-      onLogout()
-      return
+      onLogout();
+      return;
     }
-    setIsLoggingOut(true)
+    setIsLoggingOut(true);
     try {
-      await apiRequest("auth/logout", { method: "POST" })
-      clearSession()
-      queryClient.clear()
-      router.replace(ROUTES.AUTH.LOGIN)
-      router.refresh()
+      // Dừng các truy vấn đang chạy để không gọi API bằng phiên sắp hủy (401 sau khi đăng xuất).
+      await queryClient.cancelQueries();
+      await apiRequest("auth/logout", { method: "POST" });
+      leave();
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        clearSession(); queryClient.clear(); router.replace(ROUTES.AUTH.LOGIN); router.refresh()
-      } else toast.error(apiErrorMessage(error))
+      if (error instanceof ApiError && error.status === 401) leave();
+      else toast.error(apiErrorMessage(error));
+    } finally {
+      setIsLoggingOut(false);
     }
-    finally { setIsLoggingOut(false) }
-  }
+  };
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full p-1.5 transition-colors hover:bg-muted outline-none">
+      <DropdownMenuTrigger
+        aria-label={`Mở menu tài khoản ${name}`}
+        className="flex items-center gap-2.5 rounded-full p-1.5 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none"
+      >
         <Avatar size="sm">
           <AvatarImage src={avatarUrl} alt={name} />
           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
@@ -101,16 +110,25 @@ function UserMenu({
             )}
           </div>
           {(subtitleLine ?? email) && (
-            <span className="text-[11px] text-muted-foreground">{subtitleLine ?? email}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {subtitleLine ?? email}
+            </span>
           )}
         </div>
-        <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 text-muted-foreground" />
+        <HugeiconsIcon
+          icon={ArrowDown01Icon}
+          className="size-3.5 text-muted-foreground"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col gap-0.5">
             <span className="font-semibold text-foreground">{name}</span>
-            {email && <span className="text-xs text-muted-foreground font-normal">{email}</span>}
+            {email && (
+              <span className="text-xs text-muted-foreground font-normal">
+                {email}
+              </span>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -137,7 +155,7 @@ function UserMenu({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
-export { UserMenu }
+export { UserMenu };

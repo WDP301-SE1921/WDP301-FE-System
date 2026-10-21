@@ -1,14 +1,12 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
-import { LiveAttendanceList } from "@/features/attendance/components/live-attendance-view";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
+import { legacyHref, type SearchParams } from "@/lib/legacy-href";
 
-export const metadata: Metadata = { title: "Điểm danh" };
-
-export default function Page() {
-  return (
-    <Suspense fallback={<SkeletonDetailHeader />}>
-      <LiveAttendanceList />
-    </Suspense>
-  );
+/** Điểm danh nằm trong Lịch dạy (dạng danh sách). */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  redirect(legacyHref(ROUTES.TEACHER.SCHEDULE, { view: "list" }, await searchParams));
 }

@@ -34,6 +34,7 @@ import {
   type GenerationAttempt,
 } from "../generation-storage";
 import { sessionTime } from "../session-format";
+import { calendarDateLabel } from "@/lib/calendar-date";
 
 export function SessionGenerator({
   classroom,
@@ -171,7 +172,7 @@ export function SessionGenerator({
                 value={field.value || null}
                 items={approved.map((unit) => ({
                   value: unit.id,
-                  label: `${unit.title} · Phiên bản ${unit.version}`,
+                  label: `${unit.title} · ${calendarDateLabel(unit.fromDate.slice(0, 10))} – ${calendarDateLabel(unit.toDate.slice(0, 10))}`,
                 }))}
                 disabled={busy || !!attempt || !!restored.error}
                 onValueChange={(value) => {
@@ -189,7 +190,9 @@ export function SessionGenerator({
                 <SelectContent>
                   {approved.map((unit) => (
                     <SelectItem key={unit.id} value={unit.id}>
-                      {unit.title} · Phiên bản {unit.version}
+                      {unit.title} ·{" "}
+                      {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
+                      {calendarDateLabel(unit.toDate.slice(0, 10))}
                     </SelectItem>
                   ))}
                 </SelectContent>

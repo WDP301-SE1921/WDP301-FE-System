@@ -191,6 +191,9 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
   const selectedClass = classes.data?.find(
     (item) => item.id === values.classId,
   );
+  // Lớp vừa chọn nhưng không đăng ký được (vd. con đã học lớp này trong kỳ): không đưa vào tóm tắt / học phí.
+  const summaryClass =
+    selectedClass?.isEligible === false ? undefined : selectedClass;
   const gradeClasses =
     classes.data?.filter((item) => item.program.grade === child?.grade) ?? [];
   const order = useQuery({
@@ -308,7 +311,7 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
   const currentOrder = order.data;
   const quote =
     currentOrder?.quotedAmount ??
-    Number(selectedClass?.monthlyFee ?? 0) * (values.packageMonths || 0);
+    Number(summaryClass?.monthlyFee ?? 0) * (values.packageMonths || 0);
   const startDate = currentOrder
     ? dateOnly(currentOrder.startDate)
     : values.startDate;
@@ -524,14 +527,16 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
                   [
                     "Lớp",
                     currentOrder?.class.name ??
-                      selectedClass?.name ??
-                      "Chưa chọn",
+                      summaryClass?.name ??
+                      (selectedClass
+                        ? "Chưa chọn được (lớp không phù hợp)"
+                        : "Chưa chọn"),
                   ],
                   [
                     "Lịch tuần",
                     scheduleText(
                       currentOrder?.class.weeklySchedules ??
-                        selectedClass?.weeklySchedules ??
+                        summaryClass?.weeklySchedules ??
                         [],
                     ) || "—",
                   ],

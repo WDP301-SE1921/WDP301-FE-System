@@ -43,13 +43,19 @@ export const ROUTES = {
     CATALOG_PROGRAM_DETAIL: (id: string) => `/manager/catalog/programs/${id}`,
     ROOMS: "/manager/rooms",
     CURRICULUM: "/manager/curriculum",
+    /** Tổng quan của Thiết kế giáo trình (giáo trình đang soạn, chờ duyệt, phản hồi). */
+    CURRICULUM_OVERVIEW: "/manager/curriculum/overview",
     CURRICULUM_FEEDBACK: "/manager/curriculum/feedback",
     CURRICULUM_UNIT: (id: string) => `/manager/curriculum/${id}`,
     CLASS_SESSIONS: (id: string) => `/manager/classes/${id}/sessions`,
 
+    /** Thông báo lớp, nhắc học phí và lịch sử email trên cùng một màn. */
+    NOTIFICATIONS: "/manager/notifications",
     EMAIL_LOGS: "/manager/notifications/emails",
     SEND_NOTIFICATION: "/manager/notifications/send",
 
+    /** Nhân sự: giáo viên, nhân viên, quản lý và lời mời (`?tab=`, `?person=` mở Sheet). */
+    PEOPLE: "/manager/people",
     STAFF_ACCOUNTS: "/manager/system/staff",
     MANAGERS: "/manager/system/managers",
     AUDIT_LOGS: "/manager/system/audit-logs",
@@ -76,11 +82,27 @@ export const ROUTES = {
         : "/staff/enrollments/new";
     },
 
+    /** Tổng quan việc trong ngày của Nhân viên. */
+    DASHBOARD: "/staff/dashboard",
     PAYMENTS: "/staff/payments",
 
     PARENTS: "/staff/parents",
     STUDENTS: "/staff/students",
     STUDENT_DETAIL: (id: string) => `/staff/students/${id}`,
+    /** Màn Học sinh & phụ huynh mở sẵn panel Xử lý của một học sinh. */
+    STUDENT_ACTION: (params: {
+      studentId: string;
+      action?: "makeup" | "change" | "leave" | "withdraw";
+      enrollmentId?: string;
+      sessionId?: string;
+    }) => {
+      const query = new URLSearchParams({ studentId: params.studentId });
+      if (params.action) query.set("action", params.action);
+      if (params.enrollmentId) query.set("enrollmentId", params.enrollmentId);
+      if (params.sessionId) query.set("sessionId", params.sessionId);
+      return `/staff/students?${query}`;
+    },
+    /** Các trang cũ dưới /staff/absences chỉ còn chuyển hướng sang panel Xử lý. */
     MAKEUP: "/staff/absences/makeup",
     SWAP_SESSION: "/staff/absences/swap",
     CHANGE_CLASS: "/staff/absences/change-class",
@@ -95,6 +117,8 @@ export const ROUTES = {
 
     SCHEDULE: "/teacher/schedule",
     CLASSES: "/teacher/classes",
+    CURRICULUM: "/teacher/curriculum",
+    CURRICULUM_UNIT: (id: string) => `/teacher/curriculum/${id}`,
     CLASS_DETAIL: (id: string) => `/teacher/classes/${id}`,
     ATTENDANCE: "/teacher/attendance",
     ATTENDANCE_SESSION: (id: string) => `/teacher/attendance/${id}`,

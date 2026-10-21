@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tổng quan thay đổi UI/UX</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/50fc8e13f364d62f2b7085bdced88cc1">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#155dfc}a:hover{color:#1447e6}
+</style>
+</helmet>
+<div class="eg-root" style="width: 1440px; height: 1560px; box-sizing: border-box; padding: 64px; display: flex; flex-direction: column; gap: 40px; background: #ffffff">
+<header style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: #155dfc">EDUGRADE · ĐỀ XUẤT 18/10/2026</p>
+<h1 style="margin: 0; font-size: 40px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em">Thiết kế lại UI/UX — giữ nguyên tính năng</h1>
+<p style="margin: 0; font-size: 16px; color: #525252; max-width: 920px">Chỉ đổi bố cục và điều hướng. API, phân quyền theo vai trò, kiểm tra dữ liệu, luồng duyệt giáo trình hai cấp và các bước nghỉ/học bù giữ như hiện tại. Đường dẫn cũ vẫn mở được và chuyển sang màn mới.</p>
+</header>
+
+<section style="display: flex; flex-direction: column; gap: 16px">
+<h2 class="eg-h2">6 nguyên tắc bố cục</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div class="eg-card eg-card-sm"><p class="eg-strong" style="margin: 0; font-size: 15px">1. Danh sách + nút thao tác</p><p class="eg-cs">Mở danh sách dạng bảng, bấm thao tác trên dòng → panel bên phải chứa đúng form cũ. Ví dụ: Học sinh › Xử lý › Học bù.</p></div>
+<div class="eg-card eg-card-sm"><p class="eg-strong" style="margin: 0; font-size: 15px">2. Bảng cho dữ liệu dạng hàng</p><p class="eg-cs">Học sinh, phụ huynh, đăng ký, nhân sự, danh mục, phòng, email, lịch sử thay đổi, bài tập, bài nộp và bài học của giáo trình.</p></div>
+<div class="eg-card eg-card-sm"><p class="eg-strong" style="margin: 0; font-size: 15px">3. Thẻ lưới 4 cột cho lớp học</p><p class="eg-cs">Thẻ gọn: tên, lịch, giáo viên, sĩ số, học phí. Hai nút to gom vào một menu thao tác.</p></div>
+<div class="eg-card eg-card-sm"><p class="eg-strong" style="margin: 0; font-size: 15px">4. Chia 2 phần: nhập | hiển thị</p><p class="eg-cs">Form bên trái, danh sách hoặc xem trước bên phải: phòng, danh mục, thông báo, sinh lịch, tạo bài tập, chấm bài, chi tiết lớp.</p></div>
+<div class="eg-card eg-card-sm"><p class="eg-strong" style="margin: 0; font-size: 15px">5. Kanban chỉ cho lịch học</p><p class="eg-cs">Cột là Thứ 2 → CN. Không kéo-thả. Đổi giờ, hủy buổi, xếp dạy thay mở trong panel của buổi học.</p></div>
+<div class="eg-card eg-card-sm"><p class="eg-strong" style="margin: 0; font-size: 15px">6. Một tông xanh cho mọi màn</p><p class="eg-cs">Dashboard bỏ tông cam đất, dùng chung token xanh #155dfc, font Be Vietnam Pro, bo góc như các màn còn lại.</p></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap">
+<h2 class="eg-h2">Menu mới theo vai trò</h2>
+<p class="eg-cs">Chữ nhỏ dưới mỗi mục: những màn cũ được gộp vào.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start">
+
+<div class="eg-card eg-card-sm" style="gap: 14px">
+<div class="eg-row-sb"><p class="eg-strong" style="margin: 0; font-size: 16px">Nhân viên</p><span class="eg-badge eg-b-blue">11 → 6 mục</span></div>
+<hr class="eg-divider">
+<div class="eg-col" style="gap: 12px">
+<div><p class="eg-strong" style="margin: 0">Dashboard <span class="eg-badge eg-b-amber" style="height: 20px">màn mới</span></p><p class="eg-help">Việc hôm nay: đơn chờ thu phí, học bù, buổi học, chỗ trống</p></div>
+<div><p class="eg-strong" style="margin: 0">Học sinh &amp; phụ huynh</p><p class="eg-help">Hồ sơ con · Phụ huynh · Nghỉ học &amp; học bù · Đổi một buổi · Đổi lớp &amp; lịch cố định · Nghỉ dài hạn · Nghỉ môn / Nghỉ hẳn</p></div>
+<div><p class="eg-strong" style="margin: 0">Đăng ký học</p><p class="eg-help">Giữ wizard 5 bước</p></div>
+<div><p class="eg-strong" style="margin: 0">Đăng ký &amp; biên lai</p><p class="eg-help">Giữ bảng; ô tra mã đăng ký lên thanh công cụ</p></div>
+<div><p class="eg-strong" style="margin: 0">Lớp học</p><p class="eg-help">Lớp học / thêm học sinh</p></div>
+<div><p class="eg-strong" style="margin: 0">Lịch học</p><p class="eg-help">Buổi học</p></div>
+</div>
+</div>
+
+<div class="eg-card eg-card-sm" style="gap: 14px">
+<div class="eg-row-sb"><p class="eg-strong" style="margin: 0; font-size: 16px">Quản lý</p><span class="eg-badge eg-b-blue">18 → 8 mục</span></div>
+<hr class="eg-divider">
+<div class="eg-col" style="gap: 12px">
+<div><p class="eg-strong" style="margin: 0">Dashboard</p><p class="eg-help">Tông xanh, 4 thẻ số liệu, biểu đồ; “Hoạt động gần đây” lấy từ lịch sử thay đổi</p></div>
+<div><p class="eg-strong" style="margin: 0">Học sinh &amp; phụ huynh</p><p class="eg-help">Học sinh · Phụ huynh (2 tab, chi tiết mở panel)</p></div>
+<div><p class="eg-strong" style="margin: 0">Lớp học</p><p class="eg-help">Lớp học · Phòng học (thành tab); chi tiết lớp chia tab</p></div>
+<div><p class="eg-strong" style="margin: 0">Lịch học</p><p class="eg-help">Lịch học tổng · Xếp lịch &amp; buổi học · Dạy thay</p></div>
+<div><p class="eg-strong" style="margin: 0">Khóa học &amp; giáo trình</p><p class="eg-help">Danh mục (môn học, khóa học) · Giáo trình · Phản hồi giáo trình</p></div>
+<div><p class="eg-strong" style="margin: 0">Thông báo</p><p class="eg-help">Lịch sử email · Gửi thông báo</p></div>
+<div><p class="eg-strong" style="margin: 0">Nhân sự</p><p class="eg-help">Danh sách giáo viên · Lời mời &amp; duyệt · Nhân sự trung tâm · Quản lý trung tâm</p></div>
+<div><p class="eg-strong" style="margin: 0">Lịch sử thay đổi</p><p class="eg-help">Giữ, đổi từ thẻ sang bảng</p></div>
+</div>
+</div>
+
+<div class="eg-card eg-card-sm" style="gap: 14px">
+<div class="eg-row-sb"><p class="eg-strong" style="margin: 0; font-size: 16px">Giáo viên</p><span class="eg-badge eg-b-blue">10 → 6 mục</span></div>
+<hr class="eg-divider">
+<div class="eg-col" style="gap: 12px">
+<div><p class="eg-strong" style="margin: 0">Dashboard</p><p class="eg-help">Tông xanh; thêm biểu đồ chuyên cần và tiến độ giáo trình</p></div>
+<div><p class="eg-strong" style="margin: 0">Lịch dạy &amp; điểm danh</p><p class="eg-help">Lịch dạy · Điểm danh</p></div>
+<div><p class="eg-strong" style="margin: 0">Lớp của tôi</p><p class="eg-help">Giữ, thẻ lưới 4 cột</p></div>
+<div><p class="eg-strong" style="margin: 0">Giáo trình</p><p class="eg-help">Thẩm định giáo trình · Phản hồi giáo trình</p></div>
+<div><p class="eg-strong" style="margin: 0">Bài tập &amp; chấm bài</p><p class="eg-help">Bài tập / Đề kiểm tra · Bài nộp của học sinh · Chấm bài</p></div>
+<div><p class="eg-strong" style="margin: 0">Báo cáo</p><p class="eg-help">Giữ, chia 2 phần</p></div>
+</div>
+</div>
+
+<div class="eg-card eg-card-sm" style="gap: 14px">
+<div class="eg-row-sb"><p class="eg-strong" style="margin: 0; font-size: 16px">Thiết kế giáo trình</p><span class="eg-badge eg-b-blue">2 mục</span></div>
+<hr class="eg-divider">
+<div class="eg-col" style="gap: 12px">
+<div><p class="eg-strong" style="margin: 0">Dashboard <span class="eg-badge eg-b-amber" style="height: 20px">màn mới</span></p><p class="eg-help">Mức sẵn sàng giáo trình kỳ sau theo khóa, việc chờ xử lý, phản hồi mới</p></div>
+<div><p class="eg-strong" style="margin: 0">Giáo trình</p><p class="eg-help">Giáo trình · Phản hồi giáo trình (thành tab trong cùng màn)</p></div>
+</div>
+</div>
+
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div class="eg-note">
+<p class="eg-strong" style="margin: 0 0 4px">Thay đổi quy trình duy nhất đã chốt</p>
+Chấm bài dùng một nút <b>Gửi điểm</b>: gọi lần lượt đúng 3 API cũ Lưu → Duyệt → Công bố. Vẫn còn <b>Lưu nháp</b> để chấm dở.
+</div>
+<div class="eg-note eg-warn">
+<p class="eg-strong" style="margin: 0 0 4px">Phần cần BE quyết định</p>
+Đề xuất giáo trình &amp; xếp lịch (trang 3) có vài quy tắc mới cần BE. Chấm bài tự luận bằng ảnh có bút vẽ cần BE lưu nét chấm và app Mobile cho chụp/gửi ảnh. Phần cần BE được đánh nhãn “chờ BE”.
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
