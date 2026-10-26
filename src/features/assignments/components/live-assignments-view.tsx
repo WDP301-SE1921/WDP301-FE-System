@@ -136,6 +136,19 @@ function AssignmentWorkspace({
               {assignment.maxAttempts} lần
             </p>
             <p className="whitespace-pre-wrap">{assignment.instructions}</p>
+            {!!assignment.learningTargets?.length && (
+              <section aria-label="Mục tiêu bài" className="space-y-2">
+                <p className="font-medium">Mục tiêu bài (CLO)</p>
+                <ul className="space-y-1 text-sm">
+                  {assignment.learningTargets.map((target) => (
+                    <li key={target.id}>
+                      <span className="font-medium">{target.code}</span> ·{" "}
+                      {target.title}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {assignment.questions.map((question, index) => (
               <div
                 key={question.id}
@@ -144,6 +157,14 @@ function AssignmentWorkspace({
                 <p className="font-medium">
                   Câu {index + 1} · {question.maxScore} điểm
                 </p>
+                {question.outcomeId && (
+                  <Badge variant="outline">
+                    CLO{" "}
+                    {assignment.learningTargets?.find(
+                      (target) => target.id === question.outcomeId,
+                    )?.code ?? ""}
+                  </Badge>
+                )}
                 <p className="whitespace-pre-wrap">{question.prompt}</p>
                 {question.choices?.map((choice) => (
                   <p key={choice}>{choice}</p>

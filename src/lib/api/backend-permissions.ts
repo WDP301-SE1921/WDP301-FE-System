@@ -353,6 +353,32 @@ const rules: {
     path: /^academic\/sessions\/[^/]+\/(reschedule-preview|reschedule|cancel)$/,
     roles: manager,
   },
+  // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa xác minh, Quản lý duyệt.
+  {
+    method: "GET",
+    path: /^academic\/programs\/[^/]+\/outcome-sets$/,
+    roles: catalogReaders,
+  },
+  {
+    method: "POST",
+    path: /^academic\/outcome-sets(?:\/[^/]+\/outcomes)?$/,
+    roles: designer,
+  },
+  {
+    method: "PATCH",
+    path: /^academic\/(outcome-sets\/[^/]+\/outcomes\/[^/]+|lessons\/[^/]+\/outcomes)$/,
+    roles: designer,
+  },
+  {
+    method: "POST",
+    path: /^academic\/(outcomes\/[^/]+\/verify-source|outcome-sets\/[^/]+\/technical-approve)$/,
+    roles: teacher,
+  },
+  {
+    method: "POST",
+    path: /^academic\/outcome-sets\/[^/]+\/(approve|request-changes)$/,
+    roles: manager,
+  },
 ];
 
 export function backendRule(method: string, path: string) {

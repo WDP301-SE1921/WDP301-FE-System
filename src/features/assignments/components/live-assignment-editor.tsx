@@ -1,10 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { useUnsavedChanges } from "@/components/shared/feedback/unsaved-changes-guard";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
@@ -24,12 +23,13 @@ import { LiveSelect } from "@/features/academic/components/live-fields";
 import { academicApi } from "@/features/academic/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import {
+  assignmentEditorPayload,
   assignmentEditorSchema,
   localDateTime,
-  toQuestionPayload,
-  vietnamDateTime,
+  type AssignmentEditorInput,
 } from "@/lib/validators/web-workflows";
 import type { AssignmentDetail } from "@/types/academic-workflows";
+import type { OutcomeSet } from "@/types/outcomes";
 import type { RegistrationClass } from "@/types/backend";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { todayInVietnam } from "@/features/registration-flow/calendar";
@@ -37,7 +37,7 @@ import { displayMoment } from "@/features/academic/components/live-fields";
 import { AssignmentImportDialog } from "./assignment-import-dialog";
 import { TEST_TYPE_TEXT } from "../assessment-labels";
 import { ROUTES } from "@/constants/routes";
-type AssignmentInput = z.infer<typeof assignmentEditorSchema>;
+type AssignmentInput = AssignmentEditorInput;
 const emptyQuestion: AssignmentInput["questions"][number] = {
   kind: "ESSAY",
   prompt: "",
@@ -45,7 +45,10 @@ const emptyQuestion: AssignmentInput["questions"][number] = {
   correctAnswer: "",
   rubric: "",
   maxScore: 10,
+  outcomeId: "",
 };
+/** Giá trị Select cho "không gắn CLO"; form lưu chuỗi rỗng. */
+const NO_OUTCOME_SET = "none";
 
 export function LiveAssignmentEditor({ id }: { id?: string }) {
   const classes = useLiveQuery(["teacher-classes"], () =>
@@ -115,6 +118,7 @@ function AssignmentEditor({
           instructions: assignment.instructions,
           dueAt: localDateTime(assignment.dueAt),
           maxAttempts: assignment.maxAttempts,
+          outcomeSetId: assignment.outcomeSetId ?? "",
           questions: assignment.questions.map((question) => ({
             kind: question.kind,
             prompt: question.prompt,
@@ -122,6 +126,7 @@ function AssignmentEditor({
             correctAnswer: question.correctAnswer ?? "",
             rubric: question.rubric ?? "",
             maxScore: question.maxScore,
+            outcomeId: question.outcomeId ?? "",
           })),
         }
       : {
@@ -131,6 +136,7 @@ function AssignmentEditor({
           instructions: "",
           dueAt: "",
           maxAttempts: 1,
+          outcomeSetId: "",
           questions: [{ ...emptyQuestion }],
         },
   });
@@ -167,6 +173,33 @@ function AssignmentEditor({
     sessions.isSuccess &&
     !!selectedSessionId &&
     !availableSessions.some((session) => session.id === selectedSessionId);
+  const programId = classes.find((item) => item.id === classId)?.programId;
+  const outcomeSetId = useWatch({ control: form.control, name: "outcomeSetId" });
+  const outcomeSets = useLiveQuery(
+    ["outcome-sets", programId, "APPROVED"],
+    (signal) =>
+      academicApi.outcomeSets(programId!, { status: "APPROVED" }, signal),
+    !!programId,
+  );
+  const approvedSets = outcomeSets.data ?? [];
+  const selectedSet = approvedSets.find((set) => set.id === outcomeSetId);
+  // Bài mới của khóa đã có bộ CLO được duyệt: chọn sẵn phiên bản mới nhất (BE trả version giảm dần).
+  useEffect(() => {
+    if (assignment || !outcomeSets.data?.length) return;
+    if (!form.getValues("outcomeSetId"))
+      form.setValue("outcomeSetId", outcomeSets.data[0].id);
+  }, [assignment, outcomeSets.data, form]);
+  const chooseOutcomeSet = (value: string) => {
+    const next = value === NO_OUTCOME_SET ? "" : value;
+    form.setValue("outcomeSetId", next, { shouldDirty: true });
+    const allowed = new Set(
+      approvedSets.find((set) => set.id === next)?.outcomes.map(({ id }) => id),
+    );
+    form.getValues("questions").forEach((question, index) => {
+      if (question.outcomeId && !allowed.has(question.outcomeId))
+        form.setValue(`questions.${index}.outcomeId`, "", { shouldDirty: true });
+    });
+  };
   const blankOnly =
     questions.fields.length === 1 &&
     !!values?.[0] &&
@@ -182,13 +215,7 @@ function AssignmentEditor({
         className="space-y-4"
         noValidate
         onSubmit={form.handleSubmit((value) => {
-          const body = {
-            ...value,
-            sessionId: value.kind === "TEST" ? value.sessionId : undefined,
-            testType: value.kind === "TEST" ? value.testType : undefined,
-            dueAt: vietnamDateTime(value.dueAt),
-            questions: value.questions.map(toQuestionPayload),
-          };
+          const body = assignmentEditorPayload(value);
           action.mutate(
             () =>
               assignment
@@ -228,8 +255,12 @@ function AssignmentEditor({
                       label: item.name,
                     }))}
                     onChange={(value) => {
+                      const nextProgram = classes.find(
+                        (item) => item.id === value,
+                      )?.programId;
                       field.onChange(value);
                       form.setValue("sessionId", undefined);
+                      if (nextProgram !== programId) chooseOutcomeSet("");
                     }}
                   />
                 )}
@@ -238,6 +269,17 @@ function AssignmentEditor({
                 <p role="alert" className="text-sm text-destructive">
                   {form.formState.errors.classId.message}
                 </p>
+              )}
+              {programId && (
+                <OutcomeSetField
+                  isLoading={outcomeSets.isPending}
+                  error={outcomeSets.error}
+                  onRetry={() => void outcomeSets.refetch()}
+                  sets={approvedSets}
+                  value={outcomeSetId}
+                  isMissing={!!outcomeSetId && outcomeSets.isSuccess && !selectedSet}
+                  onChange={chooseOutcomeSet}
+                />
               )}
               <Controller
                 name="kind"
@@ -494,6 +536,31 @@ function AssignmentEditor({
                     )}
                   </>
                 )}
+                {selectedSet && (
+                  <>
+                    <Controller
+                      name={`questions.${index}.outcomeId`}
+                      control={form.control}
+                      render={({ field }) => (
+                        <LiveSelect
+                          label="CLO mà câu này đo"
+                          value={field.value}
+                          options={selectedSet.outcomes.map((outcome) => ({
+                            value: outcome.id,
+                            label: `${outcome.code} · ${outcome.title}`,
+                          }))}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <FieldError
+                      message={
+                        form.formState.errors.questions?.[index]?.outcomeId
+                          ?.message
+                      }
+                    />
+                  </>
+                )}
                 <Label htmlFor={`question-${index}-max`}>Điểm tối đa</Label>
                 <Input
                   id={`question-${index}-max`}
@@ -544,6 +611,7 @@ function AssignmentEditor({
               correctAnswer: question.correctAnswer ?? "",
               rubric: question.rubric ?? "",
               maxScore: question.maxScore,
+              outcomeId: "",
             }));
             if (replace || blankOnly) questions.replace(imported);
             else questions.append(imported);
@@ -558,5 +626,67 @@ function AssignmentEditor({
         />
       )}
     </>
+  );
+}
+
+/**
+ * Bộ CLO của khóa học. BE chặn giao bài khi khóa đã có bộ được duyệt mà bài chưa gắn CLO;
+ * lưu nháp vẫn được phép khi chọn "Không gắn CLO".
+ */
+function OutcomeSetField({
+  isLoading,
+  error,
+  onRetry,
+  sets,
+  value,
+  isMissing,
+  onChange,
+}: {
+  isLoading: boolean;
+  error: unknown;
+  onRetry: () => void;
+  sets: OutcomeSet[];
+  value: string;
+  isMissing: boolean;
+  onChange: (value: string) => void;
+}) {
+  if (isLoading)
+    return (
+      <p role="status" className="text-sm text-muted-foreground">
+        Đang tải chuẩn đầu ra (CLO) của khóa…
+      </p>
+    );
+  if (error) return <ApiFeedback error={error} retry={onRetry} />;
+  if (!sets.length && !value)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Khóa học chưa có bộ CLO được duyệt nên bài không cần gắn CLO.
+      </p>
+    );
+  return (
+    <div className="space-y-2 rounded-xl bg-muted p-4">
+      <LiveSelect
+        label="Chuẩn đầu ra (CLO)"
+        value={value || NO_OUTCOME_SET}
+        options={[
+          ...sets.map((set, index) => ({
+            value: set.id,
+            label: `${set.level} · phiên bản ${set.version}${index === 0 ? " (mới nhất)" : ""}`,
+          })),
+          { value: NO_OUTCOME_SET, label: "Không gắn CLO (chỉ lưu nháp)" },
+        ]}
+        onChange={onChange}
+      />
+      {isMissing ? (
+        <p role="alert" className="text-sm text-destructive">
+          Bộ CLO đã chọn không còn được duyệt. Chọn lại bộ CLO của khóa.
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Khóa đã có bộ CLO được duyệt: mọi câu phải gắn CLO trước khi giao bài
+          cho học sinh.
+        </p>
+      )}
+    </div>
   );
 }

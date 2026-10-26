@@ -164,6 +164,7 @@ export const questionSchema = z
     correctAnswer: z.string().max(10000).optional(),
     rubric: z.string().max(10000).optional(),
     maxScore: z.coerce.number().min(0.01).max(100),
+    outcomeId: requiredId.optional(),
   })
   .superRefine((value, context) => {
     if (
@@ -227,6 +228,7 @@ const assignmentBaseSchema = z.object({
       "Hạn nộp phải ở tương lai.",
     ),
   maxAttempts: z.coerce.number().int().min(1).max(10),
+  outcomeSetId: requiredId.optional(),
   questions: z.array(questionSchema).min(1).max(100),
 });
 export const assignmentSchema =
@@ -313,6 +315,8 @@ export const assignmentEditorSchema = z
       "Hạn nộp phải ở tương lai.",
     ),
     maxAttempts: z.number().int().min(1).max(10),
+    /** Bộ CLO đã duyệt của khóa; chuỗi rỗng = bài không gắn CLO. */
+    outcomeSetId: z.string(),
     questions: z
       .array(
         z
@@ -323,6 +327,7 @@ export const assignmentEditorSchema = z
             correctAnswer: z.string(),
             rubric: z.string(),
             maxScore: z.number().min(0.01).max(100),
+            outcomeId: z.string(),
           })
           .superRefine((value, context) => {
             const parsed = questionSchema.safeParse(toQuestionPayload(value));
@@ -338,7 +343,37 @@ export const assignmentEditorSchema = z
       .min(1)
       .max(100),
   })
-  .superRefine(validateAssessment);
+  .superRefine(validateAssessment)
+  .superRefine((value, context) => {
+    // BE: đã chọn bộ CLO thì mọi câu phải đo một CLO trong bộ (OUTCOME_MAPPING_INCOMPLETE).
+    if (!value.outcomeSetId) return;
+    value.questions.forEach((question, index) => {
+      if (!question.outcomeId)
+        context.addIssue({
+          code: "custom",
+          path: ["questions", index, "outcomeId"],
+          message: "Chọn CLO mà câu hỏi này đo.",
+        });
+    });
+  });
+export type AssignmentEditorInput = z.infer<typeof assignmentEditorSchema>;
+/** Body tạo/sửa bài tập từ form soạn bài; bỏ CLO cũ khi bài không chọn bộ CLO. */
+export function assignmentEditorPayload(value: AssignmentEditorInput) {
+  const { outcomeSetId, ...rest } = value;
+  return {
+    ...rest,
+    sessionId: value.kind === "TEST" ? value.sessionId : undefined,
+    testType: value.kind === "TEST" ? value.testType : undefined,
+    dueAt: vietnamDateTime(value.dueAt),
+    ...(outcomeSetId ? { outcomeSetId } : {}),
+    questions: value.questions.map((question) => ({
+      ...toQuestionPayload(question),
+      ...(outcomeSetId && question.outcomeId
+        ? { outcomeId: question.outcomeId }
+        : {}),
+    })),
+  };
+}
 export function toQuestionPayload(value: {
   kind: "MULTIPLE_CHOICE" | "ESSAY";
   prompt: string;

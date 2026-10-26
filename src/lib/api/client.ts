@@ -291,6 +291,26 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_ANALYTICS_RANGE: "Khoảng ngày thống kê không hợp lệ.",
   ANALYTICS_TOO_LARGE:
     "Dữ liệu thống kê quá lớn. Thu hẹp khoảng ngày hoặc bộ lọc.",
+  OUTCOME_SET_REQUIRED:
+    "Khóa học đã có bộ CLO được duyệt. Chọn bộ CLO và gắn CLO cho từng câu trước khi giao bài.",
+  INVALID_OUTCOME_SET:
+    "Bộ CLO không còn hợp lệ cho khóa học này. Chọn một bộ đã được duyệt của khóa.",
+  OUTCOME_MAPPING_INCOMPLETE:
+    "Còn câu hỏi chưa gắn CLO. Gắn CLO thuộc bộ đã chọn cho mọi câu.",
+  OUTCOME_SET_LOCKED:
+    "Bộ CLO không còn ở trạng thái nháp nên không sửa được. Tạo phiên bản mới nếu cần thay đổi.",
+  OUTCOME_SET_INCOMPLETE:
+    "Mọi CLO phải được chính bạn xác minh nguồn và có ít nhất một bài học trước khi duyệt chuyên môn.",
+  OUTCOME_SET_NOT_FOUND: "Không tìm thấy bộ CLO. Tải lại danh sách.",
+  OUTCOME_SET_NOT_REVIEWED:
+    "Chỉ trả về nháp được bộ CLO đang chờ Quản lý duyệt.",
+  OUTCOME_NOT_FOUND: "Không tìm thấy CLO trong bộ. Tải lại danh sách.",
+  SOURCE_REVIEW_INCOMPLETE:
+    "Ghi rõ mục/trang nguồn và giải thích đối chiếu (mỗi ô ít nhất 12 ký tự).",
+  INVALID_OUTCOME_MAPPING:
+    "Chỉ gắn CLO thuộc bộ của cùng khóa học với bài học.",
+  LESSON_LOCKED:
+    "Chỉ gắn CLO cho bài học ở bản nháp. Bài đã duyệt cần tạo giáo trình kỳ mới.",
 };
 export class ApiError extends Error {
   constructor(

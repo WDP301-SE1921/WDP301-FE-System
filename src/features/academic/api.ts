@@ -1,5 +1,6 @@
 import { apiRequest, ApiError } from "@/lib/api/client";
 import type { PaginatedList } from "@/types/backend";
+import type { OutcomeSet, OutcomeSetStatus } from "@/types/outcomes";
 import type {
   ScheduledSession,
   ScheduledSessionDetail,
@@ -269,6 +270,17 @@ export const academicApi = {
     ),
   retryEmail: (id: string) =>
     command<EmailDelivery>(`${itemPath("email-deliveries", id)}/retry`),
+  /** Các bộ CLO của một khóa học; BE lọc theo vai trò (giáo viên chỉ khóa mình dạy). */
+  outcomeSets: (
+    programId: string,
+    filters: { status?: OutcomeSetStatus } = {},
+    signal?: AbortSignal,
+  ) =>
+    readArrayPages<OutcomeSet>(
+      `${itemPath("programs", programId)}/outcome-sets`,
+      filters,
+      signal,
+    ),
   substituteCandidates: (sessionId: string, signal?: AbortSignal) =>
     readArrayPages<SubstituteCandidate>(
       `${itemPath("sessions", sessionId)}/substitute-candidates`,
