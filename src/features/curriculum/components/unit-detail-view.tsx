@@ -68,6 +68,7 @@ import {
   useCurriculumReadiness,
 } from "./curriculum-readiness";
 import { LessonForm } from "./lesson-form";
+import { LessonOutcomeDialog } from "@/features/outcomes/components/lesson-outcome-dialog";
 import { CurriculumImport } from "./curriculum-import";
 import {
   CurriculumSubmitForm,
@@ -143,6 +144,9 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   const [confirmApply, setConfirmApply] = useState(false);
   const [notice, setNotice] = useState("");
   const [deleting, setDeleting] = useState<"unit" | CurriculumLesson | null>(
+    null,
+  );
+  const [mappingLesson, setMappingLesson] = useState<CurriculumLesson | null>(
     null,
   );
   const validation = useMutation({
@@ -617,6 +621,11 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                                       Đưa bài xuống
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
+                                      onClick={() => setMappingLesson(row.lesson)}
+                                    >
+                                      Gắn CLO
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
                                       className="text-destructive"
                                       onClick={() => setDeleting(row.lesson)}
                                     >
@@ -889,6 +898,13 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 }
               }}
             />
+            {canEdit && (
+              <LessonOutcomeDialog
+                lesson={mappingLesson}
+                programId={unit.programId}
+                onClose={() => setMappingLesson(null)}
+              />
+            )}
           </>
         )}
       </AsyncBoundary>
