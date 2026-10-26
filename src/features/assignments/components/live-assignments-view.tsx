@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
+import { measuredLearningTargets } from "@/features/outcomes/rules";
 import {
   useLiveCommand,
   useLiveQuery,
@@ -115,6 +116,10 @@ function AssignmentWorkspace({
       item.startDate.slice(0, 10) <= today &&
       item.endDate.slice(0, 10) > today,
   );
+  const measuredTargets = measuredLearningTargets(
+    assignment.learningTargets,
+    assignment.questions,
+  );
   return (
     <>
       {assignment.status !== "DRAFT" && (
@@ -136,11 +141,11 @@ function AssignmentWorkspace({
               {assignment.maxAttempts} lần
             </p>
             <p className="whitespace-pre-wrap">{assignment.instructions}</p>
-            {!!assignment.learningTargets?.length && (
+            {measuredTargets.length > 0 && (
               <section aria-label="Mục tiêu bài" className="space-y-2">
                 <p className="font-medium">Mục tiêu bài (CLO)</p>
                 <ul className="space-y-1 text-sm">
-                  {assignment.learningTargets.map((target) => (
+                  {measuredTargets.map((target) => (
                     <li key={target.id}>
                       <span className="font-medium">{target.code}</span> ·{" "}
                       {target.title}

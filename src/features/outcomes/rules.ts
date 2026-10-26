@@ -1,5 +1,9 @@
 import type { WebRole } from "@/constants/roles";
-import type { OutcomeSet, OutcomeSetStatus } from "@/types/outcomes";
+import type {
+  LearningTarget,
+  OutcomeSet,
+  OutcomeSetStatus,
+} from "@/types/outcomes";
 
 export const OUTCOME_SET_STATUS_TEXT: Record<OutcomeSetStatus, string> = {
   DRAFT: "Nháp",
@@ -41,6 +45,18 @@ export function technicalApprovalBlockers(
       ? []
       : [`${outcome.code}: chưa gắn bài học nào.`]),
   ]);
+}
+
+/**
+ * BE trả `learningTargets` là cả bộ CLO của bài; mục tiêu thật của bài là các CLO
+ * mà câu hỏi gắn `outcomeId`, giữ thứ tự trong bộ.
+ */
+export function measuredLearningTargets(
+  targets: LearningTarget[] | undefined,
+  questions: { outcomeId?: string | null }[],
+): LearningTarget[] {
+  const measured = new Set(questions.map((question) => question.outcomeId));
+  return (targets ?? []).filter((target) => measured.has(target.id));
 }
 
 export interface ProgramOption {
