@@ -38,7 +38,7 @@ function Header({ role, onToggleMobileSidebar }: HeaderProps) {
           variant="ghost"
           size="icon-sm"
           onClick={onToggleMobileSidebar}
-          className="lg:hidden rounded-full text-muted-foreground"
+          className="size-11 rounded-full text-muted-foreground sm:size-9 lg:hidden"
           aria-label="Mở menu"
           leftIcon={<HugeiconsIcon icon={Menu01Icon} className="size-5" />}
         />

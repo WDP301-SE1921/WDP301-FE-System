@@ -194,6 +194,7 @@ export function PeopleHub({ role }: { role: WebRole }) {
         }
       />
       <Tabs
+        className="min-w-0"
         value={tab}
         onValueChange={(value) => {
           const next = tabs.find((key) => key === value);
@@ -202,10 +203,17 @@ export function PeopleHub({ role }: { role: WebRole }) {
           void setTab(next);
         }}
       >
-        <TabsList aria-label="Nhóm tài khoản">
+        <TabsList
+          aria-label="Nhóm tài khoản"
+          className="max-w-full flex-wrap justify-start rounded-2xl group-data-horizontal/tabs:h-auto sm:rounded-full"
+        >
           {tabs.map((key) => (
-            <TabsTrigger key={key} value={key}>
-              {PEOPLE_TABS[key]}
+            <TabsTrigger
+              key={key}
+              value={key}
+              className="min-h-11 flex-none whitespace-normal rounded-full py-2 text-center sm:min-h-9"
+            >
+              <span className="wrap-break-word">{PEOPLE_TABS[key]}</span>
               {counts.data?.[key] !== undefined && (
                 <Badge variant="neutral" className="ml-1.5 h-5 px-2">
                   {counts.data[key]}
@@ -431,7 +439,9 @@ function AccountsTable({
               if (classes.isPending)
                 return <span className="text-muted-foreground">Đang tải…</span>;
               if (classes.isError)
-                return <span className="text-destructive">Chưa tải được lớp</span>;
+                return (
+                  <span className="text-destructive">Chưa tải được lớp</span>
+                );
               const names = (byTeacher.get(row.original.id) ?? []).map(
                 (classroom) => classroom.name,
               );
@@ -461,7 +471,10 @@ function AccountsTable({
           } satisfies DataTableColumn<BackendUser>,
         ]
       : [
-          { accessorKey: "email", header: "Email" } satisfies DataTableColumn<BackendUser>,
+          {
+            accessorKey: "email",
+            header: "Email",
+          } satisfies DataTableColumn<BackendUser>,
           {
             id: "role",
             header: "Vai trò",
@@ -526,7 +539,10 @@ function AccountsTable({
   return (
     <>
       {kind === "teachers" && (
-        <ApiFeedback error={classes.error} retry={() => void classes.refetch()} />
+        <ApiFeedback
+          error={classes.error}
+          retry={() => void classes.refetch()}
+        />
       )}
       <DataTable
         columns={columns}
@@ -744,7 +760,9 @@ function PersonSheetContent({
                       size="sm"
                       variant="outline"
                       render={
-                        <Link href={ROUTES.MANAGER.CLASS_DETAIL(classroom.id)} />
+                        <Link
+                          href={ROUTES.MANAGER.CLASS_DETAIL(classroom.id)}
+                        />
                       }
                     >
                       Xem lớp

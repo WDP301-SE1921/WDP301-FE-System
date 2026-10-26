@@ -89,6 +89,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --motion-duration-feedback: 150ms;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark {
@@ -137,13 +139,78 @@
   html {
     @apply font-sans;
   }
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 20%, transparent);
+    color: var(--foreground);
+  }
+  input,
+  textarea {
+    caret-color: var(--primary);
+  }
+  a:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+    border-radius: var(--radius-xl);
+  }
 }
 
 /* Base UI positioners create a stacking context above modal dialogs. */
 @layer components {
+  [data-slot="button"],
+  [data-slot="input"],
+  [data-slot="input-container"] {
+    transition-duration: var(--motion-duration-feedback);
+    transition-timing-function: var(--motion-ease-out);
+  }
+  [data-slot="table"] {
+    font-variant-numeric: tabular-nums;
+  }
   [data-slot="select-portal"]
     > [role="presentation"]:has(> [data-slot="select-content"]) {
     @apply z-60;
+  }
+}
+
+@keyframes auth-ready {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="auth-form-panel"] {
+    animation: auth-ready 180ms var(--motion-ease-out);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="auth-layout"],
+  [data-slot="app-shell"] {
+    scroll-behavior: auto;
+  }
+  [data-slot="skeleton"],
+  [data-slot="spinner"] {
+    animation: none !important;
+  }
+  [data-slot="button"],
+  [data-slot="sidebar"] {
+    transition-property: color, background-color, border-color, box-shadow;
+    translate: none;
+  }
+  [data-slot="dialog-content"],
+  [data-slot="dialog-overlay"],
+  [data-slot="sheet-content"],
+  [data-slot="sheet-overlay"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="select-content"],
+  [data-slot="popover-content"],
+  [data-slot="tooltip-content"] {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

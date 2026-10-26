@@ -41,20 +41,30 @@ export function HubTabs<T extends string>({
   const [, reset] = useQueryStates(resetParsers);
   return (
     <Tabs
+      className="min-w-0"
       value={tab}
       onValueChange={(value) => {
         const next = values.find((candidate) => candidate === value);
         if (!next) return;
         void reset(
-          Object.fromEntries(Object.keys(resetParsers).map((key) => [key, null])),
+          Object.fromEntries(
+            Object.keys(resetParsers).map((key) => [key, null]),
+          ),
         );
         void setTab(next);
       }}
     >
-      <TabsList aria-label={ariaLabel} className="h-auto flex-wrap justify-start">
+      <TabsList
+        aria-label={ariaLabel}
+        className="max-w-full flex-wrap justify-start rounded-2xl group-data-horizontal/tabs:h-auto sm:rounded-full"
+      >
         {items.map((item) => (
-          <TabsTrigger key={item.value} value={item.value}>
-            {item.label}
+          <TabsTrigger
+            key={item.value}
+            value={item.value}
+            className="min-h-11 flex-none whitespace-normal rounded-full py-2 text-center sm:min-h-9"
+          >
+            <span className="wrap-break-word">{item.label}</span>
             {item.count !== undefined && (
               <Badge variant="neutral" className="ml-1.5 h-5 px-2">
                 {item.count}

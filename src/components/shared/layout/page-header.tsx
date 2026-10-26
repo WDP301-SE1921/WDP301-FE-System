@@ -79,8 +79,8 @@ function PageHeader({
         </Breadcrumb>
       )}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3 sm:flex-1">
           {showBackButton && (
             <Button
               variant="outline"
@@ -93,18 +93,20 @@ function PageHeader({
               }
             />
           )}
-          <div className="space-y-1">
-            <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <div className="min-w-0 space-y-1">
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground wrap-break-word sm:text-3xl">
               {title}
             </h1>
             {description && (
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="text-sm text-muted-foreground wrap-break-word">
+                {description}
+              </p>
             )}
           </div>
         </div>
 
         {actions && (
-          <div className="flex items-center gap-2 sm:self-center shrink-0">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:self-center">
             {actions}
           </div>
         )}

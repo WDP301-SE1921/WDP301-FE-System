@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { EMPTY_MSG } from "@/constants/messages"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Folder01Icon, Search01Icon } from "@hugeicons/core-free-icons"
+import { cn } from "@/lib/utils"
 
 export interface EmptyStateProps {
   variant?: "no-data" | "no-result"
@@ -34,27 +35,38 @@ function EmptyState({
     : EMPTY_MSG.NO_DATA_DESC
 
   const defaultIcon = isNoResult ? (
-    <HugeiconsIcon icon={Search01Icon} className="size-8 text-muted-foreground" />
+    <HugeiconsIcon icon={Search01Icon} className="size-7" />
   ) : (
-    <HugeiconsIcon icon={Folder01Icon} className="size-8 text-muted-foreground" />
+    <HugeiconsIcon icon={Folder01Icon} className="size-7" />
   )
 
   return (
     <div
       data-slot="empty-state"
-      className={`flex min-h-55 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center animate-in fade-in-50 ${className}`}
+      className={cn(
+        "flex min-h-55 w-full min-w-0 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-5 py-8 text-center sm:px-8 sm:py-10 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200",
+        className,
+      )}
     >
-      <div className="flex size-14 items-center justify-center rounded-full bg-muted/60 mb-4">
+      <div
+        aria-hidden="true"
+        className="mb-4 flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/5 text-primary"
+      >
         {icon ?? defaultIcon}
       </div>
-      <h3 className="font-heading text-base font-semibold text-foreground">
+      <h3 className="max-w-full wrap-break-word font-heading text-base font-semibold leading-6 text-foreground">
         {title ?? defaultTitle}
       </h3>
-      <p className="mt-1 text-sm text-muted-foreground max-w-sm">
+      <p className="mt-1 w-full max-w-sm wrap-break-word text-sm leading-6 text-muted-foreground">
         {description ?? defaultDescription}
       </p>
       {actionLabel && onAction && (
-        <Button onClick={onAction} variant="outline" size="sm" className="mt-5 rounded-full">
+        <Button
+          type="button"
+          onClick={onAction}
+          variant="outline"
+          className="mt-5 min-h-11 max-w-full wrap-anywhere rounded-xl whitespace-normal px-4 py-2"
+        >
           {actionLabel}
         </Button>
       )}

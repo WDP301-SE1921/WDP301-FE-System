@@ -66,6 +66,12 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
       data-slot="app-shell"
       className="flex min-h-screen bg-background text-foreground"
     >
+      <a
+        href="#main-content"
+        className="sr-only rounded-xl bg-primary font-medium text-primary-foreground shadow-lg focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-70 focus:px-4 focus:py-3 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+      >
+        Đi đến nội dung chính
+      </a>
       {/* Desktop Sidebar */}
       <div className="sticky top-0 hidden h-dvh shrink-0 self-start lg:block">
         <Sidebar
@@ -90,7 +96,7 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Đóng menu"
-                className="absolute right-2 top-2 z-10"
+                className="absolute right-2 top-2 z-10 size-11"
                 leftIcon={
                   <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                 }
@@ -108,11 +114,14 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
-        <Header
-          role={role}
-          onToggleMobileSidebar={() => setMobileOpen(true)}
-        />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <Header role={role} onToggleMobileSidebar={() => setMobileOpen(true)} />
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="min-w-0 flex-1 scroll-mt-20 overflow-y-auto"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

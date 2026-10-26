@@ -1,5 +1,5 @@
-import { BUSINESS_RULES } from "@/constants/business-rules"
-import { FIELD_LIMITS } from "@/constants/validation"
+import { BUSINESS_RULES } from "@/constants/business-rules";
+import { FIELD_LIMITS } from "@/constants/validation";
 
 export const AUTH_MSG = {
   // ---------- Chung cho panel trái (AuthLayout) ----------
@@ -53,10 +53,12 @@ export const AUTH_MSG = {
 
   // ---------- Phụ huynh tự đăng ký ----------
   REGISTER_TITLE: "Đăng ký tài khoản phụ huynh",
-  REGISTER_DESC: "Tự tạo tài khoản bằng email và mật khẩu, sau đó tạo hồ sơ con trên ứng dụng.",
+  REGISTER_DESC:
+    "Tự tạo tài khoản bằng email và mật khẩu, sau đó tạo hồ sơ con trên ứng dụng.",
   REGISTER_SUBMIT: "Đăng ký tài khoản",
   REGISTER_SUCCESS: "Đã tạo tài khoản phụ huynh",
-  REGISTER_NEXT: "Mở ứng dụng EduGrade, đăng nhập bằng tài khoản vừa tạo và tạo hồ sơ con. Kiểm tra email để xác minh tài khoản trước khi tạo hồ sơ theo yêu cầu của máy chủ.",
+  REGISTER_NEXT:
+    "Mở ứng dụng EduGrade, đăng nhập bằng tài khoản vừa tạo và tạo hồ sơ con. Kiểm tra email để xác minh tài khoản trước khi tạo hồ sơ theo yêu cầu của máy chủ.",
 
   // ---------- Label & placeholder field dùng chung ----------
   EMAIL_LABEL: "Địa chỉ Email",
@@ -71,6 +73,7 @@ export const AUTH_MSG = {
 
   // ---------- Hành động ----------
   LOGIN_ACTION: "Đăng nhập",
+  LOGIN_PENDING: "Đang đăng nhập…",
   BACK_TO_LOGIN: "Quay lại đăng nhập",
 
   // ---------- Kết quả ----------
@@ -81,9 +84,11 @@ export const AUTH_MSG = {
 
   // ---------- Hỗ trợ ----------
   SUPPORT_HINT: "Bạn chưa có tài khoản hoặc cần đặt lại mật khẩu?",
-  SUPPORT_CONTACT: "Vui lòng liên hệ Trưởng ban quản trị EduGrade: 0913 345 678",
+  SUPPORT_CONTACT:
+    "Vui lòng liên hệ Trưởng ban quản trị EduGrade: 0913 345 678",
 
   // ---------- Phiên đăng nhập hết hạn (overlay) ----------
   SESSION_EXPIRED_TITLE: "Phiên đăng nhập đã hết hạn",
-  SESSION_EXPIRED_DESC: "Đăng nhập lại để tiếp tục, dữ liệu đang nhập sẽ được giữ.",
-} as const
+  SESSION_EXPIRED_DESC:
+    "Đăng nhập lại để tiếp tục, dữ liệu đang nhập sẽ được giữ.",
+} as const;
