@@ -263,9 +263,21 @@ export const academicApi = {
     limit: number,
     signal?: AbortSignal,
     status?: EmailDelivery["status"],
+    /** Lọc ở BE: `search` theo người nhận, ngày tạo theo UTC+7. */
+    filters: {
+      search?: string;
+      eventType?: string;
+      fromDate?: string;
+      toDate?: string;
+    } = {},
   ) =>
     apiRequest<PaginatedList<EmailDelivery>>(
-      queryPath("academic/email-deliveries", { page, limit, status }),
+      queryPath("academic/email-deliveries", {
+        page,
+        limit,
+        status,
+        ...filters,
+      }),
       { signal },
     ),
   retryEmail: (id: string) =>

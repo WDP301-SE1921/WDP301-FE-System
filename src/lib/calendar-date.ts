@@ -3,6 +3,12 @@ export function todayInVietnam(now = new Date()): string {
   return new Date(now.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)
 }
 
+/** Ngày lịch người dùng chọn (giờ máy), dạng YYYY-MM-DD; không đổi qua UTC để khỏi lùi ngày. */
+export function localIsoDate(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 export function addCalendarDays(date: string, days: number): string {
   const value = new Date(`${date}T00:00:00Z`)
   value.setUTCDate(value.getUTCDate() + days)
