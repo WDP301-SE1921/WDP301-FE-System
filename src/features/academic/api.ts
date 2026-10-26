@@ -119,6 +119,30 @@ export async function readDirectoryPages<T>(
 const itemPath = (collection: string, id: string) =>
   `academic/${collection}/${encodeURIComponent(id)}`;
 /** BE hieu ngay YYYY-MM-DD la ca ngay theo UTC+7. */
+/**
+ * Tổng hợp chuyên cần: `counts`/`students` tính trên toàn kỳ, riêng `history` bị BE
+ * phân trang (`page`, `limit`, `total`) nên gộp lịch sử của mọi trang.
+ */
+async function readAttendancePages<T extends { history: unknown[] }>(
+  path: string,
+  filters: Record<string, string | undefined>,
+  signal?: AbortSignal,
+): Promise<T> {
+  const first = await apiRequest<T & { total?: number }>(
+    queryPath(path, { ...filters, page: 1, limit: 100 }),
+    { signal },
+  );
+  const history = [...first.history];
+  for (let page = 2; history.length < (first.total ?? 0); page++) {
+    const next = await apiRequest<T>(
+      queryPath(path, { ...filters, page, limit: 100 }),
+      { signal },
+    );
+    if (!next.history.length) break;
+    history.push(...next.history);
+  }
+  return { ...first, history };
+}
 export function attendanceRange(fromDate: string, toDate: string) {
   return { fromDate, toDate };
 }
@@ -164,9 +188,10 @@ export const academicApi = {
   cancelLeave: (id: string) => command(`${itemPath("leaves", id)}/cancel`),
   /** Chuyên cần một học sinh trong một lớp (Giáo viên lớp đó; Quản lý, Nhân viên — BE-8). */
   classAttendance: (classId: string, studentId: string, signal?: AbortSignal) =>
-    apiRequest<ClassAttendanceSummary>(
-      `${itemPath("classes", classId)}/attendance-summary?${new URLSearchParams({ studentId })}`,
-      { signal },
+    readAttendancePages<ClassAttendanceSummary>(
+      `${itemPath("classes", classId)}/attendance-summary`,
+      { studentId },
+      signal,
     ),
   /**
    * Buổi vắng đã ghi nhận (buổi đã chốt) chưa xếp học bù — cả trung tâm hoặc một học sinh.
@@ -180,9 +205,10 @@ export const academicApi = {
     ),
   /** Bài được giao của một học sinh kèm điểm đã công bố (Quản lý, Nhân viên). */
   studentGrades: (studentId: string, signal?: AbortSignal) =>
-    apiRequest<StudentGradeRecord[]>(
+    readArrayPages<StudentGradeRecord>(
       `${itemPath("students", studentId)}/grades`,
-      { signal },
+      {},
+      signal,
     ),
   makeupSources: (studentId: string, signal?: AbortSignal) =>
     readArrayPages<MakeupSource>(
@@ -225,12 +251,10 @@ export const academicApi = {
     range: { fromDate: string; toDate: string },
     signal?: AbortSignal,
   ) =>
-    apiRequest<AttendanceSummary>(
-      queryPath(
-        `${itemPath("classes", classId)}/attendance-summary`,
-        attendanceRange(range.fromDate, range.toDate),
-      ),
-      { signal },
+    readAttendancePages<AttendanceSummary>(
+      `${itemPath("classes", classId)}/attendance-summary`,
+      attendanceRange(range.fromDate, range.toDate),
+      signal,
     ),
   /** `status` lọc một trạng thái; `total` là số dòng sau lọc (BE-12). */
   emailDeliveries: (
@@ -246,9 +270,10 @@ export const academicApi = {
   retryEmail: (id: string) =>
     command<EmailDelivery>(`${itemPath("email-deliveries", id)}/retry`),
   substituteCandidates: (sessionId: string, signal?: AbortSignal) =>
-    apiRequest<SubstituteCandidate[]>(
+    readArrayPages<SubstituteCandidate>(
       `${itemPath("sessions", sessionId)}/substitute-candidates`,
-      { signal },
+      {},
+      signal,
     ),
   substitute: (sessionId: string, body: unknown) =>
     command(

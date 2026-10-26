@@ -118,10 +118,7 @@ export const registrationApi = {
       signal,
     }),
   subjects: (search = "", signal?: AbortSignal) =>
-    apiRequest<AcademicSubject[]>(
-      `subjects?${new URLSearchParams({ search })}`,
-      { signal },
-    ),
+    allPages<AcademicSubject>("subjects", search ? { search } : {}, signal),
   teachers: async (signal?: AbortSignal) => {
     const items: AcademicTeacher[] = [];
     for (let page = 1; ; page++) {
@@ -140,8 +137,7 @@ export const registrationApi = {
       `classes/${encodeURIComponent(id)}?${new URLSearchParams({ page: String(page), limit: "20" })}`,
       { signal },
     ),
-  rooms: (signal?: AbortSignal) =>
-    apiRequest<RoomRecord[]>("rooms", { signal }),
+  rooms: (signal?: AbortSignal) => allPages<RoomRecord>("rooms", {}, signal),
   createRoom: (body: unknown) =>
     apiRequest<RoomRecord>("rooms", {
       method: "POST",
@@ -168,9 +164,10 @@ export const registrationApi = {
       { method: "PUT", body: scheduleUnlockSchema.parse(body) },
     ),
   schedules: (id: string, signal?: AbortSignal) =>
-    apiRequest<RegistrationClass["weeklySchedules"]>(
+    allPages<RegistrationClass["weeklySchedules"][number]>(
       `classes/${encodeURIComponent(id)}/schedules`,
-      { signal },
+      {},
+      signal,
     ),
   saveSchedules: (
     id: string,
