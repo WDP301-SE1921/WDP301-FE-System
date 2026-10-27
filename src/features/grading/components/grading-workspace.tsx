@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
@@ -52,6 +51,7 @@ import {
 import { gradingJobFailureMessage } from "../presentation";
 import { ROUTES } from "@/constants/routes";
 import { latestSubmissions } from "@/features/assignments/submission-selectors";
+import { SubmissionFile } from "./submission-file";
 
 const formSchema = z.object({
   scores: z
@@ -200,8 +200,8 @@ function GradeWorkspace({
       try {
         if (mode === "objective") return await workflow.objective();
         return mode === "send"
-            ? await workflow.send(input!, baselineRevision)
-            : await workflow.saveDraft(input!, baselineRevision);
+          ? await workflow.send(input!, baselineRevision)
+          : await workflow.saveDraft(input!, baselineRevision);
       } finally {
         lock.current = false;
       }
@@ -687,78 +687,5 @@ function GradeWorkspace({
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-/** Signed URLs expire after 60 seconds. Refresh on failure; PDF/non-image files retain their download link. */
-function SubmissionFile({ id, index }: { id: string; index: number }) {
-  const [failedUrl, setFailedUrl] = useState("");
-  const file = useLiveQuery(["submission-file", id], async () => {
-    const value = await academicApi.file(id);
-    const url = new URL(value.url);
-    if (!["https:", "http:"].includes(url.protocol))
-      throw new Error("Đường dẫn file không hợp lệ.");
-    return value;
-  });
-  const url = file.data?.url;
-  const isPdf = url
-    ? new URL(url).pathname.toLowerCase().endsWith(".pdf")
-    : false;
-  return (
-    <section
-      className="space-y-2 rounded-xl border border-border p-3"
-      aria-label={`Tệp bài làm ${index + 1}`}
-    >
-      <p className="text-sm font-medium">Tệp {index + 1}</p>
-      <AsyncBoundary
-        isLoading={file.isPending}
-        isError={file.isError}
-        error={file.error}
-        onRetry={() => void file.refetch()}
-      >
-        {url && (
-          <>
-            {!isPdf && failedUrl !== url && (
-              <Image
-                src={url}
-                width={1200}
-                height={1600}
-                unoptimized
-                alt={`Bài làm của học sinh, tệp ${index + 1}`}
-                loading="lazy"
-                className="h-auto w-full rounded-xl"
-                onError={() => setFailedUrl(url)}
-              />
-            )}
-            {(isPdf || failedUrl === url) && (
-              <p className="text-sm text-muted-foreground">
-                Tệp chưa xem được dưới dạng ảnh. Mở tệp để đối chiếu bài làm.
-              </p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                render={
-                  <a href={url} target="_blank" rel="noopener noreferrer" />
-                }
-              >
-                Mở / tải tệp
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setFailedUrl("");
-                  void file.refetch();
-                }}
-              >
-                Tải lại liên kết
-              </Button>
-            </div>
-          </>
-        )}
-      </AsyncBoundary>
-    </section>
   );
 }

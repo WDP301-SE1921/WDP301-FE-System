@@ -4,6 +4,8 @@ import type { ApiEnvelope } from "@/types/backend";
 import { userFacingMessage } from "./error-message";
 
 const ERROR_TEXT: Record<string, string> = {
+  AVATAR_CONFLICT:
+    "Ảnh đã được thay đổi ở nơi khác. Kiểm tra lại trước khi lưu.",
   UNIT_REVISION_REQUIRED:
     "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
   UNIT_APPROVAL_REQUIRED:
@@ -160,10 +162,14 @@ const ERROR_TEXT: Record<string, string> = {
     "Thông tin hoặc lịch lớp đã thay đổi sau khi lập bill. Hủy bản nháp này và lập bill mới trước khi thu tiền.",
   UNIT_NOT_FOUND: "Không tìm thấy học phần. Vui lòng tải lại danh sách.",
   PROGRAM_NOT_FOUND: "Không tìm thấy chương trình đào tạo.",
-  PROGRAM_FREQUENCY_NOT_CONFIGURED: "Khóa học chưa cấu hình số buổi/tuần. Quản lý cần cập nhật khóa trước khi tiếp tục.",
-  CLASS_WEEKLY_SESSION_COUNT_MISMATCH: "Số khung giờ lịch tuần chưa đúng số buổi/tuần của khóa.",
-  PROGRAM_FREQUENCY_CHANGE_CONFLICT: "Số buổi mới không khớp lịch các lớp đang hoạt động. Kiểm tra các lớp liên quan trước khi đổi.",
-  CURRICULUM_EFFECTIVE_PERIOD_CONFLICT: "Khoảng hiệu lực chồng với giáo trình đã duyệt của khóa. Tải lại và chọn kỳ không giao ngày.",
+  PROGRAM_FREQUENCY_NOT_CONFIGURED:
+    "Khóa học chưa cấu hình số buổi/tuần. Quản lý cần cập nhật khóa trước khi tiếp tục.",
+  CLASS_WEEKLY_SESSION_COUNT_MISMATCH:
+    "Số khung giờ lịch tuần chưa đúng số buổi/tuần của khóa.",
+  PROGRAM_FREQUENCY_CHANGE_CONFLICT:
+    "Số buổi mới không khớp lịch các lớp đang hoạt động. Kiểm tra các lớp liên quan trước khi đổi.",
+  CURRICULUM_EFFECTIVE_PERIOD_CONFLICT:
+    "Khoảng hiệu lực chồng với giáo trình đã duyệt của khóa. Tải lại và chọn kỳ không giao ngày.",
   UNIT_LOCKED:
     "Chỉ sửa bản nháp của bạn. Học phần đã duyệt cần tạo phiên bản nháp mới.",
   UNIT_NOT_APPROVED: "Học phần chưa được quản lý duyệt.",
@@ -277,8 +283,9 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_ANSWERS: "Bài làm thiếu hoặc sai định dạng câu trả lời.",
   ATTEMPTS_EXHAUSTED: "Đã hết số lần nộp của bài tập này.",
   INVALID_FILES: "Danh sách file đính kèm không hợp lệ.",
-  INVALID_FILE_SIZE: "File vượt dung lượng cho phép.",
-  INVALID_FILE_TYPE: "Định dạng file không được hỗ trợ.",
+  INVALID_FILE_SIZE: "Tệp rỗng hoặc vượt quá dung lượng cho phép.",
+  INVALID_FILE_TYPE:
+    "Định dạng tệp không hợp lệ. Chọn đúng loại tệp được hỗ trợ.",
   INVALID_AI_RESULT:
     "AI trả về kết quả chấm không hợp lệ. Chấm tay hoặc chạy chấm AI lại.",
   INVALID_AI_REPORT:

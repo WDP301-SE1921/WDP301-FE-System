@@ -200,7 +200,11 @@ const rules: {
     roles: teacher,
   },
   { method: "POST", path: /^academic\/reports$/, roles: teacher },
-  { method: "GET", path: /^academic\/files\/[^/]+\/download$/, roles: teacher },
+  {
+    method: "GET",
+    path: /^academic\/files\/[^/]+\/(preview|download)$/,
+    roles: teacher,
+  },
   {
     method: "GET",
     path: /^academic\/(lessons|feedback)$/,
@@ -227,6 +231,16 @@ const rules: {
     roles: manager,
   },
   { method: "GET", path: /^auth\/me$/, roles: null },
+  ...["GET", "PUT", "DELETE"].map((method) => ({
+    method,
+    path: /^auth\/me\/avatar$/,
+    roles: [
+      "center_manager",
+      "staff",
+      "curriculum_designer",
+      "teacher",
+    ] as const,
+  })),
   { method: "PATCH", path: /^auth\/me$/, roles: null },
   {
     method: "POST",

@@ -49,6 +49,27 @@ import {
   transferSchema,
 } from "@/lib/validators/web-workflows";
 import { assignmentImportPreviewSchema } from "@/lib/validators/assignment-import";
+import { signedAccessUrlSchema } from "@/lib/validators/storage";
+import type { SignedAccessUrl } from "@/types/storage";
+
+async function readFileAccess(
+  id: string,
+  action: "preview" | "download",
+  signal?: AbortSignal,
+): Promise<SignedAccessUrl> {
+  const value = await apiRequest<unknown>(
+    `academic/files/${encodeURIComponent(id)}/${action}`,
+    { signal },
+  );
+  const parsed = signedAccessUrlSchema.safeParse(value);
+  if (!parsed.success)
+    throw new ApiError(
+      "INVALID_API_RESPONSE",
+      "Không đọc được đường dẫn tệp. Vui lòng thử lại.",
+      502,
+    );
+  return parsed.data;
+}
 
 export function queryPath(
   path: string,
@@ -374,10 +395,10 @@ export const academicApi = {
     readArrayPages<ReportRecord>("academic/reports", {}, signal),
   createReport: (body: unknown) =>
     command<ReportRecord>("academic/reports", reportSchema.parse(body)),
-  file: (id: string) =>
-    apiRequest<{ url: string; expiresIn: number }>(
-      `${itemPath("files", id)}/download`,
-    ),
+  previewFile: (id: string, signal?: AbortSignal) =>
+    readFileAccess(id, "preview", signal),
+  downloadFile: (id: string, signal?: AbortSignal) =>
+    readFileAccess(id, "download", signal),
   lessons: (signal?: AbortSignal) =>
     readArrayPages<LessonRecord>("academic/lessons", {}, signal),
   feedback: (signal?: AbortSignal) =>

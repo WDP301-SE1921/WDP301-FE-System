@@ -7,6 +7,7 @@ export interface BackendUser {
   role: string;
   status: "ACTIVE" | "DISABLED";
   emailVerifiedAt: string | null;
+  hasAvatar: boolean;
 }
 export interface BackendTokens {
   accessToken: string;
@@ -116,7 +117,10 @@ export interface RegistrationProgram {
     isOpen: boolean;
     /** Chi tiết khóa (`GET programs/:id`) từ BE 19/10; bản cũ không có. */
     teacherId?: string | null;
-    weeklySchedules?: Pick<WeeklySchedule, "weekday" | "startTime" | "endTime">[];
+    weeklySchedules?: Pick<
+      WeeklySchedule,
+      "weekday" | "startTime" | "endTime"
+    >[];
   }[];
   curriculumUnits?: {
     id: string;

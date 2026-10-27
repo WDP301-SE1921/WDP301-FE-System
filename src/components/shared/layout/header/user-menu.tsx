@@ -32,6 +32,9 @@ export interface UserMenuProps {
   name?: string;
   roleLabel?: string;
   avatarUrl?: string;
+  onAvatarStatusChange?: React.ComponentProps<
+    typeof AvatarImage
+  >["onLoadingStatusChange"];
   email?: string;
   /** Dòng nhỏ dưới tên — mặc định hiện `email`, truyền vào để hiện thứ khác. */
   subtitleLine?: string;
@@ -45,6 +48,7 @@ function UserMenu({
   name = "Tài khoản",
   roleLabel,
   avatarUrl,
+  onAvatarStatusChange,
   email,
   subtitleLine,
   accountHref = ROUTES.MANAGER.PROFILE,
@@ -93,7 +97,11 @@ function UserMenu({
         className="flex min-h-11 min-w-11 max-w-full items-center gap-2.5 rounded-full p-1.5 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none motion-reduce:transition-none"
       >
         <Avatar size="sm">
-          <AvatarImage src={avatarUrl} alt={name} />
+          <AvatarImage
+            src={avatarUrl}
+            alt={name}
+            onLoadingStatusChange={onAvatarStatusChange}
+          />
           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
             {initials}
           </AvatarFallback>

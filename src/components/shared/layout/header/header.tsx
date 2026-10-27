@@ -10,6 +10,7 @@ import { getQuickCreateItems } from "@/constants/menu";
 import { ROLES, ROLE_LABEL, type WebRole } from "@/constants/roles";
 import { ROUTES } from "@/constants/routes";
 import { useCurrentUser } from "@/hooks/use-current-role";
+import { useCurrentAvatar } from "@/features/auth/hooks/use-avatar";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Menu01Icon } from "@hugeicons/core-free-icons";
 
@@ -20,6 +21,7 @@ export interface HeaderProps {
 
 function Header({ role, onToggleMobileSidebar }: HeaderProps) {
   const user = useCurrentUser();
+  const avatar = useCurrentAvatar(user);
   const quickCreateItems = getQuickCreateItems(role);
   const accountHref =
     role === ROLES.TEACHER
@@ -58,7 +60,8 @@ function Header({ role, onToggleMobileSidebar }: HeaderProps) {
           name={user?.name}
           roleLabel={ROLE_LABEL[role]}
           email={user?.email}
-          avatarUrl={user?.avatarUrl}
+          avatarUrl={avatar.url}
+          onAvatarStatusChange={avatar.onImageStatus}
           accountHref={accountHref}
         />
       </div>
