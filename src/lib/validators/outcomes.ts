@@ -21,6 +21,10 @@ export const outcomeSetCreateSchema = z.object({
   copyFromId: optionalId,
 });
 
+export const outcomeSetUpdateSchema = z.object({
+  level: text(2, 100, "Cấp độ"),
+});
+
 export const learningOutcomeSchema = z.object({
   code: text(2, 64, "Mã CLO"),
   title: text(2, 255, "Tên CLO"),

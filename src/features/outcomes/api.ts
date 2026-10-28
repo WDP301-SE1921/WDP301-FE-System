@@ -5,6 +5,7 @@ import {
   lessonOutcomeSchema,
   outcomeChangeRequestSchema,
   outcomeSetCreateSchema,
+  outcomeSetUpdateSchema,
   sourceReviewSchema,
 } from "@/lib/validators/outcomes";
 import type { LearningOutcome, OutcomeSet } from "@/types/outcomes";
@@ -18,8 +19,24 @@ const post = <T>(path: string, body?: unknown) =>
 export const outcomeApi = {
   sets: (programId: string, signal?: AbortSignal) =>
     academicApi.outcomeSets(programId, {}, signal),
+  getSet: (setId: string, signal?: AbortSignal) =>
+    apiRequest<OutcomeSet>(setPath(setId), { signal }),
   createSet: (body: unknown) =>
     post<OutcomeSet>("academic/outcome-sets", outcomeSetCreateSchema.parse(body)),
+  updateSet: (setId: string, body: unknown) =>
+    apiRequest<OutcomeSet>(setPath(setId), {
+      method: "PATCH",
+      body: outcomeSetUpdateSchema.parse(body),
+    }),
+  deleteSet: (setId: string) =>
+    apiRequest<{ id: string; deleted: boolean }>(setPath(setId), {
+      method: "DELETE",
+    }),
+  deleteOutcome: (setId: string, outcomeId: string) =>
+    apiRequest<{ id: string; deleted: boolean }>(
+      `${setPath(setId)}/outcomes/${encodeURIComponent(outcomeId)}`,
+      { method: "DELETE" },
+    ),
   saveOutcome: (setId: string, body: unknown, outcomeId?: string) =>
     apiRequest<LearningOutcome>(
       outcomeId

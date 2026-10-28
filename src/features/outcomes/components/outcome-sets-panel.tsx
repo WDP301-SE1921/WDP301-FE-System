@@ -21,6 +21,7 @@ import {
   learningOutcomeSchema,
   outcomeChangeRequestSchema,
   outcomeSetCreateSchema,
+  outcomeSetUpdateSchema,
   sourceReviewSchema,
 } from "@/lib/validators/outcomes";
 import { confirmationSchema } from "@/lib/validators/web-workflows";
@@ -35,7 +36,10 @@ import {
 type OutcomeDialog =
   | { kind: "create" }
   | { kind: "copy"; set: OutcomeSet }
+  | { kind: "edit-set"; set: OutcomeSet }
+  | { kind: "delete-set"; set: OutcomeSet }
   | { kind: "outcome"; set: OutcomeSet; outcome?: LearningOutcome }
+  | { kind: "delete-outcome"; set: OutcomeSet; outcome: LearningOutcome }
   | { kind: "verify"; set: OutcomeSet; outcome: LearningOutcome }
   | { kind: "technical-approve" | "approve" | "request-changes"; set: OutcomeSet };
 
@@ -206,13 +210,25 @@ function OutcomeSetCard({
                 {(actions.canEditOutcomes || actions.canVerify) && (
                   <div className="flex flex-wrap gap-2">
                     {actions.canEditOutcomes && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onAction({ kind: "outcome", set, outcome })}
-                      >
-                        Sửa CLO
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onAction({ kind: "outcome", set, outcome })}
+                        >
+                          Sửa CLO
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:bg-destructive/10"
+                          onClick={() =>
+                            onAction({ kind: "delete-outcome", set, outcome })
+                          }
+                        >
+                          Xóa CLO
+                        </Button>
+                      </>
                     )}
                     {actions.canVerify && (
                       <Button
@@ -252,12 +268,27 @@ function OutcomeSetCard({
         )}
         <div className="flex flex-wrap gap-2">
           {actions.canEditOutcomes && (
-            <Button
-              variant="outline"
-              onClick={() => onAction({ kind: "outcome", set })}
-            >
-              Thêm CLO
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => onAction({ kind: "outcome", set })}
+              >
+                Thêm CLO
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => onAction({ kind: "edit-set", set })}
+              >
+                Sửa cấp độ
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10"
+                onClick={() => onAction({ kind: "delete-set", set })}
+              >
+                Xóa bộ CLO
+              </Button>
+            </>
           )}
           {actions.canTechnicallyApprove && (
             <Button
@@ -309,6 +340,91 @@ function OutcomeDialogBody({
     toast.success(message);
     onDone();
   };
+  if (dialog.kind === "edit-set") {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Sửa cấp độ bộ CLO</DialogTitle>
+          <DialogDescription>
+            Đổi tên cấp độ hiển thị của bộ CLO (phiên bản {dialog.set.version}).
+          </DialogDescription>
+        </DialogHeader>
+        <ApiForm
+          schema={outcomeSetUpdateSchema}
+          defaults={{
+            level: dialog.set.level,
+          }}
+          fields={[
+            {
+              name: "level",
+              label: "Cấp độ",
+              description: "Nhãn do trung tâm đặt, ví dụ “Lớp 8 - nâng cao”.",
+            },
+          ]}
+          submitLabel="Lưu thay đổi"
+          successMessage={false}
+          onSubmit={(value) => outcomeApi.updateSet(dialog.set.id, value)}
+          onSuccess={done("Đã cập nhật cấp độ bộ CLO.")}
+        />
+      </>
+    );
+  }
+  if (dialog.kind === "delete-set") {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Xóa bộ CLO</DialogTitle>
+          <DialogDescription>
+            Bạn có chắc chắn muốn xóa bộ CLO “{dialog.set.level}” (phiên bản {dialog.set.version}) không? Thao tác này không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <ApiForm
+          schema={confirmationSchema}
+          defaults={{ confirmed: false }}
+          fields={[
+            {
+              name: "confirmed",
+              label: "Tôi xác nhận muốn xóa bộ CLO nháp này",
+              type: "checkbox",
+            },
+          ]}
+          submitLabel="Xóa bộ CLO"
+          successMessage={false}
+          onSubmit={() => outcomeApi.deleteSet(dialog.set.id)}
+          onSuccess={done("Đã xóa bộ CLO.")}
+        />
+      </>
+    );
+  }
+  if (dialog.kind === "delete-outcome") {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Xóa CLO {dialog.outcome.code}</DialogTitle>
+          <DialogDescription>
+            Bạn có chắc chắn muốn xóa mục chuẩn đầu ra “{dialog.outcome.code} · {dialog.outcome.title}” khỏi bộ CLO không?
+          </DialogDescription>
+        </DialogHeader>
+        <ApiForm
+          schema={confirmationSchema}
+          defaults={{ confirmed: false }}
+          fields={[
+            {
+              name: "confirmed",
+              label: `Tôi xác nhận muốn xóa ${dialog.outcome.code}`,
+              type: "checkbox",
+            },
+          ]}
+          submitLabel="Xóa CLO"
+          successMessage={false}
+          onSubmit={() =>
+            outcomeApi.deleteOutcome(dialog.set.id, dialog.outcome.id)
+          }
+          onSuccess={done(`Đã xóa ${dialog.outcome.code}.`)}
+        />
+      </>
+    );
+  }
   if (dialog.kind === "create" || dialog.kind === "copy") {
     const source = dialog.kind === "copy" ? dialog.set : undefined;
     return (
