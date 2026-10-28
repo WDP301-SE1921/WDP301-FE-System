@@ -347,14 +347,22 @@ function GradeWorkspace({
             const answer = submission.answers.find(
               (item) => item.questionId === question.id,
             )?.answer;
+            const targetOutcome = assignment.learningTargets?.find(
+              (item) => item.id === question.outcomeId,
+            );
             return (
               <Card key={question.id} className="min-w-0">
-                <CardHeader>
+                <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
                   <CardTitle>
                     Câu {index + 1} ·{" "}
                     {question.kind === "ESSAY" ? "Tự luận" : "Trắc nghiệm"} ·{" "}
                     {question.maxScore} điểm
                   </CardTitle>
+                  {targetOutcome && (
+                    <Badge variant="info" title={targetOutcome.statement}>
+                      {targetOutcome.code} · {targetOutcome.title}
+                    </Badge>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="whitespace-pre-wrap break-words">
@@ -464,7 +472,7 @@ function GradeWorkspace({
                       type="button"
                       variant="outline"
                       size="sm"
-                      disabled={submission.files.length > 0 || aiBusy}
+                      disabled={aiBusy}
                       onClick={() => {
                         if (!lock.current) {
                           lock.current = true;
@@ -474,6 +482,11 @@ function GradeWorkspace({
                     >
                       {aiBusy ? "AI đang xử lý…" : "Gợi ý AI"}
                     </Button>
+                    {submission.files.length > 0 && (
+                      <p className="w-full text-xs text-muted-foreground">
+                        Bài nộp có {submission.files.length} tệp đính kèm. AI sẽ đề xuất điểm dựa trên câu trả lời chữ và nhắc giáo viên kiểm tra tệp đính kèm.
+                      </p>
+                    )}
                   </div>
                   {!assignment.questions.every(
                     (question) => question.kind === "MULTIPLE_CHOICE",

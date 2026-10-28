@@ -46,6 +46,7 @@ export interface DataTableProps<TData extends RowData, TValue = unknown> {
   onRowClick?: (row: TData) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  mobileCardRenderer?: (row: TData, index: number) => React.ReactNode;
 }
 
 function DataTable<TData extends RowData, TValue = unknown>({
@@ -64,6 +65,7 @@ function DataTable<TData extends RowData, TValue = unknown>({
   onRowClick,
   emptyTitle,
   emptyDescription,
+  mobileCardRenderer,
 }: DataTableProps<TData, TValue>) {
   const tableColumns = React.useMemo<LegacyColumnDef<TData, TValue>[]>(() => {
     if (!selectable) return columns;
@@ -134,7 +136,17 @@ function DataTable<TData extends RowData, TValue = unknown>({
         description: emptyDescription,
       }}
     >
-      <Table>
+      {mobileCardRenderer && (
+        <div className="space-y-3 md:hidden">
+          {data.map((row, index) => (
+            <div key={index} className="rounded-xl border border-border bg-card p-4">
+              {mobileCardRenderer(row, index)}
+            </div>
+          ))}
+        </div>
+      )}
+      <div className={cn("overflow-x-auto rounded-xl border border-border", mobileCardRenderer && "hidden md:block")}>
+        <Table>
         <TableHeader
           className={
             stickyHeader ? "sticky top-0 z-10 bg-card shadow-xs" : undefined
@@ -183,6 +195,7 @@ function DataTable<TData extends RowData, TValue = unknown>({
           ))}
         </TableBody>
       </Table>
+      </div>
     </AsyncBoundary>
   );
 }

@@ -56,6 +56,9 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
     setCollapsedOverride(next);
     try {
       localStorage.setItem(STORAGE_KEYS.SIDEBAR_COLLAPSED, String(next));
+      if (typeof document !== "undefined") {
+        document.cookie = `edugrade_sidebar_collapsed=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      }
     } catch {
       // Persisting the preference is optional.
     }
@@ -73,7 +76,10 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
         Đi đến nội dung chính
       </a>
       {/* Desktop Sidebar */}
-      <div className="sticky top-0 hidden h-dvh shrink-0 self-start lg:block">
+      <div
+        suppressHydrationWarning
+        className="sticky top-0 hidden h-dvh shrink-0 self-start lg:block"
+      >
         <Sidebar
           role={role}
           collapsed={collapsed}

@@ -184,6 +184,11 @@
   [data-slot="auth-form-panel"] {
     animation: auth-ready 180ms var(--motion-ease-out);
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
