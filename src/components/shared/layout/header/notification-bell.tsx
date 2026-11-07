@@ -33,6 +33,7 @@ import {
 } from "@/features/notifications/presentation";
 import type { WebRole } from "@/constants/roles";
 import { cn } from "@/lib/utils";
+import { WebPushButton } from "@/features/notifications/components/web-push-button";
 
 /** Chuông thông báo trên topbar: hộp thư thông báo của tài khoản (`/notifications`). */
 export function NotificationBell({ role }: { role: WebRole }) {
@@ -161,6 +162,7 @@ function NotificationPanel({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <WebPushButton />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-1">

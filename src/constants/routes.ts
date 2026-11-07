@@ -53,6 +53,7 @@ export const ROUTES = {
     NOTIFICATIONS: "/manager/notifications",
     EMAIL_LOGS: "/manager/notifications/emails",
     SEND_NOTIFICATION: "/manager/notifications/send",
+    CHAT: "/manager/chat",
 
     /** Nhân sự: giáo viên, nhân viên, quản lý và lời mời (`?tab=`, `?person=` mở Sheet). */
     PEOPLE: "/manager/people",
@@ -111,6 +112,7 @@ export const ROUTES = {
     PROFILE: "/staff/profile",
     CLASSES: "/staff/classes",
     SCHEDULE: "/staff/schedule",
+    CHAT: "/staff/chat",
   },
   TEACHER: {
     DASHBOARD: "/teacher/dashboard",
@@ -136,6 +138,7 @@ export const ROUTES = {
 
     REPORTS: "/teacher/reports",
     FEEDBACK: "/teacher/feedback",
+    CHAT: "/teacher/chat",
 
     PROFILE: "/teacher/profile",
   },

@@ -286,6 +286,13 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_FILE_SIZE: "Tệp rỗng hoặc vượt quá dung lượng cho phép.",
   INVALID_FILE_TYPE:
     "Định dạng tệp không hợp lệ. Chọn đúng loại tệp được hỗ trợ.",
+  CHAT_ATTACHMENT_INVALID: "Chọn một tệp hợp lệ, dung lượng tối đa 10 MB.",
+  CHAT_ATTACHMENT_SIZE_INVALID: "Tệp đính kèm phải có dung lượng tối đa 10 MB.",
+  CHAT_ATTACHMENT_TYPE_INVALID:
+    "Chat chỉ hỗ trợ ảnh, PDF, Office, CSV, TXT và ZIP.",
+  CHAT_ATTACHMENT_NAME_INVALID: "Tên tệp đính kèm không hợp lệ.",
+  CHAT_MESSAGE_EMPTY: "Nhập nội dung hoặc chọn một tệp để gửi.",
+  CHAT_MESSAGE_TOO_LONG: "Tin nhắn tối đa 2.000 ký tự.",
   INVALID_AI_RESULT:
     "AI trả về kết quả chấm không hợp lệ. Chấm tay hoặc chạy chấm AI lại.",
   INVALID_AI_REPORT:

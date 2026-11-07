@@ -21,6 +21,7 @@ export const AREA = {
   CATALOG: "catalog",
   ROOMS: "rooms",
   NOTIFICATIONS: "notifications",
+  CHAT: "chat",
   STAFF_ACCOUNTS: "staff_accounts",
   AUDIT_LOGS: "audit_logs",
   PROFILE: "profile",
@@ -60,11 +61,14 @@ const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: M.ROOMS, area: AREA.ROOMS },
   { prefix: M.CURRICULUM, area: AREA.CATALOG },
   { prefix: "/manager/notifications", area: AREA.NOTIFICATIONS },
+  { prefix: M.CHAT, area: AREA.CHAT },
+  { prefix: S.CHAT, area: AREA.CHAT },
   { prefix: M.PEOPLE, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.STAFF_ACCOUNTS, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.MANAGERS, area: AREA.STAFF_ACCOUNTS },
   { prefix: M.AUDIT_LOGS, area: AREA.AUDIT_LOGS },
   { prefix: M.PROFILE, area: AREA.PROFILE },
+  { prefix: ROUTES.TEACHER.CHAT, area: AREA.CHAT },
   { prefix: "/teacher", area: AREA.TEACHER_PORTAL },
 ];
 
@@ -81,6 +85,7 @@ const ALL_BACK_OFFICE_AREAS: readonly Area[] = [
   AREA.CATALOG,
   AREA.ROOMS,
   AREA.NOTIFICATIONS,
+  AREA.CHAT,
   AREA.STAFF_ACCOUNTS,
   AREA.AUDIT_LOGS,
   AREA.PROFILE,
@@ -98,11 +103,12 @@ export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
     AREA.CATALOG,
     AREA.ROOMS,
     AREA.NOTIFICATIONS,
+    AREA.CHAT,
     AREA.STAFF_ACCOUNTS,
     AREA.AUDIT_LOGS,
     AREA.PROFILE,
   ],
-  [ROLES.CURRICULUM_DESIGNER]: [AREA.CATALOG, AREA.PROFILE],
+  [ROLES.CURRICULUM_DESIGNER]: [AREA.CATALOG, AREA.CHAT, AREA.PROFILE],
   [ROLES.STAFF]: [
     AREA.DASHBOARD,
     AREA.STUDENTS,
@@ -113,9 +119,10 @@ export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
     AREA.CLASSES,
     AREA.SCHEDULE,
     AREA.NOTIFICATIONS,
+    AREA.CHAT,
     AREA.PROFILE,
   ],
-  [ROLES.TEACHER]: [AREA.TEACHER_PORTAL],
+  [ROLES.TEACHER]: [AREA.TEACHER_PORTAL, AREA.CHAT],
 };
 
 /** Trang chủ sau đăng nhập / nút "Về Dashboard" theo role. */

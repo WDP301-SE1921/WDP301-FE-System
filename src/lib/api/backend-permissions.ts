@@ -12,6 +12,12 @@ const catalogReaders = [...sessionReaders, "curriculum_designer"] as const;
 const staff = ["staff"] as const;
 const teacher = ["teacher"] as const;
 const managerOrStaff = ["center_manager", "staff"] as const;
+const chatRoles = [
+  "center_manager",
+  "curriculum_designer",
+  "staff",
+  "teacher",
+] as const;
 
 // BE also enforces ownership and state; unmatched method/path pairs are denied.
 const rules: {
@@ -28,6 +34,30 @@ const rules: {
   },
   { method: "PATCH", path: /^notifications\/[^/]+\/read$/, roles: null },
   { method: "POST", path: /^notifications\/read-all$/, roles: null },
+  {
+    method: "GET",
+    path: /^chat\/(?:users|conversations|unread-count)$/,
+    roles: chatRoles,
+  },
+  { method: "POST", path: /^chat\/conversations$/, roles: chatRoles },
+  {
+    method: "GET",
+    path: /^chat\/conversations\/[^/]+\/messages$/,
+    roles: chatRoles,
+  },
+  {
+    method: "POST",
+    path: /^chat\/conversations\/[^/]+\/(?:messages|read)$/,
+    roles: chatRoles,
+  },
+  {
+    method: "DELETE",
+    path: /^chat\/conversations\/[^/]+\/messages\/[^/]+$/,
+    roles: chatRoles,
+  },
+  { method: "GET", path: /^push\/public-key$/, roles: chatRoles },
+  { method: "POST", path: /^push\/subscriptions$/, roles: chatRoles },
+  { method: "DELETE", path: /^push\/subscriptions$/, roles: chatRoles },
   // Vé 60 giây để trình duyệt mở socket thông báo; access token vẫn ở cookie httpOnly.
   { method: "POST", path: /^auth\/realtime-ticket$/, roles: null },
   {
