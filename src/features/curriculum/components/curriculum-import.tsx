@@ -40,6 +40,9 @@ import type { CurriculumUnitDetail } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { importCommitFromPreview } from "../import-contract";
 import { curriculumImportDiagnosticText } from "../presentation";
+import { importIsDirty } from "../import-state";
+import { ApiError } from "@/lib/api/client";
+import { csvRowErrorLines } from "@/lib/api/csv-error-message";
 import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
 import { curriculumCsv, curriculumCsvTemplate } from "../csv-export";
 import {
@@ -125,10 +128,20 @@ export function CurriculumImport({
   const locked =
     !!attempt || preview.isPending || commit.isPending || !!restored.error;
   useCurriculumFormState(
-    (form.formState.isDirty && !imported) || !!preview.data || !!attempt,
+    importIsDirty({
+      formDirty: form.formState.isDirty,
+      imported,
+      hasPreview: !!preview.data,
+      hasPendingAttempt: !!attempt,
+    }),
     preview.isPending || commit.isPending,
     onStateChange,
   );
+  const failure = restored.error ?? preview.error ?? commit.error;
+  const failureRows =
+    failure instanceof ApiError && failure.code === "CSV_INVALID"
+      ? csvRowErrorLines(failure.details)
+      : [];
   const ready =
     !!preview.data &&
     !preview.data.summary.invalidRows &&
@@ -137,18 +150,19 @@ export function CurriculumImport({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Nhập bài học từ CSV</CardTitle>
+        <CardTitle>Nhập bài từ file</CardTitle>
       </CardHeader>
       <CardContent className="grid items-start gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-start gap-2">
             <CsvDownloadButton
-              label="Tải mẫu CSV"
+              label="Tải file mẫu"
               createCsv={curriculumCsvTemplate}
               filename="giao-trinh-mau"
               disabled={locked}
             />
             <CsvDownloadButton
+              label="Xuất bài ra file"
               createCsv={() => curriculumCsv(unit.lessons)}
               filename={unit.title}
               disabled={
@@ -157,24 +171,40 @@ export function CurriculumImport({
               }
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Các cột nội dung: kind, sequence, title, content, monthKey. kind là
-            LESSON; monthKey để trống. Giữ cột csvVersion trong file tải từ hệ
-            thống để nhập lại đúng ký tự đặc biệt. File CSV cũ vẫn được hỗ trợ.
-            Chỉ nhận CSV UTF-8; chưa hỗ trợ XLSX, chương và tài liệu.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Xuất toàn bộ bài học đã lưu. Để nhập lại toàn bộ, chọn bản nháp mới
-            hoặc chế độ thay thế. Dữ liệu lớn vẫn chịu giới hạn nhập 5 MiB và
-            giới hạn lưu nội dung 1 MiB.
-          </p>
+          <ol className="list-inside list-decimal space-y-1 text-sm">
+            <li>Tải file mẫu hoặc xuất bài hiện có.</li>
+            <li>Mở bằng Excel, mỗi dòng một bài, không xóa dòng đầu.</li>
+            <li>
+              Lưu dạng &quot;CSV UTF-8 (Comma delimited)&quot; rồi chọn file ở
+              đây.
+            </li>
+          </ol>
+          <details className="rounded-xl border border-border p-3 text-xs text-muted-foreground">
+            <summary className="cursor-pointer text-sm font-medium text-foreground">
+              Chi tiết kỹ thuật
+            </summary>
+            <div className="mt-2 space-y-2">
+              <p>
+                Các cột nội dung: kind, sequence, title, content, monthKey. Cột
+                kind ghi LESSON; để trống monthKey. Cột csvVersion có thể để
+                trống (hiểu là 1); giữ nguyên cột này trong file tải từ hệ thống
+                để nhập lại đúng ký tự đặc biệt. File CSV cũ vẫn được hỗ trợ.
+              </p>
+              <p>
+                Chỉ nhận CSV UTF-8, dấu phẩy hoặc dấu chấm phẩy; chưa hỗ trợ
+                XLSX. Tối đa 5 MiB và 1.000 dòng; giới hạn lưu nội dung là 1
+                MiB. CSV chỉ nhập bài học, giáo viên tạo bài kiểm tra riêng theo
+                buổi học.
+              </p>
+            </div>
+          </details>
           <form
             className="space-y-3"
             noValidate
             onSubmit={form.handleSubmit((input) => preview.mutate(input))}
           >
             <Label htmlFor="curriculum-csv">
-              File CSV UTF-8 (tối đa 5 MiB, 1.000 dòng)
+              Chọn file CSV đã lưu từ Excel
             </Label>
             <Input
               key={fileKey}
@@ -193,10 +223,6 @@ export function CurriculumImport({
             />
             <div id="curriculum-csv-help">
               <FieldError message={form.formState.errors.file?.message} />
-              <p className="text-xs text-muted-foreground">
-                CSV chỉ nhập bài học. Giáo viên tạo bài kiểm tra riêng theo buổi
-                học.
-              </p>
             </div>
             <Controller
               control={form.control}
@@ -234,23 +260,29 @@ export function CurriculumImport({
               disabled={locked}
               isLoading={preview.isPending}
             >
-              Xem trước CSV
+              Kiểm tra file
             </Button>
           </form>
           <p className="text-xs text-muted-foreground">
-            Thêm vào nội dung hiện có giữ nguyên bài cũ. Thay toàn bộ chỉ thay
-            bài trong bản nháp và luôn yêu cầu xác nhận.
+            Thêm vào nội dung hiện có giữ nguyên bài cũ. Thay toàn bộ sẽ thay
+            các bài trong bản nháp và gỡ mục tiêu đã gắn cho các bài đó; bạn cần
+            gắn lại sau khi nhập. Luôn có hộp xác nhận.
           </p>
         </div>
         <div className="min-w-0 space-y-4">
           {!preview.data && !attempt && (
             <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-              Chọn file và bấm Xem trước để kiểm tra từng dòng trước khi nhập.
+              Chọn file rồi bấm Kiểm tra file để xem từng dòng trước khi nhập.
             </p>
           )}
-          <ApiFeedback
-            error={restored.error ?? preview.error ?? commit.error}
-          />
+          <ApiFeedback error={failure} />
+          {!!failureRows.length && (
+            <ul className="max-h-64 list-inside list-disc space-y-1 overflow-auto rounded-xl bg-muted p-3 text-sm">
+              {failureRows.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
           {attempt && (
             <p role="status" className="rounded-xl bg-muted p-3">
               Có thao tác nhập cần xác nhận lại. Thử lại giữ nguyên nội dung đã
@@ -265,7 +297,7 @@ export function CurriculumImport({
               </p>
               {!ready && !preview.data.summary.invalidRows && (
                 <p role="status">
-                  Nháp đã thay đổi hoặc bản xem trước hết hạn. Xem trước lại.
+                  Nháp đã thay đổi hoặc kết quả kiểm tra hết hạn. Bấm Kiểm tra file lại.
                 </p>
               )}
               <div className="max-h-96 overflow-auto rounded-xl border border-border">
@@ -326,7 +358,7 @@ export function CurriculumImport({
             </Button>
           )}
           {commit.isSuccess && (
-            <p role="status">Đã nhập {commit.data.createdCount} nội dung.</p>
+            <p role="status">Đã nhập {commit.data.createdCount} bài học.</p>
           )}
           <ConfirmDialog
             open={confirm}

@@ -74,3 +74,23 @@ export function unlinkedOutcomeSubmitNote(
   const codes = listOutcomeCodes(groups.flatMap((group) => group.codes));
   return `Lưu ý: còn ${total} mục tiêu chưa gắn bài (${codes}). Bạn vẫn gửi duyệt giáo trình được. Hãy gắn bài cho các mục tiêu này trước khi giáo viên duyệt bộ mục tiêu.`;
 }
+
+/** Trang Khóa học & giáo trình của Thiết kế GT (= `ROUTES.MANAGER.CURRICULUM`; lặp lại ở đây để file giữ thuần cho `node --test`). */
+const OUTCOME_MATRIX_PATH = "/manager/curriculum";
+
+/** Giá trị `?outcomeMatrix=` khi chưa chỉ định bộ: màn tự chọn bộ nháp đầu tiên của khóa. */
+export const OUTCOME_MATRIX_FIRST_SET = "first";
+
+/**
+ * Link tới màn gắn bài hàng loạt (tab "Mục tiêu khóa học", `?outcomeMatrix=`).
+ * Chỉ Thiết kế GT có tab này, nên chỉ dựng link cho vai trò đó. `setId` bỏ trống thì
+ * màn tự chọn bộ nháp đầu tiên của khóa.
+ */
+export function buildOutcomeMatrixHref(programId: string, setId?: string): string {
+  const query = new URLSearchParams({
+    tab: "outcomes",
+    outcomeProgram: programId,
+    outcomeMatrix: setId || OUTCOME_MATRIX_FIRST_SET,
+  });
+  return `${OUTCOME_MATRIX_PATH}?${query}`;
+}

@@ -12,6 +12,7 @@ import {
   ApiFeedback,
   FieldError,
 } from "@/components/shared/feedback/api-feedback";
+import { nextLessonSequence } from "../lesson-order";
 import {
   curriculumLessonSchema,
   type CurriculumLessonInput,
@@ -39,13 +40,12 @@ export function LessonForm({
   onStateChange?: (state: CurriculumFormState) => void;
 }) {
   const id = useId();
-  const next =
-    Math.max(
-      0,
-      ...unit.lessons
-        .filter((item) => item.kind === "LESSON")
-        .map((item) => item.sequence),
-    ) + 1;
+  // Số thứ tự tự đánh: bài mới nằm cuối. BE vẫn bắt buộc `sequence` nên giữ trong schema.
+  const next = nextLessonSequence(
+    unit.lessons
+      .filter((item) => item.kind === "LESSON")
+      .map((item) => item.sequence),
+  );
   const form = useForm<CurriculumLessonInput>({
     resolver: zodResolver(curriculumLessonSchema),
     defaultValues: {
@@ -73,23 +73,12 @@ export function LessonForm({
       onSubmit={form.handleSubmit((input) => save.mutate(input))}
     >
       <fieldset disabled={save.isPending} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor={id + "-sequence"}>Thứ tự bài học</Label>
-          <Input
-            id={id + "-sequence"}
-            type="number"
-            min={1}
-            aria-invalid={!!errors.sequence}
-            aria-describedby={id + "-sequence-help"}
-            {...form.register("sequence", { valueAsNumber: true })}
-          />
-          <div id={id + "-sequence-help"}>
-            <FieldError message={errors.sequence?.message} />
-            <p className="text-xs text-muted-foreground">
-              Mỗi buổi học một bài, thứ tự bắt đầu từ 1.
-            </p>
-          </div>
-        </div>
+        {!lesson && (
+          <p className="text-xs text-muted-foreground">
+            Bài mới được thêm vào cuối danh sách. Đổi thứ tự bằng nút ↑ ↓ ở danh sách bài.
+          </p>
+        )}
+        <FieldError message={errors.sequence?.message} />
         <div className="space-y-2">
           <Label htmlFor={id + "-title"}>Tên bài học</Label>
           <Input
@@ -116,13 +105,6 @@ export function LessonForm({
           <div id={id + "-content-error"}>
             <FieldError message={errors.content?.message} />
           </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={id + "-chapter"}>Chương</Label>
-          <Input id={id + "-chapter"} disabled placeholder="Chưa được hỗ trợ" />
-          <p className="text-xs text-muted-foreground">
-            Chương và tài liệu sẽ có khi hệ thống hỗ trợ.
-          </p>
         </div>
         <StickyFormFooter>
           <Button

@@ -37,4 +37,5 @@ export const CURRICULUM_HUB_RESET_KEYS = [
   "editProgram",
   "returnTo",
   "outcomeProgram",
+  "outcomeMatrix",
 ] as const;

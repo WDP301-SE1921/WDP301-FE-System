@@ -43,7 +43,7 @@ import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { useHubTab } from "@/hooks/use-hub-tab";
 import { useVietnamDate } from "@/hooks/use-vietnam-date";
 
-/** Trang danh sách giáo trình (Giáo viên thẩm định, admin). */
+/** Trang danh sách giáo trình (giáo viên duyệt nội dung, Quản lý). */
 export function CurriculumUnitsView({ programId }: { programId?: string }) {
   const role = useCurrentRole();
   const [isCreating, setIsCreating] = useState(false);

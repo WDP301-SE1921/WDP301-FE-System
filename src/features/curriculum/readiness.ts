@@ -40,7 +40,7 @@ export interface CurriculumReadiness {
   maxNeeded: number;
   sessionsPerWeek: number | null;
   plannedNeed: number | null;
-  /** Lý do chưa gửi thẩm định được; rỗng khi đủ điều kiện. */
+  /** Lý do chưa gửi duyệt được; rỗng khi đủ điều kiện. */
   blockedReason: string;
 }
 
@@ -66,11 +66,10 @@ export function curriculumReadiness(input: {
     : null;
   const reviewers = input.reviewers ?? [];
   const estimate = estimateLessons(input.fromDate.slice(0, 10), input.toDate.slice(0, 10), [], input.program?.sessionsPerWeek);
-  const programName = input.program?.name ?? "này";
-  const blockedReason = !classes.length
-    ? `Khóa ${programName} chưa có lớp nào, nên chưa có giáo viên để duyệt nội dung. Quản lý cần tạo lớp cho khóa và phân công giáo viên.`
-    : input.reviewers && !reviewers.length
-      ? `Các lớp của khóa ${programName} chưa có giáo viên phụ trách. Quản lý cần phân công giáo viên trước.`
+  // Khóa chưa có lớp vẫn có người duyệt (B4): chỉ chặn khi không có giáo viên nào đang hoạt động.
+  const blockedReason =
+    input.reviewers && !reviewers.length
+      ? "Chưa có giáo viên nào đang hoạt động. Quản lý hãy tạo tài khoản giáo viên trong Nhân sự."
       : "";
   return {
     activeClasses: classes.length,

@@ -35,7 +35,7 @@ export const programSchema = z.object({
   grade: z.number().int().min(6).max(9),
 });
 export type ProgramInput = z.infer<typeof programSchema>;
-const scheduleSchema = z
+export const scheduleSchema = z
   .object({
     weekday: z.number().int().min(1).max(7),
     startTime: z
@@ -81,3 +81,8 @@ export const registrationClassSchema = z.object({
   roomId: z.string().trim(),
 });
 export type RegistrationClassInput = z.infer<typeof registrationClassSchema>;
+/** Wizard tạo lớp: thông tin lớp + lịch tuần. Số dòng lịch phải bằng số buổi/tuần của khóa (kiểm ở bước 2). */
+export const classWizardSchema = registrationClassSchema.extend({
+  schedules: z.array(scheduleSchema).max(14),
+});
+export type ClassWizardInput = z.infer<typeof classWizardSchema>;

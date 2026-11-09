@@ -37,10 +37,15 @@ export interface CurriculumUnit {
   _count?: { lessons: number };
 }
 
+/** Vì sao giáo viên này được chọn duyệt: dạy khóa này, dạy cùng môn, hoặc khóa chưa có ai cùng môn. */
+export type CurriculumReviewerReason = "PROGRAM" | "SUBJECT" | "ANY";
+
 export interface CurriculumReviewer {
   id: string;
   displayName: string | null;
   email: string;
+  /** BE cũ chưa trả field này. */
+  reason?: CurriculumReviewerReason;
 }
 
 export interface CurriculumUnitDetail extends CurriculumUnit {

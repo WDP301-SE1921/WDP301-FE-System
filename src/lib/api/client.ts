@@ -2,6 +2,8 @@ import axios from "axios";
 import { emitSessionExpired } from "@/lib/auth-events";
 import type { ApiEnvelope } from "@/types/backend";
 import { userFacingMessage } from "./error-message";
+import { csvInvalidMessage } from "./csv-error-message";
+import { listOutcomeCodes } from "@/lib/outcome-links";
 
 const ERROR_TEXT: Record<string, string> = {
   AVATAR_CONFLICT:
@@ -19,7 +21,7 @@ const ERROR_TEXT: Record<string, string> = {
   ASSIGNMENT_IMPORT_AI_FAILED:
     "Chưa trích được câu hỏi từ file. Thử lại hoặc dùng CSV mẫu.",
   INVALID_CURRICULUM_REVIEWER:
-    "Chọn giáo viên đang phụ trách lớp thuộc khóa học này để duyệt nội dung.",
+    "Giáo viên này không còn trong danh sách người duyệt. Chọn giáo viên khác trong danh sách.",
   UNIT_NOT_PENDING_TECHNICAL_REVIEW:
     "Giáo trình không còn chờ duyệt nội dung. Tải lại để xem trạng thái mới.",
   REVIEW_NOTE_REQUIRED: "Nhập nội dung cần sửa trước khi trả lại giáo trình.",
@@ -144,7 +146,7 @@ const ERROR_TEXT: Record<string, string> = {
     "Giáo trình có dữ liệu liên quan nên chưa thể xóa hoặc thay toàn bộ bài.",
   LESSON_IN_USE: "Bài học có dữ liệu liên quan nên chưa thể xóa.",
   CSV_INVALID:
-    "File CSV không hợp lệ. Kiểm tra header, số cột và định dạng UTF-8.",
+    "File CSV không hợp lệ, chưa có bài nào được lưu. Kiểm tra dòng tiêu đề, số cột và lưu lại bằng \"CSV UTF-8 (Comma delimited)\".",
   SESSION_NOT_FOUND: "Không tìm thấy buổi học.",
   SESSION_LOCKED: "Chỉ đổi hoặc hủy buổi đã lên lịch ở tương lai.",
   INVALID_SESSION_TIME: "Giờ mới phải ở tương lai và kết thúc sau giờ bắt đầu.",
@@ -307,15 +309,15 @@ const ERROR_TEXT: Record<string, string> = {
   ANALYTICS_TOO_LARGE:
     "Dữ liệu thống kê quá lớn. Thu hẹp khoảng ngày hoặc bộ lọc.",
   OUTCOME_SET_REQUIRED:
-    "Khóa học đã có bộ mục tiêu được duyệt áp dụng. Chọn bộ mục tiêu và gắn mục tiêu cho từng câu trước khi giao bài.",
+    "Có câu đã gắn mục tiêu nhưng bài chưa chọn bộ mục tiêu. Chọn bộ mục tiêu cho bài, hoặc bỏ mục tiêu khỏi các câu đó.",
   INVALID_OUTCOME_SET:
     "Bộ mục tiêu không còn hợp lệ cho khóa học này. Chọn một bộ đã được duyệt áp dụng của khóa.",
   OUTCOME_MAPPING_INCOMPLETE:
-    "Còn câu hỏi chưa gắn mục tiêu. Gắn mục tiêu thuộc bộ đã chọn cho mọi câu.",
+    "Có câu gắn mục tiêu không thuộc bộ đã chọn. Chọn lại mục tiêu cho các câu đó.",
   OUTCOME_SET_LOCKED:
     "Bộ mục tiêu này đã gửi duyệt hoặc đã duyệt nên không đổi được. Tải lại trang để xem dữ liệu mới; cần thay đổi thì tạo bản mới của bộ mục tiêu.",
   OUTCOME_SET_INCOMPLETE:
-    "Mọi mục tiêu phải được chính bạn xác minh nguồn và có ít nhất một bài học trước khi duyệt nội dung.",
+    "Mỗi mục tiêu cần có ít nhất một bài học trước khi duyệt nội dung. Gắn bài cho các mục tiêu còn thiếu.",
   OUTCOME_SET_NOT_FOUND: "Không tìm thấy bộ mục tiêu. Tải lại danh sách.",
   OUTCOME_SET_NOT_REVIEWED:
     "Chỉ trả về nháp được bộ mục tiêu đang chờ Quản lý duyệt áp dụng.",
@@ -327,6 +329,24 @@ const ERROR_TEXT: Record<string, string> = {
   LESSON_LOCKED:
     "Bài thuộc giáo trình đã lưu trữ nên không gắn mục tiêu được. Hãy gắn vào bài của giáo trình đang dùng hoặc của kỳ tiếp theo.",
 };
+/** Câu lỗi cần dữ liệu trong `details`; trả undefined thì dùng `ERROR_TEXT`. */
+function detailedMessage(code: string, details: unknown): string | undefined {
+  const info =
+    details && typeof details === "object"
+      ? (details as Record<string, unknown>)
+      : {};
+  if (code === "CSV_INVALID") return csvInvalidMessage(details);
+  if (code === "OUTCOME_SET_INCOMPLETE") {
+    const codes = Array.isArray(info.codes)
+      ? info.codes.filter((item): item is string => typeof item === "string")
+      : [];
+    return codes.length
+      ? `Mục tiêu ${listOutcomeCodes(codes)} chưa gắn bài học nào. Gắn ít nhất một bài cho mỗi mục tiêu rồi duyệt lại.`
+      : undefined;
+  }
+  return undefined;
+}
+
 export class ApiError extends Error {
   constructor(
     public code: string,
@@ -339,7 +359,7 @@ export class ApiError extends Error {
       userFacingMessage(
         status === 429
           ? "Thao tác quá nhiều lần. Vui lòng thử lại sau."
-          : (ERROR_TEXT[code] ?? message),
+          : (detailedMessage(code, details) ?? ERROR_TEXT[code] ?? message),
       ),
     );
   }

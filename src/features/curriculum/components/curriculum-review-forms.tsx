@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { StickyFormFooter } from "@/components/shared/workflows/sticky-form-footer";
 import { estimateLessons } from "../workspace-selectors";
@@ -16,7 +16,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -41,6 +43,7 @@ import {
 } from "@/lib/validators/curriculum";
 import type { CurriculumUnitDetail } from "@/types/curriculum";
 import { curriculumApi } from "../api";
+import { defaultReviewerId, groupReviewers } from "../reviewer-groups";
 import { useCurriculumMutation } from "../hooks/use-curriculum";
 import {
   useCurriculumFormState,
@@ -72,6 +75,12 @@ export function CurriculumSubmitForm({
     resolver: zodResolver(curriculumSubmitSchema),
     defaultValues: { reviewerTeacherId: "" },
   });
+  // Chọn sẵn người đầu danh sách; setValue không đánh dấu form đã sửa.
+  useEffect(() => {
+    if (!reviewers.data?.length || form.getValues("reviewerTeacherId")) return;
+    form.setValue("reviewerTeacherId", defaultReviewerId(reviewers.data));
+  }, [reviewers.data, form]);
+  const reviewerGroups = groupReviewers(reviewers.data ?? []);
   const save = useCurriculumMutation(async (input: CurriculumSubmitInput) => {
     const result = await curriculumApi.submit(unit.id, input);
     onSaved();
@@ -86,9 +95,9 @@ export function CurriculumSubmitForm({
       onRetry={() => void reviewers.refetch()}
       data={reviewers.data}
       emptyProps={{
-        title: "Chưa có giáo viên phù hợp",
+        title: "Chưa có giáo viên nào đang hoạt động",
         description:
-          "Liên hệ Quản lý để phân công giáo viên đúng môn trước khi gửi duyệt.",
+          "Quản lý hãy tạo tài khoản giáo viên trong Nhân sự rồi gửi duyệt lại.",
       }}
     >
       <form
@@ -126,13 +135,18 @@ export function CurriculumSubmitForm({
                   aria-invalid={!!form.formState.errors.reviewerTeacherId}
                   aria-describedby={id + "-error"}
                 >
-                  <SelectValue placeholder="Chọn giáo viên đúng môn" />
+                  <SelectValue placeholder="Chọn giáo viên duyệt" />
                 </SelectTrigger>
                 <SelectContent>
-                  {reviewers.data?.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
-                      {teacher.displayName || teacher.email} · {teacher.email}
-                    </SelectItem>
+                  {reviewerGroups.map((group) => (
+                    <SelectGroup key={group.reason ?? "other"}>
+                      {group.label && <SelectLabel>{group.label}</SelectLabel>}
+                      {group.reviewers.map((teacher) => (
+                        <SelectItem key={teacher.id} value={teacher.id}>
+                          {teacher.displayName || teacher.email} · {teacher.email}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>

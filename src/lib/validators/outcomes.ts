@@ -33,7 +33,12 @@ export const learningOutcomeSchema = z.object({
   sourceUrl: z
     .string()
     .trim()
-    .url("Đường dẫn nguồn không hợp lệ.")
+    // Khớp BE `@IsUrl`: chỉ http/https.
+    .url({
+      protocol: /^https?$/,
+      hostname: z.regexes.domain,
+      error: "Đường dẫn nguồn không hợp lệ.",
+    })
     .min(12, "Đường dẫn nguồn cần ít nhất 12 ký tự.")
     .max(2000),
   sourceLocator: text(12, 255, "Vị trí trong nguồn"),
@@ -44,6 +49,8 @@ export const learningOutcomeSchema = z.object({
     .optional()
     .transform((value) => value || undefined),
   required: z.boolean(),
+  /** Số phiên bản mục tiêu đang sửa; BE trả REVISION_CONFLICT nếu đã có người sửa trước. Bỏ trống khi tạo mới. */
+  expectedRevision: z.number().int().min(1).optional(),
 });
 
 export const sourceReviewSchema = z.object({

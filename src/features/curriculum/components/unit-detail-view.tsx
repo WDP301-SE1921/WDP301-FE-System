@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -69,19 +69,26 @@ import type { CurriculumFormState } from "../hooks/use-curriculum-form";
 import { UnitForm } from "./unit-form";
 import {
   CurriculumReadinessCards,
+  neededLessons,
   useCurriculumReadiness,
 } from "./curriculum-readiness";
-import { LessonForm } from "./lesson-form";
 import { LessonOutcomeDialog } from "@/features/outcomes/components/lesson-outcome-dialog";
+import { LessonForm } from "./lesson-form";
+import { LessonPositionDialog } from "./lesson-position-dialog";
+import { moveLessonBy, moveLessonTo } from "../lesson-order";
+import { hasBlockingCheck, submitChecklist } from "../submit-checklist";
 import { academicApi } from "@/features/academic/api";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import {
+  buildOutcomeMatrixHref,
+  countUnlinked,
   unlinkedDraftOutcomes,
   unlinkedOutcomeSubmitNote,
 } from "@/lib/outcome-links";
 import { OutcomeLinkWarning } from "./outcome-link-warning";
 import { CurriculumImport } from "./curriculum-import";
-import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
+import { toast } from "@/components/ui/toast";
+import { downloadCsv } from "@/lib/files/csv";
 import { curriculumCsv, curriculumCsvTemplate } from "../csv-export";
 import {
   CurriculumSubmitForm,
@@ -104,11 +111,11 @@ interface Editor {
 const editorTitles: Record<Editor["kind"], string> = {
   unit: "Thông tin giáo trình",
   lesson: "Soạn bài học",
-  import: "Nhập bài học từ CSV",
+  import: "Nhập bài từ file",
   submit: "Gửi duyệt",
   "technical-review": "Duyệt nội dung",
   revision: "Chuẩn bị giáo trình cho kỳ tiếp theo",
-  "request-changes": "Yêu cầu chỉnh sửa giáo trình",
+  "request-changes": "Trả lại giáo trình để sửa",
 };
 
 export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
@@ -159,13 +166,12 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   const [deleting, setDeleting] = useState<"unit" | CurriculumLesson | null>(
     null,
   );
+  const [positionLesson, setPositionLesson] = useState<CurriculumLesson | null>(
+    null,
+  );
   const [mappingLesson, setMappingLesson] = useState<CurriculumLesson | null>(
     null,
   );
-  const validation = useMutation({
-    mutationFn: () => curriculumApi.validation(unitId),
-    retry: false,
-  });
   const approve = useCurriculumMutation(() => curriculumApi.approve(unitId));
   const remove = useCurriculumMutation(async () => {
     const result = await curriculumApi.remove(unitId);
@@ -193,12 +199,15 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
       role === "teacher" || role === "center_manager" ? "changed" : "all",
     ),
   );
+  // Bản đầu tiên không có bản để đối chiếu: ẩn cột, nút lọc, và bỏ qua ?lessonChanges= cũ trên URL.
+  const hasComparison = !!comparison.previous;
+  const effectiveFilter = hasComparison ? changeFilter : "all";
   const comparisonRows = comparison.rows.filter(
     (row) =>
-      changeFilter === "all" ||
-      (changeFilter === "changed"
+      effectiveFilter === "all" ||
+      (effectiveFilter === "changed"
         ? row.change !== "unchanged"
-        : row.change === changeFilter),
+        : row.change === effectiveFilter),
   );
   const selectedRow =
     comparisonRows.find((row) => row.lesson.id === selectedLessonId) ??
@@ -236,28 +245,37 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     canMapOutcomes,
   );
   const unlinkedGroups = unlinkedDraftOutcomes(outcomeSets.data ?? []);
-  const showOutcomeLessons = () =>
-    document
-      .getElementById("curriculum-lessons")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const busy = [approve, remove, removeLesson, reorder, validation].some(
+  const isOwnerDesigner =
+    role === "curriculum_designer" && unit?.designerId === user?.id;
+  const hasMenu =
+    canEdit ||
+    isOwnerDesigner ||
+    (role === "center_manager" &&
+      !!unit &&
+      ["PENDING_REVIEW", "APPROVED"].includes(unit.status));
+  const busy = [approve, remove, removeLesson, reorder].some(
     (mutation) => mutation.isPending,
   );
-  const error = [approve, remove, removeLesson, reorder, validation].find(
+  const error = [approve, remove, removeLesson, reorder].find(
     (mutation) => mutation.error,
   )?.error;
   const regular =
     unit?.lessons
       .filter((lesson) => lesson.kind === "LESSON")
       .sort((a, b) => a.sequence - b.sequence) ?? [];
-  const ready =
-    !!validation.data?.ready && validation.data.revision === unit?.revision;
-  // Bản nháp: báo trước khóa đã có lớp có giáo viên (người thẩm định) và số bài cần.
-  const showReadiness =
-    unit?.status === "DRAFT" &&
-    (role === "curriculum_designer" || role === "center_manager");
-  const { readiness } = useCurriculumReadiness(unit, showReadiness);
-  const blockedReason = readiness?.blockedReason ?? "";
+  // Danh sách kiểm tra gửi duyệt: tính ngay từ bài đang có, tự cập nhật khi thêm hoặc xóa bài.
+  const showReadiness = canEdit;
+  const { readiness, reviewerCount } = useCurriculumReadiness(
+    unit,
+    showReadiness,
+  );
+  const checks = submitChecklist({
+    sequences: regular.map((lesson) => lesson.sequence),
+    reviewerCount,
+    neededLessons: neededLessons(readiness),
+    unlinkedOutcomes: outcomeSets.data ? countUnlinked(unlinkedGroups) : undefined,
+  });
+  const blocked = hasBlockingCheck(checks);
   const backHref =
     role === "teacher" ? ROUTES.TEACHER.CURRICULUM : ROUTES.MANAGER.CURRICULUM;
   const openEditor = (value: Editor) => {
@@ -273,14 +291,30 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     closeEditor();
     setNotice(message);
   };
-  function move(id: string, direction: number) {
-    const ids = regular.map((lesson) => lesson.id);
-    const index = ids.indexOf(id),
-      target = index + direction;
-    if (index < 0 || target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-    reorder.mutate(ids);
+  function download(createCsv: () => string, filename: string) {
+    try {
+      downloadCsv(createCsv(), filename);
+    } catch {
+      toast.error("Chưa tạo được file. Thử lại sau.");
+    }
   }
+  // Mọi cách đổi thứ tự đều gọi `reorder`; BE đánh lại số bài liên tục từ 1.
+  function applyOrder(ids: string[] | null, done?: () => void, message?: string) {
+    if (!ids) return;
+    reorder.mutate(ids, {
+      onSuccess: () => {
+        done?.();
+        if (message) toast.success(message);
+      },
+      onError: () =>
+        toast.error("Chưa đổi được thứ tự bài. Thứ tự cũ được giữ nguyên."),
+    });
+  }
+  const regularIds = regular.map((lesson) => lesson.id);
+  const move = (id: string, direction: -1 | 1) =>
+    applyOrder(moveLessonBy(regularIds, id, direction));
+  const renumber = () =>
+    applyOrder(regularIds, undefined, "Đã đánh số lại bài học.");
   return (
     <PageContainer>
       <PageHeader
@@ -300,40 +334,13 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
         actions={
           unit && (
             <div className="flex flex-wrap gap-2">
-              {role === "curriculum_designer" &&
-                unit.designerId === user?.id && (
-                  <>
-                    <CsvDownloadButton
-                      label="Tải mẫu CSV"
-                      createCsv={curriculumCsvTemplate}
-                      filename="giao-trinh-mau"
-                      disabled={busy || formState.busy}
-                    />
-                    <CsvDownloadButton
-                      label="Xuất CSV đã lưu"
-                      createCsv={() => curriculumCsv(unit.lessons)}
-                      filename={unit.title}
-                      disabled={
-                        busy ||
-                        formState.busy ||
-                        formState.dirty ||
-                        !regular.length
-                      }
-                    />
-                  </>
-                )}
               {canEdit && (
                 <Button
-                  disabled={busy || (ready && !!blockedReason)}
-                  aria-describedby={
-                    blockedReason ? "curriculum-submit-blocked" : undefined
-                  }
-                  isLoading={validation.isPending}
-                  onClick={() =>
-                    ready ? openEditor({ kind: "submit" }) : validation.mutate()
-                  }
+                  disabled={busy || blocked}
+                  aria-describedby="curriculum-submit-checklist"
+                  onClick={() => openEditor({ kind: "submit" })}
                 >
-                  {ready ? "Gửi duyệt" : "Kiểm tra giáo trình"}
+                  Gửi duyệt
                 </Button>
               )}
               {canTechnicalReview && (
@@ -348,11 +355,6 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   Duyệt nội dung
                 </Button>
               )}
-              {canConfirm && (
-                <Button disabled={busy} onClick={() => setConfirmApply(true)}>
-                  Duyệt áp dụng
-                </Button>
-              )}
               {canRevise && (
                 <Button
                   disabled={busy}
@@ -361,18 +363,18 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   Chuẩn bị kỳ tiếp theo
                 </Button>
               )}
-              {(canEdit || role === "center_manager") && (
+              {hasMenu && (
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
                       <Button
                         variant="outline"
                         disabled={busy}
-                        aria-label="Thao tác khác với giáo trình"
+                        aria-label="Thêm thao tác với giáo trình"
                       />
                     }
                   >
-                    Thao tác khác
+                    Thêm
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {canEdit && (
@@ -385,11 +387,34 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                         <DropdownMenuItem
                           onClick={() => openEditor({ kind: "import" })}
                         >
-                          Nhập bài học từ CSV
+                          Nhập bài từ file
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => validation.mutate()}>
-                          Kiểm tra giáo trình
+                      </>
+                    )}
+                    {isOwnerDesigner && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            download(curriculumCsvTemplate, "giao-trinh-mau")
+                          }
+                        >
+                          Tải file mẫu
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={formState.dirty || !regular.length}
+                          onClick={() =>
+                            download(
+                              () => curriculumCsv(unit.lessons),
+                              unit.title,
+                            )
+                          }
+                        >
+                          Xuất bài ra file
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {canEdit && (
+                      <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive"
@@ -406,19 +431,13 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                             openEditor({ kind: "request-changes" })
                           }
                         >
-                          Yêu cầu chỉnh sửa
+                          Trả lại để sửa
                         </DropdownMenuItem>
                       )}
                     {role === "center_manager" &&
                       unit.status === "APPROVED" && (
                         <DropdownMenuItem onClick={() => setDeleting("unit")}>
                           Lưu trữ giáo trình
-                        </DropdownMenuItem>
-                      )}
-                    {role === "center_manager" &&
-                      !["PENDING_REVIEW", "APPROVED"].includes(unit.status) && (
-                        <DropdownMenuItem disabled>
-                          Chưa có việc cần duyệt
                         </DropdownMenuItem>
                       )}
                   </DropdownMenuContent>
@@ -453,12 +472,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   </p>
                 </div>
                 <ApprovalSteps unit={unit} />
-                <ComparisonNotice comparison={comparison} />
-                {canEdit && (
-                  <p className="text-sm text-muted-foreground">
-                    Kiểm tra cấu trúc trước khi gửi giáo viên duyệt nội dung.
-                    Bài kiểm tra được giáo viên tạo riêng theo buổi học.
-                  </p>
+                {(comparison.previous || comparison.isPending || comparison.error) && (
+                  <ComparisonNotice comparison={comparison} />
                 )}
                 {unit.status === "APPROVED" && (
                   <p className="text-sm text-muted-foreground">
@@ -468,23 +483,17 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 )}
               </CardContent>
             </Card>
-            {canEdit && blockedReason && (
-              <p
-                id="curriculum-submit-blocked"
-                role="status"
-                className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/60 dark:text-amber-200"
-              >
-                <b>Chưa gửi duyệt được.</b> {blockedReason}
-              </p>
-            )}
-            {showReadiness && readiness && (
-              <CurriculumReadinessCards
-                unit={unit}
-                readiness={readiness}
-                lessonCount={regular.length}
-                validated={ready}
-                canManageClasses={role === "center_manager"}
-              />
+            {canEdit && (
+              <div id="curriculum-submit-checklist">
+                <CurriculumReadinessCards
+                  unit={unit}
+                  readiness={readiness}
+                  lessonCount={regular.length}
+                  checks={checks}
+                  onRenumber={renumber}
+                  renumbering={reorder.isPending}
+                />
+              </div>
             )}
             <ApiFeedback error={error} />
             {notice && (
@@ -519,69 +528,55 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 </CardContent>
               </Card>
             )}
-            {validation.data && canEdit && (
-              <div
-                role="status"
-                className="space-y-2 rounded-xl bg-muted p-4 text-sm"
-              >
-                <p className="font-medium">
-                  {ready
-                    ? "Cấu trúc giáo trình hợp lệ, có thể gửi duyệt."
-                    : validation.data.revision !== unit.revision
-                      ? "Nội dung đã thay đổi. Kiểm tra giáo trình lại trước khi gửi."
-                      : "Giáo trình cần bổ sung."}{" "}
-                  · {validation.data.lessonCount} bài học
-                </p>
-                {!!validation.data.errors.length && (
-                  <ul className="list-inside list-disc space-y-1">
-                    {validation.data.errors.map((item, index) => (
-                      <li key={item.code + index}>
-                        {(
-                          {
-                            EMPTY_CURRICULUM: "Thêm ít nhất một bài học.",
-                            LESSON_SEQUENCE_GAP:
-                              "Sắp thứ tự bài học liên tục từ 1.",
-                          } as Record<string, string>
-                        )[item.code] ?? item.message}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
             {canMapOutcomes && unlinkedGroups.length > 0 && (
               <OutcomeLinkWarning
                 groups={unlinkedGroups}
-                onLink={showOutcomeLessons}
+                onLink={() =>
+                  router.push(buildOutcomeMatrixHref(unit.programId))
+                }
               />
             )}
             <div id="curriculum-lessons" className="scroll-mt-24 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-semibold">Bài học ({regular.length})</h2>
                 <div className="flex flex-wrap gap-2">
-                  {(
-                    [
-                      "all",
-                      "changed",
-                      "new",
-                      "modified",
-                      "unchanged",
-                      "removed",
-                    ] as const
-                  ).map((filter) => (
+                  {hasComparison &&
+                    (
+                      [
+                        "all",
+                        "changed",
+                        "new",
+                        "modified",
+                        "unchanged",
+                        "removed",
+                      ] as const
+                    ).map((filter) => (
+                      <Button
+                        key={filter}
+                        size="sm"
+                        variant={
+                          effectiveFilter === filter ? "secondary" : "ghost"
+                        }
+                        onClick={() => void setChangeFilter(filter)}
+                      >
+                        {filter === "all"
+                          ? "Tất cả"
+                          : filter === "changed"
+                            ? "Chỉ bài thay đổi"
+                            : LESSON_CHANGE_LABELS[filter]}
+                      </Button>
+                    ))}
+                  {canMapOutcomes && (
                     <Button
-                      key={filter}
                       size="sm"
-                      variant={changeFilter === filter ? "secondary" : "ghost"}
-                      onClick={() => void setChangeFilter(filter)}
+                      variant="outline"
+                      render={
+                        <Link href={buildOutcomeMatrixHref(unit.programId)} />
+                      }
                     >
-                      {filter === "all"
-                        ? "Tất cả"
-                        : filter === "changed"
-                          ? "Chỉ bài thay đổi"
-                          : LESSON_CHANGE_LABELS[filter]}
+                      Gắn mục tiêu
                     </Button>
-                  ))}
+                  )}
                   {canEdit && (
                     <Button
                       size="sm"
@@ -600,137 +595,160 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                       <TableRow>
                         <TableHead>STT</TableHead>
                         <TableHead>Tên bài · nội dung tóm tắt</TableHead>
-                        <TableHead
-                          aria-disabled="true"
-                          title="Chờ hỗ trợ chương từ hệ thống"
-                        >
-                          Chương · chưa hỗ trợ
-                        </TableHead>
-                        <TableHead>So với bản đối chiếu</TableHead>
+                        {hasComparison && (
+                          <TableHead>So với bản đối chiếu</TableHead>
+                        )}
                         <TableHead>Thao tác</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {comparisonRows.map((row) => (
-                        <TableRow
-                          key={row.lesson.id}
-                          className={
-                            selectedRow?.lesson.id === row.lesson.id
-                              ? "bg-primary/5"
-                              : undefined
-                          }
-                        >
-                          <TableCell>{row.lesson.sequence}</TableCell>
-                          <TableCell className="max-w-80 whitespace-normal">
-                            <Button
-                              variant="link"
-                              className="h-auto whitespace-normal p-0 text-left"
-                              onClick={() =>
-                                void setSelectedLessonId(row.lesson.id)
-                              }
-                            >
-                              {row.lesson.title}
-                            </Button>
-                            <p className="line-clamp-2 text-xs text-muted-foreground">
-                              {row.lesson.content}
-                            </p>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            —
-                          </TableCell>
-                          <TableCell>
-                            {LESSON_CHANGE_LABELS[row.change]}
-                          </TableCell>
-                          <TableCell>
-                            {canEdit && row.change !== "removed" ? (
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    openEditor({
-                                      kind: "lesson",
-                                      lesson: row.lesson,
-                                    })
-                                  }
-                                >
-                                  Sửa
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={busy}
-                                  aria-label={`Gắn mục tiêu cho bài ${row.lesson.sequence}`}
-                                  onClick={() => setMappingLesson(row.lesson)}
-                                >
-                                  Gắn mục tiêu
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger
-                                    render={
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        aria-label={`Thao tác bài ${row.lesson.sequence}`}
-                                        disabled={busy}
-                                      />
-                                    }
+                      {comparisonRows.map((row) => {
+                        const isFirst = regular[0]?.id === row.lesson.id;
+                        const isLast = regular.at(-1)?.id === row.lesson.id;
+                        return (
+                          <TableRow
+                            key={row.lesson.id}
+                            className={
+                              selectedRow?.lesson.id === row.lesson.id
+                                ? "bg-primary/5"
+                                : undefined
+                            }
+                          >
+                            <TableCell>{row.lesson.sequence}</TableCell>
+                            <TableCell className="max-w-80 whitespace-normal">
+                              <Button
+                                variant="link"
+                                className="h-auto whitespace-normal p-0 text-left"
+                                onClick={() =>
+                                  void setSelectedLessonId(row.lesson.id)
+                                }
+                              >
+                                {row.lesson.title}
+                              </Button>
+                              <p className="line-clamp-2 text-xs text-muted-foreground">
+                                {row.lesson.content}
+                              </p>
+                            </TableCell>
+                            {hasComparison && (
+                              <TableCell>
+                                {LESSON_CHANGE_LABELS[row.change]}
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              {canEdit && row.change !== "removed" ? (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="icon-sm"
+                                    variant="outline"
+                                    disabled={busy || isFirst}
+                                    aria-label={`Đưa bài ${row.lesson.sequence} lên`}
+                                    onClick={() => move(row.lesson.id, -1)}
                                   >
-                                    ⋯
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuItem
-                                      disabled={
-                                        regular[0]?.id === row.lesson.id
-                                      }
-                                      onClick={() => move(row.lesson.id, -1)}
-                                    >
-                                      Đưa bài lên
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      disabled={
-                                        regular.at(-1)?.id === row.lesson.id
-                                      }
-                                      onClick={() => move(row.lesson.id, 1)}
-                                    >
-                                      Đưa bài xuống
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={() => setDeleting(row.lesson)}
-                                    >
-                                      Xóa bài học
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            ) : (
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() =>
-                                    void setSelectedLessonId(row.lesson.id)
-                                  }
-                                >
-                                  Đọc
-                                </Button>
-                                {canMapOutcomes && row.change !== "removed" && (
+                                    ↑
+                                  </Button>
+                                  <Button
+                                    size="icon-sm"
+                                    variant="outline"
+                                    disabled={busy || isLast}
+                                    aria-label={`Đưa bài ${row.lesson.sequence} xuống`}
+                                    onClick={() => move(row.lesson.id, 1)}
+                                  >
+                                    ↓
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    aria-label={`Gắn mục tiêu cho bài ${row.lesson.sequence}`}
-                                    onClick={() => setMappingLesson(row.lesson)}
+                                    disabled={busy}
+                                    onClick={() =>
+                                      openEditor({
+                                        kind: "lesson",
+                                        lesson: row.lesson,
+                                      })
+                                    }
                                   >
-                                    Gắn mục tiêu
+                                    Sửa
                                   </Button>
-                                )}
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger
+                                      render={
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          aria-label={`Thao tác bài ${row.lesson.sequence}`}
+                                          disabled={busy}
+                                        />
+                                      }
+                                    >
+                                      ⋯
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      {canMapOutcomes && (
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setMappingLesson(row.lesson)
+                                          }
+                                        >
+                                          Gắn mục tiêu
+                                        </DropdownMenuItem>
+                                      )}
+                                      <DropdownMenuItem
+                                        disabled={regular.length < 2}
+                                        onClick={() =>
+                                          setPositionLesson(row.lesson)
+                                        }
+                                      >
+                                        Chuyển tới vị trí…
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() => setDeleting(row.lesson)}
+                                      >
+                                        Xóa bài học
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      void setSelectedLessonId(row.lesson.id)
+                                    }
+                                  >
+                                    Đọc
+                                  </Button>
+                                  {canMapOutcomes && row.change !== "removed" && (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger
+                                        render={
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            aria-label={`Thao tác bài ${row.lesson.sequence}`}
+                                          />
+                                        }
+                                      >
+                                        ⋯
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setMappingLesson(row.lesson)
+                                          }
+                                        >
+                                          Gắn mục tiêu
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   {!comparisonRows.length && (
@@ -743,7 +761,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                       description={
                         regular.length
                           ? "Chọn Tất cả để đọc toàn bộ giáo trình."
-                          : "Thêm bài học hoặc nhập danh sách từ CSV."
+                          : "Thêm bài học hoặc nhập bài từ file."
                       }
                     />
                   )}
@@ -820,7 +838,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     onStateChange={setFormState}
                     onSaved={() =>
                       saved(
-                        "Đã lưu bài học. Kiểm tra lại cấu trúc trước khi gửi duyệt.",
+                        "Đã lưu bài học.",
                       )
                     }
                   />
@@ -874,7 +892,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     onStateChange={setFormState}
                   />
                 )}
-                {editor?.kind === "submit" && canEdit && ready && (
+                {editor?.kind === "submit" && canEdit && (
                   <CurriculumSubmitForm
                     unit={unit}
                     outcomeNote={unlinkedOutcomeSubmitNote(unlinkedGroups)}
@@ -986,6 +1004,23 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 onClose={() => setMappingLesson(null)}
               />
             )}
+            <LessonPositionDialog
+              lesson={positionLesson}
+              currentPosition={
+                positionLesson
+                  ? regularIds.indexOf(positionLesson.id) + 1
+                  : 1
+              }
+              count={regular.length}
+              busy={reorder.isPending}
+              onClose={() => setPositionLesson(null)}
+              onSubmit={(lesson, position) =>
+                applyOrder(
+                  moveLessonTo(regularIds, lesson.id, position),
+                  () => setPositionLesson(null),
+                )
+              }
+            />
           </>
         )}
       </AsyncBoundary>

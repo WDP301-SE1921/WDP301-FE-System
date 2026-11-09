@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +8,6 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   parseAsInteger,
-  parseAsString,
   parseAsStringLiteral,
   useQueryState,
   useQueryStates,
@@ -83,6 +82,7 @@ import {
   type SchedulesInput,
 } from "../schemas";
 import { ApiFeedback, FieldError } from "./api-feedback";
+import { ClassCreateWizard } from "./class-create-wizard";
 import { MoneyInput } from "./money-input";
 import { ApiForm } from "@/components/shared/forms/api-form";
 import { CompareTable } from "@/components/shared/display/compare-table";
@@ -154,13 +154,11 @@ export function RegistrationClassEditor({ classId }: { classId?: string }) {
 }
 
 function ClassCreateView() {
-  const [programId] = useQueryState("programId", parseAsString.withDefault(""));
-  const { programs, teachers, rooms } = useEditorData();
   return (
     <PageContainer>
       <PageHeader
         title="Tạo lớp học"
-        description="Tạo lớp đóng, lưu lịch tuần rồi mở đăng ký."
+        description="Tạo lớp qua 3 bước: thông tin, lịch học, giáo viên và phòng. Lớp mới đóng đăng ký cho tới khi bạn mở."
         actions={
           <Button
             variant="outline"
@@ -170,24 +168,7 @@ function ClassCreateView() {
           </Button>
         }
       />
-      <ApiFeedback
-        error={teachers.error}
-        retry={() => void teachers.refetch()}
-      />
-      <ApiFeedback error={rooms.error} retry={() => void rooms.refetch()} />
-      <AsyncBoundary
-        isLoading={programs.isPending}
-        isError={programs.isError}
-        error={programs.error}
-        onRetry={() => void programs.refetch()}
-      >
-        <ClassDetailsForm
-          programs={programs.data ?? []}
-          teachers={teachers.data?.items ?? []}
-          rooms={rooms.data ?? []}
-          initialProgramId={programId}
-        />
-      </AsyncBoundary>
+      <ClassCreateWizard />
     </PageContainer>
   );
 }
@@ -923,6 +904,12 @@ function ClassDetailsForm({
 }
 
 function ClassSchedules({ classroom }: { classroom: RegistrationClass }) {
+  const anchor = useRef<HTMLElement>(null);
+  // Wizard tạo lớp chuyển tới `#class-weekly-schedule` khi lưu lịch lỗi: cuộn tới thẻ này một lần.
+  useEffect(() => {
+    if (window.location.hash !== `#${WEEKLY_SCHEDULE_ID}`) return;
+    anchor.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
   const slots = useQuery({
     queryKey: ["academic-schedules", classroom.id],
     queryFn: ({ signal }) => registrationApi.schedules(classroom.id, signal),
@@ -930,7 +917,7 @@ function ClassSchedules({ classroom }: { classroom: RegistrationClass }) {
   });
   // Bọc cả lúc đang tải để lời nhắc "Mở đăng ký" luôn có chỗ cuộn tới.
   return (
-    <section id={WEEKLY_SCHEDULE_ID} className="scroll-mt-24">
+    <section ref={anchor} id={WEEKLY_SCHEDULE_ID} className="scroll-mt-24">
       <AsyncBoundary
         isLoading={slots.isPending}
         isError={slots.isError}

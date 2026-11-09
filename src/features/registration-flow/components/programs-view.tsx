@@ -2,7 +2,12 @@
 import { Fragment, useId, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueries,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   parseAsInteger,
   parseAsString,
@@ -60,6 +65,8 @@ import { ChoiceCards } from "@/components/shared/forms/choice-cards";
 import { Badge } from "@/components/ui/badge";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { ROUTES } from "@/constants/routes";
+import { academicApi } from "@/features/academic/api";
+import { useCurrentUser } from "@/hooks/use-current-role";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { useHubTab } from "@/hooks/use-hub-tab";
@@ -93,7 +100,10 @@ const PROGRAMS_PAGE_SIZE = 10;
 const PROGRAM_FILTERS = {
   all: "Tất cả khóa",
   review: "Có giáo trình chờ duyệt áp dụng",
+  outcomeReview: "Có mục tiêu chờ duyệt",
 } as const;
+/** BE chưa có route liệt kê bộ mục tiêu theo trạng thái cho mọi khóa (B9), nên kiểm từng khóa; giới hạn số khóa. */
+const OUTCOME_CHECK_LIMIT = 30;
 const PROGRAM_FILTER_KEYS = Object.keys(
   PROGRAM_FILTERS,
 ) as (keyof typeof PROGRAM_FILTERS)[];
@@ -175,6 +185,20 @@ function ProgramsCatalog() {
     queryFn: () => registrationApi.classes(),
     retry: false,
   });
+  // Chỉ gọi khi bộ lọc "Có mục tiêu chờ duyệt" đang bật: mỗi khóa một request.
+  const currentUser = useCurrentUser();
+  const outcomeCheckOn = programFilter === "outcomeReview";
+  const checkedPrograms = (programs.data ?? []).slice(0, OUTCOME_CHECK_LIMIT);
+  const outcomeChecks = useQueries({
+    queries: checkedPrograms.map((program) => ({
+      // Cùng tiền tố `useLiveQuery`: duyệt hoặc trả bộ mục tiêu (invalidate ["web-api", userId]) làm mới luôn bộ lọc này.
+      queryKey: ["web-api", currentUser?.id, "outcome-sets-pending", program.id],
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        academicApi.outcomeSets(program.id, { status: "TECHNICALLY_APPROVED" }, signal),
+      enabled: outcomeCheckOn,
+      retry: false,
+    })),
+  });
   const remove = useMutation({
     mutationFn: (id: string) =>
       apiRequest<unknown>(`programs/${encodeURIComponent(id)}`, {
@@ -251,12 +275,28 @@ function ProgramsCatalog() {
           (classesWithoutTeacher.get(classroom.programId) ?? 0) + 1,
         );
     }
-  const rows = (programs.data ?? []).filter(
-    (program) =>
-      programFilter === "all" ||
-      (unitsByProgram.get(program.id) ?? []).some(
-        (unit) => curriculumStage(unit) === "PENDING_MANAGER_CONFIRMATION",
-      ),
+  const outcomePendingIds = new Set<string>();
+  let outcomeChecking = 0;
+  let outcomeFailed = 0;
+  checkedPrograms.forEach((program, index) => {
+    const check = outcomeChecks[index];
+    if (!check || !outcomeCheckOn) return;
+    if (check.isPending) outcomeChecking++;
+    else if (check.isError) outcomeFailed++;
+    else if (check.data?.some((set) => set.status === "TECHNICALLY_APPROVED"))
+      outcomePendingIds.add(program.id);
+  });
+  const outcomeUnchecked = outcomeCheckOn
+    ? Math.max(0, (programs.data?.length ?? 0) - OUTCOME_CHECK_LIMIT)
+    : 0;
+  const rows = (programs.data ?? []).filter((program) =>
+    programFilter === "all"
+      ? true
+      : programFilter === "outcomeReview"
+        ? outcomePendingIds.has(program.id)
+        : (unitsByProgram.get(program.id) ?? []).some(
+            (unit) => curriculumStage(unit) === "PENDING_MANAGER_CONFIRMATION",
+          ),
   );
   const start = (Math.max(1, catalogPage) - 1) * PROGRAMS_PAGE_SIZE;
   return (
@@ -304,6 +344,37 @@ function ProgramsCatalog() {
               </SelectContent>
             </Select>
           </FilterBar>
+          {outcomeCheckOn && (
+            <div role="status" className="space-y-1 text-sm text-muted-foreground">
+              {outcomeChecking > 0 && (
+                <p>
+                  Đang kiểm tra mục tiêu của {outcomeChecking}/{checkedPrograms.length} khóa…
+                </p>
+              )}
+              {outcomeFailed > 0 && (
+                <p className="text-destructive">
+                  Không kiểm tra được {outcomeFailed} khóa. Danh sách dưới đây có thể thiếu.{" "}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() =>
+                      outcomeChecks.forEach((check) => {
+                        if (check.isError) void check.refetch();
+                      })
+                    }
+                  >
+                    Thử lại
+                  </button>
+                </p>
+              )}
+              {outcomeUnchecked > 0 && (
+                <p>
+                  Mới kiểm {OUTCOME_CHECK_LIMIT}/{programs.data?.length} khóa. Khóa còn lại chưa
+                  được kiểm; dùng ô tìm kiếm để thu hẹp danh sách.
+                </p>
+              )}
+            </div>
+          )}
           <ApiFeedback error={remove.error} />
           <ApiFeedback
             error={classes.error}

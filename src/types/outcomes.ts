@@ -8,14 +8,17 @@ export interface LearningOutcome {
   code: string;
   title: string;
   statement: string;
-  sourceTitle: string;
-  sourceUrl: string;
-  sourceLocator: string;
+  /** Ba trường nguồn có thể null (B3, mục tiêu bản nhẹ). */
+  sourceTitle: string | null;
+  sourceUrl: string | null;
+  sourceLocator: string | null;
   sourceStatus: OutcomeSourceStatus;
   sourceNote: string | null;
   verifiedById: string | null;
   verifiedAt: string | null;
   required: boolean;
+  /** Tăng mỗi lần sửa; gửi lại làm `expectedRevision` khi sửa. */
+  revision: number;
   lessonLinks: { lessonId: string }[];
 }
 

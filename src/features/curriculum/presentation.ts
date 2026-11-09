@@ -12,7 +12,7 @@ export function curriculumStage(
 
 const IMPORT_DIAGNOSTIC_TEXT: Record<string, string> = {
   INVALID_KIND:
-    "Chỉ nhập bài học (LESSON). Bài kiểm tra được tạo riêng theo buổi học.",
+    "Chỉ nhập bài học. Bài kiểm tra được tạo riêng theo buổi học.",
   MONTHLY_TEST_NOT_ALLOWED:
     "Bài kiểm tra đã được tách khỏi giáo trình. Tạo đề kiểm tra trong phần Bài tập / Đề kiểm tra.",
   TESTS_MANAGED_BY_TEACHER:
@@ -20,7 +20,7 @@ const IMPORT_DIAGNOSTIC_TEXT: Record<string, string> = {
   INVALID_TITLE: "Tên nội dung bắt buộc, tối đa 255 ký tự.",
   INVALID_CONTENT: "Nội dung bắt buộc, tối đa 50.000 ký tự.",
   INVALID_SEQUENCE: "Số thứ tự bài phải liên tục theo chế độ nhập.",
-  INVALID_MONTH: "Bài học không dùng trường tháng kiểm tra.",
+  INVALID_MONTH: "Bài học không dùng ô tháng kiểm tra. Để trống ô này.",
 };
 
 const IMPORT_FIELD_TEXT: Record<string, string> = {

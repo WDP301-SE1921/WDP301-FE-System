@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { z } from "zod";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiForm } from "@/components/shared/forms/api-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,6 +17,7 @@ import {
 import { toast } from "@/components/ui/toast";
 import type { WebRole } from "@/constants/roles";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
+import { registrationApi } from "@/features/registration-flow/api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import {
   learningOutcomeSchema,
@@ -24,9 +26,9 @@ import {
   outcomeSetUpdateSchema,
   sourceReviewSchema,
 } from "@/lib/validators/outcomes";
-import { confirmationSchema } from "@/lib/validators/web-workflows";
 import type { LearningOutcome, OutcomeSet } from "@/types/outcomes";
 import { outcomeApi } from "../api";
+import { nextOutcomeCode } from "../outcome-code";
 import {
   OUTCOME_SET_STATUS_TEXT,
   outcomeSetActions,
@@ -43,6 +45,9 @@ type OutcomeDialog =
   | { kind: "verify"; set: OutcomeSet; outcome: LearningOutcome }
   | { kind: "technical-approve" | "approve" | "request-changes"; set: OutcomeSet };
 
+/** Hộp chỉ cần xác nhận: không có ô nhập, bấm nút là mở hộp hỏi lại. */
+const confirmOnlySchema = z.object({});
+
 const ROLE_HINT: Partial<Record<WebRole, string>> = {
   curriculum_designer:
     "Soạn mục tiêu cho khóa học, ghi rõ nguồn căn cứ rồi gắn mục tiêu cho bài học ở trang giáo trình. Giáo viên của khóa xác minh và duyệt nội dung, sau đó Quản lý duyệt áp dụng.",
@@ -58,7 +63,17 @@ const SET_BADGE: Record<OutcomeSet["status"], "neutral" | "warning" | "success">
 };
 
 /** Các bộ CLO của một khóa học và thao tác theo vai trò; BE vẫn kiểm tra lại mọi quyền. */
-export function OutcomeSetsPanel({ programId }: { programId: string }) {
+export function OutcomeSetsPanel({
+  programId,
+  programName,
+  onOpenMatrix,
+}: {
+  programId: string;
+  /** Tên khóa, điền sẵn làm "Cấp độ" khi tạo bộ mới. */
+  programName?: string;
+  /** Mở màn gắn bài hàng loạt cho một bộ nháp (chỉ Thiết kế GT). */
+  onOpenMatrix?: (setId: string) => void;
+}) {
   const user = useCurrentUser();
   const sets = useLiveQuery(["outcome-sets", programId, "all"], (signal) =>
     outcomeApi.sets(programId, signal),
@@ -98,6 +113,7 @@ export function OutcomeSetsPanel({ programId }: { programId: string }) {
               set={set}
               user={user}
               onAction={setDialog}
+              onOpenMatrix={onOpenMatrix}
             />
           ))}
         </div>
@@ -118,6 +134,7 @@ export function OutcomeSetsPanel({ programId }: { programId: string }) {
               ].join(":")}
               dialog={dialog}
               programId={programId}
+              programName={programName}
               sets={sets.data ?? []}
               onDone={() => setDialog(null)}
             />
@@ -128,14 +145,41 @@ export function OutcomeSetsPanel({ programId }: { programId: string }) {
   );
 }
 
+/** Dòng nguồn căn cứ; ba trường nguồn có thể trống (mục tiêu bản nhẹ) nên chỉ in phần có. */
+function OutcomeSource({ outcome }: { outcome: LearningOutcome }) {
+  const { sourceTitle, sourceUrl, sourceLocator } = outcome;
+  if (!sourceTitle && !sourceUrl && !sourceLocator) return null;
+  const label = sourceTitle || sourceUrl;
+  return (
+    <p className="text-xs text-muted-foreground">
+      Nguồn:{" "}
+      {sourceUrl ? (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="underline underline-offset-2"
+        >
+          {label}
+        </a>
+      ) : (
+        label
+      )}
+      {sourceLocator && (label ? ` · ${sourceLocator}` : sourceLocator)}
+    </p>
+  );
+}
+
 function OutcomeSetCard({
   set,
   user,
   onAction,
+  onOpenMatrix,
 }: {
   set: OutcomeSet;
   user: { id: string; role: WebRole };
   onAction: (dialog: OutcomeDialog) => void;
+  onOpenMatrix?: (setId: string) => void;
 }) {
   const actions = outcomeSetActions(set, user);
   const blockers = actions.canTechnicallyApprove
@@ -190,18 +234,7 @@ function OutcomeSetCard({
                   </div>
                 </div>
                 <p className="text-sm">{outcome.statement}</p>
-                <p className="text-xs text-muted-foreground">
-                  Nguồn:{" "}
-                  <a
-                    href={outcome.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline underline-offset-2"
-                  >
-                    {outcome.sourceTitle}
-                  </a>{" "}
-                  · {outcome.sourceLocator}
-                </p>
+                <OutcomeSource outcome={outcome} />
                 {outcome.sourceNote && (
                   <p className="text-xs whitespace-pre-wrap text-muted-foreground">
                     {outcome.sourceNote}
@@ -252,8 +285,8 @@ function OutcomeSetCard({
         )}
         {actions.canEditOutcomes && (
           <p className="text-xs text-muted-foreground">
-            Gắn bài học cho mục tiêu ở trang giáo trình của khóa: nút “Gắn mục
-            tiêu” ở từng bài.
+            Bấm “Gắn bài” để gắn mục tiêu cho nhiều bài cùng lúc. Gắn riêng từng
+            bài thì dùng nút “Gắn mục tiêu” ở trang giáo trình.
           </p>
         )}
         {blockers.length > 0 && (
@@ -269,6 +302,9 @@ function OutcomeSetCard({
         <div className="flex flex-wrap gap-2">
           {actions.canEditOutcomes && (
             <>
+              {onOpenMatrix && (
+                <Button onClick={() => onOpenMatrix(set.id)}>Gắn bài</Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => onAction({ kind: "outcome", set })}
@@ -328,14 +364,26 @@ function OutcomeSetCard({
 function OutcomeDialogBody({
   dialog,
   programId,
+  programName,
   sets,
   onDone,
 }: {
   dialog: OutcomeDialog;
   programId: string;
+  programName?: string;
   sets: OutcomeSet[];
   onDone: () => void;
 }) {
+  // Mã môn và khối chỉ cần khi thêm mục tiêu vào bộ còn trống (dựng mã đầu tiên).
+  const needsProgram =
+    dialog.kind === "outcome" &&
+    !dialog.outcome &&
+    dialog.set.outcomes.length === 0;
+  const program = useLiveQuery(
+    ["program-code", programId],
+    (signal) => registrationApi.program(programId, signal),
+    needsProgram,
+  );
   const done = (message: string) => () => {
     toast.success(message);
     onDone();
@@ -379,16 +427,17 @@ function OutcomeDialogBody({
           </DialogDescription>
         </DialogHeader>
         <ApiForm
-          schema={confirmationSchema}
-          defaults={{ confirmed: false }}
-          fields={[
-            {
-              name: "confirmed",
-              label: "Tôi xác nhận muốn xóa bộ mục tiêu nháp này",
-              type: "checkbox",
-            },
-          ]}
+          schema={confirmOnlySchema}
+          fields={[]}
+          confirm={{
+            title: `Xóa bộ mục tiêu ${dialog.set.level}?`,
+            description: () =>
+              `Bộ “${dialog.set.level}” (bản ${dialog.set.version}) và các mục tiêu trong bộ sẽ bị xóa. Không khôi phục được.`,
+            confirmText: "Xóa bộ mục tiêu",
+            danger: true,
+          }}
           submitLabel="Xóa bộ mục tiêu"
+          submitVariant="destructive"
           successMessage={false}
           onSubmit={() => outcomeApi.deleteSet(dialog.set.id)}
           onSuccess={done("Đã xóa bộ mục tiêu.")}
@@ -406,16 +455,17 @@ function OutcomeDialogBody({
           </DialogDescription>
         </DialogHeader>
         <ApiForm
-          schema={confirmationSchema}
-          defaults={{ confirmed: false }}
-          fields={[
-            {
-              name: "confirmed",
-              label: `Tôi xác nhận muốn xóa ${dialog.outcome.code}`,
-              type: "checkbox",
-            },
-          ]}
+          schema={confirmOnlySchema}
+          fields={[]}
+          confirm={{
+            title: `Xóa mục tiêu ${dialog.outcome.code}?`,
+            description: () =>
+              `Mục tiêu “${dialog.outcome.code} · ${dialog.outcome.title}” sẽ bị xóa khỏi bộ, kể cả liên kết với các bài học. Không khôi phục được.`,
+            confirmText: "Xóa mục tiêu",
+            danger: true,
+          }}
           submitLabel="Xóa mục tiêu"
+          submitVariant="destructive"
           successMessage={false}
           onSubmit={() =>
             outcomeApi.deleteOutcome(dialog.set.id, dialog.outcome.id)
@@ -442,7 +492,7 @@ function OutcomeDialogBody({
           schema={outcomeSetCreateSchema}
           defaults={{
             programId,
-            level: source?.level ?? "",
+            level: source?.level ?? programName ?? "",
             copyFromId: source?.id ?? "none",
           }}
           fields={[
@@ -479,6 +529,16 @@ function OutcomeDialogBody({
   }
   if (dialog.kind === "outcome") {
     const { outcome } = dialog;
+    // Mã gợi ý chỉ cho mục tiêu mới; tải xong mã môn thì dựng lại hộp một lần (key đổi).
+    const suggestedCode = outcome
+      ? ""
+      : nextOutcomeCode(
+          dialog.set.outcomes.map((item) => item.code),
+          {
+            subjectCode: program.data?.subjectRecord?.code,
+            grade: program.data?.grade,
+          },
+        );
     return (
       <>
         <DialogHeader>
@@ -489,9 +549,10 @@ function OutcomeDialogBody({
           </DialogDescription>
         </DialogHeader>
         <ApiForm
+          key={suggestedCode}
           schema={learningOutcomeSchema}
           defaults={{
-            code: outcome?.code ?? "",
+            code: outcome?.code ?? suggestedCode,
             title: outcome?.title ?? "",
             statement: outcome?.statement ?? "",
             sourceTitle: outcome?.sourceTitle ?? "",
@@ -501,7 +562,13 @@ function OutcomeDialogBody({
             required: outcome?.required ?? true,
           }}
           fields={[
-            { name: "code", label: "Mã mục tiêu" },
+            {
+              name: "code",
+              label: "Mã mục tiêu",
+              description: outcome
+                ? undefined
+                : "Mã gợi ý theo thứ tự trong bộ. Bạn sửa lại được.",
+            },
             { name: "title", label: "Tên ngắn" },
             { name: "statement", label: "Phát biểu mục tiêu", type: "textarea" },
             { name: "sourceTitle", label: "Tên nguồn căn cứ" },
@@ -517,7 +584,11 @@ function OutcomeDialogBody({
           submitLabel={outcome ? "Lưu mục tiêu" : "Thêm mục tiêu"}
           successMessage={false}
           onSubmit={(value) =>
-            outcomeApi.saveOutcome(dialog.set.id, value, outcome?.id)
+            outcomeApi.saveOutcome(
+              dialog.set.id,
+              outcome ? { ...value, expectedRevision: outcome.revision } : value,
+              outcome?.id,
+            )
           }
           onSuccess={done(outcome ? "Đã lưu mục tiêu." : "Đã thêm mục tiêu.")}
         />
@@ -533,22 +604,29 @@ function OutcomeDialogBody({
           <DialogDescription>{outcome.statement}</DialogDescription>
         </DialogHeader>
         <p className="text-sm">
-          Mở{" "}
-          <a
-            href={outcome.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-2"
-          >
-            {outcome.sourceTitle}
-          </a>
-          , tìm đúng yêu cầu cần đạt rồi ghi lại vị trí và cách mục tiêu cụ thể hóa
-          yêu cầu đó.
+          {outcome.sourceUrl ? (
+            <>
+              Mở{" "}
+              <a
+                href={outcome.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2"
+              >
+                {outcome.sourceTitle || outcome.sourceUrl}
+              </a>
+              , tìm
+            </>
+          ) : (
+            "Mục tiêu này chưa ghi nguồn. Tìm"
+          )}{" "}
+          đúng yêu cầu cần đạt rồi ghi lại vị trí và cách mục tiêu cụ thể hóa yêu
+          cầu đó.
         </p>
         <ApiForm
           schema={sourceReviewSchema}
           defaults={{
-            sourceLocator: outcome.sourceLocator,
+            sourceLocator: outcome.sourceLocator ?? "",
             sourceNote: outcome.sourceNote ?? "",
           }}
           fields={[
@@ -596,15 +674,18 @@ function OutcomeDialogBody({
         </DialogDescription>
       </DialogHeader>
       <ApiForm
-        schema={confirmationSchema}
-        defaults={{ confirmed: false }}
-        fields={[
-          {
-            name: "confirmed",
-            label: `Xác nhận ${dialog.set.level} · bản ${dialog.set.version}`,
-            type: "checkbox",
-          },
-        ]}
+        schema={confirmOnlySchema}
+        fields={[]}
+        confirm={{
+          title: isApprove
+            ? `Duyệt áp dụng ${dialog.set.level} · bản ${dialog.set.version}?`
+            : `Duyệt nội dung ${dialog.set.level} · bản ${dialog.set.version}?`,
+          description: () =>
+            isApprove
+              ? "Sau khi duyệt áp dụng, bài tập mới của khóa phải gắn mục tiêu của bộ này trước khi giao cho học sinh."
+              : "Bạn xác nhận mọi mục tiêu đúng kiến thức, đúng nguồn và có bài học tương ứng.",
+          confirmText: isApprove ? "Duyệt áp dụng" : "Duyệt nội dung",
+        }}
         submitLabel={isApprove ? "Duyệt áp dụng" : "Duyệt nội dung"}
         successMessage={false}
         onSubmit={() =>

@@ -80,8 +80,9 @@ export function AssignmentImportDialog({
         <DialogHeader>
           <DialogTitle>Nhập câu hỏi từ file</DialogTitle>
           <DialogDescription>
-            CSV theo mẫu, Word DOCX hoặc PDF có chữ, tối đa 5 MiB. Nội dung chỉ
-            được đưa vào bản nháp sau khi bạn xem lại.
+            CSV theo mẫu, Word DOCX hoặc PDF có chữ, tối đa 5 MiB. Với CSV, lưu
+            từ Excel dạng &quot;CSV UTF-8 (Comma delimited)&quot;. Nội dung chỉ được đưa
+            vào bản nháp sau khi bạn xem lại.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-5">
@@ -118,7 +119,7 @@ export function AssignmentImportDialog({
                 Đọc file và xem trước
               </Button>
               <CsvDownloadButton
-                label="Tải mẫu CSV"
+                label="Tải file mẫu"
                 createCsv={assignmentCsvTemplate}
                 filename="bai-tap-mau"
                 disabled={preview.isPending}

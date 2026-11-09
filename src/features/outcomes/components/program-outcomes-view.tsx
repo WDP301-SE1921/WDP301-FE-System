@@ -7,12 +7,15 @@ import { LiveSelect } from "@/features/academic/components/live-fields";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { curriculumApi } from "@/features/curriculum/api";
 import { registrationApi } from "@/features/registration-flow/api";
+import { useCurrentUser } from "@/hooks/use-current-role";
+import { OUTCOME_MATRIX_FIRST_SET } from "@/lib/outcome-links";
 import { useHubTab } from "@/hooks/use-hub-tab";
 import {
   programsFromClasses,
   programsFromUnits,
   type ProgramOption,
 } from "../rules";
+import { OutcomeLessonMatrix } from "./outcome-lesson-matrix";
 import { OutcomeSetsPanel } from "./outcome-sets-panel";
 
 /** Chọn khóa học (`?outcomeProgram=`) rồi xem/xử lý các bộ CLO của khóa đó. */
@@ -24,6 +27,8 @@ function ProgramOutcomesBody({
   emptyDescription: string;
 }) {
   const [selected, setSelected] = useQueryState("outcomeProgram", parseAsString);
+  const [matrix, setMatrix] = useQueryState("outcomeMatrix", parseAsString);
+  const user = useCurrentUser();
   const programId = programs.some((program) => program.id === selected)
     ? selected!
     : programs[0]?.id;
@@ -31,6 +36,9 @@ function ProgramOutcomesBody({
     return (
       <EmptyState title="Chưa có khóa học" description={emptyDescription} />
     );
+  const programName = programs.find((program) => program.id === programId)?.label;
+  // Màn gắn bài hàng loạt chỉ dành cho Thiết kế GT; vai trò khác mở link thì về danh sách.
+  const matrixOpen = matrix !== null && user?.role === "curriculum_designer";
   return (
     <div className="min-w-0 space-y-4">
       <div className="max-w-md">
@@ -41,10 +49,33 @@ function ProgramOutcomesBody({
             value: program.id,
             label: program.label,
           }))}
-          onChange={(value) => void setSelected(value)}
+          onChange={(value) => {
+            void setSelected(value);
+            void setMatrix(null);
+          }}
         />
       </div>
-      <OutcomeSetsPanel key={programId} programId={programId} />
+      {matrixOpen ? (
+        <OutcomeLessonMatrix
+          key={programId}
+          programId={programId}
+          programName={programName}
+          setId={matrix === OUTCOME_MATRIX_FIRST_SET ? null : matrix}
+          onSelectSet={(setId) => void setMatrix(setId)}
+          onBack={() => void setMatrix(null)}
+        />
+      ) : (
+        <OutcomeSetsPanel
+          key={programId}
+          programId={programId}
+          programName={programName}
+          onOpenMatrix={
+            user?.role === "curriculum_designer"
+              ? (setId) => void setMatrix(setId)
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }

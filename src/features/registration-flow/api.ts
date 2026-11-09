@@ -119,6 +119,19 @@ export const registrationApi = {
     }),
   subjects: (search = "", signal?: AbortSignal) =>
     allPages<AcademicSubject>("subjects", search ? { search } : {}, signal),
+  /** Tạo lớp ở trạng thái đóng đăng ký; lịch lưu riêng bằng `saveSchedules`. */
+  createClass: (body: {
+    programId: string;
+    name: string;
+    capacity: number;
+    monthlyFee: number;
+    teacherId?: string;
+    roomId?: string;
+  }) =>
+    apiRequest<RegistrationClass>("classes", {
+      method: "POST",
+      body: { ...body, isOpen: false },
+    }),
   teachers: async (signal?: AbortSignal) => {
     const items: AcademicTeacher[] = [];
     for (let page = 1; ; page++) {

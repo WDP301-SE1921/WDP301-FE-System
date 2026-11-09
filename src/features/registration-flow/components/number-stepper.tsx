@@ -1,5 +1,6 @@
 "use client";
-import { Minus, Plus } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 
 interface NumberStepperProps {
@@ -49,7 +50,7 @@ export function NumberStepper({
         type="button"
         size="icon"
         variant="outline"
-        leftIcon={<Minus />}
+        leftIcon={<HugeiconsIcon icon={MinusSignIcon} className="size-4" />}
         aria-label={decreaseLabel}
         disabled={disabled || (value != null && value <= min)}
         onClick={() => step(-1)}
@@ -64,7 +65,7 @@ export function NumberStepper({
         type="button"
         size="icon"
         variant="outline"
-        leftIcon={<Plus />}
+        leftIcon={<HugeiconsIcon icon={PlusSignIcon} className="size-4" />}
         aria-label={increaseLabel}
         disabled={disabled || (value != null && value >= max)}
         onClick={() => step(1)}
