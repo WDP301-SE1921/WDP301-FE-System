@@ -1,6 +1,6 @@
 "use client";
-import { useId, useRef } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useId, useRef, useState, type ReactNode } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
+import { ConfirmDialog } from "@/components/shared/feedback/confirm-dialog";
+import { ChoiceCards } from "@/components/shared/forms/choice-cards";
+import { ReasonSelect } from "@/components/shared/forms/reason-select";
 import { useLiveCommand } from "@/features/academic/hooks/use-live-api";
 import { userFacingMessage } from "@/lib/api/error-message";
+import { cn } from "@/lib/utils";
 
 export interface ApiFormField {
   name: string;
@@ -31,11 +35,19 @@ export interface ApiFormField {
     | "datetime-local"
     | "textarea"
     | "checkbox"
-    | "select";
-  options?: { value: string; label: string }[];
+    | "select"
+    /** Chọn lý do có sẵn trong `presets`, mục cuối "Khác…" mở ô gõ tay. */
+    | "reason"
+    /** Radio dạng thẻ, mỗi lựa chọn có thể có dòng mô tả. */
+    | "choices";
+  options?: { value: string; label: string; description?: ReactNode }[];
+  presets?: readonly string[];
   disabled?: boolean;
   description?: string;
+  /** Chiếm nửa hàng từ `sm` trở lên (vd. hai ô ngày cạnh nhau). */
+  half?: boolean;
 }
+export type ApiFormValues = Record<string, unknown>;
 export function ApiForm({
   schema,
   fields,
@@ -45,6 +57,10 @@ export function ApiForm({
   onSubmit,
   onSuccess,
   disabled = false,
+  preview,
+  summary,
+  confirm,
+  submitVariant = "default",
 }: {
   schema: z.ZodObject<Record<string, z.ZodType>>;
   fields: ApiFormField[];
@@ -54,21 +70,42 @@ export function ApiForm({
   onSubmit: (value: Record<string, unknown>) => Promise<unknown>;
   onSuccess?: (result: unknown) => void;
   disabled?: boolean;
+  /** Vùng xem trước (bảng so sánh) dựng từ giá trị đang nhập; chỉ hiển thị, không chặn gửi. */
+  preview?: (values: ApiFormValues) => ReactNode;
+  /** Câu tóm tắt tác động đặt cạnh nút gửi. */
+  summary?: (values: ApiFormValues) => ReactNode;
+  /** Có thì bấm gửi mở hộp xác nhận trước khi gọi API (thay cho ô tick "Tôi xác nhận…"). */
+  confirm?: {
+    title: string;
+    description?: (values: ApiFormValues) => string;
+    confirmText: string;
+    danger?: boolean;
+  };
+  submitVariant?: "default" | "destructive";
 }) {
   const id = useId();
   const errorSummary = useRef<HTMLDivElement>(null);
   const action = useLiveCommand();
+  const [pending, setPending] = useState<ApiFormValues | null>(null);
   const form = useForm<Record<string, unknown>>({
     resolver: zodResolver(schema),
     defaultValues: defaults,
   });
+  const watched = useWatch({ control: form.control }) as ApiFormValues;
+  const run = (value: ApiFormValues) =>
+    new Promise<void>((resolve) =>
+      action.mutate(() => onSubmit(value), {
+        onSuccess,
+        onSettled: () => resolve(),
+      }),
+    );
   return (
     <form
       className="space-y-4"
       noValidate
       onSubmit={(event) => {
         void form.handleSubmit(
-          (value) => action.mutate(() => onSubmit(value), { onSuccess }),
+          (value) => (confirm ? setPending(value) : void run(value)),
           () => setTimeout(() => errorSummary.current?.focus(), 0),
         )(event);
       }}
@@ -96,16 +133,54 @@ export function ApiForm({
           </ul>
         </div>
       )}
-      <fieldset disabled={disabled || action.isPending} className="space-y-4">
+      <fieldset
+        disabled={disabled || action.isPending}
+        className="grid min-w-0 gap-4 sm:grid-cols-2"
+      >
         {fields.map((input) => {
           const fieldId = `${id}-${input.name}`;
           const message = form.formState.errors[input.name]?.message;
           return (
-            <div key={input.name} className="space-y-2">
-              {input.type !== "checkbox" && (
+            <div
+              key={input.name}
+              className={cn("min-w-0 space-y-2", !input.half && "sm:col-span-2")}
+            >
+              {input.type !== "checkbox" && input.type !== "choices" && (
                 <Label htmlFor={fieldId}>{input.label}</Label>
               )}
-              {input.type === "select" ? (
+              {input.type === "reason" ? (
+                <Controller
+                  name={input.name}
+                  control={form.control}
+                  render={({ field }) => (
+                    <ReasonSelect
+                      id={fieldId}
+                      value={String(field.value ?? "")}
+                      onChange={field.onChange}
+                      presets={input.presets ?? []}
+                      disabled={input.disabled || action.isPending || disabled}
+                      invalid={!!message}
+                      describedBy={message ? `${fieldId}-error` : undefined}
+                    />
+                  )}
+                />
+              ) : input.type === "choices" ? (
+                <Controller
+                  name={input.name}
+                  control={form.control}
+                  render={({ field }) => (
+                    <ChoiceCards
+                      legend={input.label}
+                      value={String(field.value ?? "")}
+                      onChange={field.onChange}
+                      options={input.options ?? []}
+                      disabled={input.disabled || action.isPending || disabled}
+                      invalid={!!message}
+                      describedBy={message ? `${fieldId}-error` : undefined}
+                    />
+                  )}
+                />
+              ) : input.type === "select" ? (
                 <Controller
                   name={input.name}
                   control={form.control}
@@ -209,15 +284,49 @@ export function ApiForm({
             </div>
           );
         })}
-        <Button type="submit">
-          {action.isPending ? "Đang xử lý…" : submitLabel}
-        </Button>
+        {preview && <div className="min-w-0 sm:col-span-2">{preview(watched)}</div>}
+        <div
+          className={cn(
+            "sm:col-span-2",
+            summary &&
+              "flex flex-col gap-3 rounded-2xl bg-muted/50 p-4 sm:flex-row sm:items-center sm:justify-between",
+          )}
+        >
+          {summary && (
+            <p className="text-sm text-foreground/80" aria-live="polite">
+              {summary(watched)}
+            </p>
+          )}
+          <Button
+            type="submit"
+            variant={submitVariant}
+            className="shrink-0"
+          >
+            {action.isPending ? "Đang xử lý…" : submitLabel}
+          </Button>
+        </div>
       </fieldset>
       <ApiFeedback error={action.error} />
       {action.isSuccess && successMessage && (
         <p role="status" className="text-sm text-muted-foreground">
           {successMessage}
         </p>
+      )}
+      {confirm && (
+        <ConfirmDialog
+          open={!!pending}
+          onOpenChange={(open) => {
+            if (!open) setPending(null);
+          }}
+          title={confirm.title}
+          description={pending ? confirm.description?.(pending) : undefined}
+          confirmText={confirm.confirmText}
+          variant={confirm.danger ? "danger" : "default"}
+          isLoading={action.isPending}
+          onConfirm={async () => {
+            if (pending) await run(pending);
+          }}
+        />
       )}
     </form>
   );

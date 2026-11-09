@@ -77,6 +77,9 @@ import {
 } from "../schemas";
 import { ApiFeedback, FieldError } from "./api-feedback";
 import { ApiForm } from "@/components/shared/forms/api-form";
+import { CompareTable } from "@/components/shared/display/compare-table";
+import { AffectedSessions } from "@/components/shared/display/affected-sessions";
+import { REASON_PRESETS } from "@/constants/reason-presets";
 import { displayMoment } from "@/features/academic/components/live-fields";
 import {
   confirmationSchema,
@@ -435,9 +438,11 @@ function ClassDetailHub({ classId }: { classId: string }) {
         )}
       </AsyncBoundary>
       <Dialog open={changingTeacher} onOpenChange={setChangingTeacher}>
-        <DialogContent className="max-h-[85dvh] overflow-y-auto">
+        <DialogContent size="2xl" className="max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Đổi giáo viên từ ngày hiệu lực</DialogTitle>
+            <DialogTitle>
+              Đổi giáo viên{classroom ? ` lớp ${classroom.name}` : ""}
+            </DialogTitle>
             <DialogDescription>
               Các buổi đang lên lịch từ thời điểm hiệu lực chuyển cho giáo viên
               mới; buổi trước đó giữ giáo viên cũ.
@@ -447,6 +452,10 @@ function ClassDetailHub({ classId }: { classId: string }) {
             <TeacherAssignmentForm
               classroom={classroom}
               teachers={teachers.data?.items ?? []}
+              sessions={sessions.data}
+              isSessionsLoading={sessions.isPending}
+              isSessionsError={sessions.isError}
+              onRetrySessions={() => void sessions.refetch()}
               onDone={() => setChangingTeacher(false)}
             />
           )}
@@ -1540,24 +1549,57 @@ const teacherAssignmentFormSchema = z.object({
 function TeacherAssignmentForm({
   classroom,
   teachers,
+  sessions,
+  isSessionsLoading,
+  isSessionsError,
+  onRetrySessions,
   onDone,
 }: {
   classroom: RegistrationClass;
   teachers: AcademicTeacher[];
+  sessions?: ScheduledSession[];
+  isSessionsLoading: boolean;
+  isSessionsError: boolean;
+  onRetrySessions: () => void;
   onDone: () => void;
 }) {
   const options = teachers.filter(
     (teacher) => teacher.id !== classroom.teacherId,
   );
+  const nameOf = (id?: unknown) => {
+    const teacher = teachers.find((item) => item.id === id);
+    return teacher ? (teacher.displayName ?? teacher.email) : undefined;
+  };
+  const currentName =
+    nameOf(classroom.teacherId) ??
+    classroom.teacher?.displayName ??
+    (classroom.teacherId ? "Giáo viên đang phụ trách" : "Chưa có giáo viên");
+  /** Buổi đang lên lịch trước/sau mốc hiệu lực — chỉ để xem trước. */
+  const split = (effectiveAt: unknown) => {
+    if (typeof effectiveAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(effectiveAt))
+      return null;
+    const at = Date.parse(vietnamDateTime(effectiveAt));
+    const scheduled = (sessions ?? [])
+      .filter((session) => session.status === "SCHEDULED" && Date.parse(session.startsAt) > Date.now())
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    return {
+      label: `${effectiveAt.slice(8, 10)}/${effectiveAt.slice(5, 7)}/${effectiveAt.slice(0, 4)}, ${effectiveAt.slice(11)}`,
+      before: scheduled.filter((session) => Date.parse(session.startsAt) < at),
+      after: scheduled.filter((session) => Date.parse(session.startsAt) >= at),
+    };
+  };
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {classroom.pendingTeacher && classroom.pendingTeacherFrom && (
-        <div className="space-y-3 rounded-2xl border border-border p-4">
+        <div className="space-y-3 rounded-2xl bg-amber-50 p-4 dark:bg-amber-950/30">
           <p className="text-sm">
-            Phân công chờ:{" "}
-            {classroom.pendingTeacher.displayName ??
-              classroom.pendingTeacher.email}
-            {" · "}Hiệu lực từ {displayMoment(classroom.pendingTeacherFrom)}
+            Đang có phân công chờ:{" "}
+            <span className="font-semibold">
+              {classroom.pendingTeacher.displayName ??
+                classroom.pendingTeacher.email}
+            </span>{" "}
+            nhận lớp từ {displayMoment(classroom.pendingTeacherFrom)}. Lưu đổi
+            mới sẽ thay phân công này.
           </p>
           <ApiForm
             schema={confirmationSchema.extend({
@@ -1568,7 +1610,8 @@ function TeacherAssignmentForm({
               {
                 name: "reason",
                 label: "Lý do hủy phân công chờ",
-                type: "textarea",
+                type: "reason",
+                presets: REASON_PRESETS.cancelPendingTeacher,
               },
               {
                 name: "confirmed",
@@ -1609,11 +1652,79 @@ function TeacherAssignmentForm({
             name: "effectiveAt",
             label: "Hiệu lực từ (giờ Việt Nam)",
             type: "datetime-local",
+            half: true,
           },
-          { name: "reason", label: "Lý do", type: "textarea" },
+          {
+            name: "reason",
+            label: "Lý do",
+            type: "reason",
+            presets: REASON_PRESETS.teacher,
+          },
         ]}
         submitLabel="Đổi giáo viên"
         successMessage={false}
+        preview={(values) => {
+          const next = nameOf(values.teacherId);
+          const parts = split(values.effectiveAt);
+          const ready = !!next && !!parts;
+          return (
+            <div className="space-y-4">
+              <CompareTable
+                rows={[
+                  {
+                    label: "Giáo viên phụ trách",
+                    before: currentName,
+                    after: ready ? `${next}, từ ${parts.label}` : "Chọn giáo viên và thời điểm",
+                    state: ready ? "changed" : "same",
+                  },
+                  {
+                    label: "Buổi trước mốc",
+                    before: parts ? `${parts.before.length} buổi` : "Chọn thời điểm",
+                    after: `Giữ ${currentName}`,
+                  },
+                  {
+                    label: "Buổi từ mốc",
+                    before: parts ? `${parts.after.length} buổi, ${currentName}` : "Chọn thời điểm",
+                    after: ready ? `Chuyển cho ${next}` : "Chọn giáo viên và thời điểm",
+                    state: ready && parts.after.length ? "changed" : "same",
+                  },
+                  {
+                    label: "Lịch tuần, phòng",
+                    before: "Như hiện tại",
+                    after: "Giữ nguyên",
+                  },
+                ]}
+              />
+              {parts && (
+                <AffectedSessions
+                  title="Buổi học trước và sau ngày hiệu lực"
+                  isLoading={isSessionsLoading}
+                  isError={isSessionsError}
+                  onRetry={onRetrySessions}
+                  first={{
+                    sessions: parts.before.slice(-2),
+                    tag: currentName,
+                    tone: "plain",
+                  }}
+                  second={{
+                    sessions: parts.after,
+                    tag: next ?? "Giáo viên mới",
+                    tone: "info",
+                    limit: 4,
+                  }}
+                  splitLabel={`Hiệu lực từ ${parts.label}`}
+                  emptyText="Lớp chưa có buổi nào đang lên lịch sau hôm nay."
+                />
+              )}
+            </div>
+          );
+        }}
+        summary={(values) => {
+          const next = nameOf(values.teacherId);
+          const parts = split(values.effectiveAt);
+          if (!next || !parts) return "Chọn giáo viên mới và thời điểm hiệu lực để xem thay đổi.";
+          return `Từ ${parts.label}: ${parts.after.length} buổi chuyển cho ${next}. Buổi trước đó giữ ${currentName}.`;
+        }}
         onSubmit={(value) =>
           registrationApi.assignTeacher(classroom.id, {
             ...value,

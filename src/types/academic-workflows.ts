@@ -296,6 +296,8 @@ export interface SubstituteCandidate {
   id: string;
   email: string;
   displayName: string | null;
+  /** Môn của các lớp giáo viên đang phụ trách (BE mới); bản BE cũ không trả trường này. */
+  subjects?: string[];
 }
 export interface StudentSchedule {
   enrollmentId: string;

@@ -170,6 +170,11 @@ export function attendanceRange(fromDate: string, toDate: string) {
 }
 const command = <T = unknown>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: "POST", body });
+/** Bỏ `reason` rỗng để BE nhận đúng body trống như trước. */
+const optionalReason = ({ reason }: { reason?: string }) => {
+  const text = reason?.trim();
+  return text ? { reason: text } : undefined;
+};
 export const academicApi = {
   sessions: (
     filters: Record<string, string | number | undefined> = {},
@@ -264,8 +269,11 @@ export const academicApi = {
       `${itemPath("enrollments", id)}/transfer`,
       transferSchema.parse(body),
     ),
-  endEnrollment: (id: string) => command(`${itemPath("enrollments", id)}/end`),
-  endStudent: (id: string) => command(`${itemPath("students", id)}/end-study`),
+  /** `reason` không bắt buộc; BE ghi vào nhật ký khi có. */
+  endEnrollment: (id: string, body: { reason?: string } = {}) =>
+    command(`${itemPath("enrollments", id)}/end`, optionalReason(body)),
+  endStudent: (id: string, body: { reason?: string } = {}) =>
+    command(`${itemPath("students", id)}/end-study`, optionalReason(body)),
   reactivateStudent: (id: string, body: unknown) =>
     command(`${itemPath("students", id)}/reactivate`, reasonSchema.parse(body)),
   attendanceSummary: (
