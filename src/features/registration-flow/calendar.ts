@@ -35,7 +35,8 @@ export function nextStudyDate(
   }
   return "";
 }
-export function scheduleText(schedules: WeeklySchedule[]) {
+/** Mỗi buổi trong tuần một dòng, vd. "Thứ 7 14:00–16:00" — dùng khi cần xếp dọc (bảng lớp). */
+export function scheduleLines(schedules: WeeklySchedule[]) {
   return [...schedules]
     .sort(
       (a, b) => a.weekday - b.weekday || a.startTime.localeCompare(b.startTime),
@@ -43,8 +44,10 @@ export function scheduleText(schedules: WeeklySchedule[]) {
     .map(
       (slot) =>
         `${slot.weekday === 7 ? "CN" : `Thứ ${slot.weekday + 1}`} ${slot.startTime}–${slot.endTime}`,
-    )
-    .join(" · ");
+    );
+}
+export function scheduleText(schedules: WeeklySchedule[]) {
+  return scheduleLines(schedules).join(" · ");
 }
 export function termLabel(
   startDate: string,
