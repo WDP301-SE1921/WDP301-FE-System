@@ -25,7 +25,7 @@ const rangeError = {
 
 export const curriculumUnitSchema = z
   .object({
-    programId: z.string().min(1, "Chọn chương trình."),
+    programId: z.string().min(1, "Chọn khóa học."),
     title,
     ...range,
   })
@@ -39,7 +39,7 @@ export const curriculumLessonSchema = z.object({
   content,
 });
 export const curriculumSubmitSchema = z.object({
-  reviewerTeacherId: z.string().min(1, "Chọn giáo viên thẩm định chuyên môn."),
+  reviewerTeacherId: z.string().min(1, "Chọn giáo viên duyệt nội dung."),
 });
 export const curriculumTechnicalReviewSchema = z
   .object({
@@ -56,7 +56,7 @@ export const curriculumRevisionSchema = z
   .refine(validRange, rangeError);
 export const scheduleRangeSchema = z
   .object({
-    curriculumUnitId: z.string().min(1, "Chọn học phần đã duyệt."),
+    curriculumUnitId: z.string().min(1, "Chọn giáo trình đã duyệt áp dụng."),
     previewId: z.string().min(1).optional(),
     ...range,
   })

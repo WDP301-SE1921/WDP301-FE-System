@@ -415,7 +415,7 @@ export function LiveTeacherDashboard() {
         <Card className="min-w-0">
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle>Chờ bạn thẩm định</CardTitle>
+              <CardTitle>Chờ bạn duyệt nội dung</CardTitle>
               <Button
                 variant="link"
                 size="sm"
@@ -432,7 +432,7 @@ export function LiveTeacherDashboard() {
               error={units.error}
               onRetry={() => void units.refetch()}
               data={toReview}
-              emptyProps={{ title: "Không có giáo trình chờ thẩm định" }}
+              emptyProps={{ title: "Không có giáo trình chờ duyệt nội dung" }}
             >
               <ul className="divide-y divide-border">
                 {toReview.slice(0, 5).map((unit) => (
@@ -443,7 +443,7 @@ export function LiveTeacherDashboard() {
                     >
                       <span className="block font-medium">{unit.title}</span>
                       <span className="text-xs text-muted-foreground">
-                        {unit._count?.lessons ?? 0} bài · gửi thẩm định
+                        {unit._count?.lessons ?? 0} bài · gửi duyệt
                       </span>
                     </Link>
                   </li>

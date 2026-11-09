@@ -352,7 +352,7 @@ export const assignmentEditorSchema = z
         context.addIssue({
           code: "custom",
           path: ["questions", index, "outcomeId"],
-          message: "Chọn CLO mà câu hỏi này đo.",
+          message: "Chọn mục tiêu mà câu hỏi này đo.",
         });
     });
   });

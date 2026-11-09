@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
 import { CurriculumUnitDetailView } from "@/features/curriculum/components/unit-detail-view";
 
-export const metadata: Metadata = { title: "Thẩm định giáo trình" };
+export const metadata: Metadata = { title: "Duyệt nội dung giáo trình" };
 
 export default async function Page({
   params,

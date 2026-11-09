@@ -1,6 +1,7 @@
 "use client";
-import { Fragment, useState } from "react";
+import { Fragment, useId, useState, type ChangeEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   parseAsInteger,
@@ -9,8 +10,9 @@ import {
   useQueryState,
   useQueryStates,
 } from "nuqs";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +22,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/toast";
 import {
   Select,
   SelectContent,
@@ -52,8 +56,8 @@ import {
   FieldError,
 } from "@/components/shared/feedback/api-feedback";
 import { StatusBadge } from "@/components/shared/feedback/status-badge";
+import { ChoiceCards } from "@/components/shared/forms/choice-cards";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { ROUTES } from "@/constants/routes";
 import { curriculumApi } from "@/features/curriculum/api";
@@ -72,11 +76,23 @@ import { curriculumEffectiveLabel } from "@/features/curriculum/workspace-select
 import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { registrationApi } from "../api";
+import {
+  PROGRAM_GRADES,
+  SESSIONS_PER_WEEK,
+  findSameSubjectGradeProgram,
+  isSubjectCodeTaken,
+  pickChangedFields,
+  safeManagerReturnPath,
+  suggestProgramName,
+  suggestSubjectCode,
+  withFinalPeriod,
+} from "../program-form";
+import { NumberStepper } from "./number-stepper";
 
 const PROGRAMS_PAGE_SIZE = 10;
 const PROGRAM_FILTERS = {
   all: "Tất cả khóa",
-  review: "Có giáo trình chờ duyệt",
+  review: "Có giáo trình chờ duyệt áp dụng",
 } as const;
 const PROGRAM_FILTER_KEYS = Object.keys(
   PROGRAM_FILTERS,
@@ -108,7 +124,7 @@ export function ProgramsCatalogTab({
   return tab === "programs" ? <ProgramsCatalog /> : null;
 }
 
-/** Thân tab "Môn học" của Quản lý; chỉ hiện khi tab đó đang mở. */
+/** Thân tab "Danh mục môn" của Quản lý; chỉ hiện khi tab đó đang mở. */
 export function SubjectsCatalogTab({
   tabs,
 }: {
@@ -119,11 +135,12 @@ export function SubjectsCatalogTab({
 }
 
 /**
- * Trái: tạo khóa học. Phải: bảng nhóm theo khóa, dưới mỗi khóa là các giáo trình theo kỳ.
- * Quản lý chỉ xem / duyệt giáo trình ở trang chi tiết, không có nút tạo giáo trình.
+ * Nút "Tạo khóa học" mở hộp thoại; bảng nhóm theo khóa, dưới mỗi khóa là các giáo trình theo kỳ.
+ * Quản lý chỉ xem / duyệt áp dụng giáo trình ở trang chi tiết, không có nút tạo giáo trình.
  */
 function ProgramsCatalog() {
   const today = useVietnamDate();
+  const router = useRouter();
   const refresh = useCatalogRefresh();
   const [{ search, catalogPage, programFilter }, setFilters] = useQueryStates({
     search: parseAsString.withDefault(""),
@@ -131,14 +148,13 @@ function ProgramsCatalog() {
     programFilter: parseAsStringLiteral(PROGRAM_FILTER_KEYS).withDefault("all"),
   });
   const [, setProgram] = useQueryState("program", parseAsString);
-  const [createKey, setCreateKey] = useState(0);
-  const [editing, setEditing] = useState<RegistrationProgram | null>(null);
+  // Hộp sửa khóa đi theo URL để trang lớp dẫn thẳng tới đây khi khóa thiếu số buổi/tuần.
+  const [{ editProgram: editProgramId, returnTo }, setEditView] =
+    useQueryStates({ editProgram: parseAsString, returnTo: parseAsString });
+  const closeEdit = () =>
+    void setEditView({ editProgram: null, returnTo: null });
+  const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<RegistrationProgram | null>(null);
-  const subjects = useQuery({
-    queryKey: ["academic-subjects", ""],
-    queryFn: ({ signal }) => registrationApi.subjects("", signal),
-    retry: false,
-  });
   const programs = useQuery({
     queryKey: ["registration-programs", { search }],
     queryFn: ({ signal }) =>
@@ -167,6 +183,51 @@ function ProgramsCatalog() {
     retry: false,
     onSuccess: refresh,
   });
+  const listedEditing = programs.data?.find(
+    (program) => program.id === editProgramId,
+  );
+  // Khóa không có trong danh sách đang lọc (mở từ link) thì đọc riêng.
+  const editDetail = useQuery({
+    queryKey: ["academic-program", editProgramId],
+    queryFn: ({ signal }) => registrationApi.program(editProgramId!, signal),
+    enabled: !!editProgramId && !programs.isPending && !listedEditing,
+    retry: false,
+  });
+  const editing = editProgramId
+    ? (listedEditing ?? editDetail.data ?? null)
+    : null;
+  const onCreated = (created: RegistrationProgram) => {
+    refresh();
+    setCreating(false);
+    toast.success(withFinalPeriod(`Đã tạo khóa ${created.name}`), {
+      duration: 10_000,
+      action: {
+        label: "Tạo lớp cho khóa này",
+        onClick: () =>
+          router.push(
+            `${ROUTES.MANAGER.CLASS_NEW}?programId=${encodeURIComponent(created.id)}`,
+          ),
+      },
+    });
+  };
+  const onEdited = () => {
+    // Đọc trước khi đóng hộp: đóng hộp xóa cả `returnTo` khỏi URL.
+    const backPath = safeManagerReturnPath(returnTo);
+    refresh();
+    closeEdit();
+    toast.success(
+      "Đã lưu thay đổi.",
+      backPath
+        ? {
+            duration: 10_000,
+            action: {
+              label: "Quay lại lớp",
+              onClick: () => router.push(backPath),
+            },
+          }
+        : undefined,
+    );
+  };
   const unitsByProgram = new Map<string, CurriculumUnit[]>();
   for (const unit of [...(units.data ?? [])].sort((left, right) =>
     left.fromDate.localeCompare(right.fromDate),
@@ -200,31 +261,14 @@ function ProgramsCatalog() {
   const start = (Math.max(1, catalogPage) - 1) * PROGRAMS_PAGE_SIZE;
   return (
     <div className="min-w-0 space-y-6">
-      <Card className="min-w-0">
-        <CardHeader>
-          <CardTitle>Tạo khóa học</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ApiFeedback
-            error={subjects.error}
-            retry={() => void subjects.refetch()}
-          />
-          <ProgramForm
-            key={createKey}
-            inline
-            subjects={subjects.data ?? []}
-            onSaved={() => {
-              refresh();
-              setCreateKey((value) => value + 1);
-            }}
-          />
-          <p className="text-sm text-muted-foreground">
-            Sau khi tạo khóa: tạo lớp cho khóa và phân công giáo viên thì Thiết
-            kế giáo trình mới gửi thẩm định giáo trình được. Quản lý duyệt áp
-            dụng và sinh lịch cho các lớp.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          Sau khi tạo khóa: tạo lớp và phân công giáo viên để giáo viên duyệt
+          nội dung giáo trình. Quản lý duyệt áp dụng rồi tạo lịch học cho các
+          lớp.
+        </p>
+        <Button onClick={() => setCreating(true)}>Tạo khóa học</Button>
+      </div>
       <Card className="min-w-0">
         <CardContent className="min-w-0 space-y-4">
           <FilterBar
@@ -338,7 +382,7 @@ function ProgramsCatalog() {
                                   program.isActive !== false &&
                                   (!programClasses.length ? (
                                     <Badge variant="warning">
-                                      Chưa thể thẩm định giáo trình
+                                      Chưa thể duyệt nội dung giáo trình
                                     </Badge>
                                   ) : withoutTeacher ? (
                                     <Badge variant="warning">
@@ -382,7 +426,12 @@ function ProgramsCatalog() {
                                   size="sm"
                                   variant="outline"
                                   aria-label={`Sửa khóa ${program.name}`}
-                                  onClick={() => setEditing(program)}
+                                  onClick={() =>
+                                    void setEditView({
+                                      editProgram: program.id,
+                                      returnTo: null,
+                                    })
+                                  }
                                 >
                                   Sửa khóa
                                 </Button>
@@ -430,7 +479,7 @@ function ProgramsCatalog() {
                             return (
                               <TableRow key={unit.id}>
                                 <TableCell className="max-w-96 whitespace-normal pl-8">
-                                  {unit.title} · v{unit.version}
+                                  {unit.title} · bản {unit.version}
                                 </TableCell>
                                 <TableCell>
                                   {calendarDateLabel(
@@ -457,7 +506,7 @@ function ProgramsCatalog() {
                                         ? "default"
                                         : "ghost"
                                     }
-                                    aria-label={`${stage === "PENDING_MANAGER_CONFIRMATION" ? "Duyệt" : "Xem"} giáo trình ${unit.title}`}
+                                    aria-label={`${stage === "PENDING_MANAGER_CONFIRMATION" ? "Duyệt áp dụng" : "Xem"} giáo trình ${unit.title}`}
                                     render={
                                       <Link
                                         href={ROUTES.MANAGER.CURRICULUM_UNIT(
@@ -467,7 +516,7 @@ function ProgramsCatalog() {
                                     }
                                   >
                                     {stage === "PENDING_MANAGER_CONFIRMATION"
-                                      ? "Duyệt"
+                                      ? "Duyệt áp dụng"
                                       : "Xem"}
                                   </Button>
                                 </TableCell>
@@ -490,30 +539,46 @@ function ProgramsCatalog() {
           )}
         </CardContent>
       </Card>
-      <Dialog
-        open={!!editing}
-        onOpenChange={(open) => {
-          if (!open) setEditing(null);
-        }}
-      >
-        <DialogContent>
+      <Dialog open={creating} onOpenChange={setCreating}>
+        <DialogContent size="xl">
           <DialogHeader>
-            <DialogTitle>Sửa khóa học</DialogTitle>
-            <DialogDescription>
-              Chọn môn học, khối và tên khóa học.
-            </DialogDescription>
+            <DialogTitle>Tạo khóa học</DialogTitle>
+            <DialogDescription>{PROGRAM_DIALOG_DESCRIPTION}</DialogDescription>
           </DialogHeader>
-          {editing && (
+          {creating && (
             <ProgramForm
-              key={editing.id}
-              program={editing}
-              subjects={subjects.data ?? []}
-              onSaved={() => {
-                refresh();
-                setEditing(null);
-              }}
+              onSaved={onCreated}
+              onCancel={() => setCreating(false)}
             />
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!editProgramId}
+        onOpenChange={(open) => {
+          if (!open) closeEdit();
+        }}
+      >
+        <DialogContent size="xl">
+          <DialogHeader>
+            <DialogTitle>Sửa khóa học</DialogTitle>
+            <DialogDescription>{PROGRAM_DIALOG_DESCRIPTION}</DialogDescription>
+          </DialogHeader>
+          <AsyncBoundary
+            isLoading={!editing && (programs.isPending || editDetail.isPending)}
+            isError={!editing && editDetail.isError}
+            error={editDetail.error}
+            onRetry={() => void editDetail.refetch()}
+          >
+            {editing && (
+              <ProgramForm
+                key={editing.id}
+                program={editing}
+                onSaved={onEdited}
+                onCancel={closeEdit}
+              />
+            )}
+          </AsyncBoundary>
         </DialogContent>
       </Dialog>
       <ConfirmDialog
@@ -547,6 +612,12 @@ function SubjectsCatalog() {
   const subjects = useQuery({
     queryKey: ["academic-subjects", search],
     queryFn: ({ signal }) => registrationApi.subjects(search.trim(), signal),
+    retry: false,
+  });
+  // Danh sách đầy đủ (không lọc) để chặn mã môn trùng.
+  const allSubjects = useQuery({
+    queryKey: ["academic-subjects", ""],
+    queryFn: ({ signal }) => registrationApi.subjects("", signal),
     retry: false,
   });
   const remove = useMutation({
@@ -614,11 +685,17 @@ function SubjectsCatalog() {
     <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
       <Card className="min-w-0">
         <CardHeader>
-          <CardTitle>Tạo môn học</CardTitle>
+          <CardTitle>Thêm môn</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <ApiFeedback
+            error={allSubjects.error}
+            retry={() => void allSubjects.refetch()}
+          />
           <SubjectForm
             key={createKey}
+            existing={allSubjects.data}
+            submitLabel="Thêm môn"
             onSaved={() => {
               refresh();
               setCreateKey((value) => value + 1);
@@ -638,7 +715,7 @@ function SubjectsCatalog() {
             error={subjects.error}
             onRetry={() => void subjects.refetch()}
             emptyTitle="Chưa có môn học phù hợp"
-            emptyDescription="Thử tìm theo tên khác hoặc tạo môn học mới."
+            emptyDescription="Thử tìm theo tên khác hoặc thêm môn mới."
           />
         </CardContent>
       </Card>
@@ -659,6 +736,9 @@ function SubjectsCatalog() {
             <SubjectForm
               key={editing.id}
               subject={editing}
+              existing={allSubjects.data}
+              submitLabel="Lưu thay đổi"
+              onCancel={() => setEditing(null)}
               onSaved={() => {
                 refresh();
                 setEditing(null);
@@ -689,13 +769,27 @@ function SubjectsCatalog() {
   );
 }
 
+const SUBJECT_CODE_TAKEN = "Mã môn này đã có. Chọn mã khác.";
+
+/**
+ * Thêm hoặc sửa một môn. Tạo môn mới thì mã tự gợi ý theo tên cho tới khi người dùng tự gõ mã.
+ * `existing` là danh sách môn đầy đủ để báo mã trùng ngay ở ô mã (BE có thể trả lỗi chung);
+ * chưa tải xong (`undefined`) thì chưa cho lưu, vì chưa kiểm được mã trùng.
+ */
 function SubjectForm({
   subject,
+  existing,
+  submitLabel,
   onSaved,
+  onCancel,
 }: {
   subject?: AcademicSubject;
-  onSaved: () => void;
+  existing: AcademicSubject[] | undefined;
+  submitLabel: string;
+  onSaved: (saved: AcademicSubject) => void;
+  onCancel?: () => void;
 }) {
+  const id = useId();
   const form = useForm<AcademicSubjectInput>({
     resolver: zodResolver(academicSubjectSchema),
     defaultValues: {
@@ -714,31 +808,71 @@ function SubjectForm({
         },
       ),
     retry: false,
-    onSuccess: onSaved,
+    onSuccess: (saved) => {
+      toast.success(
+        subject
+          ? "Đã lưu thay đổi."
+          : withFinalPeriod(`Đã tạo môn ${saved.name}`),
+      );
+      onSaved(saved);
+    },
   });
+  const code = useWatch({ control: form.control, name: "code" });
+  const { errors, dirtyFields, isSubmitted } = form.formState;
+  const isCodeTyped = !!dirtyFields.code;
+  const codeTaken = isSubjectCodeTaken(existing ?? [], code, subject?.id);
+  const codeError = errors.code?.message ?? (codeTaken ? SUBJECT_CODE_TAKEN : undefined);
   return (
     <form
-      className="space-y-3"
-      onSubmit={form.handleSubmit((v) => save.mutate(v))}
+      className="space-y-4"
+      noValidate
+      onSubmit={form.handleSubmit((value) => {
+        if (!existing) return;
+        if (codeTaken) {
+          form.setFocus("code");
+          return;
+        }
+        save.mutate(value);
+      })}
     >
-      <Label htmlFor={subject ? "subject-code-edit" : "subject-code"}>
-        Mã môn
-      </Label>
-      <Input
-        id={subject ? "subject-code-edit" : "subject-code"}
-        placeholder="Ví dụ: TOAN"
-        {...form.register("code")}
-      />
-      <FieldError message={form.formState.errors.code?.message} />
-      <Label htmlFor={subject ? "subject-name-edit" : "subject-name"}>
-        Tên môn
-      </Label>
-      <Input
-        id={subject ? "subject-name-edit" : "subject-name"}
-        placeholder="Ví dụ: Toán"
-        {...form.register("name")}
-      />
-      <FieldError message={form.formState.errors.name?.message} />
+      <div className="space-y-2">
+        <Label htmlFor={`${id}-name`}>Tên môn</Label>
+        <Input
+          id={`${id}-name`}
+          placeholder="Ví dụ: Toán"
+          aria-invalid={!!errors.name}
+          aria-describedby={`${id}-name-error`}
+          {...form.register("name", {
+            onChange: (event: ChangeEvent<HTMLInputElement>) => {
+              if (subject || isCodeTyped) return;
+              form.setValue("code", suggestSubjectCode(event.target.value), {
+                shouldValidate: isSubmitted,
+              });
+            },
+          })}
+        />
+        <div id={`${id}-name-error`}>
+          <FieldError message={errors.name?.message} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${id}-code`}>Mã môn</Label>
+        <Input
+          id={`${id}-code`}
+          placeholder="Ví dụ: TOAN"
+          aria-invalid={!!codeError}
+          aria-describedby={`${id}-code-help ${id}-code-error`}
+          {...form.register("code")}
+        />
+        <p id={`${id}-code-help`} className="text-xs text-muted-foreground">
+          {subject
+            ? "Viết liền, không dấu."
+            : "Viết liền, không dấu. Tự gợi ý theo tên môn."}
+        </p>
+        <div id={`${id}-code-error`}>
+          <FieldError message={codeError} />
+        </div>
+      </div>
       {subject && (
         <Controller
           control={form.control}
@@ -746,163 +880,330 @@ function SubjectForm({
           render={({ field }) => (
             <div className="flex items-center gap-2">
               <Checkbox
-                id="subject-active"
+                id={`${id}-active`}
                 checked={field.value}
                 onCheckedChange={field.onChange}
               />
-              <Label htmlFor="subject-active">Đang sử dụng</Label>
+              <Label htmlFor={`${id}-active`}>Đang sử dụng</Label>
             </div>
           )}
         />
       )}
       <ApiFeedback error={save.error} />
-      <Button
-        type="submit"
-        disabled={save.isPending}
-        isLoading={save.isPending}
-      >
-        Lưu môn học
-      </Button>
+      {!existing && (
+        <p role="status" className="text-xs text-muted-foreground">
+          Đang tải danh sách môn để kiểm tra mã trùng…
+        </p>
+      )}
+      <div className="flex flex-wrap justify-end gap-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={save.isPending}
+            onClick={onCancel}
+          >
+            Hủy
+          </Button>
+        )}
+        <Button type="submit" isLoading={save.isPending} disabled={!existing}>
+          {submitLabel}
+        </Button>
+      </div>
     </form>
   );
 }
+
+const PROGRAM_DIALOG_DESCRIPTION =
+  "Khóa học là một môn của một khối, ví dụ Toán 7. Lớp và giáo trình đều thuộc một khóa.";
+/** Tạo khóa bắt buộc có số buổi/tuần; khóa cũ chưa đặt thì sửa vẫn để trống được. */
+const createProgramSchema = academicProgramSchema.superRefine(
+  (value, context) => {
+    if (value.sessionsPerWeek === undefined)
+      context.addIssue({
+        code: "custom",
+        path: ["sessionsPerWeek"],
+        message: "Chọn số buổi mỗi tuần.",
+      });
+  },
+);
+
+/**
+ * Form trong hộp tạo / sửa khóa. "+ Thêm môn" thay nội dung hộp bằng form môn: hai form
+ * không lồng nhau, còn giá trị đã chọn của khóa vẫn giữ trong `form` của container này.
+ */
 function ProgramForm({
   program,
-  subjects,
   onSaved,
-  inline = false,
+  onCancel,
 }: {
   program?: RegistrationProgram;
-  subjects: AcademicSubject[];
-  onSaved: () => void;
-  /** Một hàng ngang trên trang danh sách khóa (để bảng bên dưới dùng đủ chiều ngang). */
-  inline?: boolean;
+  onSaved: (saved: RegistrationProgram) => void;
+  onCancel: () => void;
 }) {
+  const id = useId();
+  const client = useQueryClient();
+  const [view, setView] = useState<"program" | "subject">("program");
+  // Môn vừa thêm trong hộp, giữ tới khi danh sách môn tải lại có nó.
+  const [addedSubjects, setAddedSubjects] = useState<AcademicSubject[]>([]);
+  // Cùng khóa cache với tab Danh mục môn; cần đủ danh sách để chọn môn và chặn mã trùng.
+  const subjectsQuery = useQuery({
+    queryKey: ["academic-subjects", ""],
+    queryFn: ({ signal }) => registrationApi.subjects("", signal),
+    retry: false,
+  });
+  const subjects = subjectsQuery.data ?? [];
+  const allPrograms = useQuery({
+    queryKey: ["registration-programs", { search: "" }],
+    queryFn: ({ signal }) => registrationApi.programsFiltered({}, signal),
+    retry: false,
+  });
   const form = useForm<AcademicProgramInput>({
-    resolver: zodResolver(academicProgramSchema.superRefine((value, context) => {
-      if (!program && value.sessionsPerWeek === undefined)
-        context.addIssue({ code: "custom", path: ["sessionsPerWeek"], message: "Nhập số buổi/tuần của khóa." });
-    })),
+    resolver: zodResolver(program ? academicProgramSchema : createProgramSchema),
     defaultValues: {
       name: program?.name ?? "",
       subjectId: program?.subjectId ?? "",
-      grade: program?.grade ?? 6,
-      sessionsPerWeek: program?.sessionsPerWeek ?? undefined,
+      grade: program?.grade,
+      sessionsPerWeek: program
+        ? (program.sessionsPerWeek ?? undefined)
+        : SESSIONS_PER_WEEK.default,
       isActive: program?.isActive ?? true,
     },
   });
   const save = useMutation({
-    mutationFn: ({ isActive, ...fields }: AcademicProgramInput) =>
+    mutationFn: (body: Partial<AcademicProgramInput>) =>
       apiRequest<RegistrationProgram>(
         program ? "programs/" + program.id : "programs",
-        {
-          method: program ? "PATCH" : "POST",
-          body: program ? { ...fields, isActive } : fields,
-        },
+        { method: program ? "PATCH" : "POST", body },
       ),
     retry: false,
     onSuccess: onSaved,
   });
-  const choices = subjects.filter(
-    (s) => s.isActive || s.id === program?.subjectId,
+  const submit = form.handleSubmit((value) => {
+    if (!program) {
+      const { name, subjectId: chosenSubjectId, grade: chosenGrade, sessionsPerWeek } = value;
+      save.mutate({ name, subjectId: chosenSubjectId, grade: chosenGrade, sessionsPerWeek });
+      return;
+    }
+    // Sửa khóa chỉ gửi phần đã đổi (xem `pickChangedFields`).
+    const changed = pickChangedFields(value, form.formState.dirtyFields);
+    if (!Object.keys(changed).length) {
+      toast.info("Chưa có thay đổi.");
+      return;
+    }
+    save.mutate(changed);
+  });
+  const [subjectId, grade] = useWatch({
+    control: form.control,
+    name: ["subjectId", "grade"],
+  });
+  const { errors, dirtyFields, isSubmitted } = form.formState;
+  const known = [
+    ...subjects,
+    ...addedSubjects.filter(
+      (added) => !subjects.some((item) => item.id === added.id),
+    ),
+  ];
+  const choices = known.filter(
+    (item) => item.isActive || item.id === program?.subjectId,
   );
-  const idPrefix = program ? "program-edit" : "program";
-  return (
-    <form
-      className={
-        inline
-          ? "grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
-          : "space-y-3"
-      }
-      onSubmit={form.handleSubmit((v) => save.mutate(v))}
-    >
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-name`}>Tên khóa học</Label>
-        <Input
-          id={`${idPrefix}-name`}
-          placeholder="Ví dụ: Toán 7"
-          {...form.register("name")}
+  const subject = known.find((item) => item.id === subjectId);
+  const sameProgram = program
+    ? undefined
+    : findSameSubjectGradeProgram(allPrograms.data ?? [], subject, grade);
+  // Ô tên chỉ "dirty" khi người dùng tự gõ; xóa trắng thì hết dirty và lại tự điền.
+  const isNameTyped = !!dirtyFields.name;
+  const fillName = (subjectName?: string, nextGrade?: number) => {
+    if (program || isNameTyped) return;
+    const suggestion = suggestProgramName(subjectName, nextGrade);
+    if (suggestion)
+      form.setValue("name", suggestion, { shouldValidate: isSubmitted });
+  };
+
+  if (view === "subject")
+    return (
+      <section aria-labelledby={`${id}-new-subject`} className="space-y-4">
+        <h3 id={`${id}-new-subject`} className="font-medium">
+          Thêm môn
+        </h3>
+        <SubjectForm
+          existing={known}
+          submitLabel="Thêm môn"
+          onCancel={() => setView("program")}
+          onSaved={(added) => {
+            setAddedSubjects((list) => [...list, added]);
+            void client.invalidateQueries({ queryKey: ["academic-subjects"] });
+            form.setValue("subjectId", added.id, {
+              shouldDirty: true,
+              shouldValidate: isSubmitted,
+            });
+            fillName(added.name, form.getValues("grade"));
+            setView("program");
+          }}
         />
-        <FieldError message={form.formState.errors.name?.message} />
-      </div>
-      <div className={inline ? "contents" : "grid gap-3 sm:grid-cols-2"}>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-subject`}>Môn học</Label>
+      </section>
+    );
+
+  const submitLabels = program
+    ? { idle: "Lưu thay đổi", busy: "Đang lưu…" }
+    : { idle: "Tạo khóa học", busy: "Đang tạo…" };
+  return (
+    <form className="space-y-5" noValidate onSubmit={submit}>
+      <div className="space-y-2">
+        {subjectsQuery.isPending ? (
+          <>
+            <p className="text-sm font-medium">Môn học</p>
+            <p role="status" className="text-sm text-muted-foreground">
+              Đang tải danh sách môn…
+            </p>
+          </>
+        ) : subjectsQuery.isError ? (
+          <>
+            <p className="text-sm font-medium">Môn học</p>
+            <ApiFeedback
+              error={subjectsQuery.error}
+              retry={() => void subjectsQuery.refetch()}
+            />
+          </>
+        ) : choices.length ? (
           <Controller
             control={form.control}
             name="subjectId"
             render={({ field }) => (
-              <Select
-                value={field.value || null}
-                items={choices.map((s) => ({ value: s.id, label: s.name }))}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger id={`${idPrefix}-subject`} className="w-full">
-                  <SelectValue placeholder="Chọn môn học" />
-                </SelectTrigger>
-                <SelectContent>
-                  {choices.map((s) => (
-                    <SelectItem value={s.id} key={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError message={form.formState.errors.subjectId?.message} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-grade`}>Khối</Label>
-          <Controller
-            control={form.control}
-            name="grade"
-            render={({ field }) => (
-              <Select
-                value={String(field.value)}
-                items={[6, 7, 8, 9].map((g) => ({
-                  value: String(g),
-                  label: "Khối " + g,
+              <ChoiceCards
+                legend="Môn học"
+                name={`${id}-subject`}
+                columns={3}
+                value={field.value}
+                disabled={save.isPending}
+                invalid={!!errors.subjectId}
+                describedBy={`${id}-subject-error`}
+                options={choices.map((item) => ({
+                  value: item.id,
+                  label: item.name,
                 }))}
-                onValueChange={(v) => field.onChange(Number(v))}
-              >
-                <SelectTrigger id={`${idPrefix}-grade`} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[6, 7, 8, 9].map((g) => (
-                    <SelectItem value={String(g)} key={g}>
-                      Khối {g}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => {
+                  field.onChange(value);
+                  fillName(
+                    known.find((item) => item.id === value)?.name,
+                    form.getValues("grade"),
+                  );
+                }}
+              />
             )}
           />
+        ) : (
+          <>
+            <p className="text-sm font-medium">Môn học</p>
+            <p className="text-sm text-muted-foreground">
+              Chưa có môn nào. Thêm môn đầu tiên.
+            </p>
+          </>
+        )}
+        {/* Nút riêng, không phải một thẻ radio: đi qua bằng phím mũi tên không tự mở form môn. */}
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full rounded-2xl border-dashed"
+          disabled={save.isPending || !subjectsQuery.isSuccess}
+          onClick={() => setView("subject")}
+        >
+          + Thêm môn
+        </Button>
+        <div id={`${id}-subject-error`}>
+          <FieldError message={errors.subjectId?.message} />
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-weekly`}>Số buổi/tuần</Label>
-        <Input id={`${idPrefix}-weekly`} type="number" min={1} max={14} step={1}
-          aria-invalid={!!form.formState.errors.sessionsPerWeek}
-          aria-describedby={`${idPrefix}-weekly-help`}
-          placeholder="Chưa cấu hình"
-          {...form.register("sessionsPerWeek", { setValueAs: (value) => value === "" ? undefined : Number(value) })}
-        />
-        <p id={`${idPrefix}-weekly-help`} className="text-xs text-muted-foreground">
-          Mỗi khung giờ học tính là một buổi. {program && program.sessionsPerWeek == null ? "Để trống để giữ nguyên khóa chưa cấu hình." : "Từ 1 đến 14 buổi/tuần."}
-        </p>
-        <FieldError message={form.formState.errors.sessionsPerWeek?.message} />
-      </div>
-      {!choices.length && (
-        <p
-          className={cn(
-            "text-sm text-muted-foreground",
-            inline && "md:col-span-5",
+        <Controller
+          control={form.control}
+          name="grade"
+          render={({ field }) => (
+            <ChoiceCards
+              legend="Khối"
+              name={`${id}-grade`}
+              value={field.value == null ? "" : String(field.value)}
+              disabled={save.isPending}
+              invalid={!!errors.grade}
+              describedBy={`${id}-grade-error`}
+              options={PROGRAM_GRADES.map((value) => ({
+                value: String(value),
+                label: `Khối ${value}`,
+              }))}
+              onChange={(value) => {
+                const next = Number(value);
+                field.onChange(next);
+                fillName(subject?.name, next);
+              }}
+            />
           )}
-        >
-          Tạo môn học trước khi tạo khóa.
+        />
+        <div id={`${id}-grade-error`}>
+          <FieldError message={errors.grade?.message} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <p id={`${id}-weekly-label`} className="text-sm font-medium">
+          Số buổi mỗi tuần
         </p>
+        <Controller
+          control={form.control}
+          name="sessionsPerWeek"
+          render={({ field }) => (
+            <NumberStepper
+              labelId={`${id}-weekly-label`}
+              value={field.value}
+              onChange={field.onChange}
+              min={SESSIONS_PER_WEEK.min}
+              max={SESSIONS_PER_WEEK.max}
+              startValue={SESSIONS_PER_WEEK.default}
+              format={(value) => `${value} buổi/tuần`}
+              emptyText="Chưa đặt"
+              decreaseLabel="Giảm số buổi/tuần"
+              increaseLabel="Tăng số buổi/tuần"
+              describedBy={`${id}-weekly-help ${id}-weekly-error`}
+              disabled={save.isPending}
+            />
+          )}
+        />
+        <p id={`${id}-weekly-help`} className="text-xs text-muted-foreground">
+          Mỗi lớp của khóa sẽ học đúng số buổi này mỗi tuần.
+          {program && program.sessionsPerWeek == null
+            ? " Khóa này chưa đặt số buổi; bấm − hoặc + để đặt."
+            : ""}
+        </p>
+        <div id={`${id}-weekly-error`}>
+          <FieldError message={errors.sessionsPerWeek?.message} />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${id}-name`}>Tên khóa học</Label>
+        <Input
+          id={`${id}-name`}
+          placeholder="Ví dụ: Toán 7"
+          aria-invalid={!!errors.name}
+          aria-describedby={`${id}-name-help ${id}-name-error`}
+          {...form.register("name", {
+            onBlur: () => {
+              if (!form.getValues("name").trim())
+                fillName(subject?.name, form.getValues("grade"));
+            },
+          })}
+        />
+        {!program && (
+          <p id={`${id}-name-help`} className="text-xs text-muted-foreground">
+            Tự điền theo môn và khối. Sửa nếu cần, ví dụ Toán 7 nâng cao.
+          </p>
+        )}
+        <div id={`${id}-name-error`}>
+          <FieldError message={errors.name?.message} />
+        </div>
+      </div>
+      {sameProgram && (
+        <Alert variant="info" role="status">
+          Đã có khóa {sameProgram.name} cùng môn và khối. Chỉ tạo thêm khi cần
+          một khóa khác, ví dụ nâng cao.
+        </Alert>
       )}
       {program && (
         <Controller
@@ -911,27 +1212,29 @@ function ProgramForm({
           render={({ field }) => (
             <div className="flex items-center gap-2">
               <Checkbox
-                id="program-active"
+                id={`${id}-active`}
                 checked={field.value}
                 onCheckedChange={field.onChange}
               />
-              <Label htmlFor="program-active">Đang sử dụng</Label>
+              <Label htmlFor={`${id}-active`}>Đang sử dụng</Label>
             </div>
           )}
         />
       )}
-      <div className={inline ? "md:col-span-5 md:row-start-2 empty:hidden" : undefined}>
-        <ApiFeedback error={save.error} />
-      </div>
-      <div className={inline ? "md:pt-7" : undefined}>
+      <ApiFeedback error={save.error} />
+      <DialogFooter>
         <Button
-          type="submit"
-          disabled={save.isPending || !choices.length}
-          isLoading={save.isPending}
+          type="button"
+          variant="outline"
+          disabled={save.isPending}
+          onClick={onCancel}
         >
-          {program ? "Lưu khóa học" : "Tạo khóa học"}
+          Hủy
         </Button>
-      </div>
+        <Button type="submit" isLoading={save.isPending}>
+          {save.isPending ? submitLabels.busy : submitLabels.idle}
+        </Button>
+      </DialogFooter>
     </form>
   );
 }

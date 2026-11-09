@@ -19,7 +19,7 @@ export function readGenerationAttempt(
   const stored = JSON.parse(raw);
   const body = scheduleRangeSchema.parse(stored.body);
   if (typeof stored.key !== "string" || !stored.key)
-    throw new Error("Không đọc được khóa sinh lịch đã lưu.");
+    throw new Error("Không đọc được lần tạo lịch học đã lưu.");
   return { key: stored.key, body };
 }
 

@@ -73,6 +73,13 @@ import {
 } from "./curriculum-readiness";
 import { LessonForm } from "./lesson-form";
 import { LessonOutcomeDialog } from "@/features/outcomes/components/lesson-outcome-dialog";
+import { academicApi } from "@/features/academic/api";
+import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
+import {
+  unlinkedDraftOutcomes,
+  unlinkedOutcomeSubmitNote,
+} from "@/lib/outcome-links";
+import { OutcomeLinkWarning } from "./outcome-link-warning";
 import { CurriculumImport } from "./curriculum-import";
 import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
 import { curriculumCsv, curriculumCsvTemplate } from "../csv-export";
@@ -98,8 +105,8 @@ const editorTitles: Record<Editor["kind"], string> = {
   unit: "Thông tin giáo trình",
   lesson: "Soạn bài học",
   import: "Nhập bài học từ CSV",
-  submit: "Gửi thẩm định chuyên môn",
-  "technical-review": "Thẩm định chuyên môn",
+  submit: "Gửi duyệt",
+  "technical-review": "Duyệt nội dung",
   revision: "Chuẩn bị giáo trình cho kỳ tiếp theo",
   "request-changes": "Yêu cầu chỉnh sửa giáo trình",
 };
@@ -214,6 +221,25 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     role === "center_manager" &&
     unit?.status === "PENDING_REVIEW" &&
     !!unit.technicalReviewedAt;
+  // Người soạn gắn mục tiêu nháp vào bài được cả khi giáo trình đã gửi hoặc đã duyệt
+  // áp dụng (BE B1); giáo trình đã lưu trữ thì BE trả LESSON_LOCKED.
+  const canMapOutcomes =
+    role === "curriculum_designer" &&
+    unit?.designerId === user?.id &&
+    !!unit &&
+    ["DRAFT", "PENDING_REVIEW", "APPROVED"].includes(unit.status);
+  // Cùng khóa cache với LessonOutcomeDialog nên gắn xong cảnh báo tự cập nhật.
+  // Lỗi tải thì trang vẫn dùng được, chỉ không có cảnh báo.
+  const outcomeSets = useLiveQuery(
+    ["outcome-sets", unit?.programId, "all"],
+    (signal) => academicApi.outcomeSets(unit!.programId, {}, signal),
+    canMapOutcomes,
+  );
+  const unlinkedGroups = unlinkedDraftOutcomes(outcomeSets.data ?? []);
+  const showOutcomeLessons = () =>
+    document
+      .getElementById("curriculum-lessons")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   const busy = [approve, remove, removeLesson, reorder, validation].some(
     (mutation) => mutation.isPending,
   );
@@ -307,7 +333,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     ready ? openEditor({ kind: "submit" }) : validation.mutate()
                   }
                 >
-                  {ready ? "Gửi thẩm định chuyên môn" : "Kiểm tra giáo trình"}
+                  {ready ? "Gửi duyệt" : "Kiểm tra giáo trình"}
                 </Button>
               )}
               {canTechnicalReview && (
@@ -319,12 +345,12 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                       ?.scrollIntoView({ behavior: "smooth" })
                   }
                 >
-                  Thẩm định chuyên môn
+                  Duyệt nội dung
                 </Button>
               )}
               {canConfirm && (
                 <Button disabled={busy} onClick={() => setConfirmApply(true)}>
-                  Xác nhận áp dụng
+                  Duyệt áp dụng
                 </Button>
               )}
               {canRevise && (
@@ -392,7 +418,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     {role === "center_manager" &&
                       !["PENDING_REVIEW", "APPROVED"].includes(unit.status) && (
                         <DropdownMenuItem disabled>
-                          Chưa có thao tác xác nhận
+                          Chưa có việc cần duyệt
                         </DropdownMenuItem>
                       )}
                   </DropdownMenuContent>
@@ -430,8 +456,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 <ComparisonNotice comparison={comparison} />
                 {canEdit && (
                   <p className="text-sm text-muted-foreground">
-                    Kiểm tra cấu trúc trước khi gửi giáo viên thẩm định. Bài
-                    kiểm tra được giáo viên tạo riêng theo buổi học.
+                    Kiểm tra cấu trúc trước khi gửi giáo viên duyệt nội dung.
+                    Bài kiểm tra được giáo viên tạo riêng theo buổi học.
                   </p>
                 )}
                 {unit.status === "APPROVED" && (
@@ -448,7 +474,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 role="status"
                 className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/60 dark:text-amber-200"
               >
-                <b>Chưa gửi thẩm định được.</b> {blockedReason}
+                <b>Chưa gửi duyệt được.</b> {blockedReason}
               </p>
             )}
             {showReadiness && readiness && (
@@ -474,7 +500,9 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 <CardContent className="space-y-3">
                   {unit.technicalReviewNote && (
                     <div>
-                      <p className="text-sm font-medium">Giáo viên thẩm định</p>
+                      <p className="text-sm font-medium">
+                        Giáo viên duyệt nội dung
+                      </p>
                       <p className="mt-1 whitespace-pre-wrap text-sm">
                         {unit.technicalReviewNote}
                       </p>
@@ -498,7 +526,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
               >
                 <p className="font-medium">
                   {ready
-                    ? "Cấu trúc giáo trình hợp lệ, có thể gửi thẩm định."
+                    ? "Cấu trúc giáo trình hợp lệ, có thể gửi duyệt."
                     : validation.data.revision !== unit.revision
                       ? "Nội dung đã thay đổi. Kiểm tra giáo trình lại trước khi gửi."
                       : "Giáo trình cần bổ sung."}{" "}
@@ -521,7 +549,13 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 )}
               </div>
             )}
-            <div className="space-y-4">
+            {canMapOutcomes && unlinkedGroups.length > 0 && (
+              <OutcomeLinkWarning
+                groups={unlinkedGroups}
+                onLink={showOutcomeLessons}
+              />
+            )}
+            <div id="curriculum-lessons" className="scroll-mt-24 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-semibold">Bài học ({regular.length})</h2>
                 <div className="flex flex-wrap gap-2">
@@ -623,6 +657,15 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                                 >
                                   Sửa
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy}
+                                  aria-label={`Gắn mục tiêu cho bài ${row.lesson.sequence}`}
+                                  onClick={() => setMappingLesson(row.lesson)}
+                                >
+                                  Gắn mục tiêu
+                                </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger
                                     render={
@@ -654,13 +697,6 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                                       Đưa bài xuống
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onClick={() =>
-                                        setMappingLesson(row.lesson)
-                                      }
-                                    >
-                                      Gắn CLO
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
                                       className="text-destructive"
                                       onClick={() => setDeleting(row.lesson)}
                                     >
@@ -670,15 +706,27 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                                 </DropdownMenu>
                               </div>
                             ) : (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  void setSelectedLessonId(row.lesson.id)
-                                }
-                              >
-                                Đọc
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    void setSelectedLessonId(row.lesson.id)
+                                  }
+                                >
+                                  Đọc
+                                </Button>
+                                {canMapOutcomes && row.change !== "removed" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    aria-label={`Gắn mục tiêu cho bài ${row.lesson.sequence}`}
+                                    onClick={() => setMappingLesson(row.lesson)}
+                                  >
+                                    Gắn mục tiêu
+                                  </Button>
+                                )}
+                              </div>
                             )}
                           </TableCell>
                         </TableRow>
@@ -724,8 +772,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   unit={unit}
                   onStateChange={setFormState}
                   onSaved={(approved) => {
-                    if (approved)
-                      setNotice("Đã lưu kết quả thẩm định chuyên môn.");
+                    if (approved) setNotice("Đã duyệt nội dung giáo trình.");
                     else router.push(ROUTES.TEACHER.CURRICULUM);
                   }}
                 />
@@ -741,7 +788,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   Trả lại để sửa
                 </Button>
                 <Button disabled={busy} onClick={() => setConfirmApply(true)}>
-                  Xác nhận áp dụng
+                  Duyệt áp dụng
                 </Button>
               </StickyFormFooter>
             )}
@@ -773,7 +820,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     onStateChange={setFormState}
                     onSaved={() =>
                       saved(
-                        "Đã lưu bài học. Kiểm tra lại cấu trúc trước khi gửi thẩm định.",
+                        "Đã lưu bài học. Kiểm tra lại cấu trúc trước khi gửi duyệt.",
                       )
                     }
                   />
@@ -830,10 +877,9 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 {editor?.kind === "submit" && canEdit && ready && (
                   <CurriculumSubmitForm
                     unit={unit}
+                    outcomeNote={unlinkedOutcomeSubmitNote(unlinkedGroups)}
                     onStateChange={setFormState}
-                    onSaved={() =>
-                      saved("Đã gửi giáo viên thẩm định chuyên môn.")
-                    }
+                    onSaved={() => saved("Đã gửi giáo viên duyệt nội dung.")}
                   />
                 )}
                 {editor?.kind === "technical-review" && canTechnicalReview && (
@@ -841,8 +887,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     unit={unit}
                     onStateChange={setFormState}
                     onSaved={(approved) => {
-                      if (approved)
-                        saved("Đã lưu kết quả thẩm định chuyên môn.");
+                      if (approved) saved("Đã duyệt nội dung giáo trình.");
                       else {
                         closeEditor();
                         router.push(ROUTES.TEACHER.CURRICULUM);
@@ -895,14 +940,14 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
             <ConfirmDialog
               open={confirmApply}
               onOpenChange={setConfirmApply}
-              title="Xác nhận áp dụng giáo trình?"
-              description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản tương lai chờ đến ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi đã sinh được giữ nguyên.`}
-              confirmText="Xác nhận áp dụng"
+              title="Duyệt áp dụng giáo trình?"
+              description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản cho kỳ sau chờ tới ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi học đã tạo được giữ nguyên.`}
+              confirmText="Duyệt áp dụng"
               isLoading={approve.isPending}
               onConfirm={async () => {
                 try {
                   await approve.mutateAsync(undefined);
-                  setNotice("Đã xác nhận giáo trình để áp dụng.");
+                  setNotice("Đã duyệt áp dụng giáo trình.");
                 } catch {
                   /* API feedback remains visible. */
                 }
@@ -933,10 +978,11 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 }
               }}
             />
-            {canEdit && (
+            {canMapOutcomes && (
               <LessonOutcomeDialog
                 lesson={mappingLesson}
                 programId={unit.programId}
+                isCurriculumApproved={unit.status === "APPROVED"}
                 onClose={() => setMappingLesson(null)}
               />
             )}

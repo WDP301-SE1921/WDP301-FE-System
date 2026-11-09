@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,7 @@ import {
   useQueryStates,
 } from "nuqs";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,17 +58,23 @@ import { RowActions } from "@/components/shared/data-table/row-actions";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { ClassRoster } from "@/components/shared/academic/class-roster";
 import { toast } from "@/components/ui/toast";
+import { canAccessPath } from "@/constants/role-access";
 import { ROUTES } from "@/constants/routes";
 import { subjectDotClass } from "@/constants/subjects";
 import { apiRequest } from "@/lib/api/client";
 import { calendarDateLabel } from "@/lib/calendar-date";
 import { cn } from "@/lib/utils";
+import { useCurrentRole } from "@/hooks/use-current-role";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { registrationApi } from "../api";
 import { todayInVietnam } from "../calendar";
-import { canOpenRegistration, useClassStateMutation } from "../class-state";
+import {
+  openRegistrationBlocker,
+  useClassStateMutation,
+  type OpenRegistrationBlocker,
+} from "../class-state";
 import { isSubstituteSession, useTeacherNames } from "../teacher-names";
 import {
   registrationClassSchema,
@@ -76,6 +83,7 @@ import {
   type SchedulesInput,
 } from "../schemas";
 import { ApiFeedback, FieldError } from "./api-feedback";
+import { MoneyInput } from "./money-input";
 import { ApiForm } from "@/components/shared/forms/api-form";
 import { CompareTable } from "@/components/shared/display/compare-table";
 import { AffectedSessions } from "@/components/shared/display/affected-sessions";
@@ -184,6 +192,89 @@ function ClassCreateView() {
   );
 }
 
+const REGISTRATION_BLOCKER_ID = "open-registration-blocker";
+const WEEKLY_SCHEDULE_ID = "class-weekly-schedule";
+
+/** Một dòng lý do nút "Mở đăng ký" đang khóa, kèm đường tới đúng chỗ phải sửa. */
+function RegistrationBlockerNotice({
+  blocker,
+  programId,
+  classId,
+  onShowSchedule,
+}: {
+  blocker: OpenRegistrationBlocker;
+  programId: string;
+  classId: string;
+  onShowSchedule: () => void;
+}) {
+  const role = useCurrentRole();
+  const prefix = "Chưa mở đăng ký được: ";
+  const scheduleAction = (label: string) => (
+    <Button
+      size="sm"
+      variant="outline"
+      className="ml-2 align-baseline"
+      onClick={onShowSchedule}
+    >
+      {label}
+    </Button>
+  );
+  let content: ReactNode;
+  switch (blocker.kind) {
+    case "INACTIVE":
+      content = `${prefix}lớp đang ngừng hoạt động. Kích hoạt lớp ở menu ⋯ trước.`;
+      break;
+    case "FREQUENCY_MISSING":
+      content = (
+        <>
+          {prefix}khóa {blocker.programName} chưa có số buổi/tuần.{" "}
+          {canAccessPath(role, ROUTES.MANAGER.CURRICULUM) ? (
+            <Link
+              href={`${ROUTES.MANAGER.CURRICULUM}?tab=programs&editProgram=${encodeURIComponent(programId)}&returnTo=${encodeURIComponent(ROUTES.MANAGER.CLASS_DETAIL(classId))}`}
+              className="font-medium underline underline-offset-4"
+            >
+              Đặt số buổi/tuần cho khóa
+            </Link>
+          ) : (
+            "Nhờ Quản lý đặt số buổi/tuần cho khóa."
+          )}
+        </>
+      );
+      break;
+    case "SCHEDULE_EMPTY":
+      content = (
+        <>
+          {prefix}lớp chưa có lịch tuần (cần {blocker.expected} khung giờ).
+          {scheduleAction("Nhập lịch tuần")}
+        </>
+      );
+      break;
+    case "SCHEDULE_SHORT":
+      content = (
+        <>
+          {prefix}lịch tuần đã lưu có {blocker.count}/{blocker.expected} khung
+          giờ.
+          {scheduleAction("Thêm khung giờ")}
+        </>
+      );
+      break;
+    case "SCHEDULE_EXTRA":
+      content = (
+        <>
+          {prefix}lịch tuần có {blocker.count} khung giờ, khóa chỉ có{" "}
+          {blocker.expected} buổi/tuần.
+          {scheduleAction("Sửa lịch tuần")}
+        </>
+      );
+      break;
+  }
+  return (
+    <Alert variant="warning" role="status" id={REGISTRATION_BLOCKER_ID}>
+      {content}
+    </Alert>
+  );
+}
+
 function classStatusBadge(classroom: RegistrationClass) {
   return classroom.isActive === false
     ? { label: "Ngừng hoạt động", variant: "secondary" as const }
@@ -230,6 +321,16 @@ function ClassDetailHub({ classId }: { classId: string }) {
     null,
   );
   const status = classroom ? classStatusBadge(classroom) : null;
+  const blocker = classroom ? openRegistrationBlocker(classroom) : null;
+  const showWeeklySchedule = async () => {
+    await setView({ tab: "overview" });
+    // Thẻ lịch tuần chỉ có ở tab Tổng quan: đợi tab vẽ xong rồi mới cuộn tới.
+    requestAnimationFrame(() =>
+      document
+        .getElementById(WEEKLY_SCHEDULE_ID)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
   const teacherName =
     classroom?.teacher?.displayName ||
     classroom?.teacher?.email ||
@@ -258,10 +359,8 @@ function ClassDetailHub({ classId }: { classId: string }) {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                disabled={
-                  classState.isPending ||
-                  (!classroom.isOpen && !canOpenRegistration(classroom))
-                }
+                disabled={classState.isPending || !!blocker}
+                aria-describedby={blocker ? REGISTRATION_BLOCKER_ID : undefined}
                 isLoading={classState.isPending}
                 onClick={() =>
                   classState.mutate({
@@ -320,6 +419,14 @@ function ClassDetailHub({ classId }: { classId: string }) {
             </Badge>
           )}
         </div>
+      )}
+      {classroom && blocker && (
+        <RegistrationBlockerNotice
+          blocker={blocker}
+          programId={classroom.programId}
+          classId={classroom.id}
+          onShowSchedule={() => void showWeeklySchedule()}
+        />
       )}
       <ApiFeedback error={classState.error} />
       <ApiFeedback error={remove.error} />
@@ -395,7 +502,7 @@ function ClassDetailHub({ classId }: { classId: string }) {
                     error={units.error}
                     retry={() => void units.refetch()}
                   />
-                  <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))]">
+                  <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))]">
                     {!sessions.isError && (
                       <UpcomingSessions
                         classroom={classroom}
@@ -539,7 +646,8 @@ function ClassDetailsForm({
       teacherId: classroom?.teacherId ?? "",
       roomId: classroom?.roomId ?? "",
       capacity: classroom?.capacity ?? 20,
-      monthlyFee: Number(classroom?.monthlyFee ?? 0),
+      // Lớp mới để trống học phí để người tạo phải nhập; 0 đồng vẫn hợp lệ nếu gõ 0.
+      monthlyFee: classroom ? Number(classroom.monthlyFee) : Number.NaN,
     },
   });
   const refresh = () => {
@@ -685,16 +793,28 @@ function ClassDetailsForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="class-fee">Học phí / tháng (VND)</Label>
-                <Input
-                  id="class-fee"
-                  type="number"
-                  min={0}
-                  step={1000}
-                  {...form.register("monthlyFee", { valueAsNumber: true })}
+                <Controller
+                  control={form.control}
+                  name="monthlyFee"
+                  render={({ field, fieldState }) => (
+                    <MoneyInput
+                      id="class-fee"
+                      name={field.name}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      inputRef={field.ref}
+                      disabled={save.isPending}
+                      invalid={!!fieldState.error}
+                      errorId="class-fee-error"
+                    />
+                  )}
                 />
-                <FieldError
-                  message={form.formState.errors.monthlyFee?.message}
-                />
+                <div id="class-fee-error">
+                  <FieldError
+                    message={form.formState.errors.monthlyFee?.message}
+                  />
+                </div>
               </div>
             </div>
             <div className={cn("space-y-2", !classroom && "sm:col-span-2")}>
@@ -808,29 +928,32 @@ function ClassSchedules({ classroom }: { classroom: RegistrationClass }) {
     queryFn: ({ signal }) => registrationApi.schedules(classroom.id, signal),
     retry: false,
   });
+  // Bọc cả lúc đang tải để lời nhắc "Mở đăng ký" luôn có chỗ cuộn tới.
   return (
-    <AsyncBoundary
-      isLoading={slots.isPending}
-      isError={slots.isError}
-      error={slots.error}
-      onRetry={() => void slots.refetch()}
-    >
-      {slots.data &&
-        (classroom.scheduleLocked === true ? (
-          <LockedSchedule classroom={classroom} slots={slots.data} />
-        ) : (
-          <ClassSchedulesForm
-            key={JSON.stringify([
-              slots.data,
-              classroom.scheduleLocked,
-              classroom.isOpen,
-              classroom.program.sessionsPerWeek,
-            ])}
-            classroom={classroom}
-            slots={slots.data}
-          />
-        ))}
-    </AsyncBoundary>
+    <section id={WEEKLY_SCHEDULE_ID} className="scroll-mt-24">
+      <AsyncBoundary
+        isLoading={slots.isPending}
+        isError={slots.isError}
+        error={slots.error}
+        onRetry={() => void slots.refetch()}
+      >
+        {slots.data &&
+          (classroom.scheduleLocked === true ? (
+            <LockedSchedule classroom={classroom} slots={slots.data} />
+          ) : (
+            <ClassSchedulesForm
+              key={JSON.stringify([
+                slots.data,
+                classroom.scheduleLocked,
+                classroom.isOpen,
+                classroom.program.sessionsPerWeek,
+              ])}
+              classroom={classroom}
+              slots={slots.data}
+            />
+          ))}
+      </AsyncBoundary>
+    </section>
   );
 }
 
@@ -1271,7 +1394,7 @@ function UpcomingSessions({
         )}
         {!isPending && !upcoming.length && (
           <p className="text-sm text-muted-foreground">
-            Chưa có buổi sắp tới. Sinh lịch từ giáo trình đã duyệt.
+            Chưa có buổi sắp tới. Tạo lịch học từ giáo trình đã duyệt áp dụng.
           </p>
         )}
         {upcoming.map((session) => {
@@ -1364,7 +1487,7 @@ function CurriculumProgress({
           <div className="space-y-1.5">
             <p className="font-medium">{current.title}</p>
             <p className="text-xs text-muted-foreground">
-              Phiên bản {current.version}
+              Bản {current.version}
               {lessons !== undefined ? ` · ${lessons} bài` : ""} · tới{" "}
               {calendarDateLabel(current.toDate.slice(0, 10))} · đã dạy {taught}{" "}
               bài
@@ -1465,7 +1588,7 @@ function ClassSessionsPanel({
             variant="outline"
             render={<Link href={ROUTES.MANAGER.CLASS_SESSIONS(classroom.id)} />}
           >
-            Giáo trình và sinh lịch
+            Giáo trình và lịch học
           </Button>
         </div>
       </CardHeader>

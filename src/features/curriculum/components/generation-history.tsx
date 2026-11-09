@@ -27,7 +27,7 @@ export function GenerationHistory({ classId }: { classId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Giáo trình đã áp dụng và lịch sử sinh lịch</CardTitle>
+        <CardTitle>Giáo trình đã áp dụng và lịch sử tạo lịch học</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <AsyncBoundary
@@ -36,7 +36,7 @@ export function GenerationHistory({ classId }: { classId: string }) {
           error={list.error}
           onRetry={() => void list.refetch()}
           data={list.data}
-          emptyProps={{ title: "Chưa có đợt sinh lịch" }}
+          emptyProps={{ title: "Chưa có lần tạo lịch học nào" }}
         >
           {list.data?.map((row) => (
             <div

@@ -9,7 +9,7 @@ const ERROR_TEXT: Record<string, string> = {
   UNIT_REVISION_REQUIRED:
     "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
   UNIT_APPROVAL_REQUIRED:
-    "Giáo trình cần được giáo viên duyệt chuyên môn và Quản lý xác nhận trước khi sử dụng bài học.",
+    "Giáo trình cần được giáo viên duyệt nội dung và Quản lý duyệt áp dụng trước khi dùng bài học.",
   INVALID_ASSESSMENT_TYPE:
     "Bài kiểm tra cần chọn loại kiểm tra và buổi học; bài tập không dùng loại kiểm tra.",
   INVALID_ASSESSMENT_SESSION:
@@ -19,12 +19,12 @@ const ERROR_TEXT: Record<string, string> = {
   ASSIGNMENT_IMPORT_AI_FAILED:
     "Chưa trích được câu hỏi từ file. Thử lại hoặc dùng CSV mẫu.",
   INVALID_CURRICULUM_REVIEWER:
-    "Chọn giáo viên đang phụ trách lớp thuộc khóa học này để duyệt chuyên môn.",
+    "Chọn giáo viên đang phụ trách lớp thuộc khóa học này để duyệt nội dung.",
   UNIT_NOT_PENDING_TECHNICAL_REVIEW:
-    "Giáo trình không còn chờ duyệt chuyên môn. Tải lại để xem trạng thái mới.",
+    "Giáo trình không còn chờ duyệt nội dung. Tải lại để xem trạng thái mới.",
   REVIEW_NOTE_REQUIRED: "Nhập nội dung cần sửa trước khi trả lại giáo trình.",
   TECHNICAL_REVIEW_REQUIRED:
-    "Giáo viên phụ trách cần duyệt chuyên môn trước khi Quản lý xác nhận sử dụng.",
+    "Giáo viên phụ trách cần duyệt nội dung trước khi Quản lý duyệt áp dụng.",
   FUTURE_CURRICULUM_PERIOD_REQUIRED:
     "Bản sửa cần áp dụng cho kỳ tiếp theo, sau kỳ hiện tại và sau hôm nay.",
   TESTS_MANAGED_BY_TEACHER:
@@ -133,15 +133,15 @@ const ERROR_TEXT: Record<string, string> = {
     "Lớp đã có dữ liệu. Xử lý các ghi danh và buổi học trước khi ngừng sử dụng.",
   CLASS_INACTIVE: "Lớp đã ngừng hoạt động.",
   REVISION_CONFLICT:
-    "Dữ liệu đã được người khác sửa. Tải lại để xem phiên bản mới rồi thực hiện lại.",
+    "Dữ liệu đã được người khác sửa. Tải lại để xem bản mới rồi thực hiện lại.",
   PREVIEW_STALE:
-    "Lịch xem trước đã hết hạn hoặc cấu hình đã thay đổi. Xem trước lại trước khi sinh lịch.",
+    "Lịch xem trước đã hết hạn hoặc thông tin lớp đã thay đổi. Xem trước lại rồi mới tạo lịch học.",
   IMPORT_PREVIEW_STALE:
     "Bản xem trước CSV đã hết hạn hoặc nháp đã thay đổi. Chọn file và xem trước lại.",
-  UNIT_NOT_PENDING: "Học phần phải được gửi duyệt trước khi quản lý xem xét.",
+  UNIT_NOT_PENDING: "Giáo trình phải được gửi duyệt trước khi Quản lý duyệt áp dụng.",
   EMPTY_CURRICULUM: "Thêm ít nhất một bài học trước khi gửi duyệt.",
   UNIT_IN_USE:
-    "Học phần có dữ liệu liên quan nên chưa thể xóa hoặc thay toàn bộ bài.",
+    "Giáo trình có dữ liệu liên quan nên chưa thể xóa hoặc thay toàn bộ bài.",
   LESSON_IN_USE: "Bài học có dữ liệu liên quan nên chưa thể xóa.",
   CSV_INVALID:
     "File CSV không hợp lệ. Kiểm tra header, số cột và định dạng UTF-8.",
@@ -161,10 +161,10 @@ const ERROR_TEXT: Record<string, string> = {
   BILL_NOT_FOUND: "Không tìm thấy bill. Kiểm tra lại mã đăng ký.",
   BILL_CLASS_CHANGED:
     "Thông tin hoặc lịch lớp đã thay đổi sau khi lập bill. Hủy bản nháp này và lập bill mới trước khi thu tiền.",
-  UNIT_NOT_FOUND: "Không tìm thấy học phần. Vui lòng tải lại danh sách.",
-  PROGRAM_NOT_FOUND: "Không tìm thấy chương trình đào tạo.",
+  UNIT_NOT_FOUND: "Không tìm thấy giáo trình. Vui lòng tải lại danh sách.",
+  PROGRAM_NOT_FOUND: "Không tìm thấy khóa học.",
   PROGRAM_FREQUENCY_NOT_CONFIGURED:
-    "Khóa học chưa cấu hình số buổi/tuần. Quản lý cần cập nhật khóa trước khi tiếp tục.",
+    "Khóa học chưa đặt số buổi/tuần. Quản lý cần đặt số buổi/tuần cho khóa trước khi tiếp tục.",
   CLASS_WEEKLY_SESSION_COUNT_MISMATCH:
     "Số khung giờ lịch tuần chưa đúng số buổi/tuần của khóa.",
   PROGRAM_FREQUENCY_CHANGE_CONFLICT:
@@ -172,23 +172,23 @@ const ERROR_TEXT: Record<string, string> = {
   CURRICULUM_EFFECTIVE_PERIOD_CONFLICT:
     "Khoảng hiệu lực chồng với giáo trình đã duyệt của khóa. Tải lại và chọn kỳ không giao ngày.",
   UNIT_LOCKED:
-    "Chỉ sửa bản nháp của bạn. Học phần đã duyệt cần tạo phiên bản nháp mới.",
-  UNIT_NOT_APPROVED: "Học phần chưa được quản lý duyệt.",
-  LESSON_NOT_FOUND: "Không tìm thấy bài học trong học phần.",
+    "Chỉ sửa được bản nháp của bạn. Giáo trình đã duyệt áp dụng cần tạo bản nháp mới.",
+  UNIT_NOT_APPROVED: "Giáo trình chưa được Quản lý duyệt áp dụng.",
+  LESSON_NOT_FOUND: "Không tìm thấy bài học trong giáo trình.",
   LESSON_NOT_APPROVED: "Nội dung bài học chưa được duyệt.",
-  INSUFFICIENT_LESSONS: "Chưa đủ bài học cho lịch lớp trong khoảng học phần.",
+  INSUFFICIENT_LESSONS: "Giáo trình chưa đủ bài cho lịch lớp trong kỳ áp dụng.",
   LESSON_SEQUENCE_GAP: "Thứ tự bài học phải liên tục từ 1.",
   MISSING_MONTHLY_TEST: "Cần soạn kiểm tra cho mỗi tháng có lịch học.",
   NO_SCHEDULED_CLASS:
-    "Chưa có lớp cùng môn và khối với lịch tuần để duyệt học phần.",
-  CURRICULUM_MISMATCH: "Học phần phải thuộc đúng khóa học của lớp.",
-  RANGE_OUTSIDE_UNIT: "Khoảng sinh lịch phải nằm trong khoảng học phần.",
+    "Chưa có lớp cùng môn và khối với lịch tuần để duyệt giáo trình.",
+  CURRICULUM_MISMATCH: "Giáo trình phải thuộc đúng khóa học của lớp.",
+  RANGE_OUTSIDE_UNIT: "Khoảng ngày tạo lịch học phải nằm trong kỳ áp dụng của giáo trình.",
   NO_SESSIONS: "Không có buổi học theo lịch tuần trong khoảng ngày đã chọn.",
   SCHEDULE_CONFLICT:
     "Lịch lớp hoặc giáo viên bị trùng. Kiểm tra các xung đột ở lịch xem trước.",
   INVALID_DATE_RANGE: "Ngày kết thúc phải từ ngày bắt đầu trở đi.",
   DATE_RANGE_TOO_LONG: "Khoảng ngày tối đa 366 ngày.",
-  TEST_OUTSIDE_UNIT: "Tháng kiểm tra phải nằm trong khoảng học phần.",
+  TEST_OUTSIDE_UNIT: "Tháng kiểm tra phải nằm trong kỳ áp dụng của giáo trình.",
   IDEMPOTENCY_CONFLICT:
     "Khóa thao tác đã dùng với nội dung khác. Đọc lại thao tác đã lưu.",
   IDEMPOTENCY_KEY_REQUIRED: "Thiếu khóa xác nhận thao tác. Vui lòng thử lại.",
@@ -263,7 +263,7 @@ const ERROR_TEXT: Record<string, string> = {
   ROSTER_MAKEUP_CONFLICT:
     "Học viên đang có lịch học bù liên quan đến buổi này. Xử lý lịch học bù trước.",
   GENERATION_NOT_FOUND:
-    "Không tìm thấy đợt sinh lịch. Tải lại lịch sử sinh lịch.",
+    "Không tìm thấy lần tạo lịch học. Tải lại lịch sử tạo lịch học.",
   INVALID_DESIGNER:
     "Người soạn phải là tài khoản Thiết kế giáo trình đang hoạt động.",
   INVALID_LESSON: "Bài học không hợp lệ hoặc không thuộc khóa học đã chọn.",
@@ -277,7 +277,7 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_TITLE: "Tên nội dung bắt buộc, tối đa 255 ký tự.",
   INVALID_CONTENT: "Nội dung bắt buộc, tối đa 50.000 ký tự.",
   INVALID_SEQUENCE: "Số thứ tự bài phải liên tục theo chế độ nhập.",
-  INVALID_MONTH: "Tháng kiểm tra phải nằm trong học phần và không trùng.",
+  INVALID_MONTH: "Tháng kiểm tra phải nằm trong kỳ áp dụng của giáo trình và không trùng.",
   INVALID_ANSWER_KEY: "Đáp án đúng của câu hỏi không hợp lệ. Kiểm tra lại đề.",
   RUBRIC_REQUIRED: "Câu tự luận cần có tiêu chí chấm.",
   INVALID_CHOICE: "Lựa chọn trắc nghiệm không hợp lệ.",
@@ -307,25 +307,25 @@ const ERROR_TEXT: Record<string, string> = {
   ANALYTICS_TOO_LARGE:
     "Dữ liệu thống kê quá lớn. Thu hẹp khoảng ngày hoặc bộ lọc.",
   OUTCOME_SET_REQUIRED:
-    "Khóa học đã có bộ CLO được duyệt. Chọn bộ CLO và gắn CLO cho từng câu trước khi giao bài.",
+    "Khóa học đã có bộ mục tiêu được duyệt áp dụng. Chọn bộ mục tiêu và gắn mục tiêu cho từng câu trước khi giao bài.",
   INVALID_OUTCOME_SET:
-    "Bộ CLO không còn hợp lệ cho khóa học này. Chọn một bộ đã được duyệt của khóa.",
+    "Bộ mục tiêu không còn hợp lệ cho khóa học này. Chọn một bộ đã được duyệt áp dụng của khóa.",
   OUTCOME_MAPPING_INCOMPLETE:
-    "Còn câu hỏi chưa gắn CLO. Gắn CLO thuộc bộ đã chọn cho mọi câu.",
+    "Còn câu hỏi chưa gắn mục tiêu. Gắn mục tiêu thuộc bộ đã chọn cho mọi câu.",
   OUTCOME_SET_LOCKED:
-    "Bộ CLO không còn ở trạng thái nháp nên không sửa được. Tạo phiên bản mới nếu cần thay đổi.",
+    "Bộ mục tiêu này đã gửi duyệt hoặc đã duyệt nên không đổi được. Tải lại trang để xem dữ liệu mới; cần thay đổi thì tạo bản mới của bộ mục tiêu.",
   OUTCOME_SET_INCOMPLETE:
-    "Mọi CLO phải được chính bạn xác minh nguồn và có ít nhất một bài học trước khi duyệt chuyên môn.",
-  OUTCOME_SET_NOT_FOUND: "Không tìm thấy bộ CLO. Tải lại danh sách.",
+    "Mọi mục tiêu phải được chính bạn xác minh nguồn và có ít nhất một bài học trước khi duyệt nội dung.",
+  OUTCOME_SET_NOT_FOUND: "Không tìm thấy bộ mục tiêu. Tải lại danh sách.",
   OUTCOME_SET_NOT_REVIEWED:
-    "Chỉ trả về nháp được bộ CLO đang chờ Quản lý duyệt.",
-  OUTCOME_NOT_FOUND: "Không tìm thấy CLO trong bộ. Tải lại danh sách.",
+    "Chỉ trả về nháp được bộ mục tiêu đang chờ Quản lý duyệt áp dụng.",
+  OUTCOME_NOT_FOUND: "Không tìm thấy mục tiêu trong bộ. Tải lại danh sách.",
   SOURCE_REVIEW_INCOMPLETE:
     "Ghi rõ mục/trang nguồn và giải thích đối chiếu (mỗi ô ít nhất 12 ký tự).",
   INVALID_OUTCOME_MAPPING:
-    "Chỉ gắn CLO thuộc bộ của cùng khóa học với bài học.",
+    "Chỉ gắn mục tiêu thuộc bộ của cùng khóa học với bài học.",
   LESSON_LOCKED:
-    "Chỉ gắn CLO cho bài học ở bản nháp. Bài đã duyệt cần tạo giáo trình kỳ mới.",
+    "Bài thuộc giáo trình đã lưu trữ nên không gắn mục tiêu được. Hãy gắn vào bài của giáo trình đang dùng hoặc của kỳ tiếp theo.",
 };
 export class ApiError extends Error {
   constructor(

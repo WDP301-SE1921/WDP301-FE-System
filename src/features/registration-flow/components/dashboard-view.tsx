@@ -41,8 +41,8 @@ export function RegistrationDashboardView({ manager }: { manager: boolean }) {
             ROUTES.MANAGER.CLASSES,
           ],
           [
-            "Chương trình",
-            "Tạo chương trình theo khối và môn học.",
+            "Khóa học",
+            "Tạo khóa học theo môn và khối.",
             ROUTES.MANAGER.CATALOG,
           ],
         ]

@@ -97,7 +97,7 @@ export function CurriculumReadinessCards({
     },
     {
       state: readiness.reviewers.length ? "ok" : "bad",
-      label: "Có giáo viên thẩm định",
+      label: "Có giáo viên duyệt nội dung",
       detail: readiness.reviewers.length
         ? reviewerNames
         : readiness.activeClasses
@@ -127,7 +127,7 @@ export function CurriculumReadinessCards({
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Điều kiện gửi thẩm định</CardTitle>
+          <CardTitle>Điều kiện gửi duyệt</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <ul className="divide-y divide-border">
@@ -158,7 +158,7 @@ export function CurriculumReadinessCards({
           </ul>
           {readiness.blockedReason && (
             <p className="text-xs text-muted-foreground">
-              Thứ tự bắt buộc: <b>Khóa học → Lớp có giáo viên → Gửi thẩm định</b>.
+              Thứ tự bắt buộc: <b>Khóa học → Lớp có giáo viên → Gửi duyệt</b>.
               {canManageClasses ? (
                 <>
                   {" "}
@@ -237,7 +237,7 @@ export function CurriculumReadinessCards({
               </div>
               <p className="text-xs text-muted-foreground">
                 Hiện có <b>{lessonCount} bài</b>. Lớp nào cần nhiều bài hơn số đang có thì Quản lý
-                không sinh được lịch cho lớp đó; lớp học nhanh hơn thì thêm bài ôn tập / dự phòng.
+                không tạo được lịch học cho lớp đó; lớp học nhanh hơn thì thêm bài ôn tập / dự phòng.
               </p>
             </>
           )}

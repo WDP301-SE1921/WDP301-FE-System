@@ -332,7 +332,7 @@ export function CurriculumImport({
             open={confirm}
             onOpenChange={setConfirm}
             title="Thay toàn bộ nội dung?"
-            description="Các bài học trong bản nháp sẽ được thay bằng danh sách vừa xem trước."
+            description="Các bài học trong bản nháp sẽ được thay bằng danh sách vừa xem trước. Mục tiêu đã gắn cho các bài này sẽ bị gỡ, bạn cần gắn lại sau khi nhập."
             variant="danger"
             isLoading={commit.isPending}
             onConfirm={async () => {

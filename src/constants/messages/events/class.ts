@@ -76,8 +76,8 @@ export const CLASS_MSG = {
   FIELD_GRADE_PLACEHOLDER: "Chọn khối",
   FIELD_CAPACITY: "Sĩ số tối đa",
   FIELD_CAPACITY_UNIT: "học sinh",
-  FIELD_PROGRAM: "Chương trình đào tạo áp dụng",
-  FIELD_PROGRAM_PLACEHOLDER: "Chọn chương trình",
+  FIELD_PROGRAM: "Khóa học áp dụng",
+  FIELD_PROGRAM_PLACEHOLDER: "Chọn khóa học",
   FIELD_PROGRAM_LESSONS: (count: number) => `${count} bài học theo khung chuẩn`,
   FIELD_WEEKDAYS: "Chọn các ngày học trong tuần",
   FIELD_WEEKDAYS_SELECTED: (count: number, days: string) =>
@@ -115,7 +115,7 @@ export const CLASS_MSG = {
   PREVIEW_FREQUENCY: "Tần suất học",
   PREVIEW_FREQUENCY_UNIT: (count: number) => `${count} buổi / tuần`,
   PREVIEW_LIST_TITLE: "Lịch trình chi tiết các buổi học đầu tiên",
-  PREVIEW_EMPTY: "Chọn chương trình và lịch cố định để xem trước buổi học",
+  PREVIEW_EMPTY: "Chọn khóa học và lịch cố định để xem trước buổi học",
   PREVIEW_FOOTER: "Giáo trình điện tử EduGrade",
   PREVIEW_FOOTER_SUB: "Đã đính kèm sẵn bài giảng",
 

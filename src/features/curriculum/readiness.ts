@@ -68,7 +68,7 @@ export function curriculumReadiness(input: {
   const estimate = estimateLessons(input.fromDate.slice(0, 10), input.toDate.slice(0, 10), [], input.program?.sessionsPerWeek);
   const programName = input.program?.name ?? "này";
   const blockedReason = !classes.length
-    ? `Khóa ${programName} chưa có lớp nào, nên chưa có giáo viên để thẩm định. Quản lý cần tạo lớp cho khóa và phân công giáo viên.`
+    ? `Khóa ${programName} chưa có lớp nào, nên chưa có giáo viên để duyệt nội dung. Quản lý cần tạo lớp cho khóa và phân công giáo viên.`
     : input.reviewers && !reviewers.length
       ? `Các lớp của khóa ${programName} chưa có giáo viên phụ trách. Quản lý cần phân công giáo viên trước.`
       : "";

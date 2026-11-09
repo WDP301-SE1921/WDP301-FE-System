@@ -45,11 +45,11 @@ type OutcomeDialog =
 
 const ROLE_HINT: Partial<Record<WebRole, string>> = {
   curriculum_designer:
-    "Soạn CLO cho khóa học, ghi rõ nguồn căn cứ rồi gắn CLO cho bài học ở giáo trình nháp. Giáo viên của khóa xác minh, sau đó Quản lý duyệt.",
+    "Soạn mục tiêu cho khóa học, ghi rõ nguồn căn cứ rồi gắn mục tiêu cho bài học ở trang giáo trình. Giáo viên của khóa xác minh và duyệt nội dung, sau đó Quản lý duyệt áp dụng.",
   teacher:
-    "Đối chiếu từng CLO với đúng mục/trang của nguồn rồi xác minh. Duyệt chuyên môn khi bạn đã tự xác minh mọi CLO và mỗi CLO có bài học.",
+    "Đối chiếu từng mục tiêu với đúng mục/trang của nguồn rồi xác minh. Duyệt nội dung khi bạn đã tự xác minh mọi mục tiêu và mỗi mục tiêu có bài học.",
   center_manager:
-    "Duyệt bộ CLO sau khi giáo viên đã duyệt chuyên môn. Từ khi khóa có bộ được duyệt, bài tập mới phải gắn CLO trước khi giao.",
+    "Duyệt áp dụng bộ mục tiêu sau khi giáo viên đã duyệt nội dung. Từ khi khóa có bộ được duyệt áp dụng, bài tập mới phải gắn mục tiêu trước khi giao.",
 };
 const SET_BADGE: Record<OutcomeSet["status"], "neutral" | "warning" | "success"> = {
   DRAFT: "neutral",
@@ -73,7 +73,7 @@ export function OutcomeSetsPanel({ programId }: { programId: string }) {
       {user.role === "curriculum_designer" && (
         <div className="flex justify-end">
           <Button onClick={() => setDialog({ kind: "create" })}>
-            Tạo bộ CLO
+            Tạo bộ mục tiêu
           </Button>
         </div>
       )}
@@ -84,11 +84,11 @@ export function OutcomeSetsPanel({ programId }: { programId: string }) {
         onRetry={() => void sets.refetch()}
         data={sets.data}
         emptyProps={{
-          title: "Khóa học chưa có bộ CLO",
+          title: "Khóa học chưa có bộ mục tiêu",
           description:
             user.role === "curriculum_designer"
-              ? "Tạo bộ CLO đầu tiên cho khóa học này."
-              : "Thiết kế giáo trình chưa soạn chuẩn đầu ra cho khóa học này.",
+              ? "Tạo bộ mục tiêu đầu tiên cho khóa học này."
+              : "Thiết kế giáo trình chưa soạn mục tiêu cho khóa học này.",
         }}
       >
         <div className="space-y-4">
@@ -145,7 +145,7 @@ function OutcomeSetCard({
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle>
-          {set.level} · phiên bản {set.version}
+          {set.level} · bản {set.version}
         </CardTitle>
         <Badge variant={SET_BADGE[set.status]}>
           {OUTCOME_SET_STATUS_TEXT[set.status]}
@@ -216,7 +216,7 @@ function OutcomeSetCard({
                           variant="outline"
                           onClick={() => onAction({ kind: "outcome", set, outcome })}
                         >
-                          Sửa CLO
+                          Sửa mục tiêu
                         </Button>
                         <Button
                           size="sm"
@@ -226,7 +226,7 @@ function OutcomeSetCard({
                             onAction({ kind: "delete-outcome", set, outcome })
                           }
                         >
-                          Xóa CLO
+                          Xóa mục tiêu
                         </Button>
                       </>
                     )}
@@ -248,17 +248,17 @@ function OutcomeSetCard({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Bộ chưa có CLO nào.</p>
+          <p className="text-sm text-muted-foreground">Bộ chưa có mục tiêu nào.</p>
         )}
         {actions.canEditOutcomes && (
           <p className="text-xs text-muted-foreground">
-            Gắn bài học cho CLO ở trang giáo trình nháp của khóa: nút “Gắn CLO”
-            trong thao tác của từng bài.
+            Gắn bài học cho mục tiêu ở trang giáo trình của khóa: nút “Gắn mục
+            tiêu” ở từng bài.
           </p>
         )}
         {blockers.length > 0 && (
           <div className="space-y-1 rounded-xl bg-muted p-4 text-sm">
-            <p className="font-medium">Chưa duyệt chuyên môn được:</p>
+            <p className="font-medium">Chưa duyệt nội dung được:</p>
             <ul className="list-disc space-y-1 pl-5">
               {blockers.map((blocker) => (
                 <li key={blocker}>{blocker}</li>
@@ -273,7 +273,7 @@ function OutcomeSetCard({
                 variant="outline"
                 onClick={() => onAction({ kind: "outcome", set })}
               >
-                Thêm CLO
+                Thêm mục tiêu
               </Button>
               <Button
                 variant="outline"
@@ -286,7 +286,7 @@ function OutcomeSetCard({
                 className="text-destructive hover:bg-destructive/10"
                 onClick={() => onAction({ kind: "delete-set", set })}
               >
-                Xóa bộ CLO
+                Xóa bộ mục tiêu
               </Button>
             </>
           )}
@@ -295,12 +295,12 @@ function OutcomeSetCard({
               disabled={blockers.length > 0}
               onClick={() => onAction({ kind: "technical-approve", set })}
             >
-              Duyệt chuyên môn
+              Duyệt nội dung
             </Button>
           )}
           {actions.canApprove && (
             <Button onClick={() => onAction({ kind: "approve", set })}>
-              Duyệt bộ CLO
+              Duyệt áp dụng
             </Button>
           )}
           {actions.canRequestChanges && (
@@ -316,7 +316,7 @@ function OutcomeSetCard({
               variant="outline"
               onClick={() => onAction({ kind: "copy", set })}
             >
-              Tạo phiên bản mới từ bộ này
+              Tạo bản mới từ bộ này
             </Button>
           )}
         </div>
@@ -344,9 +344,9 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>Sửa cấp độ bộ CLO</DialogTitle>
+          <DialogTitle>Sửa cấp độ bộ mục tiêu</DialogTitle>
           <DialogDescription>
-            Đổi tên cấp độ hiển thị của bộ CLO (phiên bản {dialog.set.version}).
+            Đổi tên cấp độ hiển thị của bộ mục tiêu (bản {dialog.set.version}).
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -364,7 +364,7 @@ function OutcomeDialogBody({
           submitLabel="Lưu thay đổi"
           successMessage={false}
           onSubmit={(value) => outcomeApi.updateSet(dialog.set.id, value)}
-          onSuccess={done("Đã cập nhật cấp độ bộ CLO.")}
+          onSuccess={done("Đã cập nhật cấp độ bộ mục tiêu.")}
         />
       </>
     );
@@ -373,9 +373,9 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>Xóa bộ CLO</DialogTitle>
+          <DialogTitle>Xóa bộ mục tiêu</DialogTitle>
           <DialogDescription>
-            Bạn có chắc chắn muốn xóa bộ CLO “{dialog.set.level}” (phiên bản {dialog.set.version}) không? Thao tác này không thể hoàn tác.
+            Bạn có chắc chắn muốn xóa bộ mục tiêu “{dialog.set.level}” (bản {dialog.set.version}) không? Thao tác này không thể hoàn tác.
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -384,14 +384,14 @@ function OutcomeDialogBody({
           fields={[
             {
               name: "confirmed",
-              label: "Tôi xác nhận muốn xóa bộ CLO nháp này",
+              label: "Tôi xác nhận muốn xóa bộ mục tiêu nháp này",
               type: "checkbox",
             },
           ]}
-          submitLabel="Xóa bộ CLO"
+          submitLabel="Xóa bộ mục tiêu"
           successMessage={false}
           onSubmit={() => outcomeApi.deleteSet(dialog.set.id)}
-          onSuccess={done("Đã xóa bộ CLO.")}
+          onSuccess={done("Đã xóa bộ mục tiêu.")}
         />
       </>
     );
@@ -400,9 +400,9 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>Xóa CLO {dialog.outcome.code}</DialogTitle>
+          <DialogTitle>Xóa mục tiêu {dialog.outcome.code}</DialogTitle>
           <DialogDescription>
-            Bạn có chắc chắn muốn xóa mục chuẩn đầu ra “{dialog.outcome.code} · {dialog.outcome.title}” khỏi bộ CLO không?
+            Bạn có chắc chắn muốn xóa mục tiêu “{dialog.outcome.code} · {dialog.outcome.title}” khỏi bộ không?
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -415,7 +415,7 @@ function OutcomeDialogBody({
               type: "checkbox",
             },
           ]}
-          submitLabel="Xóa CLO"
+          submitLabel="Xóa mục tiêu"
           successMessage={false}
           onSubmit={() =>
             outcomeApi.deleteOutcome(dialog.set.id, dialog.outcome.id)
@@ -431,10 +431,10 @@ function OutcomeDialogBody({
       <>
         <DialogHeader>
           <DialogTitle>
-            {source ? "Tạo phiên bản CLO mới" : "Tạo bộ CLO"}
+            {source ? "Tạo bản mới của bộ mục tiêu" : "Tạo bộ mục tiêu"}
           </DialogTitle>
           <DialogDescription>
-            Bộ chép từ phiên bản cũ giữ CLO và liên kết bài học, nhưng nguồn trở
+            Bộ chép từ bản cũ giữ mục tiêu và liên kết bài học, nhưng nguồn trở
             về chưa xác minh để giáo viên duyệt lại.
           </DialogDescription>
         </DialogHeader>
@@ -453,18 +453,18 @@ function OutcomeDialogBody({
             },
             {
               name: "copyFromId",
-              label: "Chép CLO từ",
+              label: "Chép mục tiêu từ",
               type: "select",
               options: [
                 { value: "none", label: "Không chép — bộ mới trống" },
                 ...sets.map((set) => ({
                   value: set.id,
-                  label: `${set.level} · phiên bản ${set.version} (${OUTCOME_SET_STATUS_TEXT[set.status]})`,
+                  label: `${set.level} · bản ${set.version} (${OUTCOME_SET_STATUS_TEXT[set.status]})`,
                 })),
               ],
             },
           ]}
-          submitLabel="Tạo bộ CLO"
+          submitLabel="Tạo bộ mục tiêu"
           successMessage={false}
           onSubmit={(value) =>
             outcomeApi.createSet({
@@ -472,7 +472,7 @@ function OutcomeDialogBody({
               copyFromId: value.copyFromId === "none" ? "" : value.copyFromId,
             })
           }
-          onSuccess={done("Đã tạo bộ CLO nháp.")}
+          onSuccess={done("Đã tạo bộ mục tiêu nháp.")}
         />
       </>
     );
@@ -482,10 +482,10 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>{outcome ? `Sửa ${outcome.code}` : "Thêm CLO"}</DialogTitle>
+          <DialogTitle>{outcome ? `Sửa ${outcome.code}` : "Thêm mục tiêu"}</DialogTitle>
           <DialogDescription>
-            Viết CLO đo được: sau khóa học, học sinh làm được gì, trong điều
-            kiện nào. Lưu xong, nguồn của CLO trở về chưa xác minh.
+            Viết mục tiêu đo được: sau khóa học, học sinh làm được gì, trong
+            điều kiện nào. Lưu xong, nguồn của mục tiêu trở về chưa xác minh.
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -501,9 +501,9 @@ function OutcomeDialogBody({
             required: outcome?.required ?? true,
           }}
           fields={[
-            { name: "code", label: "Mã CLO" },
+            { name: "code", label: "Mã mục tiêu" },
             { name: "title", label: "Tên ngắn" },
-            { name: "statement", label: "Phát biểu CLO", type: "textarea" },
+            { name: "statement", label: "Phát biểu mục tiêu", type: "textarea" },
             { name: "sourceTitle", label: "Tên nguồn căn cứ" },
             { name: "sourceUrl", label: "Đường dẫn nguồn" },
             {
@@ -512,14 +512,14 @@ function OutcomeDialogBody({
               description: "Mục và trang cụ thể, ví dụ “Lớp 8 > Phương trình, trang in 65”.",
             },
             { name: "sourceNote", label: "Ghi chú đối chiếu", type: "textarea" },
-            { name: "required", label: "CLO bắt buộc của khóa", type: "checkbox" },
+            { name: "required", label: "Mục tiêu bắt buộc của khóa", type: "checkbox" },
           ]}
-          submitLabel={outcome ? "Lưu CLO" : "Thêm CLO"}
+          submitLabel={outcome ? "Lưu mục tiêu" : "Thêm mục tiêu"}
           successMessage={false}
           onSubmit={(value) =>
             outcomeApi.saveOutcome(dialog.set.id, value, outcome?.id)
           }
-          onSuccess={done(outcome ? "Đã lưu CLO." : "Đã thêm CLO.")}
+          onSuccess={done(outcome ? "Đã lưu mục tiêu." : "Đã thêm mục tiêu.")}
         />
       </>
     );
@@ -542,7 +542,7 @@ function OutcomeDialogBody({
           >
             {outcome.sourceTitle}
           </a>
-          , tìm đúng yêu cầu cần đạt rồi ghi lại vị trí và cách CLO cụ thể hóa
+          , tìm đúng yêu cầu cần đạt rồi ghi lại vị trí và cách mục tiêu cụ thể hóa
           yêu cầu đó.
         </p>
         <ApiForm
@@ -567,10 +567,10 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>Trả bộ CLO về nháp</DialogTitle>
+          <DialogTitle>Trả bộ mục tiêu về nháp</DialogTitle>
           <DialogDescription>
             Thiết kế giáo trình sẽ thấy lý do và sửa lại; giáo viên phải duyệt
-            chuyên môn lần nữa.
+            nội dung lần nữa.
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -580,7 +580,7 @@ function OutcomeDialogBody({
           submitLabel="Trả về nháp"
           successMessage={false}
           onSubmit={(value) => outcomeApi.requestChanges(dialog.set.id, value)}
-          onSuccess={done("Đã trả bộ CLO về nháp.")}
+          onSuccess={done("Đã trả bộ mục tiêu về nháp.")}
         />
       </>
     );
@@ -588,11 +588,11 @@ function OutcomeDialogBody({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isApprove ? "Duyệt bộ CLO" : "Duyệt chuyên môn"}</DialogTitle>
+        <DialogTitle>{isApprove ? "Duyệt áp dụng bộ mục tiêu" : "Duyệt nội dung bộ mục tiêu"}</DialogTitle>
         <DialogDescription>
           {isApprove
-            ? "Sau khi duyệt, bài tập mới của khóa phải gắn CLO của bộ được duyệt trước khi giao cho học sinh."
-            : "Bạn xác nhận mọi CLO đúng kiến thức, đúng nguồn và có bài học tương ứng."}
+            ? "Sau khi duyệt áp dụng, bài tập mới của khóa phải gắn mục tiêu của bộ này trước khi giao cho học sinh."
+            : "Bạn xác nhận mọi mục tiêu đúng kiến thức, đúng nguồn và có bài học tương ứng."}
         </DialogDescription>
       </DialogHeader>
       <ApiForm
@@ -601,11 +601,11 @@ function OutcomeDialogBody({
         fields={[
           {
             name: "confirmed",
-            label: `Xác nhận ${dialog.set.level} · phiên bản ${dialog.set.version}`,
+            label: `Xác nhận ${dialog.set.level} · bản ${dialog.set.version}`,
             type: "checkbox",
           },
         ]}
-        submitLabel={isApprove ? "Duyệt bộ CLO" : "Duyệt chuyên môn"}
+        submitLabel={isApprove ? "Duyệt áp dụng" : "Duyệt nội dung"}
         successMessage={false}
         onSubmit={() =>
           isApprove
@@ -613,7 +613,7 @@ function OutcomeDialogBody({
             : outcomeApi.technicalApprove(dialog.set.id)
         }
         onSuccess={done(
-          isApprove ? "Đã duyệt bộ CLO." : "Đã duyệt chuyên môn bộ CLO.",
+          isApprove ? "Đã duyệt áp dụng bộ mục tiêu." : "Đã duyệt nội dung bộ mục tiêu.",
         )}
       />
     </>

@@ -1,13 +1,13 @@
 const FIELD_TEXT: Record<string, string> = {
   source: "Nguồn dữ liệu",
-  version: "Phiên bản",
+  version: "Bản",
   referenceDate: "Ngày tham chiếu",
   teacherId: "Mã giáo viên",
-  reviewerTeacherId: "Mã giáo viên duyệt chuyên môn",
+  reviewerTeacherId: "Mã giáo viên duyệt nội dung",
   effectiveAt: "Thời điểm có hiệu lực",
   affectedSessions: "Số buổi học bị ảnh hưởng",
   confirmed: "Đã xác nhận lịch",
-  approved: "Đã duyệt chuyên môn",
+  approved: "Đã duyệt nội dung",
   reason: "Lý do",
   note: "Ghi chú",
   paymentId: "Mã thanh toán",
@@ -39,7 +39,7 @@ const FIELD_TEXT: Record<string, string> = {
 /** Trường mã tài khoản: có tên trong danh sách đã tải thì hiện tên, kèm nhãn không còn chữ "Mã". */
 const PERSON_FIELD_TEXT: Record<string, string> = {
   teacherId: "Giáo viên",
-  reviewerTeacherId: "Giáo viên duyệt chuyên môn",
+  reviewerTeacherId: "Giáo viên duyệt nội dung",
   substituteTeacherId: "Giáo viên dạy thay",
   previousTeacherId: "Giáo viên trước",
   actorUserId: "Người thực hiện",

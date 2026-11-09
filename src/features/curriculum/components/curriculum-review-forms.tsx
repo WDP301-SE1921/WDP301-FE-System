@@ -8,6 +8,7 @@ import { registrationApi } from "@/features/registration-flow/api";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,9 +55,13 @@ interface ReviewFormProps {
 
 export function CurriculumSubmitForm({
   unit,
+  outcomeNote,
   onSaved,
   onStateChange,
-}: ReviewFormProps) {
+}: ReviewFormProps & {
+  /** Lưu ý mục tiêu chưa gắn bài; chỉ để nhắc, không chặn việc gửi. */
+  outcomeNote?: string;
+}) {
   const id = useId();
   const reviewers = useQuery({
     queryKey: ["curriculum", "reviewers", unit.id],
@@ -83,7 +88,7 @@ export function CurriculumSubmitForm({
       emptyProps={{
         title: "Chưa có giáo viên phù hợp",
         description:
-          "Liên hệ quản lý để phân công giáo viên đúng môn trước khi gửi thẩm định.",
+          "Liên hệ Quản lý để phân công giáo viên đúng môn trước khi gửi duyệt.",
       }}
     >
       <form
@@ -92,11 +97,16 @@ export function CurriculumSubmitForm({
         onSubmit={form.handleSubmit((input) => save.mutate(input))}
       >
         <p className="text-sm text-muted-foreground">
-          Giáo viên thẩm định nội dung chuyên môn. Quản lý xác nhận áp dụng sau
-          khi giáo viên đồng ý. Nội dung nháp được khóa khi gửi.
+          Giáo viên duyệt nội dung giáo trình. Quản lý duyệt áp dụng sau khi
+          giáo viên đồng ý. Nội dung nháp được khóa khi gửi.
         </p>
+        {outcomeNote && (
+          <Alert variant="info" role="status">
+            {outcomeNote}
+          </Alert>
+        )}
         <div className="space-y-2">
-          <Label htmlFor={id}>Giáo viên thẩm định</Label>
+          <Label htmlFor={id}>Giáo viên duyệt nội dung</Label>
           <Controller
             name="reviewerTeacherId"
             control={form.control}
@@ -139,7 +149,7 @@ export function CurriculumSubmitForm({
           isLoading={save.isPending}
           disabled={save.isPending}
         >
-          Gửi thẩm định chuyên môn
+          Gửi duyệt
         </Button>
         <ApiFeedback error={save.error} />
       </form>
@@ -180,7 +190,7 @@ export function CurriculumTechnicalReviewForm({
     >
       <fieldset disabled={save.isPending} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor={id + "-decision"}>Kết quả thẩm định chuyên môn</Label>
+          <Label htmlFor={id + "-decision"}>Kết quả duyệt nội dung</Label>
           <Controller
             name="approved"
             control={form.control}
@@ -189,7 +199,7 @@ export function CurriculumTechnicalReviewForm({
                 value={field.value ? "approve" : "changes"}
                 disabled={save.isPending}
                 items={{
-                  approve: "Đồng ý về chuyên môn",
+                  approve: "Đồng ý nội dung",
                   changes: "Yêu cầu chỉnh sửa",
                 }}
                 onValueChange={(value) => field.onChange(value === "approve")}
@@ -198,7 +208,7 @@ export function CurriculumTechnicalReviewForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="approve">Đồng ý về chuyên môn</SelectItem>
+                  <SelectItem value="approve">Đồng ý nội dung</SelectItem>
                   <SelectItem value="changes">Yêu cầu chỉnh sửa</SelectItem>
                 </SelectContent>
               </Select>
@@ -208,7 +218,7 @@ export function CurriculumTechnicalReviewForm({
         <div className="space-y-2">
           <Label htmlFor={id + "-note"}>
             {approved
-              ? "Nhận xét chuyên môn (tùy chọn)"
+              ? "Nhận xét nội dung (tùy chọn)"
               : "Nội dung cần chỉnh sửa"}
           </Label>
           <Textarea
@@ -224,7 +234,7 @@ export function CurriculumTechnicalReviewForm({
         </div>
         <p className="text-sm text-muted-foreground">
           {approved
-            ? "Giáo trình sẽ chuyển đến quản lý để xác nhận áp dụng."
+            ? "Giáo trình sẽ chuyển tới Quản lý để duyệt áp dụng."
             : "Giáo trình trở về bản nháp để người thiết kế chỉnh sửa và gửi lại."}
         </p>
         <StickyFormFooter>
@@ -233,7 +243,7 @@ export function CurriculumTechnicalReviewForm({
             isLoading={save.isPending}
             disabled={save.isPending}
           >
-            {approved ? "Đồng ý và chuyển quản lý" : "Gửi yêu cầu chỉnh sửa"}
+            {approved ? "Duyệt nội dung" : "Gửi yêu cầu chỉnh sửa"}
           </Button>
         </StickyFormFooter>
       </fieldset>
@@ -326,7 +336,7 @@ export function CurriculumRevisionForm({
           </Select>
           <p className="text-xs text-muted-foreground">
             {source === "copy"
-              ? "Sao chép bài vào bản nháp mới bằng phiên bản kế tiếp."
+              ? "Sao chép bài vào bản nháp mới (bản kế tiếp)."
               : source === "csv"
                 ? "Tạo bản trống rồi mở bước xem trước CSV."
                 : "Tạo bản trống và soạn từng bài."}
@@ -389,7 +399,7 @@ export function CurriculumRevisionForm({
             placeholder="Chưa cấu hình"
           />
           <p className="text-xs text-muted-foreground">
-            {estimate?.max == null ? "Quản lý cần cấu hình số buổi/tuần tại khóa học." : `Dự kiến ${estimate.max} bài theo số tuần làm tròn. Số buổi thực tế được kiểm tra theo lịch lớp khi sinh lịch.`} Bản nguồn có{" "}
+            {estimate?.max == null ? "Quản lý cần đặt số buổi/tuần cho khóa học." : `Dự kiến ${estimate.max} bài theo số tuần làm tròn. Số buổi thực tế được kiểm tra theo lịch lớp khi tạo lịch học.`} Bản nguồn có{" "}
             {unit.lessons.filter((lesson) => lesson.kind === "LESSON").length}{" "}
             bài.
           </p>

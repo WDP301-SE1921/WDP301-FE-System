@@ -63,17 +63,23 @@ export function DesignerOutcomesTab({
   );
   if (tab !== "outcomes") return null;
   return (
-    <AsyncBoundary
-      isLoading={units.isPending}
-      isError={units.isError}
-      error={units.error}
-      onRetry={() => void units.refetch()}
-    >
-      <ProgramOutcomesBody
-        programs={programsFromUnits(units.data ?? [])}
-        emptyDescription="Soạn giáo trình cho một khóa học trước, rồi tạo bộ CLO cho khóa đó."
-      />
-    </AsyncBoundary>
+    <div className="min-w-0 space-y-4">
+      {/* Dòng duy nhất còn chữ CLO (Q7), cho người đã quen tên cũ. */}
+      <p className="text-sm text-muted-foreground">
+        Mục tiêu khóa học trước đây gọi là chuẩn đầu ra (CLO).
+      </p>
+      <AsyncBoundary
+        isLoading={units.isPending}
+        isError={units.isError}
+        error={units.error}
+        onRetry={() => void units.refetch()}
+      >
+        <ProgramOutcomesBody
+          programs={programsFromUnits(units.data ?? [])}
+          emptyDescription="Soạn giáo trình cho một khóa học trước, rồi tạo bộ mục tiêu cho khóa đó."
+        />
+      </AsyncBoundary>
+    </div>
   );
 }
 
@@ -91,7 +97,7 @@ export function TeacherOutcomesBody() {
     >
       <ProgramOutcomesBody
         programs={programsFromClasses(classes.data ?? [])}
-        emptyDescription="Bạn chưa được phân công lớp nào nên chưa có khóa học để xác minh CLO."
+        emptyDescription="Bạn chưa được phân công lớp nào nên chưa có khóa học để xác minh mục tiêu."
       />
     </AsyncBoundary>
   );

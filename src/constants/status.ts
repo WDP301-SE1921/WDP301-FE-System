@@ -74,14 +74,14 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
     DRAFT: { label: "Bản nháp", variant: "secondary" },
     PENDING_REVIEW: { label: "Chờ duyệt", variant: "warning" },
     PENDING_TECHNICAL_REVIEW: {
-      label: "Chờ thẩm định chuyên môn",
+      label: "Chờ giáo viên duyệt nội dung",
       variant: "warning",
     },
     PENDING_MANAGER_CONFIRMATION: {
-      label: "Chờ xác nhận áp dụng",
+      label: "Chờ Quản lý duyệt áp dụng",
       variant: "info",
     },
-    APPROVED: { label: "Đã duyệt", variant: "success" },
+    APPROVED: { label: "Đã duyệt áp dụng", variant: "success" },
     ARCHIVED: { label: "Đã lưu trữ", variant: "neutral" },
   },
   session: {

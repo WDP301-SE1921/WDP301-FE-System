@@ -109,7 +109,7 @@ export function ScheduledSessionsView({
           {role === "center_manager" && user && (
             <Card>
               <CardHeader>
-                <CardTitle>Xem trước và sinh lịch · {classroom.name}</CardTitle>
+                <CardTitle>Xem trước và tạo lịch học · {classroom.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <SessionGenerator

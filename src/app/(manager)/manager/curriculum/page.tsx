@@ -53,8 +53,8 @@ export default async function CurriculumPage() {
             }
             description={
               role === "center_manager"
-                ? "Mỗi khóa học (môn + khối) có một giáo trình dùng cho mọi lớp của khóa, mỗi kỳ một phiên bản. Giáo trình do Thiết kế giáo trình soạn, quản lý duyệt áp dụng."
-                : "Soạn giáo trình theo khóa học, gửi giáo viên thẩm định rồi chờ quản lý duyệt áp dụng."
+                ? "Mỗi khóa học (môn + khối) có một giáo trình dùng cho mọi lớp của khóa, mỗi kỳ một bản. Giáo trình do Thiết kế giáo trình soạn, giáo viên duyệt nội dung, Quản lý duyệt áp dụng."
+                : "Soạn giáo trình theo khóa học, gửi giáo viên duyệt nội dung rồi chờ Quản lý duyệt áp dụng."
             }
           />
           <HubTabs

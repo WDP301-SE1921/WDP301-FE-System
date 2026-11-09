@@ -124,9 +124,9 @@ export function UnitForm({
   const readinessNote = !programDetail.data
     ? ""
     : !detailClasses.length
-      ? `Khóa ${programDetail.data.name} chưa có lớp. Vẫn soạn bản nháp được, nhưng chỉ gửi thẩm định khi khóa có lớp đã phân công giáo viên — báo Quản lý tạo lớp cho khóa này.`
+      ? `Khóa ${programDetail.data.name} chưa có lớp. Vẫn soạn bản nháp được, nhưng chỉ gửi duyệt khi khóa có lớp đã phân công giáo viên — báo Quản lý tạo lớp cho khóa này.`
       : detailClasses.every((item) => item.teacherId === null)
-        ? `Các lớp của khóa ${programDetail.data.name} chưa có giáo viên phụ trách. Vẫn soạn bản nháp được, nhưng chỉ gửi thẩm định khi có giáo viên.`
+        ? `Các lớp của khóa ${programDetail.data.name} chưa có giáo viên phụ trách. Vẫn soạn bản nháp được, nhưng chỉ gửi duyệt khi có giáo viên.`
         : "";
   const overlapping = (sources.data ?? []).filter(
     (item) =>
@@ -244,10 +244,10 @@ export function UnitForm({
             <div className="space-y-2">
               <Label htmlFor="unit-copy-source">Giáo trình nguồn</Label>
               <Select value={sourceUnit?.id ?? null}
-                items={copyCandidates.map((item) => ({ value: item.id, label: `${item.title} · v${item.version}${item.status === "ARCHIVED" ? " · Đã lưu trữ" : ""}` }))}
+                items={copyCandidates.map((item) => ({ value: item.id, label: `${item.title} · bản ${item.version}${item.status === "ARCHIVED" ? " · Đã lưu trữ" : ""}` }))}
                 onValueChange={(value) => void setCopySource(typeof value === "string" ? value : "")}>
                 <SelectTrigger id="unit-copy-source"><SelectValue /></SelectTrigger>
-                <SelectContent>{copyCandidates.map((item) => <SelectItem key={item.id} value={item.id}>{item.title} · v{item.version}{item.status === "ARCHIVED" ? " · Đã lưu trữ" : ""}</SelectItem>)}</SelectContent>
+                <SelectContent>{copyCandidates.map((item) => <SelectItem key={item.id} value={item.id}>{item.title} · bản {item.version}{item.status === "ARCHIVED" ? " · Đã lưu trữ" : ""}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           )}
@@ -321,7 +321,7 @@ export function UnitForm({
         )}
         <p className="text-xs text-muted-foreground">
           Ước tính tham khảo; lịch nghỉ và ngày học thực tế được kiểm tra khi
-          sinh lịch.
+          tạo lịch học.
         </p>
         {!!overlapping.length && (
           <p className="text-amber-700 dark:text-amber-300">

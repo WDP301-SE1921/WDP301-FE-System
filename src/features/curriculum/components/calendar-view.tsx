@@ -151,7 +151,7 @@ export function AcademicCalendarView({
                 />
               }
             >
-              Sinh lịch theo khóa
+              Tạo lịch học
             </Button>
           )
         }

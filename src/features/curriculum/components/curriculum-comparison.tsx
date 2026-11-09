@@ -53,7 +53,7 @@ export function ComparisonNotice({
         {comparison.isPending
           ? "Đang tải bản đối chiếu…"
           : comparison.previous
-            ? `${comparison.reference?.inferred ? "Đối chiếu kỳ trước gần nhất (suy luận theo hiệu lực, không xác nhận là bản nguồn)" : "Đối chiếu bản nguồn đã sao chép"}: ${comparison.previous.title} · phiên bản ${comparison.previous.version}. So bài cùng thứ tự; đổi thứ tự có thể tạo chênh lệch.`
+            ? `${comparison.reference?.inferred ? "Đối chiếu kỳ trước gần nhất (suy luận theo hiệu lực, không xác nhận là bản nguồn)" : "Đối chiếu bản nguồn đã sao chép"}: ${comparison.previous.title} · bản ${comparison.previous.version}. So bài cùng thứ tự; đổi thứ tự có thể tạo chênh lệch.`
             : "Chưa có bản đối chiếu truy cập được. Đọc toàn bộ bài trước khi quyết định."}
       </p>
       {comparison.previous && !comparison.isPending && <p>{(["new", "modified", "unchanged", "removed"] as const).map((change) => `${comparison.rows.filter((row) => row.change === change).length} ${LESSON_CHANGE_LABELS[change].toLocaleLowerCase("vi")}`).join(" · ")}</p>}
@@ -113,13 +113,13 @@ export function ApprovalSteps({ unit }: { unit: CurriculumUnit }) {
       steps={[
         { label: "Soạn bài" },
         {
-          label: "Giáo viên thẩm định",
+          label: "Giáo viên duyệt nội dung",
           description:
             unit.reviewerTeacher?.displayName ||
             unit.reviewerTeacher?.email ||
             undefined,
         },
-        { label: "Quản lý xác nhận" },
+        { label: "Quản lý duyệt áp dụng" },
         { label: "Áp dụng", description: unit.fromDate.slice(0, 10) },
       ]}
       allowNavBack={false}

@@ -25,7 +25,7 @@ import { registrationApi } from "../api";
 const PROGRAM_TABS = {
   overview: "Tổng quan",
   curriculum: "Giáo trình",
-  outcomes: "Chuẩn đầu ra (CLO)",
+  outcomes: "Mục tiêu khóa học",
   classes: "Các lớp áp dụng",
 } as const;
 type ProgramTab = keyof typeof PROGRAM_TABS;
@@ -112,8 +112,8 @@ function ProgramSheetContent({ programId }: { programId: string }) {
           {data && programTab === "overview" && (
             <p className="text-sm text-muted-foreground">
               Mỗi kỳ, khóa học có một giáo trình đã duyệt dùng chung cho mọi
-              lớp của khóa. Quản lý chọn bản đã duyệt khi sinh buổi học cho các
-              lớp áp dụng.
+              lớp của khóa. Quản lý chọn bản đã duyệt áp dụng khi tạo lịch học
+              cho các lớp của khóa.
             </p>
           )}
           {data && programTab === "classes" && (
@@ -169,7 +169,7 @@ function ProgramSheetContent({ programId }: { programId: string }) {
                 >
                   <div className="min-w-0 space-y-1">
                     <p className="font-medium">
-                      {unit.title} · v{unit.version}
+                      {unit.title} · bản {unit.version}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {calendarDateLabel(unit.fromDate.slice(0, 10))} →{" "}

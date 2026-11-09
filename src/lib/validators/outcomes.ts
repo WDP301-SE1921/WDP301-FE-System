@@ -26,9 +26,9 @@ export const outcomeSetUpdateSchema = z.object({
 });
 
 export const learningOutcomeSchema = z.object({
-  code: text(2, 64, "Mã CLO"),
-  title: text(2, 255, "Tên CLO"),
-  statement: text(12, 5000, "Phát biểu CLO"),
+  code: text(2, 64, "Mã mục tiêu"),
+  title: text(2, 255, "Tên mục tiêu"),
+  statement: text(12, 5000, "Phát biểu mục tiêu"),
   sourceTitle: text(5, 255, "Tên nguồn"),
   sourceUrl: z
     .string()
@@ -58,5 +58,5 @@ export const outcomeChangeRequestSchema = z.object({
 export const lessonOutcomeSchema = z.object({
   outcomeIds: z
     .array(requiredId)
-    .refine((value) => new Set(value).size === value.length, "CLO bị trùng."),
+    .refine((value) => new Set(value).size === value.length, "Mục tiêu bị trùng."),
 });

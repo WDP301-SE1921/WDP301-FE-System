@@ -8,7 +8,11 @@ export const academicSubjectSchema = z.object({
 export const academicProgramSchema = z.object({
   name: z.string().trim().min(1, "Nhập tên khóa học.").max(255),
   subjectId: z.string().min(1, "Chọn môn học."),
-  grade: z.number().int().min(6).max(9),
+  grade: z
+    .number({ error: "Chọn khối." })
+    .int("Chọn khối.")
+    .min(6, "Chọn khối.")
+    .max(9, "Chọn khối."),
   sessionsPerWeek: sessionsPerWeekSchema.optional(),
   isActive: z.boolean(),
 });

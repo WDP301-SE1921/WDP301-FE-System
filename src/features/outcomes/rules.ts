@@ -6,9 +6,9 @@ import type {
 } from "@/types/outcomes";
 
 export const OUTCOME_SET_STATUS_TEXT: Record<OutcomeSetStatus, string> = {
-  DRAFT: "Nháp",
-  TECHNICALLY_APPROVED: "Chờ Quản lý duyệt",
-  APPROVED: "Đã duyệt",
+  DRAFT: "Bản nháp",
+  TECHNICALLY_APPROVED: "Chờ Quản lý duyệt áp dụng",
+  APPROVED: "Đã duyệt áp dụng",
 };
 
 /** Thao tác được phép theo quy tắc BE (`outcome.service.ts`); BE vẫn kiểm tra lại quyền. */
@@ -31,12 +31,12 @@ export function outcomeSetActions(
   };
 }
 
-/** BE chỉ cho duyệt chuyên môn khi mọi CLO do chính giáo viên đó xác minh và có bài học. */
+/** BE chỉ cho duyệt nội dung bộ khi mọi mục tiêu do chính giáo viên đó xác minh và có bài học. */
 export function technicalApprovalBlockers(
   set: OutcomeSet,
   teacherId: string,
 ): string[] {
-  if (!set.outcomes.length) return ["Bộ chưa có CLO nào."];
+  if (!set.outcomes.length) return ["Bộ chưa có mục tiêu nào."];
   return set.outcomes.flatMap((outcome) => [
     ...(outcome.sourceStatus === "VERIFIED" && outcome.verifiedById === teacherId
       ? []

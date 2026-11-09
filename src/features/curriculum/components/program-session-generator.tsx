@@ -131,8 +131,8 @@ export function ProgramSessionGenerator({
   return (
     <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
-        title="Sinh lịch theo khóa"
-        description="Xem trước và sinh lịch lần lượt cho các lớp của khóa. Mỗi lớp có kết quả riêng."
+        title="Tạo lịch học"
+        description="Xem trước rồi tạo lịch học lần lượt cho các lớp của khóa. Mỗi lớp có kết quả riêng."
         actions={
           <Button
             variant="outline"
@@ -153,7 +153,7 @@ export function ProgramSessionGenerator({
             <CardContent className="space-y-4">
               {selector}
               <EmptyState
-                title="Chọn khóa để sinh lịch"
+                title="Chọn khóa để tạo lịch học"
                 description="Giáo trình đã duyệt và các lớp của khóa sẽ hiện ở đây."
               />
             </CardContent>
@@ -299,7 +299,7 @@ function GenerationWorkspace({
         },
       );
       setNotice(
-        `${succeeded} lớp đã sinh lịch${failed ? ` · ${failed} lớp cần kiểm tra và thử lại` : ""}.`,
+        `${succeeded} lớp đã tạo lịch học${failed ? ` · ${failed} lớp cần kiểm tra và thử lại` : ""}.`,
       );
       await Promise.all(
         [
@@ -364,7 +364,7 @@ function GenerationWorkspace({
                   <Label htmlFor="generation-unit">Giáo trình áp dụng</Label>
                   <p className="text-xs text-muted-foreground">
                     {covering.length > 1
-                      ? "Có nhiều giáo trình cùng hiệu lực. Tải lại dữ liệu và báo Quản lý xử lý xung đột trước khi sinh lịch."
+                      ? "Có nhiều giáo trình cùng hiệu lực. Tải lại dữ liệu và báo Quản lý xử lý xung đột trước khi tạo lịch học."
                       : "Không có giáo trình đã duyệt phủ trọn khoảng ngày. Nếu khoảng đi qua hai kỳ, chia thành từng khoảng thuộc một giáo trình."}
                   </p>
                   <Button type="button" size="sm" variant="outline" onClick={() => void client.invalidateQueries({ queryKey: ["curriculum"] })}>Tải lại giáo trình</Button>
@@ -379,7 +379,7 @@ function GenerationWorkspace({
                 </p>
               )}
               <p className="text-sm text-muted-foreground">
-                {sessionsPerWeek == null ? "Khóa chưa cấu hình số buổi/tuần. Quản lý cần cập nhật khóa trước khi sinh lịch." : `Chuẩn khóa: ${sessionsPerWeek} buổi/tuần. Lớp lệch chuẩn cần sửa lịch trước khi sinh.`}
+                {sessionsPerWeek == null ? "Khóa chưa đặt số buổi/tuần. Quản lý cần đặt số buổi/tuần cho khóa trước khi tạo lịch học." : `Chuẩn khóa: ${sessionsPerWeek} buổi/tuần. Lớp lệch chuẩn cần sửa lịch tuần trước khi tạo lịch học.`}
               </p>
               <fieldset className="space-y-3">
                 <legend className="mb-2 text-sm font-medium">
@@ -422,7 +422,7 @@ function GenerationWorkspace({
               {counts.size > 1 && (
                 <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
                   Các lớp có số buổi/tuần khác nhau. Kiểm tra số bài dự kiến của
-                  từng lớp trước khi sinh lịch.
+                  từng lớp trước khi tạo lịch học.
                 </p>
               )}
               <Button
@@ -440,7 +440,7 @@ function GenerationWorkspace({
         {!selected.length && (
           <Card>
             <CardContent>
-              <EmptyState title="Chọn các lớp cần sinh lịch" />
+              <EmptyState title="Chọn các lớp cần tạo lịch học" />
             </CardContent>
           </Card>
         )}
@@ -462,7 +462,7 @@ function GenerationWorkspace({
               <CardContent className="min-w-0 space-y-3">
                 {row?.generated !== undefined ? (
                   <p role="status" className="text-sm text-primary">
-                    Đã sinh {row.generated} buổi ·{" "}
+                    Đã tạo {row.generated} buổi ·{" "}
                     {calendarDateLabel(row.input.fromDate)} –{" "}
                     {calendarDateLabel(row.input.toDate)}
                   </p>
@@ -536,7 +536,7 @@ function GenerationWorkspace({
         })}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            Lớp đã sinh thành công được giữ nguyên khi thử lại lớp lỗi.
+            Lớp đã tạo lịch học thành công được giữ nguyên khi thử lại lớp lỗi.
           </p>
           <Button
             disabled={
@@ -545,7 +545,7 @@ function GenerationWorkspace({
             isLoading={busy === "generate"}
             onClick={() => void generateAll()}
           >
-            Sinh lịch cho{" "}
+            Tạo lịch học cho{" "}
             {selected.filter((item) => ready(results[item.id])).length} lớp
           </Button>
         </div>

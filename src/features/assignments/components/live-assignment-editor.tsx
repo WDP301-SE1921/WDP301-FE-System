@@ -479,7 +479,7 @@ function AssignmentEditor({
             )}
               <p className="w-full text-xs text-muted-foreground">
                 CSV gồm câu hỏi đang trên form, kể cả nội dung chưa lưu. Lớp,
-                hạn nộp, người nhận và liên kết CLO được chọn riêng khi nhập
+                hạn nộp, người nhận và mục tiêu được chọn riêng khi nhập
                 lại.
               </p>
             {!classId && (
@@ -579,7 +579,7 @@ function AssignmentEditor({
                       control={form.control}
                       render={({ field }) => (
                         <LiveSelect
-                          label="CLO mà câu này đo"
+                          label="Mục tiêu mà câu này đo"
                           value={field.value}
                           options={selectedSet.outcomes.map((outcome) => ({
                             value: outcome.id,
@@ -692,37 +692,37 @@ function OutcomeSetField({
   if (isLoading)
     return (
       <p role="status" className="text-sm text-muted-foreground">
-        Đang tải chuẩn đầu ra (CLO) của khóa…
+        Đang tải mục tiêu của khóa…
       </p>
     );
   if (error) return <ApiFeedback error={error} retry={onRetry} />;
   if (!sets.length && !value)
     return (
       <p className="text-sm text-muted-foreground">
-        Khóa học chưa có bộ CLO được duyệt nên bài không cần gắn CLO.
+        Khóa học chưa có bộ mục tiêu được duyệt áp dụng nên bài không cần gắn mục tiêu.
       </p>
     );
   return (
     <div className="space-y-2 rounded-xl bg-muted p-4">
       <LiveSelect
-        label="Chuẩn đầu ra (CLO)"
+        label="Mục tiêu khóa học"
         value={value || NO_OUTCOME_SET}
         options={[
           ...sets.map((set, index) => ({
             value: set.id,
-            label: `${set.level} · phiên bản ${set.version}${index === 0 ? " (mới nhất)" : ""}`,
+            label: `${set.level} · bản ${set.version}${index === 0 ? " (mới nhất)" : ""}`,
           })),
-          { value: NO_OUTCOME_SET, label: "Không gắn CLO (chỉ lưu nháp)" },
+          { value: NO_OUTCOME_SET, label: "Không gắn mục tiêu (chỉ lưu nháp)" },
         ]}
         onChange={onChange}
       />
       {isMissing ? (
         <p role="alert" className="text-sm text-destructive">
-          Bộ CLO đã chọn không còn được duyệt. Chọn lại bộ CLO của khóa.
+          Bộ mục tiêu đã chọn không còn được duyệt. Chọn lại bộ mục tiêu của khóa.
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Khóa đã có bộ CLO được duyệt: mọi câu phải gắn CLO trước khi giao bài
+          Khóa đã có bộ mục tiêu được duyệt: mọi câu phải gắn mục tiêu trước khi giao bài
           cho học sinh.
         </p>
       )}

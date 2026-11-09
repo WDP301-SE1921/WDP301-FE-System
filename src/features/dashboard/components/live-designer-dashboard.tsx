@@ -92,7 +92,7 @@ export function LiveDesignerDashboard() {
         <DashboardStatCard
           label="Đang soạn"
           value={stat(drafting.length)}
-          note="Bản nháp chưa gửi thẩm định"
+          note="Bản nháp chưa gửi duyệt"
           icon={<HugeiconsIcon icon={Edit02Icon} />}
         />
         <DashboardStatCard
@@ -104,7 +104,7 @@ export function LiveDesignerDashboard() {
         <DashboardStatCard
           label="Chờ duyệt"
           value={stat(pending.length)}
-          note="Đang chờ giáo viên thẩm định hoặc quản lý xác nhận"
+          note="Đang chờ giáo viên duyệt nội dung hoặc Quản lý duyệt áp dụng"
           icon={<HugeiconsIcon icon={Clock01Icon} />}
         />
         <DashboardStatCard

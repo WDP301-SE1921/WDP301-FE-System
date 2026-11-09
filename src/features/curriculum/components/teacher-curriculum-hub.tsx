@@ -19,7 +19,7 @@ export function TeacherCurriculumHub() {
     <PageContainer maxWidth="full">
       <PageHeader
         title="Giáo trình"
-        description="Đọc giáo trình được phân công, thẩm định chuyên môn và gửi phản hồi bài học."
+        description="Đọc giáo trình được phân công, duyệt nội dung và gửi phản hồi bài học."
       />
       <Tabs
         value={tab}
@@ -30,8 +30,8 @@ export function TeacherCurriculumHub() {
         }
       >
         <TabsList>
-          <TabsTrigger value="review">Giáo trình & thẩm định</TabsTrigger>
-          <TabsTrigger value="outcomes">Chuẩn đầu ra (CLO)</TabsTrigger>
+          <TabsTrigger value="review">Giáo trình & duyệt nội dung</TabsTrigger>
+          <TabsTrigger value="outcomes">Mục tiêu khóa học</TabsTrigger>
           <TabsTrigger value="feedback">Phản hồi</TabsTrigger>
         </TabsList>
       </Tabs>

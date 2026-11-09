@@ -28,7 +28,7 @@ const FIELD_LABELS: Record<string, string> = {
   enrollmentIds: "Học sinh nhận bài",
   classId: "Lớp học",
   teacherId: "Giáo viên",
-  reviewerTeacherId: "Giáo viên thẩm định",
+  reviewerTeacherId: "Giáo viên duyệt nội dung",
   programId: "Khóa học",
   sessionsPerWeek: "Số buổi/tuần",
   roomId: "Phòng học",

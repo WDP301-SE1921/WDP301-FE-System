@@ -68,7 +68,7 @@ export const STATUS_TEXT: Record<string, string> = {
   COMPLETED: "Hoàn tất",
   BOOKED: "Đã xếp",
   MISSED: "Không đi học bù",
-  SUPERSEDED: "Đã có phiên bản mới",
+  SUPERSEDED: "Đã có bản mới",
   UNMARKED: "Chưa điểm danh",
   PRESENT: "Có mặt",
   ABSENT: "Vắng",

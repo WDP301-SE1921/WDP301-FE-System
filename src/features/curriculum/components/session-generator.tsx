@@ -154,8 +154,8 @@ export function SessionGenerator({
       <ApiFeedback error={restored.error} />
       {attempt && (
         <p className="rounded-xl bg-muted p-3 text-sm">
-          Có thao tác sinh lịch cần xác nhận lại. Thử lại sẽ dùng nguyên học
-          phần và khoảng ngày đã chọn.
+          Có lần tạo lịch học cần xác nhận lại. Thử lại sẽ dùng đúng giáo trình
+          và khoảng ngày đã chọn.
         </p>
       )}
       <form
@@ -163,7 +163,7 @@ export function SessionGenerator({
         onSubmit={(event) => void form.handleSubmit(submit)(event)}
       >
         <div className="space-y-2">
-          <Label htmlFor="schedule-unit">Học phần đã duyệt</Label>
+          <Label htmlFor="schedule-unit">Giáo trình đã duyệt áp dụng</Label>
           <Controller
             control={form.control}
             name="curriculumUnitId"
@@ -185,7 +185,7 @@ export function SessionGenerator({
                 }}
               >
                 <SelectTrigger id="schedule-unit">
-                  <SelectValue placeholder="Chọn học phần" />
+                  <SelectValue placeholder="Chọn giáo trình" />
                 </SelectTrigger>
                 <SelectContent>
                   {approved.map((unit) => (
@@ -204,7 +204,7 @@ export function SessionGenerator({
           />
           {units.isSuccess && !approved.length && (
             <p className="text-sm text-muted-foreground">
-              Chưa có học phần đã duyệt cho khóa học của lớp này.
+              Chưa có giáo trình đã duyệt áp dụng cho khóa học của lớp này.
             </p>
           )}
         </div>
@@ -254,21 +254,21 @@ export function SessionGenerator({
             }
             isLoading={generate.isPending}
           >
-            {attempt ? "Thử lại sinh lịch" : "Sinh buổi học"}
+            {attempt ? "Thử tạo lịch học lại" : "Tạo lịch học"}
           </Button>
         </div>
       </form>
       <ApiFeedback error={preview.error ?? generate.error} />
       {generate.isSuccess && (
         <p role="status" className="text-sm text-primary">
-          Đã sinh {generate.data.sessions.length} buổi học.
+          Đã tạo {generate.data.sessions.length} buổi học.
         </p>
       )}
       {matchingPreview && (
         <div className="space-y-3">
           <p className="font-medium">
             {preview.data!.slots.length} buổi dự kiến
-            {conflicts ? " · Có xung đột, cần xử lý trước khi sinh lịch" : ""}
+            {conflicts ? " · Có xung đột, cần xử lý trước khi tạo lịch học" : ""}
           </p>
           {preview.data!.slots.map((slot, index) => (
             <div

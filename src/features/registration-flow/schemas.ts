@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_MONEY_AMOUNT } from "./money";
 
 export const parentEmailSchema = z.object({
   email: z.string().trim().toLowerCase().email("Nhập email hợp lệ.").max(255),
@@ -29,7 +30,7 @@ export const registrationSchema = z.object({
 });
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 export const programSchema = z.object({
-  name: z.string().trim().min(1, "Nhập tên chương trình.").max(255),
+  name: z.string().trim().min(1, "Nhập tên khóa học.").max(255),
   subject: z.string().trim().min(1, "Nhập môn học.").max(100),
   grade: z.number().int().min(6).max(9),
 });
@@ -69,10 +70,13 @@ export const schedulesSchema = z
   });
 export type SchedulesInput = z.infer<typeof schedulesSchema>;
 export const registrationClassSchema = z.object({
-  programId: z.string().min(1, "Chọn chương trình."),
+  programId: z.string().min(1, "Chọn khóa học."),
   name: z.string().trim().min(1, "Nhập tên lớp.").max(255),
   capacity: z.number().int().min(1).max(1000),
-  monthlyFee: z.number().finite().min(0),
+  monthlyFee: z
+    .number({ error: "Nhập học phí mỗi tháng." })
+    .min(0, "Học phí không được âm.")
+    .max(MAX_MONEY_AMOUNT, "Học phí tối đa 999.999.999.999 đồng."),
   teacherId: z.string().trim(),
   roomId: z.string().trim(),
 });

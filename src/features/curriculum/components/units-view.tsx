@@ -52,15 +52,15 @@ export function CurriculumUnitsView({ programId }: { programId?: string }) {
       <PageHeader
         title={
           role === "teacher"
-            ? "Thẩm định giáo trình"
+            ? "Duyệt nội dung giáo trình"
             : role === "center_manager"
-              ? "Xác nhận giáo trình"
+              ? "Duyệt áp dụng giáo trình"
               : "Thiết kế giáo trình"
         }
         description={
           role === "teacher"
-            ? "Đọc và thẩm định nội dung chuyên môn của giáo trình được phân công."
-            : "Người thiết kế soạn nội dung, giáo viên thẩm định chuyên môn, quản lý xác nhận áp dụng."
+            ? "Đọc và duyệt nội dung giáo trình được phân công."
+            : "Thiết kế giáo trình soạn nội dung, giáo viên duyệt nội dung, Quản lý duyệt áp dụng."
         }
         actions={
           role === "curriculum_designer" && (
@@ -296,7 +296,7 @@ export function CurriculumUnitsBody({
                       <TableCell className="max-w-72 whitespace-normal">
                         <p className="font-medium">{curriculumLabel(unit)}</p>
                         <p className="text-xs text-muted-foreground">
-                          Phiên bản {unit.version}
+                          Bản {unit.version}
                         </p>
                       </TableCell>
                       <TableCell>
@@ -330,7 +330,7 @@ export function CurriculumUnitsBody({
                         >
                           {curriculumNeedsAction(unit, role, user?.id)
                             ? role === "teacher"
-                              ? "Thẩm định"
+                              ? "Duyệt nội dung"
                               : "Mở"
                             : "Xem"}
                         </Button>
@@ -344,7 +344,7 @@ export function CurriculumUnitsBody({
         </AsyncBoundary>
         {units.data && (
           <p className="text-xs text-muted-foreground">
-            {rows.length} phiên bản · {groupCurricula(rows).length} khóa học ·
+            {rows.length} bản giáo trình · {groupCurricula(rows).length} khóa học ·
             dòng tô màu là việc cần bạn xử lý.
           </p>
         )}

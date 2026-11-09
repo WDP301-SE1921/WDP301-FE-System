@@ -37,12 +37,12 @@ export function curriculumNeedsAction(
 export function curriculumNextStep(unit: CurriculumUnit) {
   if (unit.status === "DRAFT")
     return unit.reviewNote || unit.technicalReviewNote
-      ? "Người thiết kế sửa theo nhận xét, gửi lại thẩm định"
-      : "Người thiết kế soạn bài, kiểm tra và gửi thẩm định";
+      ? "Thiết kế giáo trình sửa theo nhận xét rồi gửi duyệt lại"
+      : "Thiết kế giáo trình soạn bài, kiểm tra rồi gửi duyệt";
   if (unit.status === "PENDING_REVIEW")
     return unit.technicalReviewedAt
-      ? "Quản lý xác nhận áp dụng"
-      : `${unit.reviewerTeacher?.displayName || unit.reviewerTeacher?.email || "Giáo viên được phân công"} thẩm định chuyên môn`;
+      ? "Quản lý duyệt áp dụng"
+      : `${unit.reviewerTeacher?.displayName || unit.reviewerTeacher?.email || "Giáo viên được phân công"} duyệt nội dung`;
   return unit.status === "ARCHIVED"
     ? "Đã lưu trữ"
     : "Có thể chuẩn bị giáo trình kỳ tiếp theo";

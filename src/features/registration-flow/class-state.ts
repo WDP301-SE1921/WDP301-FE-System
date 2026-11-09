@@ -30,10 +30,8 @@ export function useClassStateMutation() {
   });
 }
 
-/** Opening requires a configured course and a complete weekly schedule. */
-export function canOpenRegistration(
-  classroom: Pick<RegistrationClass, "isActive" | "weeklySchedules" | "program">,
-) {
-  return classroom.isActive !== false && classroom.program.sessionsPerWeek != null &&
-    classroom.weeklySchedules.length === classroom.program.sessionsPerWeek;
-}
+export {
+  canOpenRegistration,
+  openRegistrationBlocker,
+  type OpenRegistrationBlocker,
+} from "./registration-blocker";

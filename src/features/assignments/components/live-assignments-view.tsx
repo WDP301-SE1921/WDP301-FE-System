@@ -163,7 +163,7 @@ function AssignmentWorkspace({
             <p className="whitespace-pre-wrap">{assignment.instructions}</p>
             {measuredTargets.length > 0 && (
               <section aria-label="Mục tiêu bài" className="space-y-2">
-                <p className="font-medium">Mục tiêu bài (CLO)</p>
+                <p className="font-medium">Mục tiêu bài</p>
                 <ul className="space-y-1 text-sm">
                   {measuredTargets.map((target) => (
                     <li key={target.id}>
@@ -184,7 +184,7 @@ function AssignmentWorkspace({
                 </p>
                 {question.outcomeId && (
                   <Badge variant="outline">
-                    CLO{" "}
+                    Mục tiêu{" "}
                     {assignment.learningTargets?.find(
                       (target) => target.id === question.outcomeId,
                     )?.code ?? ""}
