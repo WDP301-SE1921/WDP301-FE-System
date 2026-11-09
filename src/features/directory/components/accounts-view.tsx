@@ -29,6 +29,36 @@ const staffAccountCreateSchema = accountCreateSchema.extend({
   kind: z.enum(["staff", "curriculum-designers"]),
 });
 
+/** Quản lý tạo giáo viên hoạt động ngay, dùng cùng quy tắc tài khoản nội bộ. */
+export function TeacherAccountCreateForm({ onDone }: { onDone: () => void }) {
+  return (
+    <ApiForm
+      schema={accountCreateSchema}
+      defaults={{ displayName: "", email: "", password: "" }}
+      fields={[
+        { name: "displayName", label: "Họ tên" },
+        { name: "email", label: "Email", type: "email" },
+        {
+          name: "password",
+          label: "Mật khẩu ban đầu",
+          type: "password",
+          description:
+            "Ít nhất 8 ký tự, tối đa 72 byte UTF-8. Cung cấp mật khẩu cho giáo viên qua kênh riêng.",
+        },
+      ]}
+      submitLabel="Tạo giáo viên"
+      successMessage={false}
+      onSubmit={(value) => directoryApi.createAccount("teachers", value)}
+      onSuccess={() => {
+        toast.success(
+          "Đã tạo tài khoản giáo viên. Giáo viên có thể đăng nhập ngay.",
+        );
+        onDone();
+      }}
+    />
+  );
+}
+
 /** Quản lý tạo tài khoản Nhân viên hoặc Thiết kế giáo trình (BE-10). */
 export function StaffAccountCreateForm({ onDone }: { onDone: () => void }) {
   return (

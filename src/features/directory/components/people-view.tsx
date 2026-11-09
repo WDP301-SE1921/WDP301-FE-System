@@ -43,7 +43,11 @@ import {
 import { SheetCloseButton } from "@/components/shared/actions/sheet-close-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
-import { AREA, canAccessArea } from "@/constants/role-access";
+import {
+  AREA,
+  canAccessArea,
+  canManageAccounts,
+} from "@/constants/role-access";
 import { ROUTES } from "@/constants/routes";
 import type { WebRole } from "@/constants/roles";
 import {
@@ -66,6 +70,7 @@ import {
   ACCOUNT_ROLE_LABEL,
   AccountEditForm,
   StaffAccountCreateForm,
+  TeacherAccountCreateForm,
   type AccountKind,
 } from "./accounts-view";
 import {
@@ -84,7 +89,7 @@ const PEOPLE_TABS = {
 type PeopleTab = keyof typeof PEOPLE_TABS;
 const PEOPLE_TAB_KEYS = Object.keys(PEOPLE_TABS) as PeopleTab[];
 const PRIMARY_ACTION: Partial<Record<PeopleTab, string>> = {
-  teachers: "Mời giáo viên",
+  teachers: "Tạo giáo viên",
   staff: "Tạo tài khoản",
   managers: "Mời quản lý",
 };
@@ -181,12 +186,12 @@ export function PeopleHub({ role }: { role: WebRole }) {
     } satisfies Record<PeopleTab, number | undefined>;
   });
   const kind: AccountKind = tab === "teachers" ? "teachers" : "staff";
-  const actionLabel = PRIMARY_ACTION[tab];
+  const actionLabel = canManageAccounts(role) ? PRIMARY_ACTION[tab] : undefined;
   return (
     <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Nhân sự"
-        description="Giáo viên, nhân viên vận hành, thiết kế giáo trình và quản lý trung tâm. Mời giáo viên, quản lý qua email; tạo tài khoản nhân viên, thiết kế giáo trình; khóa hoặc mở tài khoản."
+        description="Tạo tài khoản giáo viên, nhân viên vận hành và thiết kế giáo trình; mời quản lý qua email; khóa hoặc mở tài khoản."
         actions={
           actionLabel ? (
             <Button onClick={() => setCreating(true)}>{actionLabel}</Button>
@@ -230,7 +235,8 @@ export function PeopleHub({ role }: { role: WebRole }) {
             <Card key={invitationKind} className="min-w-0">
               <CardHeader>
                 <CardTitle>
-                  Lời mời {INVITATION_LABEL[invitationKind]}
+                  {invitationKind === "teacher" ? "Lịch sử lời mời" : "Lời mời"}{" "}
+                  {INVITATION_LABEL[invitationKind]}
                 </CardTitle>
               </CardHeader>
               <CardContent className="min-w-0">
@@ -281,19 +287,21 @@ export function PeopleHub({ role }: { role: WebRole }) {
           <DialogHeader>
             <DialogTitle>{actionLabel}</DialogTitle>
             <DialogDescription>
-              {tab === "staff"
-                ? "Tạo tài khoản đăng nhập cho nhân viên vận hành hoặc thiết kế giáo trình."
-                : "Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt ở tab Lời mời."}
+              {tab === "teachers"
+                ? "Tạo tài khoản giáo viên với họ tên, email và mật khẩu ban đầu. Giáo viên có thể đăng nhập ngay sau khi tạo."
+                : tab === "staff"
+                  ? "Tạo tài khoản đăng nhập cho nhân viên vận hành hoặc thiết kế giáo trình."
+                  : "Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt ở tab Lời mời."}
             </DialogDescription>
           </DialogHeader>
           {creating &&
+            actionLabel &&
             (tab === "staff" ? (
               <StaffAccountCreateForm onDone={() => setCreating(false)} />
-            ) : tab === "teachers" || tab === "managers" ? (
-              <InvitationForm
-                key={tab}
-                kind={tab === "teachers" ? "teacher" : "manager"}
-              />
+            ) : tab === "teachers" ? (
+              <TeacherAccountCreateForm onDone={() => setCreating(false)} />
+            ) : tab === "managers" ? (
+              <InvitationForm kind="manager" />
             ) : null)}
         </DialogContent>
       </Dialog>

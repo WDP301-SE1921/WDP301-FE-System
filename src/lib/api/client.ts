@@ -74,7 +74,8 @@ const ERROR_TEXT: Record<string, string> = {
   EMAIL_DELIVERY_NOT_FOUND: "Không tìm thấy email.",
   EMAIL_DELIVERY_FAILED:
     "Gửi email không thành công. Xem lịch sử email để kiểm tra và thử lại.",
-  TEACHER_INVITATION_REQUIRED: "Tạo giáo viên qua lời mời và duyệt tài khoản.",
+  TEACHER_INVITATION_DISABLED:
+    "Lời mời giáo viên đã ngừng sử dụng. Liên hệ quản lý trung tâm để được tạo tài khoản trực tiếp.",
   OUTSIDE_ENROLLMENT: "Ngày đã chọn nằm ngoài kỳ học đang có hiệu lực.",
   ENROLLMENT_ENDED: "Ghi danh đã kết thúc. Tải lại trạng thái trước khi xử lý.",
   LEAVE_OVERLAP: "Khoảng nghỉ trùng với một đơn đã duyệt.",

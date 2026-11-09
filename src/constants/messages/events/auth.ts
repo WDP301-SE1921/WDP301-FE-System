@@ -46,7 +46,8 @@ export const AUTH_MSG = {
 
   // ---------- Nhận lời mời ----------
   INVITE_TITLE: "Nhận lời mời tham gia trung tâm",
-  INVITE_DESC: "Đặt họ tên và mật khẩu cho tài khoản được mời.",
+  INVITE_DESC:
+    "Đặt họ tên và mật khẩu cho tài khoản quản lý được mời. Giáo viên nhận tài khoản trực tiếp từ quản lý trung tâm.",
   INVITE_SUCCESS: "Đã gửi thông tin tài khoản",
   INVITE_SUCCESS_DESC:
     "Tài khoản đang chờ quản lý trung tâm duyệt. Bạn đăng nhập được sau khi được duyệt.",

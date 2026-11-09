@@ -37,6 +37,7 @@ const rules: {
   },
   { method: "GET", path: /^staff(?:\/[^/]+)?$/, roles: manager },
   { method: "POST", path: /^staff$/, roles: manager },
+  { method: "POST", path: /^teachers$/, roles: manager },
   // Tài khoản Thiết kế giáo trình, chung bảng với Nhân viên (BE-10).
   {
     method: "GET",
@@ -164,7 +165,7 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^(teacher|manager)-invitations$|^account-invitations\/[^/]+\/(review|revoke|resend)$/,
+    path: /^manager-invitations$|^account-invitations\/[^/]+\/(review|revoke|resend)$/,
     roles: manager,
   },
   {
