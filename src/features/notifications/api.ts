@@ -34,7 +34,8 @@ export type NotificationType =
   | "CURRICULUM_CHANGES_REQUESTED"
   | "CURRICULUM_APPROVED"
   | "FEEDBACK_CREATED"
-  | "FEEDBACK_RESOLVED";
+  | "FEEDBACK_RESOLVED"
+  | "CHAT_MESSAGE";
 
 export type NotificationTargetKind =
   | "ASSIGNMENT"
@@ -46,7 +47,8 @@ export type NotificationTargetKind =
   | "ENROLLMENT"
   | "REGISTRATION"
   | "CURRICULUM_UNIT"
-  | "FEEDBACK";
+  | "FEEDBACK"
+  | "CHAT_CONVERSATION";
 
 export interface NotificationItem {
   id: string;

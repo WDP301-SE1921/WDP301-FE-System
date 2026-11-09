@@ -51,6 +51,10 @@ export function useNotificationSocket(): RealtimeStatus {
         150,
       );
     };
+    const refreshChat = () =>
+      void client.invalidateQueries({
+        queryKey: ["web-api", userId, "chat"],
+      });
     const retryLater = () => {
       clearTimeout(retryTimer);
       retryTimer = setTimeout(() => {
@@ -90,6 +94,9 @@ export function useNotificationSocket(): RealtimeStatus {
       });
       socket.on("notification.created", refresh);
       socket.on("notifications.read-changed", refresh);
+      socket.on("chat.message.created", refreshChat);
+      socket.on("chat.message.deleted", refreshChat);
+      socket.on("chat.conversation.read", refreshChat);
       socket.on("disconnect", (reason) => {
         if (stopped) return;
         setStatus("offline");

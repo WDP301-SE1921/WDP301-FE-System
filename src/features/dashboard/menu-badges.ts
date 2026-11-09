@@ -9,6 +9,7 @@ import { submissionSummary } from "@/features/assignments/submission-selectors";
 import { readAssignmentWorkspaces } from "@/features/assignments/workspace-api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { addCalendarDays, todayInVietnam } from "@/lib/calendar-date";
+import { chatApi } from "@/features/chat/api";
 
 /** Buổi đã kết thúc trong khoảng này mà chưa chốt điểm danh thì tính vào badge. */
 const UNMARKED_LOOKBACK_DAYS = 30;
@@ -40,7 +41,10 @@ export function useMenuBadgeCounts(role: WebRole): MenuBadgeCounts {
     enabled: options.enabled && role === "staff",
     queryKey: [...base, "menu-badges", "pending-registrations"],
     queryFn: ({ signal }) =>
-      directoryApi.registrations({ status: "DRAFT", page: 1, limit: 1 }, signal),
+      directoryApi.registrations(
+        { status: "DRAFT", page: 1, limit: 1 },
+        signal,
+      ),
   });
   // Cùng khóa với bảng Bài tập & chấm bài nên không gọi lại khi đã mở bảng.
   const workspaces = useQuery({
@@ -75,16 +79,28 @@ export function useMenuBadgeCounts(role: WebRole): MenuBadgeCounts {
           Date.parse(session.endsAt) <= Date.now(),
       ).length,
   });
+  const chatUnread = useQuery({
+    ...options,
+    queryKey: [...base, "chat", "unread-count"],
+    queryFn: ({ signal }) => chatApi.unread(signal),
+    select: (data) => data.unreadCount,
+  });
+  const chatCount = { [MENU_BADGE_KEYS.CHAT_UNREAD]: chatUnread.data };
   if (role === "center_manager")
-    return { [MENU_BADGE_KEYS.FAILED_EMAILS]: failedEmails.data?.total };
+    return {
+      ...chatCount,
+      [MENU_BADGE_KEYS.FAILED_EMAILS]: failedEmails.data?.total,
+    };
   if (role === "staff")
     return {
+      ...chatCount,
       [MENU_BADGE_KEYS.PENDING_REGISTRATIONS]: pendingRegistrations.data?.total,
     };
   if (role === "teacher")
     return {
+      ...chatCount,
       [MENU_BADGE_KEYS.UNGRADED_SUBMISSIONS]: workspaces.data,
       [MENU_BADGE_KEYS.UNMARKED_SESSIONS_TODAY]: sessions.data,
     };
-  return {};
+  return chatCount;
 }

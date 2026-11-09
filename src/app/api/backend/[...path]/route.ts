@@ -195,7 +195,33 @@ async function handle(
         "VALIDATION_ERROR",
         "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
       );
-    if (path === "auth/me/avatar" && request.method === "PUT") {
+    if (
+      /^chat\/conversations\/[^/]+\/messages$/.test(path) &&
+      request.method === "POST" &&
+      request.headers.get("content-type")?.startsWith("multipart/form-data")
+    ) {
+      const data = await request.formData();
+      const file = data.get("file");
+      const body = data.get("body");
+      const validBody =
+        body === null || (typeof body === "string" && body.length <= 2000);
+      const validFile =
+        file instanceof File && file.size > 0 && file.size <= 10 * 1024 * 1024;
+      if (
+        !validBody ||
+        !validFile ||
+        (!String(body ?? "").trim() && !file) ||
+        data.getAll("file").length !== 1 ||
+        data.getAll("body").length > 1 ||
+        [...data.keys()].some((field) => field !== "file" && field !== "body")
+      )
+        throw backendError(
+          400,
+          "CHAT_ATTACHMENT_INVALID",
+          "Chọn một tệp tối đa 10 MB và nội dung tin nhắn hợp lệ.",
+        );
+      init.body = data;
+    } else if (path === "auth/me/avatar" && request.method === "PUT") {
       const data = await request.formData();
       const parsed = avatarFileSchema.safeParse(data.get("file"));
       if (

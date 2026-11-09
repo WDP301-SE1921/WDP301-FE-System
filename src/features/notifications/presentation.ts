@@ -5,6 +5,7 @@ import {
   Invoice01Icon,
   Megaphone01Icon,
   Task01Icon,
+  BubbleChatIcon,
 } from "@hugeicons/core-free-icons";
 import { ROUTES } from "@/constants/routes";
 import { canAccessPath } from "@/constants/role-access";
@@ -18,7 +19,8 @@ export type NotificationCategory =
   | "assignment"
   | "tuition"
   | "curriculum"
-  | "announcement";
+  | "announcement"
+  | "chat";
 
 /** Nhóm hiển thị (nhãn, icon, màu) của từng loại thông báo; API chỉ lọc một `type` nên không làm tab theo nhóm. */
 export const NOTIFICATION_CATEGORY: Record<
@@ -28,7 +30,8 @@ export const NOTIFICATION_CATEGORY: Record<
   schedule: {
     label: "Lịch học",
     icon: Calendar03Icon,
-    className: "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
+    className:
+      "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300",
   },
   absence: {
     label: "Nghỉ & học bù",
@@ -58,9 +61,15 @@ export const NOTIFICATION_CATEGORY: Record<
     icon: Megaphone01Icon,
     className: "bg-muted text-foreground",
   },
+  chat: {
+    label: "Trò chuyện",
+    icon: BubbleChatIcon,
+    className: "bg-primary/10 text-primary",
+  },
 };
 
 export function notificationCategory(type: string): NotificationCategory {
+  if (type === "CHAT_MESSAGE") return "chat";
   if (type.startsWith("LEAVE_") || type.startsWith("MAKEUP_")) return "absence";
   if (
     type.startsWith("ASSIGNMENT_") ||
@@ -147,6 +156,9 @@ export function notificationHref(
       href = teacher
         ? `${ROUTES.TEACHER.CURRICULUM}?tab=feedback`
         : `${ROUTES.MANAGER.CURRICULUM}?tab=feedback`;
+      break;
+    case "CHAT_CONVERSATION":
+      href = `${teacher ? ROUTES.TEACHER.CHAT : staff ? ROUTES.STAFF.CHAT : ROUTES.MANAGER.CHAT}?conversation=${encodeURIComponent(id)}`;
       break;
   }
   return href && canAccessPath(role, href.split("?")[0]) ? href : null;
