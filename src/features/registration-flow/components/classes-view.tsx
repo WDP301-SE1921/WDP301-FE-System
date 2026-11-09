@@ -41,7 +41,7 @@ import { useHubTab } from "@/hooks/use-hub-tab";
 import { cn } from "@/lib/utils";
 import type { RegistrationClass } from "@/types/backend";
 import { registrationApi } from "../api";
-import { money, scheduleText } from "../calendar";
+import { money, scheduleLines, scheduleText } from "../calendar";
 import { canOpenRegistration, useClassStateMutation } from "../class-state";
 import { useTeacherNames } from "../teacher-names";
 
@@ -378,26 +378,35 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                   const teacher = teacherName(item, teacherNames);
                   return (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        <span className="flex items-center gap-2">
+                      <TableCell className="min-w-44 max-w-64 font-medium whitespace-normal">
+                        <span className="flex items-start gap-2">
                           <span
                             aria-hidden="true"
                             className={cn(
-                              "size-2.5 shrink-0 rounded-full",
+                              "mt-1.5 size-2.5 shrink-0 rounded-full",
                               subjectDotClass(item.program.subject),
                             )}
                           />
-                          {item.name}
+                          <span className="min-w-0 break-words">{item.name}</span>
                         </span>
                       </TableCell>
                       <TableCell>
                         {item.program.subject} · Khối {item.program.grade}
                       </TableCell>
-                      <TableCell className="max-w-56 whitespace-normal">
-                        {scheduleText(item.weeklySchedules) ||
-                          "Chưa có lịch tuần"}
+                      <TableCell className="min-w-36">
+                        {item.weeklySchedules.length ? (
+                          <ul className="space-y-0.5 tabular-nums">
+                            {scheduleLines(item.weeklySchedules).map((line) => (
+                              <li key={line} className="whitespace-nowrap">
+                                {line}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          "Chưa có lịch tuần"
+                        )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="min-w-40 max-w-60 whitespace-normal">
                         {teacher ?? (
                           <Badge variant="warning">Chưa phân công</Badge>
                         )}
