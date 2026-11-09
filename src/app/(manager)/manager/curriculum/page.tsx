@@ -15,6 +15,7 @@ import {
   CurriculumUnitsTab,
   CurriculumUnitsView,
 } from "@/features/curriculum/components/units-view";
+import { DesignerOutcomesTab } from "@/features/outcomes/components/program-outcomes-view";
 import { ProgramSheet } from "@/features/registration-flow/components/program-detail-view";
 import {
   ProgramsCatalogTab,
@@ -71,7 +72,10 @@ export default async function CurriculumPage() {
               <ProgramSheet />
             </>
           ) : (
-            <CurriculumUnitsTab tabs={tabs} />
+            <>
+              <CurriculumUnitsTab tabs={tabs} />
+              <DesignerOutcomesTab tabs={tabs} />
+            </>
           )}
           <CurriculumFeedbackTab tabs={tabs} />
         </PageContainer>

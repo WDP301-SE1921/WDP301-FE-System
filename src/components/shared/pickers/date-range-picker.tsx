@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ACTION_LABEL } from "@/constants/messages/common"
+import { localIsoDate } from "@/lib/calendar-date"
 import { formatDate } from "@/lib/format"
 
 export interface DateRangePickerProps {
@@ -21,10 +22,6 @@ export interface DateRangePickerProps {
   /** Gọi sau mỗi lần đổi khoảng ngày — dùng để reset page về 1. */
   onChange?: () => void
   className?: string
-}
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
 }
 
 /**
@@ -51,7 +48,7 @@ function DateRangePicker({
         : placeholder
 
   const handleSelect = (date: Date) => {
-    const picked = toIsoDate(date)
+    const picked = localIsoDate(date)
 
     // Chưa có khoảng, hoặc đã đủ khoảng → bắt đầu khoảng mới.
     if (!from || (from && to)) {

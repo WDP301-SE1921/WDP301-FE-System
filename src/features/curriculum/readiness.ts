@@ -1,5 +1,6 @@
 import type { RegistrationProgram, WeeklySchedule } from "@/types/backend";
 import type { CurriculumReviewer } from "@/types/curriculum";
+import { estimateLessons } from "./workspace-selectors";
 
 /**
  * Số buổi một lớp có trong khoảng ngày (gồm cả hai đầu), giống `slotsForRange` của BE:
@@ -37,6 +38,8 @@ export interface CurriculumReadiness {
   /** `null` khi BE chưa trả lịch tuần của lớp. */
   needs: ClassLessonNeed[] | null;
   maxNeeded: number;
+  sessionsPerWeek: number | null;
+  plannedNeed: number | null;
   /** Lý do chưa gửi thẩm định được; rỗng khi đủ điều kiện. */
   blockedReason: string;
 }
@@ -62,6 +65,7 @@ export function curriculumReadiness(input: {
         .sort((a, b) => b.needed - a.needed || a.name.localeCompare(b.name, "vi"))
     : null;
   const reviewers = input.reviewers ?? [];
+  const estimate = estimateLessons(input.fromDate.slice(0, 10), input.toDate.slice(0, 10), [], input.program?.sessionsPerWeek);
   const programName = input.program?.name ?? "này";
   const blockedReason = !classes.length
     ? `Khóa ${programName} chưa có lớp nào, nên chưa có giáo viên để thẩm định. Quản lý cần tạo lớp cho khóa và phân công giáo viên.`
@@ -76,6 +80,8 @@ export function curriculumReadiness(input: {
     reviewers,
     needs,
     maxNeeded: Math.max(0, ...(needs ?? []).map((row) => row.needed)),
+    sessionsPerWeek: input.program?.sessionsPerWeek ?? null,
+    plannedNeed: estimate?.max ?? null,
     blockedReason,
   };
 }

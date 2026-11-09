@@ -4,6 +4,8 @@ import type { ApiEnvelope } from "@/types/backend";
 import { userFacingMessage } from "./error-message";
 
 const ERROR_TEXT: Record<string, string> = {
+  AVATAR_CONFLICT:
+    "Ảnh đã được thay đổi ở nơi khác. Kiểm tra lại trước khi lưu.",
   UNIT_REVISION_REQUIRED:
     "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
   UNIT_APPROVAL_REQUIRED:
@@ -72,7 +74,8 @@ const ERROR_TEXT: Record<string, string> = {
   EMAIL_DELIVERY_NOT_FOUND: "Không tìm thấy email.",
   EMAIL_DELIVERY_FAILED:
     "Gửi email không thành công. Xem lịch sử email để kiểm tra và thử lại.",
-  TEACHER_INVITATION_REQUIRED: "Tạo giáo viên qua lời mời và duyệt tài khoản.",
+  TEACHER_INVITATION_DISABLED:
+    "Lời mời giáo viên đã ngừng sử dụng. Liên hệ quản lý trung tâm để được tạo tài khoản trực tiếp.",
   OUTSIDE_ENROLLMENT: "Ngày đã chọn nằm ngoài kỳ học đang có hiệu lực.",
   ENROLLMENT_ENDED: "Ghi danh đã kết thúc. Tải lại trạng thái trước khi xử lý.",
   LEAVE_OVERLAP: "Khoảng nghỉ trùng với một đơn đã duyệt.",
@@ -160,6 +163,14 @@ const ERROR_TEXT: Record<string, string> = {
     "Thông tin hoặc lịch lớp đã thay đổi sau khi lập bill. Hủy bản nháp này và lập bill mới trước khi thu tiền.",
   UNIT_NOT_FOUND: "Không tìm thấy học phần. Vui lòng tải lại danh sách.",
   PROGRAM_NOT_FOUND: "Không tìm thấy chương trình đào tạo.",
+  PROGRAM_FREQUENCY_NOT_CONFIGURED:
+    "Khóa học chưa cấu hình số buổi/tuần. Quản lý cần cập nhật khóa trước khi tiếp tục.",
+  CLASS_WEEKLY_SESSION_COUNT_MISMATCH:
+    "Số khung giờ lịch tuần chưa đúng số buổi/tuần của khóa.",
+  PROGRAM_FREQUENCY_CHANGE_CONFLICT:
+    "Số buổi mới không khớp lịch các lớp đang hoạt động. Kiểm tra các lớp liên quan trước khi đổi.",
+  CURRICULUM_EFFECTIVE_PERIOD_CONFLICT:
+    "Khoảng hiệu lực chồng với giáo trình đã duyệt của khóa. Tải lại và chọn kỳ không giao ngày.",
   UNIT_LOCKED:
     "Chỉ sửa bản nháp của bạn. Học phần đã duyệt cần tạo phiên bản nháp mới.",
   UNIT_NOT_APPROVED: "Học phần chưa được quản lý duyệt.",
@@ -273,8 +284,16 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_ANSWERS: "Bài làm thiếu hoặc sai định dạng câu trả lời.",
   ATTEMPTS_EXHAUSTED: "Đã hết số lần nộp của bài tập này.",
   INVALID_FILES: "Danh sách file đính kèm không hợp lệ.",
-  INVALID_FILE_SIZE: "File vượt dung lượng cho phép.",
-  INVALID_FILE_TYPE: "Định dạng file không được hỗ trợ.",
+  INVALID_FILE_SIZE: "Tệp rỗng hoặc vượt quá dung lượng cho phép.",
+  INVALID_FILE_TYPE:
+    "Định dạng tệp không hợp lệ. Chọn đúng loại tệp được hỗ trợ.",
+  CHAT_ATTACHMENT_INVALID: "Chọn một tệp hợp lệ, dung lượng tối đa 10 MB.",
+  CHAT_ATTACHMENT_SIZE_INVALID: "Tệp đính kèm phải có dung lượng tối đa 10 MB.",
+  CHAT_ATTACHMENT_TYPE_INVALID:
+    "Chat chỉ hỗ trợ ảnh, PDF, Office, CSV, TXT và ZIP.",
+  CHAT_ATTACHMENT_NAME_INVALID: "Tên tệp đính kèm không hợp lệ.",
+  CHAT_MESSAGE_EMPTY: "Nhập nội dung hoặc chọn một tệp để gửi.",
+  CHAT_MESSAGE_TOO_LONG: "Tin nhắn tối đa 2.000 ký tự.",
   INVALID_AI_RESULT:
     "AI trả về kết quả chấm không hợp lệ. Chấm tay hoặc chạy chấm AI lại.",
   INVALID_AI_REPORT:
@@ -287,6 +306,26 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_ANALYTICS_RANGE: "Khoảng ngày thống kê không hợp lệ.",
   ANALYTICS_TOO_LARGE:
     "Dữ liệu thống kê quá lớn. Thu hẹp khoảng ngày hoặc bộ lọc.",
+  OUTCOME_SET_REQUIRED:
+    "Khóa học đã có bộ CLO được duyệt. Chọn bộ CLO và gắn CLO cho từng câu trước khi giao bài.",
+  INVALID_OUTCOME_SET:
+    "Bộ CLO không còn hợp lệ cho khóa học này. Chọn một bộ đã được duyệt của khóa.",
+  OUTCOME_MAPPING_INCOMPLETE:
+    "Còn câu hỏi chưa gắn CLO. Gắn CLO thuộc bộ đã chọn cho mọi câu.",
+  OUTCOME_SET_LOCKED:
+    "Bộ CLO không còn ở trạng thái nháp nên không sửa được. Tạo phiên bản mới nếu cần thay đổi.",
+  OUTCOME_SET_INCOMPLETE:
+    "Mọi CLO phải được chính bạn xác minh nguồn và có ít nhất một bài học trước khi duyệt chuyên môn.",
+  OUTCOME_SET_NOT_FOUND: "Không tìm thấy bộ CLO. Tải lại danh sách.",
+  OUTCOME_SET_NOT_REVIEWED:
+    "Chỉ trả về nháp được bộ CLO đang chờ Quản lý duyệt.",
+  OUTCOME_NOT_FOUND: "Không tìm thấy CLO trong bộ. Tải lại danh sách.",
+  SOURCE_REVIEW_INCOMPLETE:
+    "Ghi rõ mục/trang nguồn và giải thích đối chiếu (mỗi ô ít nhất 12 ký tự).",
+  INVALID_OUTCOME_MAPPING:
+    "Chỉ gắn CLO thuộc bộ của cùng khóa học với bài học.",
+  LESSON_LOCKED:
+    "Chỉ gắn CLO cho bài học ở bản nháp. Bài đã duyệt cần tạo giáo trình kỳ mới.",
 };
 export class ApiError extends Error {
   constructor(

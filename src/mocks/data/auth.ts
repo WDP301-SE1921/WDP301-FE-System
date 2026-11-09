@@ -30,6 +30,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     password: "edugrade123",
     name: "Trần Quốc Việt",
     role: ROLES.ADMIN,
+    hasAvatar: false,
   },
   {
     id: "mgr-001",
@@ -37,6 +38,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     password: "edugrade123",
     name: "Nguyễn Thị Lan",
     role: ROLES.CENTER_MANAGER,
+    hasAvatar: false,
   },
   {
     id: "cur-001",
@@ -44,6 +46,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     password: "edugrade123",
     name: "Hoàng Văn Tuấn",
     role: ROLES.CURRICULUM_DESIGNER,
+    hasAvatar: false,
   },
   {
     id: "stf-001",
@@ -51,6 +54,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     password: "edugrade123",
     name: "Vũ Minh Khoa",
     role: ROLES.STAFF,
+    hasAvatar: false,
   },
   {
     id: "tch-001",
@@ -58,6 +62,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     password: "edugrade123",
     name: "Trần Văn Minh",
     role: ROLES.TEACHER,
+    hasAvatar: false,
   },
   {
     id: "stf-002",
@@ -65,6 +70,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     password: "edugrade123",
     name: "Phạm Thị Hoa",
     role: ROLES.STAFF,
+    hasAvatar: false,
     isDisabled: true,
   },
 ]
@@ -88,6 +94,7 @@ export function mockLogin({ email, password }: LoginInput): LoginResult {
       email: account.email,
       name: account.name,
       role: account.role,
+      hasAvatar: account.hasAvatar,
       avatarUrl: account.avatarUrl,
     },
     redirectTo: ROLE_HOME_ROUTE[account.role],

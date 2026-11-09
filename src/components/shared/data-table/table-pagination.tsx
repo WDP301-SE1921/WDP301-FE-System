@@ -6,9 +6,10 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PAGINATION_DEFAULTS } from "@/constants/ui";
+import { cn } from "@/lib/utils";
 
 export interface TablePaginationProps {
   totalItems: number;
@@ -51,9 +53,13 @@ function TablePagination({
     fixedPageSize ?? (pageSize || PAGINATION_DEFAULTS.PAGE_SIZE);
   const totalPages = Math.ceil(totalItems / currentPageSize) || 1;
 
-  const startItem =
-    totalItems === 0 ? 0 : (currentPage - 1) * currentPageSize + 1;
-  const endItem = Math.min(currentPage * currentPageSize, totalItems);
+  const hasCurrentPage = totalItems > 0 && currentPage <= totalPages;
+  const startItem = hasCurrentPage
+    ? (currentPage - 1) * currentPageSize + 1
+    : 0;
+  const endItem = hasCurrentPage
+    ? Math.min(currentPage * currentPageSize, totalItems)
+    : 0;
 
   const handlePageChange = (newPage: number) => {
     const validPage = Math.max(1, Math.min(newPage, totalPages));
@@ -71,22 +77,33 @@ function TablePagination({
   return (
     <div
       data-slot="table-pagination"
-      className={`flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
+      className={cn(
+        "flex min-w-0 flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between",
+        className,
+      )}
     >
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span>
+      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3 text-xs text-muted-foreground">
+        <span
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="tabular-nums"
+        >
           Hiển thị <strong>{startItem}</strong>–<strong>{endItem}</strong> trên{" "}
           <strong>{totalItems}</strong> dòng
         </span>
 
         {!fixedPageSize && (
           <div className="flex items-center gap-1.5">
-            <span>Hàng/trang:</span>
+            <span aria-hidden="true">Hàng/trang:</span>
             <Select
               value={String(currentPageSize)}
               onValueChange={handlePageSizeChange}
             >
-              <SelectTrigger className="h-7 w-16 text-xs rounded-xl">
+              <SelectTrigger
+                aria-label="Số dòng mỗi trang"
+                className="h-11 w-20 text-xs rounded-xl sm:h-9"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -101,28 +118,43 @@ function TablePagination({
         )}
       </div>
 
-      <Pagination className="w-auto mx-0">
+      <Pagination aria-label="Phân trang bảng" className="w-auto mx-0 shrink-0">
         <PaginationContent>
           <PaginationItem>
-            <PaginationPrevious
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Trang trước"
+              disabled={currentPage <= 1}
               onClick={() => handlePageChange(currentPage - 1)}
-              className={
-                currentPage <= 1 ? "pointer-events-none opacity-40" : undefined
+              className="h-11 rounded-xl px-3 sm:h-9"
+              leftIcon={
+                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
               }
-            />
+            >
+              Trước
+            </Button>
           </PaginationItem>
-          <PaginationItem className="text-xs font-semibold px-2 text-foreground">
+          <PaginationItem
+            aria-label={`Trang ${currentPage} trên ${totalPages}`}
+            className="text-xs font-semibold tabular-nums px-2 text-foreground"
+          >
             {currentPage} / {totalPages}
           </PaginationItem>
           <PaginationItem>
-            <PaginationNext
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Trang sau"
+              disabled={currentPage >= totalPages}
               onClick={() => handlePageChange(currentPage + 1)}
-              className={
-                currentPage >= totalPages
-                  ? "pointer-events-none opacity-40"
-                  : undefined
+              className="h-11 rounded-xl px-3 sm:h-9"
+              rightIcon={
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
               }
-            />
+            >
+              Sau
+            </Button>
           </PaginationItem>
         </PaginationContent>
       </Pagination>

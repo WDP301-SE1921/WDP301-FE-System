@@ -60,7 +60,7 @@ const FIELDS = [
   },
 ] as const;
 
-/** Invited teachers and managers set their own name and password; a manager approves them next. */
+/** Invited managers set their name and password; retired teacher tokens are rejected by BE. */
 function AcceptInvitationForm() {
   const [token] = useQueryState("token", parseAsString.withDefault(""));
   const accept = useMutation({

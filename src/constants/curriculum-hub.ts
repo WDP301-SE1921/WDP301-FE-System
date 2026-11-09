@@ -3,6 +3,7 @@ export const CURRICULUM_HUB_LABELS = {
   programs: "Khóa học & giáo trình",
   subjects: "Môn học",
   curriculum: "Giáo trình",
+  outcomes: "Chuẩn đầu ra (CLO)",
   feedback: "Phản hồi giáo trình",
 } as const;
 export type CurriculumHubTab = keyof typeof CURRICULUM_HUB_LABELS;
@@ -16,6 +17,7 @@ export const MANAGER_CURRICULUM_TABS = [
 /** Thiết kế giáo trình: soạn giáo trình và xử lý phản hồi; không thấy Môn học / Khóa học. */
 export const DESIGNER_CURRICULUM_TABS = [
   "curriculum",
+  "outcomes",
   "feedback",
 ] as const satisfies readonly CurriculumHubTab[];
 
@@ -32,4 +34,5 @@ export const CURRICULUM_HUB_RESET_KEYS = [
   "programFilter",
   "program",
   "programTab",
+  "outcomeProgram",
 ] as const;

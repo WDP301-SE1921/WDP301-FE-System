@@ -28,6 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
+import { assignmentCsvTemplate } from "../csv-export";
 
 interface AssignmentImportDialogProps {
   classId: string;
@@ -115,13 +117,12 @@ export function AssignmentImportDialog({
               >
                 Đọc file và xem trước
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={downloadTemplate}
-              >
-                Tải CSV mẫu
-              </Button>
+              <CsvDownloadButton
+                label="Tải mẫu CSV"
+                createCsv={assignmentCsvTemplate}
+                filename="bai-tap-mau"
+                disabled={preview.isPending}
+              />
             </div>
           </form>
           <ApiFeedback error={preview.error} />
@@ -229,17 +230,4 @@ export function AssignmentImportDialog({
       />
     </Dialog>
   );
-}
-
-function downloadTemplate() {
-  const source =
-    '\uFEFFkind,prompt,choices,correctAnswer,rubric,maxScore\nMULTIPLE_CHOICE,"2 + 3 bằng bao nhiêu?","4|5|6","5",,2\nESSAY,"Giải thích tính chất giao hoán của phép cộng",,,"Nêu đúng tính chất và cho ví dụ minh họa",8\n';
-  const url = URL.createObjectURL(
-    new Blob([source], { type: "text/csv;charset=utf-8" }),
-  );
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "bai-tap-mau.csv";
-  link.click();
-  URL.revokeObjectURL(url);
 }

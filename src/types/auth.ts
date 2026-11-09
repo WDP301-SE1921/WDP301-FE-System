@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: WebRole;
+  hasAvatar: boolean;
   avatarUrl?: string;
   emailVerifiedAt?: string | null;
   status?: "ACTIVE" | "DISABLED";

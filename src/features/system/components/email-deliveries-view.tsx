@@ -1,5 +1,12 @@
 "use client";
-import { parseAsInteger, parseAsStringLiteral, useQueryStates } from "nuqs";
+import {
+  parseAsInteger,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from "nuqs";
+import { FilterBar } from "@/components/shared/data-table/filter-bar";
+import { DateRangePicker } from "@/components/shared/pickers/date-range-picker";
 import {
   Select,
   SelectContent,
@@ -76,15 +83,36 @@ const EVENT_TEXT: Record<string, string> = {
  * Lọc trạng thái trên URL (`?emailStatus=`), BE trả `total` sau lọc (BE-12).
  */
 export function EmailDeliveriesTable() {
-  const [{ page, emailStatus }, setFilters] = useQueryStates({
+  const [
+    { page, emailStatus, emailSearch, emailType, emailFrom, emailTo },
+    setFilters,
+  ] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     emailStatus: parseAsStringLiteral(STATUS_FILTERS).withDefault("ALL"),
+    emailSearch: parseAsString.withDefault(""),
+    emailType: parseAsString.withDefault(""),
+    emailFrom: parseAsString.withDefault(""),
+    emailTo: parseAsString.withDefault(""),
   });
   const status = emailStatus === "ALL" ? undefined : emailStatus;
+  // Lọc ở BE (người nhận, loại, ngày tạo theo UTC+7) để `total` và phân trang đúng.
+  const filters = {
+    search: emailSearch.trim() || undefined,
+    eventType: emailType || undefined,
+    fromDate: emailFrom || undefined,
+    toDate: emailTo || undefined,
+  };
+  const hasFilters = Object.values(filters).some(Boolean);
   const query = useLiveQuery(
-    ["email-deliveries", page, emailStatus],
+    ["email-deliveries", page, emailStatus, filters],
     (signal) =>
-      academicApi.emailDeliveries(Math.max(1, page), PAGE_SIZE, signal, status),
+      academicApi.emailDeliveries(
+        Math.max(1, page),
+        PAGE_SIZE,
+        signal,
+        status,
+        filters,
+      ),
     true,
     (value) =>
       value.items.some(
@@ -198,6 +226,59 @@ export function EmailDeliveriesTable() {
         </div>
       </CardHeader>
       <CardContent className="min-w-0 space-y-4">
+        <FilterBar
+          searchParamKey="emailSearch"
+          searchPlaceholder="Tìm email người nhận…"
+          showClearButton={false}
+          onSearchChange={() => void setFilters({ page: null })}
+        >
+          <Select
+            items={{ ALL: "Mọi loại email", ...EVENT_TEXT }}
+            value={emailType || "ALL"}
+            onValueChange={(value) =>
+              void setFilters({
+                emailType: value && value !== "ALL" ? String(value) : null,
+                page: null,
+              })
+            }
+          >
+            <SelectTrigger className="w-52" aria-label="Lọc loại email">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Mọi loại email</SelectItem>
+              {Object.entries(EVENT_TEXT).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DateRangePicker
+            fromParamKey="emailFrom"
+            toParamKey="emailTo"
+            placeholder="Ngày tạo email"
+            onChange={() => void setFilters({ page: null })}
+          />
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-xs text-muted-foreground"
+              onClick={() =>
+                void setFilters({
+                  emailSearch: null,
+                  emailType: null,
+                  emailFrom: null,
+                  emailTo: null,
+                  page: null,
+                })
+              }
+            >
+              Xóa bộ lọc
+            </Button>
+          )}
+        </FilterBar>
         {retry.error instanceof ApiError && retry.error.status >= 500 ? (
           // BE đã lưu lần thử trước khi trả lỗi gửi email.
           <p role="alert" className="text-sm text-destructive">
@@ -215,7 +296,11 @@ export function EmailDeliveriesTable() {
           error={query.error}
           onRetry={() => void query.refetch()}
           emptyTitle={
-            status ? "Không có email ở trạng thái này" : "Chưa có email nào được lưu"
+            hasFilters
+              ? "Không có email khớp bộ lọc"
+              : status
+                ? "Không có email ở trạng thái này"
+                : "Chưa có email nào được lưu"
           }
         />
         <TablePagination

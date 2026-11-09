@@ -51,7 +51,7 @@ export const INVITATION_LABEL: Record<InvitationKind, string> = {
  * Mời qua email: người nhận tự hoàn tất họ tên và mật khẩu, sau đó quản lý duyệt ở tab Lời mời.
  * Link mời chỉ hiện một lần ngay sau khi tạo.
  */
-export function InvitationForm({ kind }: { kind: InvitationKind }) {
+export function InvitationForm({ kind }: { kind: "manager" }) {
   const [created, setCreated] = useState<AccountInvitation | null>(null);
   return (
     <div className="space-y-4">
@@ -117,7 +117,7 @@ export function InvitationsTable({
       id: "status",
       header: "Trạng thái",
       cell: ({ row }) => (
-        <InvitationStatus invitation={row.original} now={now} />
+        <InvitationStatus kind={kind} invitation={row.original} now={now} />
       ),
     },
     {
@@ -131,11 +131,15 @@ export function InvitationsTable({
       cell: ({ row }) => (
         <Button
           size="sm"
-          variant={row.original.status === "ACCEPTED" ? "default" : "outline"}
+          variant={
+            kind === "manager" && row.original.status === "ACCEPTED"
+              ? "default"
+              : "outline"
+          }
           aria-label={`Mở lời mời ${row.original.email}`}
           onClick={() => setSelectedId(row.original.id)}
         >
-          {row.original.status === "ACCEPTED"
+          {kind === "manager" && row.original.status === "ACCEPTED"
             ? "Duyệt tài khoản"
             : "Xem lời mời"}
         </Button>
@@ -153,7 +157,11 @@ export function InvitationsTable({
           error={query.error}
           onRetry={() => void query.refetch()}
           emptyTitle="Chưa có lời mời"
-          emptyDescription={`Mời ${INVITATION_LABEL[kind]} bằng nút ở đầu trang.`}
+          emptyDescription={
+            kind === "teacher"
+              ? "Lời mời giáo viên đã ngừng sử dụng. Tạo tài khoản trực tiếp ở tab Giáo viên."
+              : `Mời ${INVITATION_LABEL[kind]} bằng nút ở đầu trang.`
+          }
         />
         <TablePagination
           totalItems={query.data?.total ?? 0}
@@ -181,6 +189,7 @@ export function InvitationsTable({
           {selected && (
             <InvitationDetails
               key={selected.id}
+              kind={kind}
               invitation={selected}
               now={now}
             />
@@ -235,15 +244,23 @@ function InvitationLink({ invitation }: { invitation: AccountInvitation }) {
 }
 
 function InvitationStatus({
+  kind,
   invitation,
   now,
 }: {
+  kind: InvitationKind;
   invitation: AccountInvitation;
   now: number;
 }) {
   const expired =
     invitation.status === "INVITED" && Date.parse(invitation.expiresAt) <= now;
   const status = STATUS[invitation.status];
+  if (kind === "teacher" && ["INVITED", "ACCEPTED"].includes(invitation.status))
+    return (
+      <Badge variant="secondary">
+        {invitation.status === "ACCEPTED" ? "Đã nhận (luồng cũ)" : "Lời mời cũ"}
+      </Badge>
+    );
   return (
     <Badge variant={expired ? "secondary" : status.variant}>
       {expired ? "Hết hạn" : status.label}
@@ -252,9 +269,11 @@ function InvitationStatus({
 }
 
 function InvitationDetails({
+  kind,
   invitation,
   now,
 }: {
+  kind: InvitationKind;
   invitation: AccountInvitation;
   now: number;
 }) {
@@ -263,7 +282,14 @@ function InvitationDetails({
   return (
     <div className="space-y-4 text-sm">
       <p className="break-all text-base font-semibold">{invitation.email}</p>
-      <InvitationStatus invitation={invitation} now={now} />
+      <InvitationStatus kind={kind} invitation={invitation} now={now} />
+      {kind === "teacher" && (
+        <p className="text-muted-foreground">
+          Lời mời giáo viên đã ngừng sử dụng. Không thể nhận, duyệt hoặc gửi lại
+          lời mời cũ. Quản lý tạo tài khoản trực tiếp ở tab Giáo viên; tài khoản
+          cũ đang khóa vẫn giữ nguyên trạng thái.
+        </p>
+      )}
       <p>Tạo lúc {displayMoment(invitation.createdAt)}</p>
       {invitation.acceptedAt && (
         <p>Người nhận hoàn tất lúc {displayMoment(invitation.acceptedAt)}</p>
@@ -275,12 +301,12 @@ function InvitationDetails({
         </p>
       )}
       {invitation.reviewNote && <p>Ghi chú: {invitation.reviewNote}</p>}
-      {expired && (
+      {kind === "manager" && expired && (
         <p className="text-muted-foreground">
           Lời mời đã hết hạn. Gửi lại để tạo link mới có hiệu lực 48 giờ.
         </p>
       )}
-      {invitation.status === "ACCEPTED" && (
+      {kind === "manager" && invitation.status === "ACCEPTED" && (
         <div className="grid gap-4 md:grid-cols-2">
           {(["APPROVE", "REJECT"] as const).map((decision) => (
             <ApiForm
@@ -310,7 +336,7 @@ function InvitationDetails({
           ))}
         </div>
       )}
-      {invitation.status === "INVITED" && (
+      {kind === "manager" && invitation.status === "INVITED" && (
         <ApiForm
           schema={confirmationSchema}
           defaults={{ confirmed: false }}

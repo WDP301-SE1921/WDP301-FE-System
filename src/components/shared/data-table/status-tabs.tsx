@@ -1,22 +1,23 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useQueryState, parseAsString } from "nuqs"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+import * as React from "react";
+import { useQueryState, parseAsString } from "nuqs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export interface StatusTabOption {
-  value: string
-  label: string
-  count?: number
+  value: string;
+  label: string;
+  count?: number;
 }
 
 export interface StatusTabsProps {
-  options: StatusTabOption[]
-  paramKey?: string
-  defaultValue?: string
-  onChange?: (value: string) => void
-  className?: string
+  options: StatusTabOption[];
+  paramKey?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  className?: string;
 }
 
 function StatusTabs({
@@ -28,26 +29,29 @@ function StatusTabs({
 }: StatusTabsProps) {
   const [activeTab, setActiveTab] = useQueryState(
     paramKey,
-    parseAsString.withDefault(defaultValue)
-  )
+    parseAsString.withDefault(defaultValue),
+  );
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value === defaultValue ? null : value)
-    onChange?.(value)
-  }
+    setActiveTab(value === defaultValue ? null : value);
+    onChange?.(value);
+  };
 
   return (
     <Tabs
       value={activeTab || defaultValue}
       onValueChange={(val) => handleTabChange(val as string)}
-      className={className}
+      className={cn("min-w-0", className)}
     >
-      <TabsList className="h-10 bg-muted/60 p-1 rounded-full">
+      <TabsList
+        aria-label="Lọc theo trạng thái"
+        className="max-w-full flex-wrap justify-start bg-muted/60 p-1 rounded-2xl group-data-horizontal/tabs:h-auto sm:rounded-full"
+      >
         {options.map((opt) => (
           <TabsTrigger
             key={opt.value}
             value={opt.value}
-            className="rounded-full px-3.5 py-1 text-xs gap-1.5 font-medium data-active:bg-background data-active:shadow-xs"
+            className="h-auto min-h-9 flex-none rounded-full px-3.5 py-1 text-xs gap-1.5 font-medium data-active:bg-background data-active:shadow-xs motion-reduce:transition-none"
           >
             <span>{opt.label}</span>
             {opt.count !== undefined && (
@@ -62,7 +66,7 @@ function StatusTabs({
         ))}
       </TabsList>
     </Tabs>
-  )
+  );
 }
 
-export { StatusTabs }
+export { StatusTabs };

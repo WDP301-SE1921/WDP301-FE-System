@@ -9,6 +9,7 @@ export interface ClassGenerationResult {
   attempt?: GenerationAttempt;
   error?: unknown;
   generated?: number;
+  contextVersion?: string;
 }
 export function sameGenerationInput(
   a: ScheduleRangeInput,

@@ -28,7 +28,11 @@ export interface CurriculumUnit {
   technicalReviewNote: string | null;
   submittedAt?: string | null;
   reviewedAt?: string | null;
-  program?: { id: string; name: string; subject: string; grade: number };
+  approvedAt?: string | null;
+  archivedAt?: string | null;
+  archiveReason?: "MANUAL" | "SUPERSEDED" | null;
+  supersededById?: string | null;
+  program?: { id: string; name: string; subject: string; grade: number; sessionsPerWeek?: number | null };
   track: { id: string; grade: number; subject: string; subjectKey: string };
   _count?: { lessons: number };
 }

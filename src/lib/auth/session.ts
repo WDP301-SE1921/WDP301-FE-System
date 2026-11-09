@@ -5,10 +5,13 @@ import type { AuthUser } from "@/types/auth";
 export const SESSION_CHANGED_EVENT = "edugrade:session-changed";
 
 export function persistSession(user: AuthUser, rememberMe: boolean) {
+  const profile = { ...user, hasAvatar: user.hasAvatar === true };
+  // Expiring image access belongs to Query cache, never the persisted profile.
+  delete profile.avatarUrl;
   window.localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
   window.sessionStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
   const storage = rememberMe ? window.localStorage : window.sessionStorage;
-  storage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(user));
+  storage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
   window.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
 }
 

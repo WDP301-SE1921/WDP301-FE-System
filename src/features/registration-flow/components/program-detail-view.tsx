@@ -18,12 +18,14 @@ import { StatusBadge } from "@/components/shared/feedback/status-badge";
 import { ROUTES } from "@/constants/routes";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
+import { OutcomeSetsPanel } from "@/features/outcomes/components/outcome-sets-panel";
 import { calendarDateLabel } from "@/lib/calendar-date";
 import { registrationApi } from "../api";
 
 const PROGRAM_TABS = {
   overview: "Tổng quan",
   curriculum: "Giáo trình",
+  outcomes: "Chuẩn đầu ra (CLO)",
   classes: "Các lớp áp dụng",
 } as const;
 type ProgramTab = keyof typeof PROGRAM_TABS;
@@ -149,6 +151,7 @@ function ProgramSheetContent({ programId }: { programId: string }) {
             </ul>
           )}
         </AsyncBoundary>
+        {programTab === "outcomes" && <OutcomeSetsPanel programId={programId} />}
         {programTab === "curriculum" && (
           <AsyncBoundary
             isLoading={units.isPending}

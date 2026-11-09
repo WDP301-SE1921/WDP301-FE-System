@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { ApiForm } from "@/components/shared/forms/api-form";
-import { UserCell } from "@/components/shared/display/user-cell";
+import { AccountAvatar } from "@/features/auth/components/account-avatar";
 import { SkeletonDetailHeader } from "@/components/shared/feedback/skeleton-presets";
 import { ROLE_LABEL } from "@/constants/roles";
 import { apiRequest } from "@/lib/api/client";
@@ -24,7 +25,14 @@ import { ApiFeedback } from "@/features/registration-flow/components/api-feedbac
 import type { AuthUser } from "@/types/auth";
 
 /** Tài khoản đang đăng nhập (mọi vai trò): thông tin bên trái, đổi mật khẩu bên phải. */
+const subscribeHydration = () => () => {};
+
 export function AccountProfile() {
+  const hydrated = useSyncExternalStore(
+    subscribeHydration,
+    () => true,
+    () => false,
+  );
   const client = useQueryClient();
   const query = useQuery({
     queryKey: ["auth-me"],
@@ -37,7 +45,10 @@ export function AccountProfile() {
         title="Tài khoản của tôi"
         description="Thông tin tài khoản đang đăng nhập tại trung tâm."
       />
-      <ApiFeedback error={query.error} retry={() => void query.refetch()} />
+      <ApiFeedback
+        error={hydrated ? query.error : null}
+        retry={() => void query.refetch()}
+      />
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card className="min-w-0">
           <CardHeader>
@@ -47,20 +58,20 @@ export function AccountProfile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            {query.isPending ? (
+            {!hydrated || query.isPending ? (
               <SkeletonDetailHeader />
             ) : (
               query.data && (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <UserCell
-                      name={query.data.name}
-                      sub={query.data.email}
-                      avatarUrl={query.data.avatarUrl}
-                    />
+                    <p className="min-w-0 wrap-break-word font-medium">
+                      {query.data.name}
+                    </p>
                     <Badge
                       variant={
-                        query.data.status === "DISABLED" ? "secondary" : "success"
+                        query.data.status === "DISABLED"
+                          ? "secondary"
+                          : "success"
                       }
                     >
                       {query.data.status === "DISABLED"
@@ -68,6 +79,7 @@ export function AccountProfile() {
                         : "Hoạt động"}
                     </Badge>
                   </div>
+                  <AccountAvatar key={query.data.id} user={query.data} />
                   <dl className="grid gap-4 text-sm sm:grid-cols-2">
                     {[
                       ["Email", query.data.email],
@@ -75,7 +87,9 @@ export function AccountProfile() {
                     ].map(([label, value]) => (
                       <div key={label} className="min-w-0">
                         <dt className="text-muted-foreground">{label}</dt>
-                        <dd className="mt-1 break-words font-medium">{value}</dd>
+                        <dd className="mt-1 break-words font-medium">
+                          {value}
+                        </dd>
                       </div>
                     ))}
                   </dl>
@@ -97,7 +111,7 @@ export function AccountProfile() {
             )}
           </CardContent>
         </Card>
-        {query.data && (
+        {hydrated && query.data && (
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Đổi mật khẩu</CardTitle>

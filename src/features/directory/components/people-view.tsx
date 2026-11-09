@@ -43,7 +43,11 @@ import {
 import { SheetCloseButton } from "@/components/shared/actions/sheet-close-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
-import { AREA, canAccessArea } from "@/constants/role-access";
+import {
+  AREA,
+  canAccessArea,
+  canManageAccounts,
+} from "@/constants/role-access";
 import { ROUTES } from "@/constants/routes";
 import type { WebRole } from "@/constants/roles";
 import {
@@ -66,6 +70,7 @@ import {
   ACCOUNT_ROLE_LABEL,
   AccountEditForm,
   StaffAccountCreateForm,
+  TeacherAccountCreateForm,
   type AccountKind,
 } from "./accounts-view";
 import {
@@ -84,7 +89,7 @@ const PEOPLE_TABS = {
 type PeopleTab = keyof typeof PEOPLE_TABS;
 const PEOPLE_TAB_KEYS = Object.keys(PEOPLE_TABS) as PeopleTab[];
 const PRIMARY_ACTION: Partial<Record<PeopleTab, string>> = {
-  teachers: "Mời giáo viên",
+  teachers: "Tạo giáo viên",
   staff: "Tạo tài khoản",
   managers: "Mời quản lý",
 };
@@ -181,12 +186,12 @@ export function PeopleHub({ role }: { role: WebRole }) {
     } satisfies Record<PeopleTab, number | undefined>;
   });
   const kind: AccountKind = tab === "teachers" ? "teachers" : "staff";
-  const actionLabel = PRIMARY_ACTION[tab];
+  const actionLabel = canManageAccounts(role) ? PRIMARY_ACTION[tab] : undefined;
   return (
     <PageContainer maxWidth="full" className="min-w-0">
       <PageHeader
         title="Nhân sự"
-        description="Giáo viên, nhân viên vận hành, thiết kế giáo trình và quản lý trung tâm. Mời giáo viên, quản lý qua email; tạo tài khoản nhân viên, thiết kế giáo trình; khóa hoặc mở tài khoản."
+        description="Tạo tài khoản giáo viên, nhân viên vận hành và thiết kế giáo trình; mời quản lý qua email; khóa hoặc mở tài khoản."
         actions={
           actionLabel ? (
             <Button onClick={() => setCreating(true)}>{actionLabel}</Button>
@@ -194,6 +199,7 @@ export function PeopleHub({ role }: { role: WebRole }) {
         }
       />
       <Tabs
+        className="min-w-0"
         value={tab}
         onValueChange={(value) => {
           const next = tabs.find((key) => key === value);
@@ -202,10 +208,17 @@ export function PeopleHub({ role }: { role: WebRole }) {
           void setTab(next);
         }}
       >
-        <TabsList aria-label="Nhóm tài khoản">
+        <TabsList
+          aria-label="Nhóm tài khoản"
+          className="max-w-full flex-wrap justify-start rounded-2xl group-data-horizontal/tabs:h-auto sm:rounded-full"
+        >
           {tabs.map((key) => (
-            <TabsTrigger key={key} value={key}>
-              {PEOPLE_TABS[key]}
+            <TabsTrigger
+              key={key}
+              value={key}
+              className="min-h-11 flex-none whitespace-normal rounded-full py-2 text-center sm:min-h-9"
+            >
+              <span className="wrap-break-word">{PEOPLE_TABS[key]}</span>
               {counts.data?.[key] !== undefined && (
                 <Badge variant="neutral" className="ml-1.5 h-5 px-2">
                   {counts.data[key]}
@@ -222,7 +235,8 @@ export function PeopleHub({ role }: { role: WebRole }) {
             <Card key={invitationKind} className="min-w-0">
               <CardHeader>
                 <CardTitle>
-                  Lời mời {INVITATION_LABEL[invitationKind]}
+                  {invitationKind === "teacher" ? "Lịch sử lời mời" : "Lời mời"}{" "}
+                  {INVITATION_LABEL[invitationKind]}
                 </CardTitle>
               </CardHeader>
               <CardContent className="min-w-0">
@@ -273,19 +287,21 @@ export function PeopleHub({ role }: { role: WebRole }) {
           <DialogHeader>
             <DialogTitle>{actionLabel}</DialogTitle>
             <DialogDescription>
-              {tab === "staff"
-                ? "Tạo tài khoản đăng nhập cho nhân viên vận hành hoặc thiết kế giáo trình."
-                : "Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt ở tab Lời mời."}
+              {tab === "teachers"
+                ? "Tạo tài khoản giáo viên với họ tên, email và mật khẩu ban đầu. Giáo viên có thể đăng nhập ngay sau khi tạo."
+                : tab === "staff"
+                  ? "Tạo tài khoản đăng nhập cho nhân viên vận hành hoặc thiết kế giáo trình."
+                  : "Người nhận tự đặt họ tên và mật khẩu, sau đó chờ quản lý duyệt ở tab Lời mời."}
             </DialogDescription>
           </DialogHeader>
           {creating &&
+            actionLabel &&
             (tab === "staff" ? (
               <StaffAccountCreateForm onDone={() => setCreating(false)} />
-            ) : tab === "teachers" || tab === "managers" ? (
-              <InvitationForm
-                key={tab}
-                kind={tab === "teachers" ? "teacher" : "manager"}
-              />
+            ) : tab === "teachers" ? (
+              <TeacherAccountCreateForm onDone={() => setCreating(false)} />
+            ) : tab === "managers" ? (
+              <InvitationForm kind="manager" />
             ) : null)}
         </DialogContent>
       </Dialog>
@@ -431,7 +447,9 @@ function AccountsTable({
               if (classes.isPending)
                 return <span className="text-muted-foreground">Đang tải…</span>;
               if (classes.isError)
-                return <span className="text-destructive">Chưa tải được lớp</span>;
+                return (
+                  <span className="text-destructive">Chưa tải được lớp</span>
+                );
               const names = (byTeacher.get(row.original.id) ?? []).map(
                 (classroom) => classroom.name,
               );
@@ -461,7 +479,10 @@ function AccountsTable({
           } satisfies DataTableColumn<BackendUser>,
         ]
       : [
-          { accessorKey: "email", header: "Email" } satisfies DataTableColumn<BackendUser>,
+          {
+            accessorKey: "email",
+            header: "Email",
+          } satisfies DataTableColumn<BackendUser>,
           {
             id: "role",
             header: "Vai trò",
@@ -526,7 +547,10 @@ function AccountsTable({
   return (
     <>
       {kind === "teachers" && (
-        <ApiFeedback error={classes.error} retry={() => void classes.refetch()} />
+        <ApiFeedback
+          error={classes.error}
+          retry={() => void classes.refetch()}
+        />
       )}
       <DataTable
         columns={columns}
@@ -744,7 +768,9 @@ function PersonSheetContent({
                       size="sm"
                       variant="outline"
                       render={
-                        <Link href={ROUTES.MANAGER.CLASS_DETAIL(classroom.id)} />
+                        <Link
+                          href={ROUTES.MANAGER.CLASS_DETAIL(classroom.id)}
+                        />
                       }
                     >
                       Xem lớp

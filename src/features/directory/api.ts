@@ -7,7 +7,11 @@ import {
   reviewInvitationSchema,
   studentUpdateSchema,
 } from "@/lib/validators/web-workflows";
-import { queryPath, readDirectoryPages } from "@/features/academic/api";
+import {
+  queryPath,
+  readArrayPages,
+  readDirectoryPages,
+} from "@/features/academic/api";
 import type {
   BackendUser,
   PaginatedList,
@@ -80,7 +84,7 @@ export const directoryApi = {
   ) => readDirectoryPages<BackendUser>(kind, filters, signal),
   account: (kind: AccountKind, id: string, signal?: AbortSignal) =>
     apiRequest<BackendUser>(`${kind}/${encodeURIComponent(id)}`, { signal }),
-  createAccount: (kind: Exclude<AccountKind, "teachers">, body: unknown) =>
+  createAccount: (kind: AccountKind, body: unknown) =>
     apiRequest<BackendUser>(kind, {
       method: "POST",
       body: accountCreateSchema.parse(body),
@@ -127,14 +131,16 @@ export const directoryApi = {
     );
   },
   studentEnrollments: (id: string, signal?: AbortSignal) =>
-    apiRequest<EnrollmentRecord[]>(
+    readArrayPages<EnrollmentRecord>(
       `students/${encodeURIComponent(id)}/enrollments`,
-      { signal },
+      {},
+      signal,
     ),
   studentSchedule: (id: string, signal?: AbortSignal) =>
-    apiRequest<StudentSchedule[]>(
+    readArrayPages<StudentSchedule>(
       `students/${encodeURIComponent(id)}/schedule`,
-      { signal },
+      {},
+      signal,
     ),
   dashboard: (filters: DirectoryFilters, signal?: AbortSignal) =>
     apiRequest<DashboardRecord>(queryPath("dashboard", filters), { signal }),
@@ -161,7 +167,7 @@ export const directoryApi = {
       queryPath(`${kind}-invitations`, filters),
       { signal },
     ),
-  invite: (kind: InvitationKind, body: unknown) =>
+  invite: (kind: "manager", body: unknown) =>
     apiRequest<AccountInvitation>(`${kind}-invitations`, {
       method: "POST",
       body: invitationSchema.parse(body),

@@ -110,7 +110,7 @@ export function TeacherClassDetailView({ classId }: { classId: string }) {
                   quản lý trung tâm mở khóa nếu cần thay đổi.
                 </p>
               ) : (
-                c.weeklySchedules.length > 0 && (
+                c.program.sessionsPerWeek != null && c.weeklySchedules.length === c.program.sessionsPerWeek && (
                   <div className="space-y-2 rounded-2xl border border-border p-4">
                     <p className="font-medium">Xác nhận lịch cố định</p>
                     <ApiForm
@@ -129,6 +129,11 @@ export function TeacherClassDetailView({ classId }: { classId: string }) {
                     />
                   </div>
                 )
+              )}
+              {!c.scheduleConfirmedAt && (c.program.sessionsPerWeek == null || c.weeklySchedules.length !== c.program.sessionsPerWeek) && (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {c.program.sessionsPerWeek == null ? "Khóa chưa cấu hình số buổi/tuần." : `Lịch hiện có ${c.weeklySchedules.length}/${c.program.sessionsPerWeek} buổi/tuần.`} Báo Quản lý hoàn thiện lịch trước khi xác nhận.
+                </p>
               )}
               <Button
                 variant="outline"

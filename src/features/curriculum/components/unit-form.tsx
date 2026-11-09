@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,9 +27,9 @@ import type { CurriculumUnit } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { useCurriculumMutation } from "../hooks/use-curriculum";
 import { useCurriculumUnits } from "../hooks/use-curriculum";
-import { estimateLessons } from "../workspace-selectors";
+import { canCopyCurriculum, estimateLessons } from "../workspace-selectors";
 import { sessionsInRange } from "../readiness";
-import { todayInVietnam } from "@/lib/calendar-date";
+import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import { useCurrentRole } from "@/hooks/use-current-role";
 import {
   useCurriculumFormState,
@@ -66,6 +66,7 @@ export function UnitForm({
     "lessonSource",
     parseAsStringLiteral(["copy", "csv", "empty"]).withDefault("empty"),
   );
+  const [copySource, setCopySource] = useQueryState("copySource", parseAsString.withDefault(""));
   const selectedProgram = useWatch({
     control: form.control,
     name: "programId",
@@ -81,16 +82,14 @@ export function UnitForm({
     enabled: canReadClasses,
     retry: false,
   });
-  const today = todayInVietnam();
-  const sourceUnit = (sources.data ?? [])
-    .filter(
-      (item) =>
-        item.programId === selectedProgram &&
-        item.status === "APPROVED" &&
-        item.fromDate.slice(0, 10) <= today &&
-        item.toDate.slice(0, 10) >= today,
-    )
-    .sort((a, b) => b.version - a.version)[0];
+  const today = useVietnamDate();
+  const copyCandidates = (sources.data ?? [])
+    .filter((item) => item.programId === selectedProgram && canCopyCurriculum(item))
+    .sort((a, b) => b.fromDate.localeCompare(a.fromDate) || b.version - a.version);
+  const sourceUnit = copyCandidates.find((item) => item.id === copySource)
+    ?? copyCandidates.find((item) => item.status === "APPROVED" && item.fromDate.slice(0, 10) <= today && item.toDate.slice(0, 10) >= today)
+    ?? copyCandidates.find((item) => item.toDate.slice(0, 10) < today)
+    ?? copyCandidates[0];
   // Chi tiết khóa có lớp + lịch tuần + giáo viên (BE 19/10), đọc được cả với Thiết kế giáo trình.
   const programDetail = useQuery({
     queryKey: ["curriculum", "program-readiness", selectedProgram],
@@ -112,7 +111,8 @@ export function UnitForm({
     : (canReadClasses ? (classes.data ?? []) : []).filter(
         (item) => item.programId === selectedProgram,
       );
-  const estimate = estimateLessons(fromDate, toDate, programClasses);
+  const frequency = programDetail.data?.sessionsPerWeek;
+  const estimate = estimateLessons(fromDate, toDate, programClasses, frequency);
   const exactNeeds =
     estimate && detailHasSchedules
       ? detailClasses
@@ -131,7 +131,8 @@ export function UnitForm({
   const overlapping = (sources.data ?? []).filter(
     (item) =>
       item.id !== unit?.id &&
-      item.status === "APPROVED" &&
+      // Auto-archived periods stay authoritative for their dates (BE-2).
+      (item.status === "APPROVED" || item.archiveReason === "SUPERSEDED") &&
       item.programId === selectedProgram &&
       fromDate &&
       toDate &&
@@ -212,7 +213,7 @@ export function UnitForm({
           <Select
             value={source}
             items={{
-              copy: "Sao chép kỳ đang dùng",
+              copy: "Sao chép giáo trình đã duyệt",
               csv: "Nhập từ CSV",
               empty: "Soạn từ đầu",
             }}
@@ -224,7 +225,7 @@ export function UnitForm({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="copy" disabled={!sourceUnit}>
-                Sao chép kỳ đang dùng
+                Sao chép giáo trình đã duyệt
               </SelectItem>
               <SelectItem value="csv">Nhập từ CSV</SelectItem>
               <SelectItem value="empty">Soạn từ đầu</SelectItem>
@@ -234,11 +235,22 @@ export function UnitForm({
             {source === "copy"
               ? sourceUnit
                 ? `Sao chép từ ${sourceUnit.title} · ${sourceUnit._count?.lessons ?? "chưa rõ số"} bài. Bản nguồn được giữ nguyên.`
-                : "Khóa học chưa có bản đã duyệt đang hiệu lực để sao chép."
+                : "Khóa học chưa có nguồn đã duyệt được phép sao chép."
               : source === "csv"
                 ? "Tạo bản trống, sau đó mở bước xem trước CSV."
                 : "Tạo bản trống và thêm từng bài học."}
           </p>
+          {source === "copy" && !!copyCandidates.length && (
+            <div className="space-y-2">
+              <Label htmlFor="unit-copy-source">Giáo trình nguồn</Label>
+              <Select value={sourceUnit?.id ?? null}
+                items={copyCandidates.map((item) => ({ value: item.id, label: `${item.title} · v${item.version}${item.status === "ARCHIVED" ? " · Đã lưu trữ" : ""}` }))}
+                onValueChange={(value) => void setCopySource(typeof value === "string" ? value : "")}>
+                <SelectTrigger id="unit-copy-source"><SelectValue /></SelectTrigger>
+                <SelectContent>{copyCandidates.map((item) => <SelectItem key={item.id} value={item.id}>{item.title} · v{item.version}{item.status === "ARCHIVED" ? " · Đã lưu trữ" : ""}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          )}
           <ApiFeedback
             error={sources.error}
             retry={() => void sources.refetch()}
@@ -250,20 +262,18 @@ export function UnitForm({
         aria-label="Kiểm tra số bài cần"
       >
         <p className="font-medium">Kiểm tra trước khi {unit ? "lưu" : "tạo"}</p>
-        {!canReadClasses && !detailHasSchedules && (
-          <div className="space-y-1">
-            <Label htmlFor="unit-weekly-count">Số buổi/tuần</Label>
-            <Input
-              id="unit-weekly-count"
-              disabled
-              placeholder="Chờ dữ liệu khóa học"
-            />
-            <p className="text-xs text-muted-foreground">
-              Khóa học chưa có dữ liệu số buổi/tuần. Quản lý kiểm tra số bài
-              cần khi sinh lịch.
-            </p>
-          </div>
-        )}
+        <div className="space-y-1">
+          <Label htmlFor="unit-weekly-count">Số buổi/tuần</Label>
+          <Input
+            id="unit-weekly-count"
+            readOnly
+            value={frequency ?? ""}
+            placeholder="Chưa cấu hình"
+          />
+          <p className="text-xs text-muted-foreground">
+            {frequency == null ? "Quản lý cần cấu hình số buổi/tuần tại khóa học." : "Chuẩn của khóa học; Quản lý thay đổi tại thông tin khóa."}
+          </p>
+        </div>
         {estimate ? (
           <>
             <p>
@@ -294,7 +304,7 @@ export function UnitForm({
                 {estimate.minWeekly === estimate.maxWeekly
                   ? estimate.minWeekly
                   : `${estimate.minWeekly}–${estimate.maxWeekly}`}{" "}
-                buổi/tuần theo lịch các lớp đang hoạt động.
+                buổi/tuần {estimate.source === "course" ? "theo chuẩn khóa, số tuần làm tròn." : "theo lịch các lớp đang hoạt động."}
               </p>
             ) : (
               <p>Chưa có lịch tuần của lớp để ước tính số bài cần.</p>

@@ -12,6 +12,7 @@ export const MENU_BADGE_KEYS = {
   UNGRADED_SUBMISSIONS: "ungradedSubmissions",
   PENDING_AI_REVIEW: "pendingAiReview",
   PENDING_REGISTRATIONS: "pendingRegistrations",
+  CHAT_UNREAD: "chatUnread",
 } as const;
 
 export type MenuBadgeKey =
@@ -159,6 +160,13 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     groupTitle: "TRUNG TÂM",
     items: [
       {
+        title: "Trò chuyện",
+        href: ROUTES.MANAGER.CHAT,
+        iconName: "BubbleChatIcon",
+        area: AREA.CHAT,
+        badgeKey: MENU_BADGE_KEYS.CHAT_UNREAD,
+      },
+      {
         title: "Nhân sự",
         href: ROUTES.MANAGER.PEOPLE,
         iconName: "UserSettings01Icon",
@@ -240,6 +248,18 @@ export const MENU_STAFF: MenuGroup[] = [
       },
     ],
   },
+  {
+    groupTitle: "LIÊN LẠC",
+    items: [
+      {
+        title: "Trò chuyện",
+        href: ROUTES.STAFF.CHAT,
+        iconName: "BubbleChatIcon",
+        area: AREA.CHAT,
+        badgeKey: MENU_BADGE_KEYS.CHAT_UNREAD,
+      },
+    ],
+  },
 ];
 
 export const MENU_TEACHER: MenuGroup[] = [
@@ -298,6 +318,18 @@ export const MENU_TEACHER: MenuGroup[] = [
         href: ROUTES.TEACHER.REPORTS,
         iconName: "Analytics01Icon",
         area: AREA.TEACHER_PORTAL,
+      },
+    ],
+  },
+  {
+    groupTitle: "LIÊN LẠC",
+    items: [
+      {
+        title: "Trò chuyện",
+        href: ROUTES.TEACHER.CHAT,
+        iconName: "BubbleChatIcon",
+        area: AREA.CHAT,
+        badgeKey: MENU_BADGE_KEYS.CHAT_UNREAD,
       },
     ],
   },

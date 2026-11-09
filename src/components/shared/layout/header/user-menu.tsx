@@ -32,6 +32,9 @@ export interface UserMenuProps {
   name?: string;
   roleLabel?: string;
   avatarUrl?: string;
+  onAvatarStatusChange?: React.ComponentProps<
+    typeof AvatarImage
+  >["onLoadingStatusChange"];
   email?: string;
   /** Dòng nhỏ dưới tên — mặc định hiện `email`, truyền vào để hiện thứ khác. */
   subtitleLine?: string;
@@ -45,6 +48,7 @@ function UserMenu({
   name = "Tài khoản",
   roleLabel,
   avatarUrl,
+  onAvatarStatusChange,
   email,
   subtitleLine,
   accountHref = ROUTES.MANAGER.PROFILE,
@@ -90,27 +94,41 @@ function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={`Mở menu tài khoản ${name}`}
-        className="flex items-center gap-2.5 rounded-full p-1.5 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none"
+        className="flex min-h-11 min-w-11 max-w-full items-center gap-2.5 rounded-full p-1.5 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 outline-none motion-reduce:transition-none"
       >
         <Avatar size="sm">
-          <AvatarImage src={avatarUrl} alt={name} />
+          <AvatarImage
+            src={avatarUrl}
+            alt={name}
+            onLoadingStatusChange={onAvatarStatusChange}
+          />
           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
             {initials}
           </AvatarFallback>
         </Avatar>
-        <div className="hidden flex-col text-left sm:flex">
+        <div className="hidden min-w-0 max-w-48 flex-col text-left xl:flex">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold leading-none text-foreground">
+            <span
+              className="min-w-0 truncate text-xs font-semibold leading-tight text-foreground"
+              title={name}
+            >
               {name}
             </span>
             {roleLabel && (
-              <Badge variant="info" className="px-1.5 py-0 text-[10px] h-4">
+              <Badge
+                variant="info"
+                className="max-w-24 shrink-0 truncate px-1.5 py-0 text-[10px] h-4"
+                title={roleLabel}
+              >
                 {roleLabel}
               </Badge>
             )}
           </div>
           {(subtitleLine ?? email) && (
-            <span className="text-[11px] text-muted-foreground">
+            <span
+              className="truncate text-[11px] text-muted-foreground"
+              title={subtitleLine ?? email}
+            >
               {subtitleLine ?? email}
             </span>
           )}
@@ -123,9 +141,11 @@ function UserMenu({
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col gap-0.5">
-            <span className="font-semibold text-foreground">{name}</span>
+            <span className="wrap-break-word font-semibold text-foreground">
+              {name}
+            </span>
             {email && (
-              <span className="text-xs text-muted-foreground font-normal">
+              <span className="wrap-break-word text-xs text-muted-foreground font-normal">
                 {email}
               </span>
             )}

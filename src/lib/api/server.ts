@@ -53,10 +53,9 @@ export function backendError(status: number, code: string, message: string) {
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "[::1]"]);
 let hasLoggedConfigProblem = false;
 function backendBaseUrl() {
-  return (process.env.BACKEND_API_URL ?? "http://localhost:3000/api/v1").replace(
-    /\/$/,
-    "",
-  );
+  return (
+    process.env.BACKEND_API_URL ?? "http://localhost:3000/api/v1"
+  ).replace(/\/$/, "");
 }
 /**
  * Địa chỉ trình duyệt dùng để mở Socket.IO thông báo. Mặc định là origin của BACKEND_API_URL;
@@ -275,5 +274,6 @@ export function webUser(user: BackendUser) {
     role,
     emailVerifiedAt: user.emailVerifiedAt,
     status: user.status,
+    hasAvatar: user.hasAvatar === true,
   };
 }

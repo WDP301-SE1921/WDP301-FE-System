@@ -1,4 +1,5 @@
 import { apiRequest } from "@/lib/api/client";
+import { readArrayPages } from "@/features/academic/api";
 import {
   curriculumUnitSchema,
   curriculumLessonSchema,
@@ -40,13 +41,9 @@ import type { PaginatedList } from "@/types/backend";
 const unitsPath = "academic/curriculum-units";
 const unitPath = (id: string) => `${unitsPath}/${encodeURIComponent(id)}`;
 export const curriculumApi = {
+  /** BE luôn phân trang danh sách giáo trình (mặc định 20) nên đọc hết các trang. */
   units: (programId?: string, signal?: AbortSignal) =>
-    apiRequest<CurriculumUnit[]>(
-      programId
-        ? `${unitsPath}?${new URLSearchParams({ programId })}`
-        : unitsPath,
-      { signal },
-    ),
+    readArrayPages<CurriculumUnit>(unitsPath, { programId }, signal),
   unit: (id: string, signal?: AbortSignal) =>
     apiRequest<CurriculumUnitDetail>(unitPath(id), { signal }),
   create: (input: CurriculumUnitInput) =>
@@ -134,7 +131,7 @@ export const curriculumApi = {
       method: "POST",
     }),
   reviewers: (id: string, signal?: AbortSignal) =>
-    apiRequest<CurriculumReviewer[]>(`${unitPath(id)}/reviewers`, { signal }),
+    readArrayPages<CurriculumReviewer>(`${unitPath(id)}/reviewers`, {}, signal),
   submit: (id: string, input: CurriculumSubmitInput) =>
     apiRequest<CurriculumUnitDetail>(`${unitPath(id)}/submit`, {
       method: "POST",
@@ -183,9 +180,10 @@ export const curriculumApi = {
       },
     ),
   generations: (classId: string, signal?: AbortSignal) =>
-    apiRequest<SessionGeneration[]>(
+    readArrayPages<SessionGeneration>(
       `academic/classes/${encodeURIComponent(classId)}/session-generations`,
-      { signal },
+      {},
+      signal,
     ),
   generation: (id: string, signal?: AbortSignal) =>
     apiRequest<SessionGeneration>(

@@ -9,6 +9,7 @@ import {
   resetPasswordPayloadSchema,
 } from "@/lib/validators/auth";
 import { parentSearchSchema } from "@/features/registration-flow/schemas";
+import { avatarFileSchema } from "@/lib/validators/storage";
 import { ROLE_HOME_ROUTE } from "@/constants/role-access";
 import { backendRule } from "@/lib/api/backend-permissions";
 import {
@@ -37,6 +38,7 @@ async function handle(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
 ) {
+  let roleRenewal: BackendAuth | undefined;
   try {
     const { path: segments } = await context.params;
     if (segments.some((part) => !/^[a-zA-Z0-9_-]+$/.test(part)))
@@ -172,6 +174,7 @@ async function handle(
     const permittedRoles = rule.roles;
     if (permittedRoles) {
       const session = await authorizedBackendFetch(request, "auth/me");
+      roleRenewal = session.renewed;
       const user = webUser(await readBackend<BackendUser>(session.response));
       if (!permittedRoles.includes(user.role))
         throw backendError(
@@ -192,7 +195,47 @@ async function handle(
         "VALIDATION_ERROR",
         "Nhập từ 2 đến 255 ký tự email để tìm phụ huynh.",
       );
-    if (path === "academic/assignments/import-preview") {
+    if (
+      /^chat\/conversations\/[^/]+\/messages$/.test(path) &&
+      request.method === "POST" &&
+      request.headers.get("content-type")?.startsWith("multipart/form-data")
+    ) {
+      const data = await request.formData();
+      const file = data.get("file");
+      const body = data.get("body");
+      const validBody =
+        body === null || (typeof body === "string" && body.length <= 2000);
+      const validFile =
+        file instanceof File && file.size > 0 && file.size <= 10 * 1024 * 1024;
+      if (
+        !validBody ||
+        !validFile ||
+        (!String(body ?? "").trim() && !file) ||
+        data.getAll("file").length !== 1 ||
+        data.getAll("body").length > 1 ||
+        [...data.keys()].some((field) => field !== "file" && field !== "body")
+      )
+        throw backendError(
+          400,
+          "CHAT_ATTACHMENT_INVALID",
+          "Chọn một tệp tối đa 10 MB và nội dung tin nhắn hợp lệ.",
+        );
+      init.body = data;
+    } else if (path === "auth/me/avatar" && request.method === "PUT") {
+      const data = await request.formData();
+      const parsed = avatarFileSchema.safeParse(data.get("file"));
+      if (
+        !parsed.success ||
+        data.getAll("file").length !== 1 ||
+        [...data.keys()].some((field) => field !== "file")
+      )
+        throw backendError(
+          400,
+          "VALIDATION_ERROR",
+          "Chọn một ảnh PNG hoặc JPG, dung lượng lớn hơn 0 và tối đa 5 MiB.",
+        );
+      init.body = data;
+    } else if (path === "academic/assignments/import-preview") {
       const data = await request.formData();
       const file = data.get("file");
       const classId = data.get("classId");
@@ -272,10 +315,11 @@ async function handle(
         headers,
       });
     }
-    if (renewed)
+    const sessionRenewal = renewed ?? roleRenewal;
+    if (sessionRenewal)
       setSessionCookies(
         response,
-        renewed,
+        sessionRenewal,
         request.cookies.get(SESSION_COOKIES.REMEMBER)?.value === "1",
       );
     if (path === "auth/logout" && upstream.ok) {
@@ -297,6 +341,12 @@ async function handle(
       status: failure.status,
       headers: { "Cache-Control": "no-store" },
     });
+    if (roleRenewal)
+      setSessionCookies(
+        response,
+        roleRenewal,
+        request.cookies.get(SESSION_COOKIES.REMEMBER)?.value === "1",
+      );
     if (failure.status === 401) clearSessionCookies(response);
     return response;
   }

@@ -12,6 +12,12 @@ const catalogReaders = [...sessionReaders, "curriculum_designer"] as const;
 const staff = ["staff"] as const;
 const teacher = ["teacher"] as const;
 const managerOrStaff = ["center_manager", "staff"] as const;
+const chatRoles = [
+  "center_manager",
+  "curriculum_designer",
+  "staff",
+  "teacher",
+] as const;
 
 // BE also enforces ownership and state; unmatched method/path pairs are denied.
 const rules: {
@@ -28,6 +34,30 @@ const rules: {
   },
   { method: "PATCH", path: /^notifications\/[^/]+\/read$/, roles: null },
   { method: "POST", path: /^notifications\/read-all$/, roles: null },
+  {
+    method: "GET",
+    path: /^chat\/(?:users|conversations|unread-count)$/,
+    roles: chatRoles,
+  },
+  { method: "POST", path: /^chat\/conversations$/, roles: chatRoles },
+  {
+    method: "GET",
+    path: /^chat\/conversations\/[^/]+\/messages$/,
+    roles: chatRoles,
+  },
+  {
+    method: "POST",
+    path: /^chat\/conversations\/[^/]+\/(?:messages|read)$/,
+    roles: chatRoles,
+  },
+  {
+    method: "DELETE",
+    path: /^chat\/conversations\/[^/]+\/messages\/[^/]+$/,
+    roles: chatRoles,
+  },
+  { method: "GET", path: /^push\/public-key$/, roles: chatRoles },
+  { method: "POST", path: /^push\/subscriptions$/, roles: chatRoles },
+  { method: "DELETE", path: /^push\/subscriptions$/, roles: chatRoles },
   // Vé 60 giây để trình duyệt mở socket thông báo; access token vẫn ở cookie httpOnly.
   { method: "POST", path: /^auth\/realtime-ticket$/, roles: null },
   {
@@ -37,6 +67,7 @@ const rules: {
   },
   { method: "GET", path: /^staff(?:\/[^/]+)?$/, roles: manager },
   { method: "POST", path: /^staff$/, roles: manager },
+  { method: "POST", path: /^teachers$/, roles: manager },
   // Tài khoản Thiết kế giáo trình, chung bảng với Nhân viên (BE-10).
   {
     method: "GET",
@@ -164,7 +195,7 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^(teacher|manager)-invitations$|^account-invitations\/[^/]+\/(review|revoke|resend)$/,
+    path: /^manager-invitations$|^account-invitations\/[^/]+\/(review|revoke|resend)$/,
     roles: manager,
   },
   {
@@ -200,7 +231,11 @@ const rules: {
     roles: teacher,
   },
   { method: "POST", path: /^academic\/reports$/, roles: teacher },
-  { method: "GET", path: /^academic\/files\/[^/]+\/download$/, roles: teacher },
+  {
+    method: "GET",
+    path: /^academic\/files\/[^/]+\/(preview|download)$/,
+    roles: teacher,
+  },
   {
     method: "GET",
     path: /^academic\/(lessons|feedback)$/,
@@ -227,6 +262,16 @@ const rules: {
     roles: manager,
   },
   { method: "GET", path: /^auth\/me$/, roles: null },
+  ...["GET", "PUT", "DELETE"].map((method) => ({
+    method,
+    path: /^auth\/me\/avatar$/,
+    roles: [
+      "center_manager",
+      "staff",
+      "curriculum_designer",
+      "teacher",
+    ] as const,
+  })),
   { method: "PATCH", path: /^auth\/me$/, roles: null },
   {
     method: "POST",
@@ -351,6 +396,32 @@ const rules: {
   {
     method: "POST",
     path: /^academic\/sessions\/[^/]+\/(reschedule-preview|reschedule|cancel)$/,
+    roles: manager,
+  },
+  // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa xác minh, Quản lý duyệt.
+  {
+    method: "GET",
+    path: /^academic\/programs\/[^/]+\/outcome-sets$/,
+    roles: catalogReaders,
+  },
+  {
+    method: "POST",
+    path: /^academic\/outcome-sets(?:\/[^/]+\/outcomes)?$/,
+    roles: designer,
+  },
+  {
+    method: "PATCH",
+    path: /^academic\/(outcome-sets\/[^/]+\/outcomes\/[^/]+|lessons\/[^/]+\/outcomes)$/,
+    roles: designer,
+  },
+  {
+    method: "POST",
+    path: /^academic\/(outcomes\/[^/]+\/verify-source|outcome-sets\/[^/]+\/technical-approve)$/,
+    roles: teacher,
+  },
+  {
+    method: "POST",
+    path: /^academic\/outcome-sets\/[^/]+\/(approve|request-changes)$/,
     roles: manager,
   },
 ];

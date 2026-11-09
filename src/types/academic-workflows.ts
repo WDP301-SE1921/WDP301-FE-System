@@ -3,6 +3,7 @@ import type {
   RegistrationOrder,
   StudentProfile,
 } from "./backend";
+import type { LearningTarget } from "./outcomes";
 
 export interface EnrollmentRecord {
   id: string;
@@ -107,11 +108,15 @@ export interface AssignmentQuestion {
   correctAnswer?: string;
   rubric?: string;
   maxScore: number;
+  outcomeId?: string | null;
 }
 export interface AssignmentDetail extends AssignmentSummary {
   instructions: string;
   recipients: { id: string; enrollmentId: string }[];
   questions: AssignmentQuestion[];
+  /** Bộ CLO đã duyệt mà bài đo; `null` khi bài không gắn CLO. */
+  outcomeSetId?: string | null;
+  learningTargets?: LearningTarget[];
 }
 export interface AssignmentImportPreview {
   fileName: string;

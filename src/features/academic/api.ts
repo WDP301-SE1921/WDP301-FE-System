@@ -1,5 +1,6 @@
 import { apiRequest, ApiError } from "@/lib/api/client";
 import type { PaginatedList } from "@/types/backend";
+import type { OutcomeSet, OutcomeSetStatus } from "@/types/outcomes";
 import type {
   ScheduledSession,
   ScheduledSessionDetail,
@@ -48,6 +49,27 @@ import {
   transferSchema,
 } from "@/lib/validators/web-workflows";
 import { assignmentImportPreviewSchema } from "@/lib/validators/assignment-import";
+import { signedAccessUrlSchema } from "@/lib/validators/storage";
+import type { SignedAccessUrl } from "@/types/storage";
+
+async function readFileAccess(
+  id: string,
+  action: "preview" | "download",
+  signal?: AbortSignal,
+): Promise<SignedAccessUrl> {
+  const value = await apiRequest<unknown>(
+    `academic/files/${encodeURIComponent(id)}/${action}`,
+    { signal },
+  );
+  const parsed = signedAccessUrlSchema.safeParse(value);
+  if (!parsed.success)
+    throw new ApiError(
+      "INVALID_API_RESPONSE",
+      "Không đọc được đường dẫn tệp. Vui lòng thử lại.",
+      502,
+    );
+  return parsed.data;
+}
 
 export function queryPath(
   path: string,
@@ -119,6 +141,30 @@ export async function readDirectoryPages<T>(
 const itemPath = (collection: string, id: string) =>
   `academic/${collection}/${encodeURIComponent(id)}`;
 /** BE hieu ngay YYYY-MM-DD la ca ngay theo UTC+7. */
+/**
+ * Tổng hợp chuyên cần: `counts`/`students` tính trên toàn kỳ, riêng `history` bị BE
+ * phân trang (`page`, `limit`, `total`) nên gộp lịch sử của mọi trang.
+ */
+async function readAttendancePages<T extends { history: unknown[] }>(
+  path: string,
+  filters: Record<string, string | undefined>,
+  signal?: AbortSignal,
+): Promise<T> {
+  const first = await apiRequest<T & { total?: number }>(
+    queryPath(path, { ...filters, page: 1, limit: 100 }),
+    { signal },
+  );
+  const history = [...first.history];
+  for (let page = 2; history.length < (first.total ?? 0); page++) {
+    const next = await apiRequest<T>(
+      queryPath(path, { ...filters, page, limit: 100 }),
+      { signal },
+    );
+    if (!next.history.length) break;
+    history.push(...next.history);
+  }
+  return { ...first, history };
+}
 export function attendanceRange(fromDate: string, toDate: string) {
   return { fromDate, toDate };
 }
@@ -164,9 +210,10 @@ export const academicApi = {
   cancelLeave: (id: string) => command(`${itemPath("leaves", id)}/cancel`),
   /** Chuyên cần một học sinh trong một lớp (Giáo viên lớp đó; Quản lý, Nhân viên — BE-8). */
   classAttendance: (classId: string, studentId: string, signal?: AbortSignal) =>
-    apiRequest<ClassAttendanceSummary>(
-      `${itemPath("classes", classId)}/attendance-summary?${new URLSearchParams({ studentId })}`,
-      { signal },
+    readAttendancePages<ClassAttendanceSummary>(
+      `${itemPath("classes", classId)}/attendance-summary`,
+      { studentId },
+      signal,
     ),
   /**
    * Buổi vắng đã ghi nhận (buổi đã chốt) chưa xếp học bù — cả trung tâm hoặc một học sinh.
@@ -180,9 +227,10 @@ export const academicApi = {
     ),
   /** Bài được giao của một học sinh kèm điểm đã công bố (Quản lý, Nhân viên). */
   studentGrades: (studentId: string, signal?: AbortSignal) =>
-    apiRequest<StudentGradeRecord[]>(
+    readArrayPages<StudentGradeRecord>(
       `${itemPath("students", studentId)}/grades`,
-      { signal },
+      {},
+      signal,
     ),
   makeupSources: (studentId: string, signal?: AbortSignal) =>
     readArrayPages<MakeupSource>(
@@ -225,12 +273,10 @@ export const academicApi = {
     range: { fromDate: string; toDate: string },
     signal?: AbortSignal,
   ) =>
-    apiRequest<AttendanceSummary>(
-      queryPath(
-        `${itemPath("classes", classId)}/attendance-summary`,
-        attendanceRange(range.fromDate, range.toDate),
-      ),
-      { signal },
+    readAttendancePages<AttendanceSummary>(
+      `${itemPath("classes", classId)}/attendance-summary`,
+      attendanceRange(range.fromDate, range.toDate),
+      signal,
     ),
   /** `status` lọc một trạng thái; `total` là số dòng sau lọc (BE-12). */
   emailDeliveries: (
@@ -238,17 +284,41 @@ export const academicApi = {
     limit: number,
     signal?: AbortSignal,
     status?: EmailDelivery["status"],
+    /** Lọc ở BE: `search` theo người nhận, ngày tạo theo UTC+7. */
+    filters: {
+      search?: string;
+      eventType?: string;
+      fromDate?: string;
+      toDate?: string;
+    } = {},
   ) =>
     apiRequest<PaginatedList<EmailDelivery>>(
-      queryPath("academic/email-deliveries", { page, limit, status }),
+      queryPath("academic/email-deliveries", {
+        page,
+        limit,
+        status,
+        ...filters,
+      }),
       { signal },
     ),
   retryEmail: (id: string) =>
     command<EmailDelivery>(`${itemPath("email-deliveries", id)}/retry`),
+  /** Các bộ CLO của một khóa học; BE lọc theo vai trò (giáo viên chỉ khóa mình dạy). */
+  outcomeSets: (
+    programId: string,
+    filters: { status?: OutcomeSetStatus } = {},
+    signal?: AbortSignal,
+  ) =>
+    readArrayPages<OutcomeSet>(
+      `${itemPath("programs", programId)}/outcome-sets`,
+      filters,
+      signal,
+    ),
   substituteCandidates: (sessionId: string, signal?: AbortSignal) =>
-    apiRequest<SubstituteCandidate[]>(
+    readArrayPages<SubstituteCandidate>(
       `${itemPath("sessions", sessionId)}/substitute-candidates`,
-      { signal },
+      {},
+      signal,
     ),
   substitute: (sessionId: string, body: unknown) =>
     command(
@@ -325,10 +395,10 @@ export const academicApi = {
     readArrayPages<ReportRecord>("academic/reports", {}, signal),
   createReport: (body: unknown) =>
     command<ReportRecord>("academic/reports", reportSchema.parse(body)),
-  file: (id: string) =>
-    apiRequest<{ url: string; expiresIn: number }>(
-      `${itemPath("files", id)}/download`,
-    ),
+  previewFile: (id: string, signal?: AbortSignal) =>
+    readFileAccess(id, "preview", signal),
+  downloadFile: (id: string, signal?: AbortSignal) =>
+    readFileAccess(id, "download", signal),
   lessons: (signal?: AbortSignal) =>
     readArrayPages<LessonRecord>("academic/lessons", {}, signal),
   feedback: (signal?: AbortSignal) =>

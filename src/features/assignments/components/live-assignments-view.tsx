@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
+import { measuredLearningTargets } from "@/features/outcomes/rules";
 import {
   useLiveCommand,
   useLiveQuery,
@@ -37,6 +38,8 @@ import type {
 import { ROUTES } from "@/constants/routes";
 import { AssignmentsTable } from "./assignments-table";
 import { AssignmentSubmissionsTable } from "./assignment-submissions-table";
+import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
+import { assignmentCsv, assignmentCsvTemplate } from "../csv-export";
 const publishSchema = recipientsSchema.extend({
   confirmed: confirmationSchema.shape.confirmed,
 });
@@ -71,15 +74,33 @@ export function LiveAssignmentSubmissions({ id }: { id: string }) {
             : undefined
         }
         actions={
-          data.data?.assignment.status === "DRAFT" && (
+          data.data && (
+            <div className="flex flex-wrap items-start gap-2">
+              <CsvDownloadButton
+                label="Tải mẫu CSV"
+                createCsv={assignmentCsvTemplate}
+                filename="bai-tap-mau"
+              />
+              <CsvDownloadButton
+                createCsv={() => assignmentCsv(data.data!.assignment.questions)}
+                filename={data.data.assignment.title}
+                disabled={!data.data.assignment.questions.length}
+              />
+              {data.data.assignment.status === "DRAFT" && (
             <Button
               variant="outline"
               render={
-                <Link href={ROUTES.TEACHER.ASSIGNMENT_EDIT(data.data.assignment.id)} />
+                    <Link
+                      href={ROUTES.TEACHER.ASSIGNMENT_EDIT(
+                        data.data.assignment.id,
+                      )}
+                    />
               }
             >
               Sửa nháp
             </Button>
+              )}
+            </div>
           )
         }
       />
@@ -115,6 +136,10 @@ function AssignmentWorkspace({
       item.startDate.slice(0, 10) <= today &&
       item.endDate.slice(0, 10) > today,
   );
+  const measuredTargets = measuredLearningTargets(
+    assignment.learningTargets,
+    assignment.questions,
+  );
   return (
     <>
       {assignment.status !== "DRAFT" && (
@@ -136,6 +161,19 @@ function AssignmentWorkspace({
               {assignment.maxAttempts} lần
             </p>
             <p className="whitespace-pre-wrap">{assignment.instructions}</p>
+            {measuredTargets.length > 0 && (
+              <section aria-label="Mục tiêu bài" className="space-y-2">
+                <p className="font-medium">Mục tiêu bài (CLO)</p>
+                <ul className="space-y-1 text-sm">
+                  {measuredTargets.map((target) => (
+                    <li key={target.id}>
+                      <span className="font-medium">{target.code}</span> ·{" "}
+                      {target.title}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {assignment.questions.map((question, index) => (
               <div
                 key={question.id}
@@ -144,6 +182,14 @@ function AssignmentWorkspace({
                 <p className="font-medium">
                   Câu {index + 1} · {question.maxScore} điểm
                 </p>
+                {question.outcomeId && (
+                  <Badge variant="outline">
+                    CLO{" "}
+                    {assignment.learningTargets?.find(
+                      (target) => target.id === question.outcomeId,
+                    )?.code ?? ""}
+                  </Badge>
+                )}
                 <p className="whitespace-pre-wrap">{question.prompt}</p>
                 {question.choices?.map((choice) => (
                   <p key={choice}>{choice}</p>

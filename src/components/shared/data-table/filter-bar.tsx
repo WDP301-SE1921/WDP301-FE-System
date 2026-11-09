@@ -1,26 +1,27 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useQueryState, parseAsString } from "nuqs"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { DEBOUNCE } from "@/constants/ui"
-import { ACTION_LABEL } from "@/constants/messages"
-import { HugeiconsIcon } from "@hugeicons/react"
+import * as React from "react";
+import { useQueryState, parseAsString } from "nuqs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { DEBOUNCE } from "@/constants/ui";
+import { ACTION_LABEL } from "@/constants/messages";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Search01Icon,
   FilterIcon,
   Cancel01Icon,
-} from "@hugeicons/core-free-icons"
+} from "@hugeicons/core-free-icons";
 
 export interface FilterBarProps {
-  searchPlaceholder?: string
-  searchParamKey?: string
-  children?: React.ReactNode
-  onClearFilters?: () => void
-  onSearchChange?: (search: string) => void
-  showClearButton?: boolean
-  className?: string
+  searchPlaceholder?: string;
+  searchParamKey?: string;
+  children?: React.ReactNode;
+  onClearFilters?: () => void;
+  onSearchChange?: (search: string) => void;
+  showClearButton?: boolean;
+  className?: string;
 }
 
 function FilterBar({
@@ -35,45 +36,50 @@ function FilterBar({
   const [querySearch, setQuerySearch] = useQueryState(
     searchParamKey,
     parseAsString.withDefault(""),
-  )
-  const [inputValue, setInputValue] = React.useState(querySearch)
-  const [prevQuerySearch, setPrevQuerySearch] = React.useState(querySearch)
+  );
+  const [inputValue, setInputValue] = React.useState(querySearch);
+  const [prevQuerySearch, setPrevQuerySearch] = React.useState(querySearch);
 
   // Đồng bộ state nội bộ khi query URL đổi từ bên ngoài (vd: reset filter ở nơi khác).
   // Tính trong render thay vì effect để tránh cascading render (react-hooks/set-state-in-effect).
   if (querySearch !== prevQuerySearch) {
-    setPrevQuerySearch(querySearch)
-    setInputValue(querySearch)
+    setPrevQuerySearch(querySearch);
+    setInputValue(querySearch);
   }
 
   // Debounced update to URL parameter using DEBOUNCE.SEARCH
   React.useEffect(() => {
     const timer = setTimeout(() => {
       if (inputValue !== querySearch) {
-        setQuerySearch(inputValue || null)
-        onSearchChange?.(inputValue)
+        setQuerySearch(inputValue || null);
+        onSearchChange?.(inputValue);
       }
-    }, DEBOUNCE.SEARCH)
+    }, DEBOUNCE.SEARCH);
 
-    return () => clearTimeout(timer)
-  }, [inputValue, querySearch, setQuerySearch, onSearchChange])
+    return () => clearTimeout(timer);
+  }, [inputValue, querySearch, setQuerySearch, onSearchChange]);
 
   const handleClear = () => {
-    setInputValue("")
-    setQuerySearch(null)
-    onClearFilters?.()
-  }
+    setInputValue("");
+    setQuerySearch(null);
+    onClearFilters?.();
+  };
 
-  const hasActiveFilters = Boolean(inputValue || querySearch)
+  const hasActiveFilters = Boolean(inputValue || querySearch);
 
   return (
     <div
       data-slot="filter-bar"
-      className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
+      className={cn(
+        "flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        className,
+      )}
     >
-      <div className="flex flex-1 flex-wrap items-center gap-2.5">
-        <div className="w-full sm:w-72">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+        <div className="w-full min-w-0 max-w-full sm:w-72">
           <Input
+            aria-label={searchPlaceholder}
+            className="h-11 sm:h-9 [&_[data-slot=input]]:h-full"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={searchPlaceholder}
@@ -82,13 +88,16 @@ function FilterBar({
             }
             suffixIcon={
               inputValue ? (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Xóa từ khóa tìm kiếm"
                   onClick={() => setInputValue("")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
-                </button>
+                  className="-mr-2 size-11 rounded-full text-muted-foreground hover:text-foreground sm:mr-0 sm:size-7"
+                  leftIcon={
+                    <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+                  }
+                />
               ) : null
             }
           />
@@ -109,7 +118,7 @@ function FilterBar({
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export { FilterBar }
+export { FilterBar };

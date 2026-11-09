@@ -2,6 +2,18 @@ import type { WebRole } from "@/constants/roles";
 import type { RegistrationClass } from "@/types/backend";
 import type { CurriculumLesson, CurriculumUnit } from "@/types/curriculum";
 
+export function canCopyCurriculum(unit: CurriculumUnit) {
+  return unit.status === "APPROVED" || (unit.status === "ARCHIVED" && !!unit.approvedAt);
+}
+
+/** Approval and being effective today are separate states. */
+export function curriculumEffectiveLabel(unit: CurriculumUnit, today: string) {
+  if (unit.status !== "APPROVED") return null;
+  if (unit.fromDate.slice(0, 10) > today) return "Chờ ngày áp dụng";
+  if (unit.toDate.slice(0, 10) < today) return "Đã hết hiệu lực";
+  return "Đang áp dụng";
+}
+
 export function curriculumNeedsAction(
   unit: CurriculumUnit,
   role: WebRole | null,
@@ -138,6 +150,7 @@ export function estimateLessons(
   fromDate: string,
   toDate: string,
   classes: Pick<RegistrationClass, "isActive" | "weeklySchedules">[],
+  sessionsPerWeek?: number | null,
 ) {
   const from = Date.parse(`${fromDate}T00:00:00Z`),
     to = Date.parse(`${toDate}T00:00:00Z`);
@@ -157,8 +170,10 @@ export function estimateLessons(
       (item) => item.isActive !== false && item.weeklySchedules.length > 0,
     )
     .map((item) => item.weeklySchedules.length);
+  const source = counts.length ? "classes" : Number.isInteger(sessionsPerWeek) && sessionsPerWeek! > 0 ? "course" : "unconfigured";
+  if (!counts.length && source === "course") counts.push(sessionsPerWeek!);
   if (!counts.length)
-    return { weeks, min: null, max: null, minWeekly: null, maxWeekly: null };
+    return { weeks, min: null, max: null, minWeekly: null, maxWeekly: null, source };
   const minWeekly = Math.min(...counts),
     maxWeekly = Math.max(...counts);
   return {
@@ -167,5 +182,6 @@ export function estimateLessons(
     max: weeks * maxWeekly,
     minWeekly,
     maxWeekly,
+    source,
   };
 }
