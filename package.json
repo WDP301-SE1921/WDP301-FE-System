@@ -8,7 +8,12 @@
     "start": "next start -p 3001",
     "lint": "eslint",
     "test:registration": "node --test tests/registration-flow.test.cjs",
-    "test:registration:http": "node --test tests/registration-http.test.cjs"
+    "test:registration:http": "node --test tests/registration-http.test.cjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report e2e/.report",
+    "test:e2e:mobile": "node e2e/run-mobile.mjs",
+    "test:e2e:all": "node e2e/run-all.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -33,6 +38,7 @@
     "zod": "^4.6.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

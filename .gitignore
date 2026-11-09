@@ -46,3 +46,8 @@ next-env.d.ts
 
 # local test scripts and fixtures (kept local, not committed)
 /tests/
+
+# playwright e2e (sessions, traces, reports)
+/e2e/.auth/
+/e2e/.results/
+/e2e/.report/
