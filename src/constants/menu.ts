@@ -39,8 +39,9 @@ export interface MenuGroup {
 
 /**
  * Menu chung của khu back-office `/manager/*`; mỗi role thấy phần giao với `ROLE_AREAS`.
- * Quản lý trung tâm thấy 8 mục; các mục Đăng ký học, Lịch sử thanh toán và nghỉ/học bù
- * chỉ vai trò `admin` vào được (BE không có admin) nên giữ nguyên.
+ * Quản lý trung tâm thấy 8 mục; các mục Đăng ký học và Lịch sử thanh toán chỉ vai trò
+ * `admin` vào được (BE không có admin) nên giữ nguyên. Nghỉ/học bù nằm trong panel "Xử lý"
+ * của Nhân viên (`/staff/students`).
  */
 export const MENU_BACK_OFFICE: MenuGroup[] = [
   {
@@ -106,41 +107,6 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
         href: ROUTES.MANAGER.SCHEDULE,
         iconName: "Calendar03Icon",
         area: AREA.SCHEDULE,
-      },
-    ],
-  },
-  {
-    groupTitle: "NGHỈ HỌC & HỌC BÙ",
-    items: [
-      {
-        title: "Học bù",
-        href: ROUTES.MANAGER.MAKEUP,
-        iconName: "CalendarCheckIn01Icon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Đổi buổi",
-        href: ROUTES.MANAGER.SWAP_SESSION,
-        iconName: "Exchange01Icon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Đổi lịch cố định",
-        href: ROUTES.MANAGER.CHANGE_CLASS,
-        iconName: "RepeatIcon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Nghỉ dài hạn",
-        href: ROUTES.MANAGER.LONG_LEAVE,
-        iconName: "CalendarBlock01Icon",
-        area: AREA.ABSENCES,
-      },
-      {
-        title: "Nghỉ môn / Nghỉ hẳn",
-        href: ROUTES.MANAGER.WITHDRAW,
-        iconName: "UserRemove01Icon",
-        area: AREA.ABSENCES,
       },
     ],
   },

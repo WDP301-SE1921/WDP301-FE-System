@@ -52,7 +52,6 @@ const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: S.DASHBOARD, area: AREA.DASHBOARD },
   { prefix: S.SCHEDULE, area: AREA.SCHEDULE },
   { prefix: "/staff/absences", area: AREA.ABSENCES },
-  { prefix: "/manager/absences", area: AREA.ABSENCES },
   { prefix: M.CLASSES, area: AREA.CLASSES },
   { prefix: M.SCHEDULE, area: AREA.SCHEDULE },
   { prefix: M.SESSIONS, area: AREA.SCHEDULE },

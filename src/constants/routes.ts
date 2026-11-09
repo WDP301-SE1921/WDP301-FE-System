@@ -25,15 +25,6 @@ export const ROUTES = {
     SCHEDULE: "/manager/schedule",
     SESSIONS: "/manager/sessions",
 
-    MAKEUP: "/manager/absences/makeup",
-    /** Mở luồng xếp học bù với học sinh + buổi nghỉ chọn sẵn (`?studentId=&sessionId=`). */
-    MAKEUP_FOR: (params: { studentId: string; sessionId: string }) =>
-      `/manager/absences/makeup?studentId=${params.studentId}&sessionId=${params.sessionId}`,
-    SWAP_SESSION: "/manager/absences/swap",
-    CHANGE_CLASS: "/manager/absences/change-class",
-    LONG_LEAVE: "/manager/absences/long-leave",
-    WITHDRAW: "/manager/absences/withdraw",
-
     TEACHERS: "/manager/teachers",
     TEACHER_DETAIL: (id: string) => `/manager/teachers/${id}`,
     TEACHER_INVITATIONS: "/manager/teachers/invitations",
