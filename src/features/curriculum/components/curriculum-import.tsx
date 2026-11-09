@@ -40,6 +40,8 @@ import type { CurriculumUnitDetail } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { importCommitFromPreview } from "../import-contract";
 import { curriculumImportDiagnosticText } from "../presentation";
+import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
+import { curriculumCsv, curriculumCsvTemplate } from "../csv-export";
 import {
   readAcademicAttempt,
   saveAcademicAttempt,
@@ -139,18 +141,32 @@ export function CurriculumImport({
       </CardHeader>
       <CardContent className="grid items-start gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">
-          <Button
-            type="button"
-            variant="outline"
-            render={<a href="/templates/giao-trinh-mau.csv" download />}
-          >
-            Tải CSV mẫu
-          </Button>
+          <div className="flex flex-wrap items-start gap-2">
+            <CsvDownloadButton
+              label="Tải mẫu CSV"
+              createCsv={curriculumCsvTemplate}
+              filename="giao-trinh-mau"
+              disabled={locked}
+            />
+            <CsvDownloadButton
+              createCsv={() => curriculumCsv(unit.lessons)}
+              filename={unit.title}
+              disabled={
+                locked ||
+                !unit.lessons.some((lesson) => lesson.kind === "LESSON")
+              }
+            />
+          </div>
           <p className="text-xs text-muted-foreground">
-            Đúng 5 cột: kind, sequence, title, content, monthKey. kind là
-            LESSON; monthKey để trống. Nội dung có dấu phẩy hoặc xuống dòng phải
-            đặt trong dấu ngoặc kép. Chỉ nhận CSV UTF-8; chưa hỗ trợ XLSX,
-            chương và tài liệu.
+            Các cột nội dung: kind, sequence, title, content, monthKey. kind là
+            LESSON; monthKey để trống. Giữ cột csvVersion trong file tải từ hệ
+            thống để nhập lại đúng ký tự đặc biệt. File CSV cũ vẫn được hỗ trợ.
+            Chỉ nhận CSV UTF-8; chưa hỗ trợ XLSX, chương và tài liệu.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Xuất toàn bộ bài học đã lưu. Để nhập lại toàn bộ, chọn bản nháp mới
+            hoặc chế độ thay thế. Dữ liệu lớn vẫn chịu giới hạn nhập 5 MiB và
+            giới hạn lưu nội dung 1 MiB.
           </p>
           <form
             className="space-y-3"

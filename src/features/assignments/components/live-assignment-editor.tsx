@@ -37,6 +37,8 @@ import { displayMoment } from "@/features/academic/components/live-fields";
 import { AssignmentImportDialog } from "./assignment-import-dialog";
 import { TEST_TYPE_TEXT } from "../assessment-labels";
 import { ROUTES } from "@/constants/routes";
+import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
+import { assignmentCsv, assignmentCsvTemplate } from "../csv-export";
 type AssignmentInput = AssignmentEditorInput;
 const emptyQuestion: AssignmentInput["questions"][number] = {
   kind: "ESSAY",
@@ -143,6 +145,7 @@ function AssignmentEditor({
   const questions = useFieldArray({ control: form.control, name: "questions" });
   const values = useWatch({ control: form.control, name: "questions" });
   const classId = useWatch({ control: form.control, name: "classId" });
+  const assignmentTitle = useWatch({ control: form.control, name: "title" });
   const kind = useWatch({ control: form.control, name: "kind" });
   const selectedSessionId = useWatch({
     control: form.control,
@@ -174,7 +177,10 @@ function AssignmentEditor({
     !!selectedSessionId &&
     !availableSessions.some((session) => session.id === selectedSessionId);
   const programId = classes.find((item) => item.id === classId)?.programId;
-  const outcomeSetId = useWatch({ control: form.control, name: "outcomeSetId" });
+  const outcomeSetId = useWatch({
+    control: form.control,
+    name: "outcomeSetId",
+  });
   const outcomeSets = useLiveQuery(
     ["outcome-sets", programId, "APPROVED"],
     (signal) =>
@@ -197,7 +203,9 @@ function AssignmentEditor({
     );
     form.getValues("questions").forEach((question, index) => {
       if (question.outcomeId && !allowed.has(question.outcomeId))
-        form.setValue(`questions.${index}.outcomeId`, "", { shouldDirty: true });
+        form.setValue(`questions.${index}.outcomeId`, "", {
+          shouldDirty: true,
+    });
     });
   };
   const blankOnly =
@@ -277,7 +285,9 @@ function AssignmentEditor({
                   onRetry={() => void outcomeSets.refetch()}
                   sets={approvedSets}
                   value={outcomeSetId}
-                  isMissing={!!outcomeSetId && outcomeSets.isSuccess && !selectedSet}
+                    isMissing={
+                      !!outcomeSetId && outcomeSets.isSuccess && !selectedSet
+                    }
                   onChange={chooseOutcomeSet}
                 />
               )}
@@ -351,7 +361,10 @@ function AssignmentEditor({
                     </p>
                   )}
                   {classId && sessions.isPending && (
-                    <p role="status" className="text-sm text-muted-foreground">
+                      <p
+                        role="status"
+                        className="text-sm text-muted-foreground"
+                      >
                       Đang tải buổi học…
                     </p>
                   )}
@@ -419,7 +432,8 @@ function AssignmentEditor({
                 className="w-full"
                 disabled={
                   isSessionUnavailable ||
-                  (kind === "TEST" && (sessions.isPending || sessions.isError))
+                    (kind === "TEST" &&
+                      (sessions.isPending || sessions.isError))
                 }
                 isLoading={action.isPending}
               >
@@ -438,6 +452,17 @@ function AssignmentEditor({
               Câu hỏi · {questions.fields.length} câu ·{" "}
               {Math.round(totalScore * 100) / 100} điểm
             </h2>
+              <div className="flex flex-wrap items-start gap-2">
+                <CsvDownloadButton
+                  label="Tải mẫu CSV"
+                  createCsv={assignmentCsvTemplate}
+                  filename="bai-tap-mau"
+                />
+                <CsvDownloadButton
+                  createCsv={() => assignmentCsv(form.getValues("questions"))}
+                  filename={assignmentTitle || "bai-tap"}
+                  disabled={blankOnly}
+                />
             <Button
               type="button"
               variant="outline"
@@ -446,6 +471,17 @@ function AssignmentEditor({
             >
               Nhập câu hỏi từ file
             </Button>
+              </div>
+            {blankOnly && (
+              <p className="w-full text-sm text-muted-foreground">
+                Nhập nội dung câu hỏi trước khi xuất CSV.
+              </p>
+            )}
+              <p className="w-full text-xs text-muted-foreground">
+                CSV gồm câu hỏi đang trên form, kể cả nội dung chưa lưu. Lớp,
+                hạn nộp, người nhận và liên kết CLO được chọn riêng khi nhập
+                lại.
+              </p>
             {!classId && (
               <p className="w-full text-sm text-muted-foreground">
                 Chọn lớp trước khi nhập câu hỏi từ file.
@@ -511,8 +547,8 @@ function AssignmentEditor({
                       ?.correctAnswer && (
                       <p role="alert" className="text-sm text-destructive">
                         {
-                          form.formState.errors.questions[index]?.correctAnswer
-                            ?.message
+                            form.formState.errors.questions[index]
+                              ?.correctAnswer?.message
                         }
                       </p>
                     )}
@@ -572,7 +608,10 @@ function AssignmentEditor({
                 />
                 {form.formState.errors.questions?.[index]?.maxScore && (
                   <p role="alert" className="text-sm text-destructive">
-                    {form.formState.errors.questions[index]?.maxScore?.message}
+                      {
+                        form.formState.errors.questions[index]?.maxScore
+                          ?.message
+                      }
                   </p>
                 )}
                 <Button

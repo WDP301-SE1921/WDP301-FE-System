@@ -38,6 +38,8 @@ import type {
 import { ROUTES } from "@/constants/routes";
 import { AssignmentsTable } from "./assignments-table";
 import { AssignmentSubmissionsTable } from "./assignment-submissions-table";
+import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
+import { assignmentCsv, assignmentCsvTemplate } from "../csv-export";
 const publishSchema = recipientsSchema.extend({
   confirmed: confirmationSchema.shape.confirmed,
 });
@@ -72,15 +74,33 @@ export function LiveAssignmentSubmissions({ id }: { id: string }) {
             : undefined
         }
         actions={
-          data.data?.assignment.status === "DRAFT" && (
+          data.data && (
+            <div className="flex flex-wrap items-start gap-2">
+              <CsvDownloadButton
+                label="Tải mẫu CSV"
+                createCsv={assignmentCsvTemplate}
+                filename="bai-tap-mau"
+              />
+              <CsvDownloadButton
+                createCsv={() => assignmentCsv(data.data!.assignment.questions)}
+                filename={data.data.assignment.title}
+                disabled={!data.data.assignment.questions.length}
+              />
+              {data.data.assignment.status === "DRAFT" && (
             <Button
               variant="outline"
               render={
-                <Link href={ROUTES.TEACHER.ASSIGNMENT_EDIT(data.data.assignment.id)} />
+                    <Link
+                      href={ROUTES.TEACHER.ASSIGNMENT_EDIT(
+                        data.data.assignment.id,
+                      )}
+                    />
               }
             >
               Sửa nháp
             </Button>
+              )}
+            </div>
           )
         }
       />

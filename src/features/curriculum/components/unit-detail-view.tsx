@@ -52,7 +52,11 @@ import {
   LessonChangeContent,
   useCurriculumComparison,
 } from "./curriculum-comparison";
-import { canCopyCurriculum, curriculumEffectiveLabel, LESSON_CHANGE_LABELS } from "../workspace-selectors";
+import {
+  canCopyCurriculum,
+  curriculumEffectiveLabel,
+  LESSON_CHANGE_LABELS,
+} from "../workspace-selectors";
 import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import type { CurriculumLesson } from "@/types/curriculum";
 import { curriculumApi } from "../api";
@@ -70,6 +74,8 @@ import {
 import { LessonForm } from "./lesson-form";
 import { LessonOutcomeDialog } from "@/features/outcomes/components/lesson-outcome-dialog";
 import { CurriculumImport } from "./curriculum-import";
+import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
+import { curriculumCsv, curriculumCsvTemplate } from "../csv-export";
 import {
   CurriculumSubmitForm,
   CurriculumTechnicalReviewForm,
@@ -197,7 +203,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   const canRevise =
     role === "curriculum_designer" &&
     unit?.designerId === user?.id &&
-    !!unit && canCopyCurriculum(unit);
+    !!unit &&
+    canCopyCurriculum(unit);
   const canTechnicalReview =
     role === "teacher" &&
     unit?.status === "PENDING_REVIEW" &&
@@ -267,6 +274,28 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
         actions={
           unit && (
             <div className="flex flex-wrap gap-2">
+              {role === "curriculum_designer" &&
+                unit.designerId === user?.id && (
+                  <>
+                    <CsvDownloadButton
+                      label="Tải mẫu CSV"
+                      createCsv={curriculumCsvTemplate}
+                      filename="giao-trinh-mau"
+                      disabled={busy || formState.busy}
+                    />
+                    <CsvDownloadButton
+                      label="Xuất CSV đã lưu"
+                      createCsv={() => curriculumCsv(unit.lessons)}
+                      filename={unit.title}
+                      disabled={
+                        busy ||
+                        formState.busy ||
+                        formState.dirty ||
+                        !regular.length
+                      }
+                    />
+                  </>
+                )}
               {canEdit && (
                 <Button
                   disabled={busy || (ready && !!blockedReason)}
@@ -388,7 +417,11 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     category="curriculum"
                     status={curriculumStage(unit)}
                   />
-                  {curriculumEffectiveLabel(unit, today) && <p className="text-sm text-muted-foreground">{curriculumEffectiveLabel(unit, today)}</p>}
+                  {curriculumEffectiveLabel(unit, today) && (
+                    <p className="text-sm text-muted-foreground">
+                      {curriculumEffectiveLabel(unit, today)}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {regular.length} bài học · Mỗi buổi một bài
                   </p>
@@ -621,7 +654,9 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                                       Đưa bài xuống
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onClick={() => setMappingLesson(row.lesson)}
+                                      onClick={() =>
+                                        setMappingLesson(row.lesson)
+                                      }
                                     >
                                       Gắn CLO
                                     </DropdownMenuItem>
