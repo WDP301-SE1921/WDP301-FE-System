@@ -328,9 +328,12 @@ export function OutcomeLessonMatrix({
                         key={outcome.id}
                         scope="col"
                         title={`${outcome.title}\n${outcome.statement}`}
-                        className="sticky top-0 z-10 min-w-24 border-b border-border bg-muted px-2 py-2 text-center font-medium"
+                        className="sticky top-0 z-10 min-w-28 border-b border-border bg-muted px-2 py-2 text-center font-medium"
                       >
-                        {outcome.code}
+                        <span className="block">{outcome.code}</span>
+                        <span className="mt-0.5 block max-w-28 truncate text-xs font-normal text-muted-foreground">
+                          {outcome.title}
+                        </span>
                       </th>
                     ))}
                   </tr>

@@ -261,7 +261,7 @@ function ProgramsCatalog() {
       unit,
     ]);
   const classNames = new Map<string, string[]>();
-  // Lớp chưa có giáo viên: giáo trình của khóa chưa có người thẩm định.
+  // Lớp chưa có giáo viên: cần phân công để dạy; không ảnh hưởng việc duyệt giáo trình (B4).
   const classesWithoutTeacher = new Map<string, number>();
   for (const classroom of classes.data ?? [])
     if (classroom.isActive !== false) {
@@ -403,7 +403,7 @@ function ProgramsCatalog() {
                     <TableHead>Hiệu lực</TableHead>
                     <TableHead className="text-right">Bài</TableHead>
                     <TableHead>Trạng thái</TableHead>
-                    <TableHead className="sticky right-0 bg-muted text-right">
+                    <TableHead className="text-right xl:sticky xl:right-0 xl:bg-muted">
                       Thao tác
                     </TableHead>
                   </TableRow>
@@ -420,10 +420,11 @@ function ProgramsCatalog() {
                         <Fragment key={program.id}>
                           <TableRow className="bg-muted hover:bg-muted">
                             <TableCell
-                              colSpan={4}
+                              colSpan={5}
                               className="whitespace-normal"
                             >
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                                 <Button
                                   variant="link"
                                   className="h-auto p-0 font-semibold"
@@ -451,21 +452,15 @@ function ProgramsCatalog() {
                                 )}
                                 {classes.isSuccess &&
                                   program.isActive !== false &&
-                                  (!programClasses.length ? (
-                                    <Badge variant="warning">
-                                      Chưa thể duyệt nội dung giáo trình
-                                    </Badge>
-                                  ) : withoutTeacher ? (
+                                  withoutTeacher > 0 && (
                                     <Badge variant="warning">
                                       {withoutTeacher === programClasses.length
                                         ? "Lớp chưa có giáo viên"
                                         : `${withoutTeacher} lớp chưa có giáo viên`}
                                     </Badge>
-                                  ) : null)}
+                                  )}
                               </div>
-                            </TableCell>
-                            <TableCell className="sticky right-0 bg-muted text-right">
-                              <div className="flex justify-end gap-1">
+                              <div className="flex flex-wrap justify-end gap-1">
                                 {classes.isSuccess &&
                                   program.isActive !== false &&
                                   (!programClasses.length ? (
@@ -523,6 +518,7 @@ function ProgramsCatalog() {
                                   ]}
                                 />
                               </div>
+                             </div>
                             </TableCell>
                           </TableRow>
                           {units.isPending && (
@@ -549,10 +545,10 @@ function ProgramsCatalog() {
                             const stage = curriculumStage(unit);
                             return (
                               <TableRow key={unit.id}>
-                                <TableCell className="max-w-96 whitespace-normal pl-8">
+                                <TableCell className="max-w-56 whitespace-normal pl-8 xl:max-w-96">
                                   {unit.title} · bản {unit.version}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="whitespace-normal xl:whitespace-nowrap">
                                   {calendarDateLabel(
                                     unit.fromDate.slice(0, 10),
                                   )}{" "}
@@ -569,7 +565,7 @@ function ProgramsCatalog() {
                                   />
                                   {curriculumEffectiveLabel(unit, today) && <p className="mt-1 text-xs text-muted-foreground">{curriculumEffectiveLabel(unit, today)}</p>}
                                 </TableCell>
-                                <TableCell className="sticky right-0 bg-card text-right">
+                                <TableCell className="text-right xl:sticky xl:right-0 xl:bg-card">
                                   <Button
                                     size="sm"
                                     variant={

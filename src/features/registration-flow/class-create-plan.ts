@@ -41,7 +41,7 @@ export function suggestClassName(
   if (!base) return "";
   const used = new Set(existingNames.map((name) => name.trim().toLowerCase()));
   for (let code = 65; code <= 90; code++) {
-    const candidate = `${base}${String.fromCharCode(code)}`;
+    const candidate = `${base}${/\d$/.test(base) ? "" : " "}${String.fromCharCode(code)}`;
     if (!used.has(candidate.toLowerCase())) return candidate;
   }
   for (let index = 27; ; index++) {

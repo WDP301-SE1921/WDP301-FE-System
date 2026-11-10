@@ -1,5 +1,5 @@
 "use client";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -52,6 +52,7 @@ export function ApiForm({
   schema,
   fields,
   defaults = {},
+  liveDefaults,
   submitLabel = "Lưu",
   successMessage = "Đã thực hiện thành công.",
   onSubmit,
@@ -65,6 +66,8 @@ export function ApiForm({
   schema: z.ZodObject<Record<string, z.ZodType>>;
   fields: ApiFormField[];
   defaults?: Record<string, unknown>;
+  /** Giá trị gợi ý đến muộn (vd tải xong mới tính được mã): chỉ điền vào ô người dùng chưa sửa, không dựng lại form. */
+  liveDefaults?: Record<string, unknown>;
   submitLabel?: string;
   successMessage?: string | false;
   onSubmit: (value: Record<string, unknown>) => Promise<unknown>;
@@ -92,6 +95,12 @@ export function ApiForm({
     defaultValues: defaults,
   });
   const watched = useWatch({ control: form.control }) as ApiFormValues;
+  const dirty = form.formState.dirtyFields as Record<string, unknown>;
+  const liveKey = JSON.stringify(liveDefaults ?? {});
+  useEffect(() => {
+    for (const [name, value] of Object.entries(JSON.parse(liveKey) as Record<string, unknown>))
+      if (!dirty[name]) form.setValue(name, value);
+  }, [liveKey, dirty, form]);
   const run = (value: ApiFormValues) =>
     new Promise<void>((resolve) =>
       action.mutate(() => onSubmit(value), {

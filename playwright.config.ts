@@ -26,13 +26,23 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    // Quay video cần ffmpeg của Playwright (`npx playwright install ffmpeg`); mặc định tắt, bật bằng E2E_VIDEO=1.
+    video: process.env.E2E_VIDEO === "1" ? "retain-on-failure" : "off",
   },
   projects: [
     { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
       name: "guest",
       testMatch: /login\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], channel: "chrome" },
+    },
+    // Luồng nghiệp vụ nhiều vai trò: mỗi spec tự đổi vai bằng `inRole` (e2e/web/helpers.ts), chạy tuần tự.
+    {
+      name: "academic",
+      testMatch: /(academic-setup|curriculum-csv|session-cancel-shift|center-closure)\.spec\.ts/,
+      dependencies: ["setup"],
+      fullyParallel: false,
+      timeout: 120_000,
       use: { ...devices["Desktop Chrome"], channel: "chrome" },
     },
     ...ROLE_ACCOUNTS.map((account) => ({

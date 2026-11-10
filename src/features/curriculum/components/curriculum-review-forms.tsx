@@ -68,9 +68,12 @@ export function CurriculumSubmitForm({
   outcomeNote,
   onSaved,
   onStateChange,
+  onCancel,
 }: ReviewFormProps & {
   /** Lưu ý mục tiêu chưa gắn bài; chỉ để nhắc, không chặn việc gửi. */
   outcomeNote?: string;
+  /** Có thì chân hộp có nút Hủy cạnh nút Gửi duyệt (canh phải). */
+  onCancel?: () => void;
 }) {
   const id = useId();
   const reviewers = useQuery({
@@ -165,14 +168,26 @@ export function CurriculumSubmitForm({
             />
           </div>
         </div>
-        <Button
-          type="submit"
-          isLoading={save.isPending}
-          disabled={save.isPending}
-        >
-          Gửi duyệt
-        </Button>
         <ApiFeedback error={save.error} />
+        <div className="flex flex-wrap justify-end gap-2">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={save.isPending}
+              onClick={onCancel}
+            >
+              Hủy
+            </Button>
+          )}
+          <Button
+            type="submit"
+            isLoading={save.isPending}
+            disabled={save.isPending}
+          >
+            Gửi duyệt
+          </Button>
+        </div>
       </form>
     </AsyncBoundary>
   );

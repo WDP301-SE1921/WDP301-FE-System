@@ -123,13 +123,11 @@ export function UnitForm({
             sessionsInRange(item.weeklySchedules ?? [], fromDate, toDate, closures),
           )
       : [];
-  const readinessNote = !programDetail.data
-    ? ""
-    : !detailClasses.length
-      ? `Khóa ${programDetail.data.name} chưa có lớp. Vẫn soạn bản nháp được, nhưng chỉ gửi duyệt khi khóa có lớp đã phân công giáo viên — báo Quản lý tạo lớp cho khóa này.`
-      : detailClasses.every((item) => item.teacherId === null)
-        ? `Các lớp của khóa ${programDetail.data.name} chưa có giáo viên phụ trách. Vẫn soạn bản nháp được, nhưng chỉ gửi duyệt khi có giáo viên.`
-        : "";
+  // Giáo viên duyệt chọn theo khóa → môn → bất kỳ (B4): lớp hay giáo viên của lớp không chặn gửi duyệt.
+  const readinessNote =
+    programDetail.data && !detailClasses.length
+      ? `Khóa ${programDetail.data.name} chưa có lớp nên chưa tính được số bài. Vẫn gửi duyệt được.`
+      : "";
   const overlapping = (sources.data ?? []).filter(
     (item) =>
       item.id !== unit?.id &&

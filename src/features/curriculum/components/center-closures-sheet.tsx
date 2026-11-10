@@ -82,7 +82,7 @@ export function CenterClosuresSheet({
               : "Danh sách ngày trung tâm nghỉ. Chỉ Quản lý thêm hoặc sửa."}
           </SheetDescription>
         </SheetHeader>
-        <div className="space-y-4 px-4 pb-6">
+        <div className="space-y-4 pt-4 pb-6">
           {result && (
             <ClosureResultPanel
               result={result}

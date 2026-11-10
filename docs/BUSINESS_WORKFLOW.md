@@ -20,10 +20,10 @@ Teacher marks `present | absent | made_up | excused` per session → attendance 
 Parent reports an absence → staff marks `absent` → finds a replacement session (same program + lesson, future, has capacity) → assigns → attended → original becomes `made_up`; no-show → stays `absent`. Permanent schedule changes and long-term leave follow the same staff ownership.
 
 ## D. Curriculum content (Thiết kế giáo trình)
-Designs each subject's lesson sequence from the textbook, sets the 1-lesson-per-session / 1-test-per-month cadence. Does not touch class scheduling or rooms.
+Designs each subject's lesson sequence from the textbook, sets the 1-lesson-per-session / 1-test-per-month cadence. Does not touch class scheduling or rooms. Soạn Mục tiêu khóa học (bộ mục tiêu của khóa) trước giáo trình và gắn vào bài; giáo viên "Đồng ý nội dung" duyệt cùng giáo trình, Quản lý "Duyệt áp dụng" duyệt kèm bộ mục tiêu.
 
 ## E. Class creation (Quản lý trung tâm)
-Choose subject + grade + program + room + fixed schedule, assign a teacher to an existing fixed class slot.
+Choose subject + grade + program + room + fixed schedule, assign a teacher to an existing fixed class slot. Then the Manager uses Tạo lịch học to generate sessions, cancels single sessions (đổi ngày / hủy và dời bài / hủy bỏ bài) and sets center closure days (hủy theo lô, phụ huynh nhận thông báo theo lớp); see ACADEMIC_USER_FLOW.md.
 
 ## F. AI grading (Giáo viên)
 Child submits (via parent's session) → AI scores it as a suggestion → teacher reviews/edits → approves → only then does the parent/child see it. AI never auto-publishes.

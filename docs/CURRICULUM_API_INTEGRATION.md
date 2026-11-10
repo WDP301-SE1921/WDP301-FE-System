@@ -40,10 +40,18 @@ Không tạo tài khoản/hồ sơ học sinh bằng nhân viên. Chỉ xác nh�
 
 ## Retry
 
-- Sinh lịch: lưu UUID + nguyên body trong sessionStorage theo user/lớp trước khi gửi. Sau timeout/lỗi mạng/5xx, khóa form và cho thử lại cùng key/body, kể cả tải lại trang. Chỉ xóa thao tác sau khi thành công hoặc BE trả lỗi nghiệp vụ xác định; giữ thao tác khi lỗi phiên/quyền, 408/429 hoặc idempotency conflict.
-- Không cho sinh lịch từ preview có xung đột hoặc preview không khớp lựa chọn hiện tại. BE kiểm tra lại trước khi ghi.
+- Tạo lịch học: lưu UUID + nguyên body trong sessionStorage theo user/lớp trước khi gửi. Sau timeout/lỗi mạng/5xx, khóa form và cho thử lại cùng key/body, kể cả tải lại trang. Chỉ xóa thao tác sau khi thành công hoặc BE trả lỗi nghiệp vụ xác định; giữ thao tác khi lỗi phiên/quyền, 408/429 hoặc idempotency conflict.
+- Không cho tạo lịch học từ preview có xung đột hoặc preview không khớp lựa chọn hiện tại. BE kiểm tra lại trước khi ghi.
 - Tạo registration nháp: lưu key theo user và body để thử lại cùng yêu cầu không tạo hai nháp. Xóa key khi đã nhận ID đăng ký.
 - Thu tiền: giữ luồng key/body + đọc lại COMPLETED/receipt đã có. Không tự retry lỗi nghiệp vụ.
+
+## Ngày nghỉ, hủy buổi và CSV (đợt 10/11/2026)
+
+- `academic/center-closures` (GET mọi vai trò web, POST/PATCH/DELETE chỉ Quản lý): không tự hủy buổi, không phát thông báo; BFF có luật proxy riêng.
+- Hủy buổi lẻ: `POST academic/sessions/:id/cancel-preview` rồi `POST .../cancel` (`shiftLessons` true = hủy và dời bài, bỏ trống = hủy, bỏ bài; cần `Idempotency-Key`). Chặn bằng `LESSON_SHIFT_BLOCKED`, `LEAVE_EXISTS`; role khác Quản lý nhận 403 `FORBIDDEN`.
+- Hủy theo lô: `POST academic/sessions/bulk-cancel-preview` và `bulk-cancel`, chia theo lớp (tối đa 200 buổi mỗi lô, key mỗi lô, timeout BFF 65 giây); `BULK_CANCEL_BLOCKED` thì không buổi nào của lô bị hủy. Thông báo: một cho mỗi buổi khi hủy lẻ, một cho mỗi lớp khi hủy theo lô.
+- Tạo lịch học bỏ ngày nghỉ và nối tiếp bài (C4); `SESSIONS_AFTER_RANGE_EXIST` khi khoảng đã có buổi.
+- CSV giáo trình: cột `kind,sequence,title,content,monthKey,csvVersion`; xuất ra `csvVersion` = 1, để trống khi nhập lại. REPLACE gỡ liên kết mục tiêu của các bài bị thay.
 
 ## BE cần xử lý
 

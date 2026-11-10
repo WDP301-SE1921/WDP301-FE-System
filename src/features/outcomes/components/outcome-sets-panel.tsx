@@ -317,13 +317,6 @@ function OutcomeSetCard({
               >
                 Dán nhiều mục tiêu
               </Button>
-              <Button
-                variant="outline"
-                className="text-destructive hover:bg-destructive/10"
-                onClick={() => onAction({ kind: "delete-set", set })}
-              >
-                Xóa bộ mục tiêu
-              </Button>
             </>
           )}
           {actions.canTechnicallyApprove && (
@@ -353,6 +346,15 @@ function OutcomeSetCard({
               onClick={() => onAction({ kind: "copy", set })}
             >
               Tạo bản mới từ bộ này
+            </Button>
+          )}
+          {actions.canEditOutcomes && (
+            <Button
+              variant="outline"
+              className="text-destructive hover:bg-destructive/10 sm:ml-auto"
+              onClick={() => onAction({ kind: "delete-set", set })}
+            >
+              Xóa bộ mục tiêu
             </Button>
           )}
         </div>
@@ -509,7 +511,7 @@ function OutcomeDialogBody({
   }
   if (dialog.kind === "outcome") {
     const { outcome } = dialog;
-    // Mã gợi ý chỉ cho mục tiêu mới; tải xong mã môn thì dựng lại hộp một lần (key đổi).
+    // Mã gợi ý chỉ cho mục tiêu mới; tải xong mã môn thì chỉ điền vào ô mã nếu người dùng chưa sửa (không dựng lại hộp).
     const suggestedCode = outcome
       ? ""
       : nextOutcomeCode(
@@ -529,7 +531,6 @@ function OutcomeDialogBody({
           </DialogDescription>
         </DialogHeader>
         <OutcomeForm
-          key={suggestedCode}
           setId={dialog.set.id}
           outcome={outcome}
           suggestedCode={suggestedCode}
@@ -678,9 +679,10 @@ function OutcomeForm({
     { name: "sourceNote", label: "Ghi chú đối chiếu (không bắt buộc)", type: "textarea" as const },
   ];
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-1">
       <ApiForm
         schema={outcomeFormSchema}
+        liveDefaults={outcome ? undefined : { code: suggestedCode }}
         defaults={{
           code: outcome?.code ?? suggestedCode,
           title: outcome?.title ?? "",
@@ -713,12 +715,22 @@ function OutcomeForm({
           ...(showSource ? sourceFields : []),
         ]}
         preview={(values) => (
-          <p className="rounded-xl bg-muted p-3 text-sm">
-            Phụ huynh sẽ thấy:{" "}
-            <span className="font-medium">
-              {String(values.title ?? "").trim() || "(chưa nhập mục tiêu)"}
-            </span>
-          </p>
+          <div className="space-y-2">
+            <p className="rounded-xl bg-muted p-3 text-sm">
+              Phụ huynh sẽ thấy:{" "}
+              <span className="font-medium">
+                {String(values.title ?? "").trim() || "(chưa nhập mục tiêu)"}
+              </span>
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSource((value) => !value)}
+            >
+              {showSource ? "Ẩn nguồn căn cứ" : "Thêm nguồn căn cứ (không bắt buộc)"}
+            </Button>
+          </div>
         )}
         submitLabel={outcome ? "Lưu mục tiêu" : "Thêm mục tiêu"}
         successMessage={false}
@@ -736,14 +748,6 @@ function OutcomeForm({
         }}
         onSuccess={onDone}
       />
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => setShowSource((value) => !value)}
-      >
-        {showSource ? "Ẩn nguồn căn cứ" : "Thêm nguồn căn cứ (không bắt buộc)"}
-      </Button>
     </div>
   );
 }

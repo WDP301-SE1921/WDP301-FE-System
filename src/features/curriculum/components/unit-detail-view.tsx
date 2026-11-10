@@ -109,6 +109,7 @@ import { CurriculumImport } from "./curriculum-import";
 import { toast } from "@/components/ui/toast";
 import { downloadCsv } from "@/lib/files/csv";
 import { curriculumCsv, curriculumCsvTemplate } from "../csv-export";
+import { lessonSummary } from "../lesson-summary";
 import {
   CurriculumSubmitForm,
   CurriculumTechnicalReviewForm,
@@ -227,12 +228,23 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   // Bản đầu tiên không có bản để đối chiếu: ẩn cột, nút lọc, và bỏ qua ?lessonChanges= cũ trên URL.
   const hasComparison = !!comparison.previous;
   const effectiveFilter = hasComparison ? changeFilter : "all";
+  // Bài "Đã bỏ" so với bản đối chiếu có thể rất nhiều: mặc định ẩn, trừ khi lọc "Đã bỏ" hoặc bấm Hiện.
+  const [showRemoved, setShowRemoved] = useState(false);
+  const removedCount = hasComparison
+    ? comparison.rows.filter((row) => row.change === "removed").length
+    : 0;
+  const canToggleRemoved =
+    removedCount > 0 &&
+    (effectiveFilter === "all" || effectiveFilter === "changed");
   const comparisonRows = comparison.rows.filter(
     (row) =>
-      effectiveFilter === "all" ||
-      (effectiveFilter === "changed"
-        ? row.change !== "unchanged"
-        : row.change === effectiveFilter),
+      (row.change !== "removed" ||
+        showRemoved ||
+        effectiveFilter === "removed") &&
+      (effectiveFilter === "all" ||
+        (effectiveFilter === "changed"
+          ? row.change !== "unchanged"
+          : row.change === effectiveFilter)),
   );
   const selectedRow =
     comparisonRows.find((row) => row.lesson.id === selectedLessonId) ??
@@ -749,6 +761,21 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   )}
                 </div>
               </div>
+              {canToggleRemoved && (
+                <p className="text-sm text-muted-foreground">
+                  {showRemoved
+                    ? `Đang hiện ${removedCount} bài đã bỏ so với bản đối chiếu · `
+                    : `Ẩn ${removedCount} bài đã bỏ so với bản đối chiếu · `}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    onClick={() => setShowRemoved((value) => !value)}
+                  >
+                    {showRemoved ? "Ẩn" : "Hiện"}
+                  </Button>
+                </p>
+              )}
               <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
                 <div className="min-w-0 overflow-x-auto rounded-2xl border border-border">
                   <Table>
@@ -787,7 +814,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                                 {row.lesson.title}
                               </Button>
                               <p className="line-clamp-2 text-xs text-muted-foreground">
-                                {row.lesson.content}
+                                {lessonSummary(row.lesson.content)}
                               </p>
                             </TableCell>
                             {hasComparison && (
@@ -1064,6 +1091,9 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   <CurriculumSubmitForm
                     unit={unit}
                     outcomeNote={unlinkedOutcomeSubmitNote(unlinkedGroups)}
+                    onCancel={() =>
+                      formState.dirty ? setDiscard(true) : closeEditor()
+                    }
                     onStateChange={setFormState}
                     onSaved={() => saved("Đã gửi giáo viên duyệt nội dung.")}
                   />
@@ -1107,15 +1137,17 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                       onSaved={() => saved("Đã gửi yêu cầu chỉnh sửa.")}
                     />
                   )}
-                <Button
-                  variant="outline"
-                  disabled={formState.busy}
-                  onClick={() =>
-                    formState.dirty ? setDiscard(true) : closeEditor()
-                  }
-                >
-                  Đóng
-                </Button>
+                {editor?.kind !== "submit" && (
+                  <Button
+                    variant="outline"
+                    disabled={formState.busy}
+                    onClick={() =>
+                      formState.dirty ? setDiscard(true) : closeEditor()
+                    }
+                  >
+                    Đóng
+                  </Button>
+                )}
               </DialogContent>
             </Dialog>
             <ConfirmDialog

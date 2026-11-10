@@ -168,7 +168,7 @@ const ERROR_TEXT: Record<string, string> = {
   CENTER_CLOSURE_OVERLAP:
     "Khoảng ngày này trùng với một ngày nghỉ đã có. Sửa ngày nghỉ cũ thay vì thêm mới.",
   CENTER_CLOSURE_NOT_FOUND: "Không còn ngày nghỉ này. Tải lại danh sách.",
-  CLOSURE_TOO_LONG: "Mỗi ngày nghỉ tối đa 92 ngày. Chia thành hai lần.",
+  CLOSURE_TOO_LONG: "Mỗi lần nghỉ tối đa 92 ngày. Chia thành hai lần.",
   MAKEUP_BOOKING_EXISTS:
     "Xử lý các lịch học bù liên quan trước khi đổi hoặc hủy buổi.",
   BILL_NOT_FOUND: "Không tìm thấy bill. Kiểm tra lại mã đăng ký.",
