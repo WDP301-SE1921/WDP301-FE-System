@@ -97,7 +97,9 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
     return await fetch(`${base}/${path}`, {
       ...init,
       cache: "no-store",
-      signal: AbortSignal.timeout(25_000),
+      signal: AbortSignal.timeout(
+        path === "academic/assignments/import-preview" ? 120_000 : 25_000,
+      ),
       headers: {
         ...(init.body instanceof FormData
           ? {}

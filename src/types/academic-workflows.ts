@@ -100,7 +100,25 @@ export interface AssignmentSummary {
     status: string;
   } | null;
 }
+export interface RubricCriterion {
+  id: string;
+  title: string;
+  description: string;
+  maxScore: number;
+}
+export interface CriterionScore {
+  criterionId: string;
+  score: number;
+  feedback: string;
+}
+export interface AssignmentAttachment {
+  questionPosition?: number | null;
+  fileId: string;
+  teacherOnly: boolean;
+  file?: { name: string; mimeType: string; size: number };
+}
 export interface AssignmentQuestion {
+  criteria?: RubricCriterion[] | null;
   id: string;
   kind: "MULTIPLE_CHOICE" | "ESSAY";
   prompt: string;
@@ -111,6 +129,7 @@ export interface AssignmentQuestion {
   outcomeId?: string | null;
 }
 export interface AssignmentDetail extends AssignmentSummary {
+  files?: AssignmentAttachment[];
   instructions: string;
   recipients: { id: string; enrollmentId: string }[];
   questions: AssignmentQuestion[];
@@ -120,7 +139,7 @@ export interface AssignmentDetail extends AssignmentSummary {
 }
 export interface AssignmentImportPreview {
   fileName: string;
-  format: "CSV" | "DOCX" | "PDF";
+  format: "CSV" | "DOCX" | "PDF" | "IMAGE";
   title?: string;
   instructions?: string;
   questions: Omit<AssignmentQuestion, "id">[];
@@ -128,6 +147,7 @@ export interface AssignmentImportPreview {
   usedAi: boolean;
 }
 export interface GradeScore {
+  criteria?: CriterionScore[];
   questionId: string;
   score: number;
   feedback: string;
@@ -154,7 +174,18 @@ export interface GradingJob {
   id: string;
   submissionId: string;
   status: "QUEUED" | "PROCESSING" | "SUCCEEDED" | "FAILED";
-  result: { scores: GradeScore[] } | null;
+  result: {
+    scores: GradeScore[];
+    manualReviewQuestionIds?: string[];
+    readingError?: string | null;
+    readings?: {
+      questionId: string;
+      answer: string;
+      readable: boolean;
+      reason: string;
+      sources: { fileId: string; page: number }[];
+    }[];
+  } | null;
   error: string | null;
 }
 export interface ReportRecord {

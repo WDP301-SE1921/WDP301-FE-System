@@ -235,6 +235,23 @@ async function handle(
           "Chọn một ảnh PNG hoặc JPG, dung lượng lớn hơn 0 và tối đa 5 MiB.",
         );
       init.body = data;
+    } else if (path === "academic/files" && request.method === "POST") {
+      const data = await request.formData();
+      const file = data.get("file");
+      if (
+        !(file instanceof File) ||
+        !file.size ||
+        file.size > 10 * 1024 * 1024 ||
+        !/\.(pdf|jpe?g|png)$/i.test(file.name) ||
+        data.getAll("file").length !== 1 ||
+        [...data.keys()].some((k) => k !== "file")
+      )
+        throw backendError(
+          400,
+          "INVALID_FILE_TYPE",
+          "Chọn một PDF, JPG hoặc PNG tối đa 10 MB.",
+        );
+      init.body = data;
     } else if (path === "academic/assignments/import-preview") {
       const data = await request.formData();
       const file = data.get("file");
@@ -243,7 +260,7 @@ async function handle(
         !(file instanceof File) ||
         !file.size ||
         file.size > 5 * 1024 * 1024 ||
-        !/\.(csv|docx|pdf)$/i.test(file.name) ||
+        !/\.(csv|docx|pdf|jpe?g|png)$/i.test(file.name) ||
         typeof classId !== "string" ||
         !classId.trim() ||
         classId.length > 191 ||
@@ -256,7 +273,7 @@ async function handle(
         throw backendError(
           400,
           "VALIDATION_ERROR",
-          "Chọn lớp và một file CSV, DOCX hoặc PDF tối đa 5 MiB.",
+          "Chọn lớp và một file CSV, DOCX, PDF, JPG hoặc PNG tối đa 5 MiB.",
         );
       init.body = data;
     } else if (path.endsWith("/import-preview")) {

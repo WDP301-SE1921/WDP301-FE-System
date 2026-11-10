@@ -15,14 +15,17 @@ const setPath = (id: string) =>
 const post = <T>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: "POST", body });
 
-/** Vòng đời bộ CLO: Thiết kế GT soạn → Giáo viên của khóa xác minh → Quản lý duyệt. */
+/** Vòng đời bộ CLO: Thiết kế GT soạn → Giáo viên của khóa xác minh và duyệt để sử dụng ngay. */
 export const outcomeApi = {
   sets: (programId: string, signal?: AbortSignal) =>
     academicApi.outcomeSets(programId, {}, signal),
   getSet: (setId: string, signal?: AbortSignal) =>
     apiRequest<OutcomeSet>(setPath(setId), { signal }),
   createSet: (body: unknown) =>
-    post<OutcomeSet>("academic/outcome-sets", outcomeSetCreateSchema.parse(body)),
+    post<OutcomeSet>(
+      "academic/outcome-sets",
+      outcomeSetCreateSchema.parse(body),
+    ),
   updateSet: (setId: string, body: unknown) =>
     apiRequest<OutcomeSet>(setPath(setId), {
       method: "PATCH",
@@ -59,7 +62,6 @@ export const outcomeApi = {
     ),
   technicalApprove: (setId: string) =>
     post<OutcomeSet>(`${setPath(setId)}/technical-approve`),
-  approve: (setId: string) => post<OutcomeSet>(`${setPath(setId)}/approve`),
   requestChanges: (setId: string, body: unknown) =>
     post<OutcomeSet>(
       `${setPath(setId)}/request-changes`,

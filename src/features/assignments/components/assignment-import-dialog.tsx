@@ -80,15 +80,15 @@ export function AssignmentImportDialog({
         <DialogHeader>
           <DialogTitle>Nhập câu hỏi từ file</DialogTitle>
           <DialogDescription>
-            CSV theo mẫu, Word DOCX hoặc PDF có chữ, tối đa 5 MiB. Nội dung chỉ
-            được đưa vào bản nháp sau khi bạn xem lại.
+            CSV theo mẫu, Word DOCX, PDF hoặc ảnh JPG/PNG, tối đa 5 MiB. Nội
+            dung chỉ được đưa vào bản nháp sau khi bạn xem lại.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-5">
           <div className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
             Word và PDF được trích xuất bằng AI. Kiểm tra lại đề, đáp án, tiêu
-            chí chấm và điểm. File scan hoặc ảnh cần chuyển thành văn bản trước
-            khi nhập.
+            chí chấm và điểm. PDF scan và ảnh cần cấu hình AI đọc ảnh; đối chiếu
+            tệp gốc nếu có vùng không đọc rõ.
           </div>
           <form
             className="space-y-3"

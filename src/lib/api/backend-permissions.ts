@@ -231,6 +231,7 @@ const rules: {
     roles: teacher,
   },
   { method: "POST", path: /^academic\/reports$/, roles: teacher },
+  { method: "POST", path: /^academic\/files$/, roles: teacher },
   {
     method: "GET",
     path: /^academic\/files\/[^/]+\/(preview|download)$/,
@@ -380,7 +381,7 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^academic\/curriculum-units\/[^/]+\/(approve|request-changes)$/,
+    path: /^academic\/curriculum-units\/[^/]+\/request-changes$/,
     roles: manager,
   },
   {
@@ -398,7 +399,7 @@ const rules: {
     path: /^academic\/sessions\/[^/]+\/(reschedule-preview|reschedule|cancel)$/,
     roles: manager,
   },
-  // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa xác minh, Quản lý duyệt.
+  // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa duyệt để sử dụng; quản lý theo dõi/yêu cầu điều chỉnh.
   {
     method: "GET",
     path: /^academic\/programs\/[^/]+\/outcome-sets$/,
@@ -421,7 +422,7 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^academic\/outcome-sets\/[^/]+\/(approve|request-changes)$/,
+    path: /^academic\/outcome-sets\/[^/]+\/request-changes$/,
     roles: manager,
   },
 ];

@@ -7,8 +7,7 @@ import type {
 
 export const OUTCOME_SET_STATUS_TEXT: Record<OutcomeSetStatus, string> = {
   DRAFT: "Nháp",
-  TECHNICALLY_APPROVED: "Chờ Quản lý duyệt",
-  APPROVED: "Đã duyệt",
+  APPROVED: "Đã duyệt · Có thể sử dụng",
 };
 
 /** Thao tác được phép theo quy tắc BE (`outcome.service.ts`); BE vẫn kiểm tra lại quyền. */
@@ -17,7 +16,6 @@ export function outcomeSetActions(
   user: { id: string; role: WebRole },
 ) {
   const isDraft = set.status === "DRAFT";
-  const isReviewed = set.status === "TECHNICALLY_APPROVED";
   return {
     canEditOutcomes:
       user.role === "curriculum_designer" &&
@@ -26,8 +24,8 @@ export function outcomeSetActions(
     canCopy: user.role === "curriculum_designer",
     canVerify: user.role === "teacher" && isDraft,
     canTechnicallyApprove: user.role === "teacher" && isDraft,
-    canApprove: user.role === "center_manager" && isReviewed,
-    canRequestChanges: user.role === "center_manager" && isReviewed,
+    canRequestChanges:
+      user.role === "center_manager" && set.status === "APPROVED",
   };
 }
 
@@ -38,7 +36,8 @@ export function technicalApprovalBlockers(
 ): string[] {
   if (!set.outcomes.length) return ["Bộ chưa có CLO nào."];
   return set.outcomes.flatMap((outcome) => [
-    ...(outcome.sourceStatus === "VERIFIED" && outcome.verifiedById === teacherId
+    ...(outcome.sourceStatus === "VERIFIED" &&
+    outcome.verifiedById === teacherId
       ? []
       : [`${outcome.code}: bạn chưa tự xác minh nguồn.`]),
     ...(outcome.lessonLinks.length

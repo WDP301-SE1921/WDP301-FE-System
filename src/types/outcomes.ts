@@ -1,5 +1,5 @@
 /** Chuẩn đầu ra khóa học (CLO) — `GET academic/programs/:id/outcome-sets` của BE. */
-export type OutcomeSetStatus = "DRAFT" | "TECHNICALLY_APPROVED" | "APPROVED";
+export type OutcomeSetStatus = "DRAFT" | "APPROVED";
 export type OutcomeSourceStatus = "CANDIDATE" | "VERIFIED";
 
 export interface LearningOutcome {

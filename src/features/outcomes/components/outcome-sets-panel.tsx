@@ -41,19 +41,21 @@ type OutcomeDialog =
   | { kind: "outcome"; set: OutcomeSet; outcome?: LearningOutcome }
   | { kind: "delete-outcome"; set: OutcomeSet; outcome: LearningOutcome }
   | { kind: "verify"; set: OutcomeSet; outcome: LearningOutcome }
-  | { kind: "technical-approve" | "approve" | "request-changes"; set: OutcomeSet };
+  | { kind: "technical-approve" | "request-changes"; set: OutcomeSet };
 
 const ROLE_HINT: Partial<Record<WebRole, string>> = {
   curriculum_designer:
-    "Soạn CLO cho khóa học, ghi rõ nguồn căn cứ rồi gắn CLO cho bài học ở giáo trình nháp. Giáo viên của khóa xác minh, sau đó Quản lý duyệt.",
+    "Soạn CLO cho khóa học, ghi rõ nguồn căn cứ rồi gắn CLO cho bài học ở giáo trình nháp. Giáo viên của khóa xác minh và duyệt chuyên môn; bộ CLO được sử dụng ngay sau khi duyệt.",
   teacher:
-    "Đối chiếu từng CLO với đúng mục/trang của nguồn rồi xác minh. Duyệt chuyên môn khi bạn đã tự xác minh mọi CLO và mỗi CLO có bài học.",
+    "Đối chiếu từng CLO với đúng mục/trang của nguồn rồi xác minh. Duyệt chuyên môn khi bạn đã tự xác minh mọi CLO và mỗi CLO có bài học. Sau khi duyệt, bộ CLO được dùng ngay để tạo và giao bài.",
   center_manager:
-    "Duyệt bộ CLO sau khi giáo viên đã duyệt chuyên môn. Từ khi khóa có bộ được duyệt, bài tập mới phải gắn CLO trước khi giao.",
+    "Theo dõi bộ CLO đã được giáo viên duyệt. Bạn có thể yêu cầu điều chỉnh; Designer tạo phiên bản mới để giữ nguyên các bài đã sử dụng bộ cũ.",
 };
-const SET_BADGE: Record<OutcomeSet["status"], "neutral" | "warning" | "success"> = {
+const SET_BADGE: Record<
+  OutcomeSet["status"],
+  "neutral" | "warning" | "success"
+> = {
   DRAFT: "neutral",
-  TECHNICALLY_APPROVED: "warning",
   APPROVED: "success",
 };
 
@@ -152,9 +154,9 @@ function OutcomeSetCard({
         </Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        {set.status === "DRAFT" && set.reviewNote && (
+        {set.reviewNote && (
           <Alert variant="warning">
-            <AlertTitle>Quản lý yêu cầu sửa</AlertTitle>
+            <AlertTitle>Yêu cầu điều chỉnh</AlertTitle>
             <AlertDescription className="whitespace-pre-wrap">
               {set.reviewNote}
             </AlertDescription>
@@ -174,7 +176,9 @@ function OutcomeSetCard({
                   <div className="flex flex-wrap gap-1">
                     <Badge
                       variant={
-                        outcome.sourceStatus === "VERIFIED" ? "success" : "neutral"
+                        outcome.sourceStatus === "VERIFIED"
+                          ? "success"
+                          : "neutral"
                       }
                     >
                       {outcome.sourceStatus === "VERIFIED"
@@ -214,7 +218,9 @@ function OutcomeSetCard({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onAction({ kind: "outcome", set, outcome })}
+                          onClick={() =>
+                            onAction({ kind: "outcome", set, outcome })
+                          }
                         >
                           Sửa CLO
                         </Button>
@@ -234,7 +240,9 @@ function OutcomeSetCard({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onAction({ kind: "verify", set, outcome })}
+                        onClick={() =>
+                          onAction({ kind: "verify", set, outcome })
+                        }
                       >
                         {outcome.sourceStatus === "VERIFIED" &&
                         outcome.verifiedById === user.id
@@ -298,17 +306,12 @@ function OutcomeSetCard({
               Duyệt chuyên môn
             </Button>
           )}
-          {actions.canApprove && (
-            <Button onClick={() => onAction({ kind: "approve", set })}>
-              Duyệt bộ CLO
-            </Button>
-          )}
           {actions.canRequestChanges && (
             <Button
               variant="outline"
               onClick={() => onAction({ kind: "request-changes", set })}
             >
-              Trả về nháp
+              Yêu cầu điều chỉnh
             </Button>
           )}
           {actions.canCopy && (
@@ -375,7 +378,8 @@ function OutcomeDialogBody({
         <DialogHeader>
           <DialogTitle>Xóa bộ CLO</DialogTitle>
           <DialogDescription>
-            Bạn có chắc chắn muốn xóa bộ CLO “{dialog.set.level}” (phiên bản {dialog.set.version}) không? Thao tác này không thể hoàn tác.
+            Bạn có chắc chắn muốn xóa bộ CLO “{dialog.set.level}” (phiên bản{" "}
+            {dialog.set.version}) không? Thao tác này không thể hoàn tác.
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -402,7 +406,8 @@ function OutcomeDialogBody({
         <DialogHeader>
           <DialogTitle>Xóa CLO {dialog.outcome.code}</DialogTitle>
           <DialogDescription>
-            Bạn có chắc chắn muốn xóa mục chuẩn đầu ra “{dialog.outcome.code} · {dialog.outcome.title}” khỏi bộ CLO không?
+            Bạn có chắc chắn muốn xóa mục chuẩn đầu ra “{dialog.outcome.code} ·{" "}
+            {dialog.outcome.title}” khỏi bộ CLO không?
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -482,7 +487,9 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>{outcome ? `Sửa ${outcome.code}` : "Thêm CLO"}</DialogTitle>
+          <DialogTitle>
+            {outcome ? `Sửa ${outcome.code}` : "Thêm CLO"}
+          </DialogTitle>
           <DialogDescription>
             Viết CLO đo được: sau khóa học, học sinh làm được gì, trong điều
             kiện nào. Lưu xong, nguồn của CLO trở về chưa xác minh.
@@ -509,10 +516,19 @@ function OutcomeDialogBody({
             {
               name: "sourceLocator",
               label: "Vị trí trong nguồn",
-              description: "Mục và trang cụ thể, ví dụ “Lớp 8 > Phương trình, trang in 65”.",
+              description:
+                "Mục và trang cụ thể, ví dụ “Lớp 8 > Phương trình, trang in 65”.",
             },
-            { name: "sourceNote", label: "Ghi chú đối chiếu", type: "textarea" },
-            { name: "required", label: "CLO bắt buộc của khóa", type: "checkbox" },
+            {
+              name: "sourceNote",
+              label: "Ghi chú đối chiếu",
+              type: "textarea",
+            },
+            {
+              name: "required",
+              label: "CLO bắt buộc của khóa",
+              type: "checkbox",
+            },
           ]}
           submitLabel={outcome ? "Lưu CLO" : "Thêm CLO"}
           successMessage={false}
@@ -553,7 +569,11 @@ function OutcomeDialogBody({
           }}
           fields={[
             { name: "sourceLocator", label: "Mục/trang trong nguồn" },
-            { name: "sourceNote", label: "Giải thích đối chiếu", type: "textarea" },
+            {
+              name: "sourceNote",
+              label: "Giải thích đối chiếu",
+              type: "textarea",
+            },
           ]}
           submitLabel="Xác minh nguồn"
           successMessage={false}
@@ -567,32 +587,33 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>Trả bộ CLO về nháp</DialogTitle>
+          <DialogTitle>Yêu cầu điều chỉnh bộ CLO</DialogTitle>
           <DialogDescription>
-            Thiết kế giáo trình sẽ thấy lý do và sửa lại; giáo viên phải duyệt
-            chuyên môn lần nữa.
+            Bộ đã duyệt vẫn được sử dụng. Thiết kế giáo trình sẽ thấy lý do, tạo
+            phiên bản mới và gửi giáo viên duyệt lại.
           </DialogDescription>
         </DialogHeader>
         <ApiForm
           schema={outcomeChangeRequestSchema}
           defaults={{ reason: "" }}
           fields={[{ name: "reason", label: "Cần sửa gì", type: "textarea" }]}
-          submitLabel="Trả về nháp"
+          submitLabel="Gửi yêu cầu điều chỉnh"
           successMessage={false}
           onSubmit={(value) => outcomeApi.requestChanges(dialog.set.id, value)}
-          onSuccess={done("Đã trả bộ CLO về nháp.")}
+          onSuccess={done(
+            "Đã gửi yêu cầu điều chỉnh. Bộ CLO hiện tại được giữ nguyên.",
+          )}
         />
       </>
     );
-  const isApprove = dialog.kind === "approve";
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isApprove ? "Duyệt bộ CLO" : "Duyệt chuyên môn"}</DialogTitle>
+        <DialogTitle>Duyệt chuyên môn và áp dụng CLO</DialogTitle>
         <DialogDescription>
-          {isApprove
-            ? "Sau khi duyệt, bài tập mới của khóa phải gắn CLO của bộ được duyệt trước khi giao cho học sinh."
-            : "Bạn xác nhận mọi CLO đúng kiến thức, đúng nguồn và có bài học tương ứng."}
+          Bạn xác nhận mọi CLO đúng kiến thức, đúng nguồn và có bài học tương
+          ứng. Sau khi duyệt, bộ CLO được sử dụng ngay để tạo và giao bài, không
+          cần quản lý duyệt thêm.
         </DialogDescription>
       </DialogHeader>
       <ApiForm
@@ -605,16 +626,10 @@ function OutcomeDialogBody({
             type: "checkbox",
           },
         ]}
-        submitLabel={isApprove ? "Duyệt bộ CLO" : "Duyệt chuyên môn"}
+        submitLabel="Duyệt chuyên môn"
         successMessage={false}
-        onSubmit={() =>
-          isApprove
-            ? outcomeApi.approve(dialog.set.id)
-            : outcomeApi.technicalApprove(dialog.set.id)
-        }
-        onSuccess={done(
-          isApprove ? "Đã duyệt bộ CLO." : "Đã duyệt chuyên môn bộ CLO.",
-        )}
+        onSubmit={() => outcomeApi.technicalApprove(dialog.set.id)}
+        onSuccess={done("Đã duyệt CLO. Có thể dùng ngay khi tạo và giao bài.")}
       />
     </>
   );

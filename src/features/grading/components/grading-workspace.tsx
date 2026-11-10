@@ -36,7 +36,10 @@ import {
 } from "@/features/academic/components/live-fields";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { parseStoredUser, readStoredUserRaw } from "@/lib/auth/session";
-import { gradeSchema } from "@/lib/validators/web-workflows";
+import {
+  gradeSchema,
+  criterionScoreSchema,
+} from "@/lib/validators/web-workflows";
 import type {
   AssignmentDetail,
   GradeReview,
@@ -48,9 +51,14 @@ import {
   sameGrade,
   type GradeInput,
 } from "../grade-workflow";
-import { gradingJobFailureMessage } from "../presentation";
+import {
+  gradingJobFailureMessage,
+  readingFailureMessage,
+} from "../presentation";
 import { ROUTES } from "@/constants/routes";
 import { latestSubmissions } from "@/features/assignments/submission-selectors";
+import { normalizeGradeSuggestion } from "../suggestions";
+import { ReadingCorrection } from "./reading-correction";
 import { SubmissionFile } from "./submission-file";
 
 const formSchema = z.object({
@@ -58,6 +66,7 @@ const formSchema = z.object({
     .array(
       z.object({
         questionId: z.string(),
+        criteria: z.array(criterionScoreSchema).max(30).optional(),
         score: z.number().min(0).max(100),
         feedback: z.string().max(5000),
       }),
@@ -131,6 +140,22 @@ function GradeWorkspace({
     defaultValues: {
       scores: assignment.questions.map((question) => ({
         questionId: question.id,
+        ...(question.criteria?.length
+          ? {
+              criteria: question.criteria.map((c) => ({
+                criterionId: c.id,
+                score:
+                  initial?.scores
+                    .find((s) => s.questionId === question.id)
+                    ?.criteria?.find((s) => s.criterionId === c.id)?.score ?? 0,
+                feedback:
+                  initial?.scores
+                    .find((s) => s.questionId === question.id)
+                    ?.criteria?.find((s) => s.criterionId === c.id)?.feedback ??
+                  "",
+              })),
+            }
+          : {}),
         score:
           initial?.scores.find((item) => item.questionId === question.id)
             ?.score ??
@@ -273,6 +298,22 @@ function GradeWorkspace({
       const question = assignment.questions.find(
         (item) => item.id === score.questionId,
       );
+      if (question?.criteria?.length) {
+        for (const c of question.criteria) {
+          const item = score.criteria?.find((s) => s.criterionId === c.id);
+          if (
+            !item ||
+            !Number.isFinite(item.score) ||
+            item.score < 0 ||
+            item.score > c.maxScore
+          ) {
+            form.setError(`scores.${index}.score`, {
+              message: "Kiểm tra điểm từng tiêu chí; không vượt điểm tối đa.",
+            });
+            valid = false;
+          }
+        }
+      }
       if (!question || score.score > question.maxScore) {
         form.setError(`scores.${index}.score`, {
           message: "Điểm vượt điểm tối đa của câu.",
@@ -390,6 +431,60 @@ function GradeWorkspace({
                       </p>
                     </div>
                   )}
+                  {question.criteria?.map((c) => (
+                    <p key={c.id} className="text-sm text-muted-foreground">
+                      {c.title} · {c.maxScore} điểm — {c.description}
+                    </p>
+                  ))}
+                  {job.data?.submissionId === submission.id &&
+                    job.data.result?.readings
+                      ?.filter((r) => r.questionId === question.id)
+                      .map((r) => (
+                        <div
+                          key={r.questionId}
+                          className="space-y-2 rounded-xl border border-border p-3"
+                        >
+                          <p className="font-medium">
+                            AI đọc bài ·{" "}
+                            {r.readable ? "Đã đọc" : "Cần kiểm tra"}
+                          </p>
+                          <p className="whitespace-pre-wrap text-sm">
+                            {r.answer}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {r.reason}
+                          </p>
+                          <p className="text-xs">
+                            {r.sources
+                              .map(
+                                (source) =>
+                                  `Tệp ${submission.files.findIndex((f) => f.fileId === source.fileId) + 1}, trang ${source.page}`,
+                              )
+                              .join("; ")}
+                          </p>
+                        </div>
+                      ))}
+                  {submission.files.length > 0 && (
+                    <ReadingCorrection
+                      key={`${question.id}:${job.data?.id ?? "initial"}:${job.data?.status ?? ""}`}
+                      submissionId={submission.id}
+                      ownerId={ownerId}
+                      questionId={question.id}
+                      answer={
+                        job.data?.submissionId === submission.id
+                          ? (job.data.result?.readings?.find(
+                              (r) => r.questionId === question.id,
+                            )?.answer ??
+                            answer ??
+                            "")
+                          : (answer ?? "")
+                      }
+                      busy={!!aiBusy || busy}
+                      onJob={(id) => {
+                        void setJobId(id);
+                      }}
+                    />
+                  )}
                   {question.rubric && (
                     <p className="whitespace-pre-wrap text-sm text-muted-foreground">
                       Tiêu chí chấm: {question.rubric}
@@ -484,7 +579,9 @@ function GradeWorkspace({
                     </Button>
                     {submission.files.length > 0 && (
                       <p className="w-full text-xs text-muted-foreground">
-                        Bài nộp có {submission.files.length} tệp đính kèm. AI sẽ đề xuất điểm dựa trên câu trả lời chữ và nhắc giáo viên kiểm tra tệp đính kèm.
+                        AI đọc {submission.files.length} tệp đính kèm, đối chiếu
+                        với câu trả lời chữ rồi đề xuất điểm. Câu không đọc rõ
+                        cần giáo viên kiểm tra.
                       </p>
                     )}
                   </div>
@@ -508,17 +605,45 @@ function GradeWorkspace({
                         AI chỉ đề xuất; giáo viên kiểm tra trước khi lưu hoặc
                         gửi.
                       </p>
-                      {suggestions && (
+                      {!!job.data.result?.manualReviewQuestionIds?.length && (
+                        <p role="alert" className="text-sm text-destructive">
+                          Cần chấm thủ công câu{" "}
+                          {job.data.result.manualReviewQuestionIds
+                            .map(
+                              (id) =>
+                                assignment.questions.findIndex(
+                                  (q) => q.id === id,
+                                ) + 1,
+                            )
+                            .join(", ")}
+                          .{" "}
+                          {readingFailureMessage(job.data.result.readingError)}
+                        </p>
+                      )}
+                      {suggestions && suggestions.length > 0 && (
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           onClick={() => {
                             assignment.questions.forEach((question, index) => {
-                              const score = suggestions.find(
+                              const raw = suggestions.find(
                                 (item) => item.questionId === question.id,
                               );
-                              if (score && question.kind === "ESSAY") {
+                              const score = raw
+                                ? normalizeGradeSuggestion(question, raw)
+                                : undefined;
+                              if (raw && !score)
+                                toast.error(
+                                  `Gợi ý câu ${index + 1} không khớp rubric. Kiểm tra hoặc chấm lại.`,
+                                );
+                              if (score) {
+                                if (score.criteria)
+                                  form.setValue(
+                                    `scores.${index}.criteria`,
+                                    score.criteria,
+                                    { shouldDirty: true, shouldValidate: true },
+                                  );
                                 form.setValue(
                                   `scores.${index}.score`,
                                   score.score,
@@ -533,7 +658,7 @@ function GradeWorkspace({
                             });
                           }}
                         >
-                          Dùng gợi ý cho câu tự luận
+                          Dùng gợi ý AI cho các câu đã đọc
                         </Button>
                       )}
                     </div>
@@ -546,7 +671,84 @@ function GradeWorkspace({
                       <Label htmlFor={`grade-score-${index}`}>
                         Câu {index + 1} · Điểm tối đa {question.maxScore}
                       </Label>
-                      {question.kind === "ESSAY" ? (
+                      {question.criteria?.length ? (
+                        <div className="space-y-3">
+                          {question.criteria.map((c, ci) => (
+                            <div
+                              key={c.id}
+                              className="space-y-2 rounded-xl bg-muted p-3"
+                            >
+                              <Label htmlFor={`criterion-score-${index}-${ci}`}>
+                                {c.title} · tối đa {c.maxScore}
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                {c.description}
+                              </p>
+                              <Input
+                                id={`criterion-score-${index}-${ci}`}
+                                type="number"
+                                min={0}
+                                max={c.maxScore}
+                                step={0.01}
+                                {...form.register(
+                                  `scores.${index}.criteria.${ci}.score`,
+                                  {
+                                    valueAsNumber: true,
+                                    onChange: () => {
+                                      const entries =
+                                        form.getValues(
+                                          `scores.${index}.criteria`,
+                                        ) ?? [];
+                                      form.setValue(
+                                        `scores.${index}.score`,
+                                        Math.round(
+                                          entries.reduce(
+                                            (sum, item) =>
+                                              sum +
+                                              (Number.isFinite(item.score)
+                                                ? item.score
+                                                : 0),
+                                            0,
+                                          ) * 100,
+                                        ) / 100,
+                                        {
+                                          shouldDirty: true,
+                                          shouldValidate: true,
+                                        },
+                                      );
+                                    },
+                                  },
+                                )}
+                              />
+                              <Label
+                                htmlFor={`criterion-feedback-${index}-${ci}`}
+                              >
+                                Nhận xét tiêu chí
+                              </Label>
+                              <Textarea
+                                id={`criterion-feedback-${index}-${ci}`}
+                                {...form.register(
+                                  `scores.${index}.criteria.${ci}.feedback`,
+                                )}
+                              />
+                              {form.formState.errors.scores?.[index]
+                                ?.criteria?.[ci] && (
+                                <p
+                                  role="alert"
+                                  className="text-sm text-destructive"
+                                >
+                                  Kiểm tra điểm và nhận xét tiêu chí.
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                          <p className="text-sm font-medium">
+                            Tổng câu: {scores?.[index]?.score ?? 0}/
+                            {question.maxScore}
+                          </p>
+                        </div>
+                      ) : question.kind === "ESSAY" ||
+                        submission.files.length > 0 ? (
                         <Input
                           id={`grade-score-${index}`}
                           type="number"
@@ -594,6 +796,43 @@ function GradeWorkspace({
                       )}
                     </div>
                   ))}
+                  {!!assignment.learningTargets?.length && (
+                    <section
+                      className="space-y-2 rounded-xl bg-muted p-3"
+                      aria-label="Điểm theo CLO"
+                    >
+                      <p className="font-medium">
+                        Tỷ lệ điểm theo CLO · bản đang chấm
+                      </p>
+                      {assignment.learningTargets.map((target) => {
+                        const related = assignment.questions.filter(
+                          (q) => q.outcomeId === target.id,
+                        );
+                        const max = related.reduce(
+                          (sum, q) => sum + q.maxScore,
+                          0,
+                        );
+                        if (!max) return null;
+                        const actual = related.reduce(
+                          (sum, q) =>
+                            sum +
+                            (scores?.find((s) => s.questionId === q.id)
+                              ?.score ?? 0),
+                          0,
+                        );
+                        return (
+                          <p key={target.id} className="text-sm">
+                            {target.code}: {Math.round(actual * 100) / 100}/
+                            {max} điểm ({Math.round((actual / max) * 100)}%)
+                          </p>
+                        );
+                      })}
+                      <p className="text-xs text-muted-foreground">
+                        Cộng điểm các câu cùng CLO rồi chia tổng điểm tối đa;
+                        đây là kết quả của bài này.
+                      </p>
+                    </section>
+                  )}
                   <Label htmlFor="grade-feedback">Nhận xét chung</Label>
                   <Textarea
                     id="grade-feedback"

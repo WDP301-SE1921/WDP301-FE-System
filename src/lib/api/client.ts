@@ -279,11 +279,32 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_SEQUENCE: "Số thứ tự bài phải liên tục theo chế độ nhập.",
   INVALID_MONTH: "Tháng kiểm tra phải nằm trong học phần và không trùng.",
   INVALID_ANSWER_KEY: "Đáp án đúng của câu hỏi không hợp lệ. Kiểm tra lại đề.",
+  INVALID_RUBRIC:
+    "Tiêu chí không hợp lệ hoặc trùng mã. Kiểm tra tên và điểm tối đa.",
+  RUBRIC_TOTAL_MISMATCH:
+    "Tổng điểm các tiêu chí phải bằng điểm tối đa của câu trước khi giao bài.",
+  INVALID_CRITERION_SCORES:
+    "Chấm đủ từng tiêu chí, trong giới hạn điểm cho phép.",
+  INVALID_FILES:
+    "Tệp không tồn tại, bị trùng hoặc không thuộc tài khoản của bạn. Tải lại tệp.",
+  AI_VISION_UNAVAILABLE:
+    "Chưa cấu hình AI đọc ảnh/PDF scan. Liên hệ quản trị hoặc soạn thủ công.",
+  AI_JOB_BUSY: "AI đang xử lý bài này. Đợi hoàn tất trước khi gửi bản sửa.",
+  INVALID_AI_CORRECTIONS:
+    "Nội dung đã sửa phải thuộc câu hỏi của bài và không được trống.",
+  AI_PAGE_LIMIT: "PDF scan vượt 10 trang; chia thành đề nhỏ hơn.",
+  AI_READING_INVALID:
+    "AI chưa đọc được nội dung hợp lệ; kiểm tra tệp gốc hoặc nhập thủ công.",
+  GRADE_REVISION_CONFLICT:
+    "Điểm đã thay đổi ở phiên khác. Ghi lại thay đổi rồi tải lại bài trước khi lưu.",
+  INVALID_FILE_QUESTION:
+    "Tệp đang gắn với câu hỏi không hợp lệ. Chọn lại câu hoặc gắn tệp cho toàn bài.",
+  OBJECTIVE_FILE_REVIEW_REQUIRED:
+    "Câu trắc nghiệm chỉ có trong tệp cần được đọc bằng AI hoặc giáo viên kiểm tra trước khi chấm.",
   RUBRIC_REQUIRED: "Câu tự luận cần có tiêu chí chấm.",
   INVALID_CHOICE: "Lựa chọn trắc nghiệm không hợp lệ.",
   INVALID_ANSWERS: "Bài làm thiếu hoặc sai định dạng câu trả lời.",
   ATTEMPTS_EXHAUSTED: "Đã hết số lần nộp của bài tập này.",
-  INVALID_FILES: "Danh sách file đính kèm không hợp lệ.",
   INVALID_FILE_SIZE: "Tệp rỗng hoặc vượt quá dung lượng cho phép.",
   INVALID_FILE_TYPE:
     "Định dạng tệp không hợp lệ. Chọn đúng loại tệp được hỗ trợ.",
@@ -318,7 +339,7 @@ const ERROR_TEXT: Record<string, string> = {
     "Mọi CLO phải được chính bạn xác minh nguồn và có ít nhất một bài học trước khi duyệt chuyên môn.",
   OUTCOME_SET_NOT_FOUND: "Không tìm thấy bộ CLO. Tải lại danh sách.",
   OUTCOME_SET_NOT_REVIEWED:
-    "Chỉ trả về nháp được bộ CLO đang chờ Quản lý duyệt.",
+    "Chỉ gửi yêu cầu điều chỉnh cho bộ CLO đã được giáo viên duyệt. Bộ hiện tại vẫn được giữ nguyên.",
   OUTCOME_NOT_FOUND: "Không tìm thấy CLO trong bộ. Tải lại danh sách.",
   SOURCE_REVIEW_INCOMPLETE:
     "Ghi rõ mục/trang nguồn và giải thích đối chiếu (mỗi ô ít nhất 12 ký tự).",
@@ -363,6 +384,8 @@ export async function apiRequest<T>(
       method: options.method ?? "GET",
       data: options.body,
       signal: options.signal,
+      timeout:
+        path === "academic/assignments/import-preview" ? 120_000 : 60_000,
       headers: {
         "Content-Type":
           options.body instanceof FormData ? undefined : "application/json",
