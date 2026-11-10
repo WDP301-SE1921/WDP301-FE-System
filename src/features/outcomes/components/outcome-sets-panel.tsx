@@ -679,7 +679,7 @@ function OutcomeForm({
     { name: "sourceNote", label: "Ghi chú đối chiếu (không bắt buộc)", type: "textarea" as const },
   ];
   return (
-    <div className="space-y-3 pt-1">
+    <div className="space-y-3 pt-1 [&_label[for]]:mb-1.5">
       <ApiForm
         schema={outcomeFormSchema}
         liveDefaults={outcome ? undefined : { code: suggestedCode }}

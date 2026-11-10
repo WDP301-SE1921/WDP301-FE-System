@@ -192,5 +192,11 @@ export async function parentNotifications(
 
 /** Chọn một thẻ ChoiceCards: radio bị ẩn (sr-only) nên bấm vào nhãn bao quanh nó. */
 export async function chooseCard(scope: Page | Locator, name: string | RegExp) {
-  await scope.locator("label", { hasText: name }).first().click();
+  // Nhấp nhãn như người dùng. Nhấp đầu tiên trong khoảng <1 giây sau khi hộp thoại mở bị bỏ qua
+  // (đã thử: sau 1 giây thì nhận ngay), nên thử lại tới khi radio đã chọn.
+  const label = scope.locator("label", { hasText: name }).first();
+  await expect(async () => {
+    await label.click();
+    await expect(label.getByRole("radio")).toBeChecked({ timeout: 1_000 });
+  }).toPass();
 }

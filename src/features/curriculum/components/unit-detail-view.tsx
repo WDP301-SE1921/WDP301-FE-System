@@ -1137,7 +1137,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                       onSaved={() => saved("Đã gửi yêu cầu chỉnh sửa.")}
                     />
                   )}
-                {editor?.kind !== "submit" && (
+                {!(editor?.kind === "submit" && canEdit) && (
                   <Button
                     variant="outline"
                     disabled={formState.busy}

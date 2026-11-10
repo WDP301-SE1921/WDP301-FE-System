@@ -400,10 +400,10 @@ function ProgramsCatalog() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Khóa học / giáo trình</TableHead>
-                    <TableHead>Hiệu lực</TableHead>
-                    <TableHead className="text-right">Bài</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right xl:sticky xl:right-0 xl:bg-muted">
+                    <TableHead className="hidden xl:table-cell">Hiệu lực</TableHead>
+                    <TableHead className="hidden text-right xl:table-cell">Bài</TableHead>
+                    <TableHead className="hidden xl:table-cell">Trạng thái</TableHead>
+                    <TableHead className="hidden text-right xl:sticky xl:right-0 xl:table-cell xl:bg-muted">
                       Thao tác
                     </TableHead>
                   </TableRow>
@@ -543,49 +543,62 @@ function ProgramsCatalog() {
                           )}
                           {programUnits.map((unit) => {
                             const stage = curriculumStage(unit);
+                            const effectiveLabel = curriculumEffectiveLabel(unit, today);
+                            const range = `${calendarDateLabel(unit.fromDate.slice(0, 10))} → ${calendarDateLabel(unit.toDate.slice(0, 10))}`;
+                            const unitAction = (
+                              <Button
+                                size="sm"
+                                variant={
+                                  stage === "PENDING_MANAGER_CONFIRMATION"
+                                    ? "default"
+                                    : "ghost"
+                                }
+                                aria-label={`${stage === "PENDING_MANAGER_CONFIRMATION" ? "Duyệt áp dụng" : "Xem"} giáo trình ${unit.title}`}
+                                render={
+                                  <Link
+                                    href={ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)}
+                                  />
+                                }
+                              >
+                                {stage === "PENDING_MANAGER_CONFIRMATION"
+                                  ? "Duyệt áp dụng"
+                                  : "Xem"}
+                              </Button>
+                            );
                             return (
                               <TableRow key={unit.id}>
-                                <TableCell className="max-w-56 whitespace-normal pl-8 xl:max-w-96">
+                                <TableCell className="whitespace-normal pl-8 xl:max-w-96">
                                   {unit.title} · bản {unit.version}
+                                  {/* Dưới xl các cột riêng ẩn đi: hiệu lực, số bài, trạng thái và nút xếp dưới tên. */}
+                                  <div className="mt-1 space-y-1 text-sm text-muted-foreground xl:hidden">
+                                    <p>
+                                      {range} · {unit._count?.lessons ?? "—"} bài
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <StatusBadge
+                                        category="curriculum"
+                                        status={stage}
+                                      />
+                                      {effectiveLabel && <span className="text-xs">{effectiveLabel}</span>}
+                                      {unitAction}
+                                    </div>
+                                  </div>
                                 </TableCell>
-                                <TableCell className="whitespace-normal xl:whitespace-nowrap">
-                                  {calendarDateLabel(
-                                    unit.fromDate.slice(0, 10),
-                                  )}{" "}
-                                  →{" "}
-                                  {calendarDateLabel(unit.toDate.slice(0, 10))}
+                                <TableCell className="hidden whitespace-nowrap xl:table-cell">
+                                  {range}
                                 </TableCell>
-                                <TableCell className="text-right tabular-nums">
+                                <TableCell className="hidden text-right tabular-nums xl:table-cell">
                                   {unit._count?.lessons ?? "—"}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden xl:table-cell">
                                   <StatusBadge
                                     category="curriculum"
                                     status={stage}
                                   />
-                                  {curriculumEffectiveLabel(unit, today) && <p className="mt-1 text-xs text-muted-foreground">{curriculumEffectiveLabel(unit, today)}</p>}
+                                  {effectiveLabel && <p className="mt-1 text-xs text-muted-foreground">{effectiveLabel}</p>}
                                 </TableCell>
-                                <TableCell className="text-right xl:sticky xl:right-0 xl:bg-card">
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      stage === "PENDING_MANAGER_CONFIRMATION"
-                                        ? "default"
-                                        : "ghost"
-                                    }
-                                    aria-label={`${stage === "PENDING_MANAGER_CONFIRMATION" ? "Duyệt áp dụng" : "Xem"} giáo trình ${unit.title}`}
-                                    render={
-                                      <Link
-                                        href={ROUTES.MANAGER.CURRICULUM_UNIT(
-                                          unit.id,
-                                        )}
-                                      />
-                                    }
-                                  >
-                                    {stage === "PENDING_MANAGER_CONFIRMATION"
-                                      ? "Duyệt áp dụng"
-                                      : "Xem"}
-                                  </Button>
+                                <TableCell className="hidden text-right xl:sticky xl:right-0 xl:table-cell xl:bg-card">
+                                  {unitAction}
                                 </TableCell>
                               </TableRow>
                             );
