@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { OutcomePicker } from "@/components/shared/outcomes/outcome-picker";
 import { toast } from "@/components/ui/toast";
 import {
   useLiveCommand,
@@ -22,7 +21,6 @@ import {
 import { lessonOutcomeSchema } from "@/lib/validators/outcomes";
 import type { OutcomeSet } from "@/types/outcomes";
 import { outcomeApi } from "../api";
-import { OUTCOME_SET_STATUS_TEXT } from "../rules";
 
 interface LessonRef {
   id: string;
@@ -138,58 +136,13 @@ function LessonOutcomeForm({
         name="outcomeIds"
         control={form.control}
         render={({ field }) => (
-          <div className="space-y-4">
-            {sets.map((set) => {
-              const locked = isLocked(set);
-              return (
-                <fieldset
-                  key={set.id}
-                  className="space-y-2"
-                  disabled={locked}
-                  aria-describedby={locked ? `locked-${set.id}` : undefined}
-                >
-                  <legend className="text-sm font-medium">
-                    {set.level} · bản {set.version} (
-                    {OUTCOME_SET_STATUS_TEXT[set.status]})
-                  </legend>
-                  {locked && (
-                    <p
-                      id={`locked-${set.id}`}
-                      className="text-xs text-muted-foreground"
-                    >
-                      Bộ đã gửi duyệt hoặc đã duyệt: liên kết giữ nguyên, không đổi ở đây.
-                    </p>
-                  )}
-                  {set.outcomes.map((outcome) => {
-                    const id = `lesson-outcome-${outcome.id}`;
-                    return (
-                      <div key={outcome.id} className="flex items-start gap-3">
-                        <Checkbox
-                          id={id}
-                          className="mt-0.5"
-                          disabled={locked}
-                          checked={field.value.includes(outcome.id)}
-                          onCheckedChange={(checked) =>
-                            field.onChange(
-                              checked
-                                ? [...field.value, outcome.id]
-                                : field.value.filter(
-                                    (value) => value !== outcome.id,
-                                  ),
-                            )
-                          }
-                        />
-                        <Label htmlFor={id} className="leading-snug font-normal">
-                          <span className="font-medium">{outcome.code}</span> ·{" "}
-                          {outcome.title}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </fieldset>
-              );
-            })}
-          </div>
+          <OutcomePicker
+            sets={sets}
+            value={field.value}
+            onChange={field.onChange}
+            isLocked={isLocked}
+            idPrefix="lesson-outcome"
+          />
         )}
       />
       {hasEditableSet ? (

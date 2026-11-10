@@ -7,7 +7,14 @@ import { estimateLessons } from "../workspace-selectors";
 import { registrationApi } from "@/features/registration-flow/api";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { approveCompanionSets } from "@/features/outcomes/approval-chain";
+import {
+  approvalPlan,
+  approvalWarning,
+  type SetFailure,
+} from "@/features/outcomes/two-stage-approval";
+import type { OutcomeSet } from "@/types/outcomes";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,11 +180,20 @@ export function CurriculumSubmitForm({
 
 export function CurriculumTechnicalReviewForm({
   unit,
+  companions = [],
+  outcomesUnready = false,
   onSaved,
   onStateChange,
 }: Omit<ReviewFormProps, "onSaved"> & {
-  onSaved: (approved: boolean) => void;
+  /** Bộ mục tiêu đang tải hoặc tải lỗi: không cho "Duyệt nội dung" để khỏi bỏ sót bộ. */
+  outcomesUnready?: boolean;
+  /** Bộ mục tiêu đi cùng giáo trình (W11); rỗng khi khóa không có bộ. */
+  companions?: OutcomeSet[];
+  onSaved: (approved: boolean, failures: SetFailure[]) => void;
 }) {
+  const client = useQueryClient();
+  const plan = approvalPlan("teacher", companions);
+  const warning = approvalWarning("teacher", plan);
   const id = useId();
   const form = useForm<CurriculumTechnicalReviewInput>({
     resolver: zodResolver(curriculumTechnicalReviewSchema),
@@ -191,7 +207,13 @@ export function CurriculumTechnicalReviewForm({
   const save = useCurriculumMutation(
     async (input: CurriculumTechnicalReviewInput) => {
       const result = await curriculumApi.technicalReview(unit.id, input);
-      onSaved(input.approved);
+      // Giáo trình đã được duyệt: lỗi ở phần mục tiêu chỉ báo, không làm hỏng bước này.
+      const failures = input.approved
+        ? await approveCompanionSets("teacher", plan.approvable)
+        : [];
+      if (input.approved && plan.approvable.length)
+        await client.invalidateQueries({ queryKey: ["web-api"] });
+      onSaved(input.approved, failures);
       return result;
     },
   );
@@ -248,14 +270,21 @@ export function CurriculumTechnicalReviewForm({
         </div>
         <p className="text-sm text-muted-foreground">
           {approved
-            ? "Giáo trình sẽ chuyển tới Quản lý để duyệt áp dụng."
-            : "Giáo trình trở về bản nháp để người thiết kế chỉnh sửa và gửi lại."}
+            ? plan.approvable.length
+              ? "Giáo trình và mục tiêu khóa học sẽ chuyển tới Quản lý để duyệt áp dụng."
+              : "Giáo trình sẽ chuyển tới Quản lý để duyệt áp dụng."
+            : "Giáo trình trở về bản nháp để người thiết kế chỉnh sửa và gửi lại. Mục tiêu khóa học giữ nguyên bản nháp."}
         </p>
+        {approved && warning && (
+          <p role="status" className="rounded-xl bg-muted p-3 text-sm">
+            {warning}
+          </p>
+        )}
         <StickyFormFooter>
           <Button
             type="submit"
             isLoading={save.isPending}
-            disabled={save.isPending}
+            disabled={save.isPending || (approved && outcomesUnready)}
           >
             {approved ? "Duyệt nội dung" : "Gửi yêu cầu chỉnh sửa"}
           </Button>

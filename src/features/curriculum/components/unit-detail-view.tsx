@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -84,9 +85,21 @@ import { LessonPositionDialog } from "./lesson-position-dialog";
 import { moveLessonBy, moveLessonTo } from "../lesson-order";
 import { hasBlockingCheck, submitChecklist } from "../submit-checklist";
 import { academicApi } from "@/features/academic/api";
+import { outcomeApi } from "@/features/outcomes/api";
+import { approveCompanionSets } from "@/features/outcomes/approval-chain";
+import {
+  approvalPlan,
+  approvalWarning,
+  latestApprovedVersion,
+  partialFailureMessage,
+  type ApprovalRole,
+  type SetFailure,
+} from "@/features/outcomes/two-stage-approval";
+import { UnitOutcomesSection } from "./unit-outcomes-section";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import {
   buildOutcomeMatrixHref,
+  companionSets,
   countUnlinked,
   unlinkedDraftOutcomes,
   unlinkedOutcomeSubmitNote,
@@ -224,15 +237,10 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   const selectedRow =
     comparisonRows.find((row) => row.lesson.id === selectedLessonId) ??
     comparisonRows[0];
-  const canEdit =
-    role === "curriculum_designer" &&
-    unit?.designerId === user?.id &&
-    unit?.status === "DRAFT";
+  // Q6: mọi Thiết kế GT sửa được bản nháp; sửa cùng lúc thì BE trả REVISION_CONFLICT.
+  const canEdit = role === "curriculum_designer" && unit?.status === "DRAFT";
   const canRevise =
-    role === "curriculum_designer" &&
-    unit?.designerId === user?.id &&
-    !!unit &&
-    canCopyCurriculum(unit);
+    role === "curriculum_designer" && !!unit && canCopyCurriculum(unit);
   const canTechnicalReview =
     role === "teacher" &&
     unit?.status === "PENDING_REVIEW" &&
@@ -246,19 +254,91 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   // áp dụng (BE B1); giáo trình đã lưu trữ thì BE trả LESSON_LOCKED.
   const canMapOutcomes =
     role === "curriculum_designer" &&
-    unit?.designerId === user?.id &&
     !!unit &&
     ["DRAFT", "PENDING_REVIEW", "APPROVED"].includes(unit.status);
+  // Giáo viên và Quản lý cũng cần bộ mục tiêu để duyệt cùng giáo trình (W11).
+  const showOutcomes =
+    canMapOutcomes ||
+    canTechnicalReview ||
+    canConfirm ||
+    (role === "center_manager" && unit?.status === "APPROVED") ||
+    (role === "teacher" && unit?.reviewerTeacherId === user?.id);
   // Cùng khóa cache với LessonOutcomeDialog nên gắn xong cảnh báo tự cập nhật.
-  // Lỗi tải thì trang vẫn dùng được, chỉ không có cảnh báo.
+  // Lỗi tải thì không cho duyệt (outcomesUnready) để khỏi bỏ sót bộ mục tiêu.
   const outcomeSets = useLiveQuery(
     ["outcome-sets", unit?.programId, "all"],
     (signal) => academicApi.outcomeSets(unit!.programId, {}, signal),
-    canMapOutcomes,
+    showOutcomes,
   );
+  // Chưa biết bộ mục tiêu thì chưa cho duyệt: tránh duyệt im lặng bỏ sót bộ (W11).
+  const outcomesUnready =
+    (canTechnicalReview || canConfirm) &&
+    (outcomeSets.isPending || outcomeSets.isError);
+  const companions = unit
+    ? companionSets(
+        outcomeSets.data ?? [],
+        unit.lessons.map((lesson) => lesson.id),
+      )
+    : [];
+  const keptVersion = companions.length
+    ? null
+    : latestApprovedVersion(outcomeSets.data ?? []);
+  const client = useQueryClient();
+  const [followUp, setFollowUp] = useState<{
+    role: ApprovalRole;
+    failures: SetFailure[];
+  } | null>(null);
+  const [retryingFollowUp, setRetryingFollowUp] = useState(false);
+  const [approvingSetId, setApprovingSetId] = useState<string | null>(null);
+  const reportFollowUp = (approvalRole: ApprovalRole, failures: SetFailure[]) =>
+    setFollowUp(failures.length ? { role: approvalRole, failures } : null);
+  /** Thử lại dựa trên trạng thái lấy lại từ BE, không gọi lại bước giáo trình. */
+  async function retryFollowUp() {
+    if (!followUp || !unit) return;
+    setRetryingFollowUp(true);
+    try {
+      const fresh = await outcomeApi.sets(unit.programId);
+      const plan = approvalPlan(
+        followUp.role,
+        companionSets(fresh, unit.lessons.map((lesson) => lesson.id)),
+      );
+      const failures = await approveCompanionSets(followUp.role, plan.approvable);
+      await client.invalidateQueries({ queryKey: ["web-api"] });
+      reportFollowUp(followUp.role, failures);
+      if (!failures.length) setNotice("Đã duyệt mục tiêu khóa học.");
+    } catch {
+      /* Lỗi tải lại bộ: giữ nguyên thông báo, bấm thử lại sau. */
+    } finally {
+      setRetryingFollowUp(false);
+    }
+  }
+  const setApproveRole: ApprovalRole | null =
+    role === "teacher" &&
+    unit?.status === "PENDING_REVIEW" &&
+    unit.reviewerTeacherId === user?.id &&
+    !!unit.technicalReviewedAt
+      ? "teacher"
+      : role === "center_manager" &&
+          (unit?.status === "APPROVED" ||
+            (unit?.status === "PENDING_REVIEW" && !!unit.technicalReviewedAt))
+        ? "center_manager"
+        : null;
+  async function approveOneSet(set: (typeof companions)[number]) {
+    if (!setApproveRole) return;
+    setApprovingSetId(set.id);
+    try {
+      const failures = await approveCompanionSets(setApproveRole, [set]);
+      await client.invalidateQueries({ queryKey: ["web-api"] });
+      reportFollowUp(setApproveRole, failures);
+      if (!failures.length) setNotice("Đã duyệt mục tiêu khóa học.");
+    } finally {
+      setApprovingSetId(null);
+    }
+  }
+  const managerPlan = approvalPlan("center_manager", companions);
+  const managerWarning = approvalWarning("center_manager", managerPlan);
   const unlinkedGroups = unlinkedDraftOutcomes(outcomeSets.data ?? []);
-  const isOwnerDesigner =
-    role === "curriculum_designer" && unit?.designerId === user?.id;
+  const isOwnerDesigner = role === "curriculum_designer";
   const hasMenu =
     canEdit ||
     isOwnerDesigner ||
@@ -513,6 +593,35 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 {notice}
               </p>
             )}
+            {outcomesUnready && (
+              <div className="space-y-2 rounded-xl border border-border bg-muted p-4 text-sm">
+                <p>
+                  {outcomeSets.isError
+                    ? "Chưa tải được mục tiêu khóa học. Tải lại trước khi duyệt để mục tiêu được duyệt cùng giáo trình."
+                    : "Đang tải mục tiêu khóa học…"}
+                </p>
+                {outcomeSets.isError && (
+                  <Button size="sm" onClick={() => void outcomeSets.refetch()}>
+                    Tải lại
+                  </Button>
+                )}
+              </div>
+            )}
+            {followUp && (
+              <div
+                role="alert"
+                className="space-y-2 rounded-xl border border-border bg-muted p-4 text-sm"
+              >
+                <p>{partialFailureMessage(followUp.failures)}</p>
+                <Button
+                  size="sm"
+                  isLoading={retryingFollowUp}
+                  onClick={() => void retryFollowUp()}
+                >
+                  Thử lại phần mục tiêu
+                </Button>
+              </div>
+            )}
             {scheduleOffer && (
               <div className="space-y-2 rounded-xl border border-border p-4 text-sm">
                 {scheduleOffer.count > 0 ? (
@@ -559,6 +668,26 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   )}
                 </CardContent>
               </Card>
+            )}
+            {(role === "teacher" || role === "center_manager") && (
+              <UnitOutcomesSection
+                unit={unit}
+                companions={companions}
+                keptVersion={keptVersion}
+                canApproveSet={(set) =>
+                  setApproveRole === "teacher"
+                    ? approvalPlan("teacher", [set]).approvable.length > 0
+                    : setApproveRole === "center_manager" &&
+                      set.status === "TECHNICALLY_APPROVED"
+                }
+                approveLabel={
+                  setApproveRole === "teacher"
+                    ? "Duyệt nội dung mục tiêu"
+                    : "Duyệt áp dụng mục tiêu"
+                }
+                onApproveSet={(set) => void approveOneSet(set)}
+                approvingSetId={approvingSetId}
+              />
             )}
             {canMapOutcomes && unlinkedGroups.length > 0 && (
               <OutcomeLinkWarning
@@ -821,9 +950,13 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 <CurriculumTechnicalReviewForm
                   unit={unit}
                   onStateChange={setFormState}
-                  onSaved={(approved) => {
-                    if (approved) setNotice("Đã duyệt nội dung giáo trình.");
-                    else router.push(ROUTES.TEACHER.CURRICULUM);
+                  companions={companions}
+                  outcomesUnready={outcomesUnready}
+                  onSaved={(approved, failures) => {
+                    if (approved) {
+                      setNotice("Đã duyệt nội dung giáo trình.");
+                      reportFollowUp("teacher", failures);
+                    } else router.push(ROUTES.TEACHER.CURRICULUM);
                   }}
                 />
               </section>
@@ -837,7 +970,10 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 >
                   Trả lại để sửa
                 </Button>
-                <Button disabled={busy} onClick={() => setConfirmApply(true)}>
+                <Button
+                  disabled={busy || outcomesUnready}
+                  onClick={() => setConfirmApply(true)}
+                >
                   Duyệt áp dụng
                 </Button>
               </StickyFormFooter>
@@ -935,9 +1071,14 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 {editor?.kind === "technical-review" && canTechnicalReview && (
                   <CurriculumTechnicalReviewForm
                     unit={unit}
+                    companions={companions}
+                    outcomesUnready={outcomesUnready}
                     onStateChange={setFormState}
-                    onSaved={(approved) => {
-                      if (approved) saved("Đã duyệt nội dung giáo trình.");
+                    onSaved={(approved, failures) => {
+                      if (approved) {
+                        saved("Đã duyệt nội dung giáo trình.");
+                        reportFollowUp("teacher", failures);
+                      }
                       else {
                         closeEditor();
                         router.push(ROUTES.TEACHER.CURRICULUM);
@@ -991,13 +1132,23 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
               open={confirmApply}
               onOpenChange={setConfirmApply}
               title="Duyệt áp dụng giáo trình?"
-              description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản cho kỳ sau chờ tới ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi học đã tạo được giữ nguyên.`}
+              description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản cho kỳ sau chờ tới ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi học đã tạo được giữ nguyên.${managerPlan.approvable.length ? " Mục tiêu khóa học đi cùng cũng được duyệt áp dụng." : ""}${managerWarning ? " " + managerWarning : ""}`}
               confirmText="Duyệt áp dụng"
               isLoading={approve.isPending}
               onConfirm={async () => {
                 try {
                   await approve.mutateAsync(undefined);
                   setNotice("Đã duyệt áp dụng giáo trình.");
+                  if (managerPlan.approvable.length) {
+                    const failures = await approveCompanionSets(
+                      "center_manager",
+                      managerPlan.approvable,
+                    );
+                    await client.invalidateQueries({ queryKey: ["web-api"] });
+                    reportFollowUp("center_manager", failures);
+                    if (!failures.length)
+                      setNotice("Đã duyệt áp dụng giáo trình và mục tiêu khóa học.");
+                  }
                   try {
                     // Lớp đủ điều kiện (có giáo viên, đủ khung giờ) để mở thẳng màn Tạo lịch học.
                     const program = await registrationApi.program(unit.programId);

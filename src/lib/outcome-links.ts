@@ -94,3 +94,47 @@ export function buildOutcomeMatrixHref(programId: string, setId?: string): strin
   });
   return `${OUTCOME_MATRIX_PATH}?${query}`;
 }
+
+/** Mọi mục tiêu đang gắn vào bài, ở mọi bộ và mọi trạng thái (C29). */
+export function lessonOutcomeIds(
+  sets: readonly OutcomeSet[],
+  lessonId: string,
+): string[] {
+  return sets.flatMap((set) =>
+    set.outcomes
+      .filter((outcome) => outcome.lessonLinks.some((link) => link.lessonId === lessonId))
+      .map((outcome) => outcome.id),
+  );
+}
+
+/**
+ * Danh sách gửi cho `PATCH academic/lessons/:id/outcomes`. BE xóa mọi liên kết không gửi (kể cả
+ * tới bộ đã duyệt) nên gửi = liên kết hiện có (lấy lại ngay trước khi lưu) - phần bỏ chọn +
+ * phần chọn thêm. Trả `null` khi người dùng không đổi gì: không gọi API.
+ */
+export function nextLessonOutcomeIds(
+  existing: readonly string[],
+  initial: readonly string[],
+  current: readonly string[],
+): string[] | null {
+  const removed = new Set(initial.filter((id) => !current.includes(id)));
+  const added = current.filter((id) => !initial.includes(id));
+  if (!removed.size && !added.length) return null;
+  return [...new Set([...existing.filter((id) => !removed.has(id)), ...added])];
+}
+
+/**
+ * Bộ đi cùng giáo trình (C28): bộ của khóa có ít nhất một mục tiêu gắn vào bài của giáo trình
+ * này. Giáo trình không có khóa ngoại tới bộ nên chỉ suy được từ liên kết bài.
+ */
+export function companionSets(
+  sets: readonly OutcomeSet[],
+  lessonIds: readonly string[],
+): OutcomeSet[] {
+  const lessons = new Set(lessonIds);
+  return sets.filter((set) =>
+    set.outcomes.some((outcome) =>
+      outcome.lessonLinks.some((link) => lessons.has(link.lessonId)),
+    ),
+  );
+}

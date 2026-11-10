@@ -1,26 +1,20 @@
 import type { RegistrationProgram, WeeklySchedule } from "@/types/backend";
 import type { CurriculumReviewer } from "@/types/curriculum";
+import { countSlots, type ClosureRange } from "./center-closures";
 import { estimateLessons } from "./workspace-selectors";
 
 /**
  * Số buổi một lớp có trong khoảng ngày (gồm cả hai đầu), giống `slotsForRange` của BE:
  * sinh lịch gán buổi thứ n = bài thứ n, nên đây cũng là số bài lớp đó cần.
- * `weekday` theo BE: 1 = Thứ 2 … 7 = Chủ nhật.
+ * `weekday` theo BE: 1 = Thứ 2 … 7 = Chủ nhật. Ngày nghỉ trung tâm (`closures`) không có buổi.
  */
 export function sessionsInRange(
   schedules: readonly Pick<WeeklySchedule, "weekday">[],
   from: string,
   to: string,
+  closures: readonly ClosureRange[] = [],
 ): number {
-  const start = new Date(`${from.slice(0, 10)}T00:00:00Z`);
-  const end = new Date(`${to.slice(0, 10)}T00:00:00Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
-  let count = 0;
-  for (let day = start; day <= end; day = new Date(day.getTime() + 86400000)) {
-    const weekday = day.getUTCDay() || 7;
-    count += schedules.filter((slot) => slot.weekday === weekday).length;
-  }
-  return count;
+  return countSlots(schedules, from, to, closures);
 }
 
 export interface ClassLessonNeed {
@@ -49,6 +43,7 @@ export function curriculumReadiness(input: {
   reviewers: CurriculumReviewer[] | undefined;
   fromDate: string;
   toDate: string;
+  closures?: readonly ClosureRange[];
 }): CurriculumReadiness {
   const classes = (input.program?.classes ?? []).filter((row) => row.isActive);
   const knowsTeacher = classes.every((row) => row.teacherId !== undefined);
@@ -60,12 +55,12 @@ export function curriculumReadiness(input: {
           id: row.id,
           name: row.name,
           perWeek: row.weeklySchedules!.length,
-          needed: sessionsInRange(row.weeklySchedules!, input.fromDate, input.toDate),
+          needed: sessionsInRange(row.weeklySchedules!, input.fromDate, input.toDate, input.closures),
         }))
         .sort((a, b) => b.needed - a.needed || a.name.localeCompare(b.name, "vi"))
     : null;
   const reviewers = input.reviewers ?? [];
-  const estimate = estimateLessons(input.fromDate.slice(0, 10), input.toDate.slice(0, 10), [], input.program?.sessionsPerWeek);
+  const estimate = estimateLessons(input.fromDate.slice(0, 10), input.toDate.slice(0, 10), [], input.program?.sessionsPerWeek, input.closures);
   // Khóa chưa có lớp vẫn có người duyệt (B4): chỉ chặn khi không có giáo viên nào đang hoạt động.
   const blockedReason =
     input.reviewers && !reviewers.length

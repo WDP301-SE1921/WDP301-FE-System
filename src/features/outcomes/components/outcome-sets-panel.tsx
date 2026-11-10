@@ -20,15 +20,15 @@ import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import {
-  learningOutcomeSchema,
+  outcomeFormSchema,
   outcomeChangeRequestSchema,
   outcomeSetCreateSchema,
-  outcomeSetUpdateSchema,
   sourceReviewSchema,
 } from "@/lib/validators/outcomes";
 import type { LearningOutcome, OutcomeSet } from "@/types/outcomes";
 import { outcomeApi } from "../api";
 import { nextOutcomeCode } from "../outcome-code";
+import { PasteOutcomesForm } from "./paste-outcomes-form";
 import {
   OUTCOME_SET_STATUS_TEXT,
   outcomeSetActions,
@@ -38,7 +38,7 @@ import {
 type OutcomeDialog =
   | { kind: "create" }
   | { kind: "copy"; set: OutcomeSet }
-  | { kind: "edit-set"; set: OutcomeSet }
+  | { kind: "paste"; set: OutcomeSet }
   | { kind: "delete-set"; set: OutcomeSet }
   | { kind: "outcome"; set: OutcomeSet; outcome?: LearningOutcome }
   | { kind: "delete-outcome"; set: OutcomeSet; outcome: LearningOutcome }
@@ -50,9 +50,9 @@ const confirmOnlySchema = z.object({});
 
 const ROLE_HINT: Partial<Record<WebRole, string>> = {
   curriculum_designer:
-    "Soạn mục tiêu cho khóa học, ghi rõ nguồn căn cứ rồi gắn mục tiêu cho bài học ở trang giáo trình. Giáo viên của khóa xác minh và duyệt nội dung, sau đó Quản lý duyệt áp dụng.",
+    "Soạn mục tiêu cho khóa học (có thể trước khi có giáo trình), gắn mục tiêu cho bài học rồi gửi duyệt cùng giáo trình. Giáo viên duyệt nội dung, sau đó Quản lý duyệt áp dụng.",
   teacher:
-    "Đối chiếu từng mục tiêu với đúng mục/trang của nguồn rồi xác minh. Duyệt nội dung khi bạn đã tự xác minh mọi mục tiêu và mỗi mục tiêu có bài học.",
+    "Duyệt nội dung khi mỗi mục tiêu đã có bài học. Xác minh nguồn là không bắt buộc.",
   center_manager:
     "Duyệt áp dụng bộ mục tiêu sau khi giáo viên đã duyệt nội dung. Từ khi khóa có bộ được duyệt áp dụng, bài tập mới phải gắn mục tiêu trước khi giao.",
 };
@@ -183,7 +183,7 @@ function OutcomeSetCard({
 }) {
   const actions = outcomeSetActions(set, user);
   const blockers = actions.canTechnicallyApprove
-    ? technicalApprovalBlockers(set, user.id)
+    ? technicalApprovalBlockers(set)
     : [];
   return (
     <Card>
@@ -226,7 +226,7 @@ function OutcomeSetCard({
                         : "Nguồn chưa xác minh"}
                     </Badge>
                     <Badge variant="outline">
-                      {outcome.required ? "Bắt buộc" : "Tự chọn"}
+                      {outcome.required ? "Bắt buộc" : "Mở rộng"}
                     </Badge>
                     <Badge variant="outline">
                       {outcome.lessonLinks.length} bài học
@@ -272,7 +272,7 @@ function OutcomeSetCard({
                         {outcome.sourceStatus === "VERIFIED" &&
                         outcome.verifiedById === user.id
                           ? "Xác minh lại nguồn"
-                          : "Xác minh nguồn"}
+                          : "Xác minh nguồn (không bắt buộc)"}
                       </Button>
                     )}
                   </div>
@@ -313,9 +313,9 @@ function OutcomeSetCard({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => onAction({ kind: "edit-set", set })}
+                onClick={() => onAction({ kind: "paste", set })}
               >
-                Sửa cấp độ
+                Dán nhiều mục tiêu
               </Button>
               <Button
                 variant="outline"
@@ -388,33 +388,13 @@ function OutcomeDialogBody({
     toast.success(message);
     onDone();
   };
-  if (dialog.kind === "edit-set") {
+  if (dialog.kind === "paste") {
     return (
-      <>
-        <DialogHeader>
-          <DialogTitle>Sửa cấp độ bộ mục tiêu</DialogTitle>
-          <DialogDescription>
-            Đổi tên cấp độ hiển thị của bộ mục tiêu (bản {dialog.set.version}).
-          </DialogDescription>
-        </DialogHeader>
-        <ApiForm
-          schema={outcomeSetUpdateSchema}
-          defaults={{
-            level: dialog.set.level,
-          }}
-          fields={[
-            {
-              name: "level",
-              label: "Cấp độ",
-              description: "Nhãn do trung tâm đặt, ví dụ “Lớp 8 - nâng cao”.",
-            },
-          ]}
-          submitLabel="Lưu thay đổi"
-          successMessage={false}
-          onSubmit={(value) => outcomeApi.updateSet(dialog.set.id, value)}
-          onSuccess={done("Đã cập nhật cấp độ bộ mục tiêu.")}
-        />
-      </>
+      <PasteOutcomesForm
+        set={dialog.set}
+        programId={programId}
+        onClose={onDone}
+      />
     );
   }
   if (dialog.kind === "delete-set") {
@@ -544,53 +524,16 @@ function OutcomeDialogBody({
         <DialogHeader>
           <DialogTitle>{outcome ? `Sửa ${outcome.code}` : "Thêm mục tiêu"}</DialogTitle>
           <DialogDescription>
-            Viết mục tiêu đo được: sau khóa học, học sinh làm được gì, trong
-            điều kiện nào. Lưu xong, nguồn của mục tiêu trở về chưa xác minh.
+            Viết ngắn gọn, phụ huynh đọc là hiểu: sau khóa học, học sinh làm được gì.
+            Sửa nguồn căn cứ thì nguồn trở về chưa xác minh.
           </DialogDescription>
         </DialogHeader>
-        <ApiForm
+        <OutcomeForm
           key={suggestedCode}
-          schema={learningOutcomeSchema}
-          defaults={{
-            code: outcome?.code ?? suggestedCode,
-            title: outcome?.title ?? "",
-            statement: outcome?.statement ?? "",
-            sourceTitle: outcome?.sourceTitle ?? "",
-            sourceUrl: outcome?.sourceUrl ?? "",
-            sourceLocator: outcome?.sourceLocator ?? "",
-            sourceNote: outcome?.sourceNote ?? "",
-            required: outcome?.required ?? true,
-          }}
-          fields={[
-            {
-              name: "code",
-              label: "Mã mục tiêu",
-              description: outcome
-                ? undefined
-                : "Mã gợi ý theo thứ tự trong bộ. Bạn sửa lại được.",
-            },
-            { name: "title", label: "Tên ngắn" },
-            { name: "statement", label: "Phát biểu mục tiêu", type: "textarea" },
-            { name: "sourceTitle", label: "Tên nguồn căn cứ" },
-            { name: "sourceUrl", label: "Đường dẫn nguồn" },
-            {
-              name: "sourceLocator",
-              label: "Vị trí trong nguồn",
-              description: "Mục và trang cụ thể, ví dụ “Lớp 8 > Phương trình, trang in 65”.",
-            },
-            { name: "sourceNote", label: "Ghi chú đối chiếu", type: "textarea" },
-            { name: "required", label: "Mục tiêu bắt buộc của khóa", type: "checkbox" },
-          ]}
-          submitLabel={outcome ? "Lưu mục tiêu" : "Thêm mục tiêu"}
-          successMessage={false}
-          onSubmit={(value) =>
-            outcomeApi.saveOutcome(
-              dialog.set.id,
-              outcome ? { ...value, expectedRevision: outcome.revision } : value,
-              outcome?.id,
-            )
-          }
-          onSuccess={done(outcome ? "Đã lưu mục tiêu." : "Đã thêm mục tiêu.")}
+          setId={dialog.set.id}
+          outcome={outcome}
+          suggestedCode={suggestedCode}
+          onDone={done(outcome ? "Đã lưu mục tiêu." : "Đã thêm mục tiêu.")}
         />
       </>
     );
@@ -630,12 +573,12 @@ function OutcomeDialogBody({
             sourceNote: outcome.sourceNote ?? "",
           }}
           fields={[
-            { name: "sourceLocator", label: "Mục/trang trong nguồn" },
+            { name: "sourceLocator", label: "Mục/trang trong nguồn", description: "Ví dụ “Trang 45”." },
             { name: "sourceNote", label: "Giải thích đối chiếu", type: "textarea" },
           ]}
           submitLabel="Xác minh nguồn"
           successMessage={false}
-          onSubmit={(value) => outcomeApi.verifySource(outcome.id, value)}
+          onSubmit={(value) => outcomeApi.verifySource(outcome.id, { ...value, expectedRevision: outcome.revision })}
           onSuccess={done(`Đã xác minh nguồn ${outcome.code}.`)}
         />
       </>
@@ -670,7 +613,7 @@ function OutcomeDialogBody({
         <DialogDescription>
           {isApprove
             ? "Sau khi duyệt áp dụng, bài tập mới của khóa phải gắn mục tiêu của bộ này trước khi giao cho học sinh."
-            : "Bạn xác nhận mọi mục tiêu đúng kiến thức, đúng nguồn và có bài học tương ứng."}
+            : "Bạn xác nhận các mục tiêu đúng kiến thức và mỗi mục tiêu đã có bài học tương ứng."}
         </DialogDescription>
       </DialogHeader>
       <ApiForm
@@ -683,7 +626,7 @@ function OutcomeDialogBody({
           description: () =>
             isApprove
               ? "Sau khi duyệt áp dụng, bài tập mới của khóa phải gắn mục tiêu của bộ này trước khi giao cho học sinh."
-              : "Bạn xác nhận mọi mục tiêu đúng kiến thức, đúng nguồn và có bài học tương ứng.",
+              : "Bạn xác nhận các mục tiêu đúng kiến thức và mỗi mục tiêu đã có bài học tương ứng.",
           confirmText: isApprove ? "Duyệt áp dụng" : "Duyệt nội dung",
         }}
         submitLabel={isApprove ? "Duyệt áp dụng" : "Duyệt nội dung"}
@@ -698,5 +641,109 @@ function OutcomeDialogBody({
         )}
       />
     </>
+  );
+}
+
+const KIND_OPTIONS = [
+  { value: "required", label: "Bắt buộc", description: "Mọi học sinh của khóa cần đạt." },
+  { value: "optional", label: "Mở rộng", description: "Dành cho học sinh học thêm." },
+];
+
+function OutcomeForm({
+  setId,
+  outcome,
+  suggestedCode,
+  onDone,
+}: {
+  setId: string;
+  outcome?: LearningOutcome;
+  suggestedCode: string;
+  onDone: () => void;
+}) {
+  const hasSource = !!(
+    outcome?.sourceTitle ||
+    outcome?.sourceUrl ||
+    outcome?.sourceLocator ||
+    outcome?.sourceNote
+  );
+  const [showSource, setShowSource] = useState(hasSource);
+  const sourceFields = [
+    { name: "sourceTitle", label: "Tên nguồn (không bắt buộc)" },
+    { name: "sourceUrl", label: "Đường dẫn nguồn (không bắt buộc)" },
+    {
+      name: "sourceLocator",
+      label: "Vị trí trong nguồn (không bắt buộc)",
+      description: "Ví dụ “Trang 45”.",
+    },
+    { name: "sourceNote", label: "Ghi chú đối chiếu (không bắt buộc)", type: "textarea" as const },
+  ];
+  return (
+    <div className="space-y-3">
+      <ApiForm
+        schema={outcomeFormSchema}
+        defaults={{
+          code: outcome?.code ?? suggestedCode,
+          title: outcome?.title ?? "",
+          // Mô tả trùng tên thì để trống: BE luôn có statement (lấy bằng tên).
+          statement:
+            outcome && outcome.statement !== outcome.title ? outcome.statement : "",
+          kind: (outcome?.required ?? true) ? "required" : "optional",
+          sourceTitle: outcome?.sourceTitle ?? "",
+          sourceUrl: outcome?.sourceUrl ?? "",
+          sourceLocator: outcome?.sourceLocator ?? "",
+          sourceNote: outcome?.sourceNote ?? "",
+        }}
+        fields={[
+          {
+            name: "title",
+            label: "Mục tiêu (phụ huynh sẽ đọc)",
+            description: "Ví dụ “Giải được phương trình bậc nhất một ẩn”.",
+          },
+          {
+            name: "statement",
+            label: "Mô tả chi tiết (không bắt buộc)",
+            type: "textarea",
+          },
+          { name: "kind", label: "Loại mục tiêu", type: "choices", options: KIND_OPTIONS },
+          {
+            name: "code",
+            label: "Mã mục tiêu",
+            description: outcome ? undefined : "Mã gợi ý theo thứ tự trong bộ. Bạn sửa lại được.",
+          },
+          ...(showSource ? sourceFields : []),
+        ]}
+        preview={(values) => (
+          <p className="rounded-xl bg-muted p-3 text-sm">
+            Phụ huynh sẽ thấy:{" "}
+            <span className="font-medium">
+              {String(values.title ?? "").trim() || "(chưa nhập mục tiêu)"}
+            </span>
+          </p>
+        )}
+        submitLabel={outcome ? "Lưu mục tiêu" : "Thêm mục tiêu"}
+        successMessage={false}
+        onSubmit={(value) => {
+          const { kind, ...rest } = value as Record<string, unknown> & { kind: string };
+          return outcomeApi.saveOutcome(
+            setId,
+            {
+              ...rest,
+              required: kind !== "optional",
+              ...(outcome ? { expectedRevision: outcome.revision } : {}),
+            },
+            outcome?.id,
+          );
+        }}
+        onSuccess={onDone}
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setShowSource((value) => !value)}
+      >
+        {showSource ? "Ẩn nguồn căn cứ" : "Thêm nguồn căn cứ (không bắt buộc)"}
+      </Button>
+    </div>
   );
 }

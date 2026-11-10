@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DAY_PATTERN, closureRangeError } from "@/features/curriculum/center-closures";
 
 const date = z.iso.date("Ngày không hợp lệ.");
 const title = z
@@ -100,10 +101,14 @@ export const importCommitSchema = z.object({
     .max(1000),
 });
 export type ImportCommitInput = z.infer<typeof importCommitSchema>;
-export const sessionCancelSchema = reviewReasonSchema.extend({
+const sessionRevisionSchema = reviewReasonSchema.extend({
   expectedRevision: z.number().int().min(1),
 });
-export const sessionRescheduleSchema = sessionCancelSchema
+/** `shiftLessons`: true = hủy và dời bài sang buổi sau; bỏ trống = hủy, bỏ bài (hành vi cũ). */
+export const sessionCancelSchema = sessionRevisionSchema.extend({
+  shiftLessons: z.boolean().optional(),
+});
+export const sessionRescheduleSchema = sessionRevisionSchema
   .extend({
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime(),
@@ -141,3 +146,21 @@ export const curriculumImportFileSchema = z.object({
 export type CurriculumImportFileInput = z.infer<
   typeof curriculumImportFileSchema
 >;
+
+export const centerClosureFormSchema = z
+  .object({
+    fromDate: z.string().regex(DAY_PATTERN, "Chọn ngày bắt đầu."),
+    toDate: z.string().regex(DAY_PATTERN, "Chọn ngày kết thúc."),
+    reason: z.string().trim().min(1, "Chọn hoặc nhập lý do.").max(255, "Lý do tối đa 255 ký tự."),
+  })
+  .superRefine((value, context) => {
+    const message = closureRangeError(value.fromDate, value.toDate);
+    if (message) context.addIssue({ code: "custom", path: ["toDate"], message });
+  });
+export type CenterClosureFormInput = z.infer<typeof centerClosureFormSchema>;
+export const bulkCancelSchema = z.object({
+  sessionIds: z.array(z.string().min(1)).min(1).max(200),
+  shiftLessons: z.boolean().optional(),
+  reason: z.string().trim().min(1, "Nhập lý do.").max(2000),
+});
+export type BulkCancelInput = z.infer<typeof bulkCancelSchema>;

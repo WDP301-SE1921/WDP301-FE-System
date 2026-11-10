@@ -1,3 +1,4 @@
+import { closedDaysInRange, type ClosureRange } from "./center-closures";
 import type { WebRole } from "@/constants/roles";
 import type { RegistrationClass } from "@/types/backend";
 import type { CurriculumLesson, CurriculumUnit } from "@/types/curriculum";
@@ -151,6 +152,7 @@ export function estimateLessons(
   toDate: string,
   classes: Pick<RegistrationClass, "isActive" | "weeklySchedules">[],
   sessionsPerWeek?: number | null,
+  closures: readonly ClosureRange[] = [],
 ) {
   const from = Date.parse(`${fromDate}T00:00:00Z`),
     to = Date.parse(`${toDate}T00:00:00Z`);
@@ -164,7 +166,12 @@ export function estimateLessons(
     to < from
   )
     return null;
-  const weeks = Math.ceil(((to - from) / 86400000 + 1) / 7);
+  // Ngày nghỉ trung tâm không có buổi: trừ khỏi số ngày rồi mới quy ra tuần.
+  const teachingDays = Math.max(
+    0,
+    (to - from) / 86400000 + 1 - closedDaysInRange(fromDate, toDate, closures),
+  );
+  const weeks = Math.ceil(teachingDays / 7);
   const counts = classes
     .filter(
       (item) => item.isActive !== false && item.weeklySchedules.length > 0,

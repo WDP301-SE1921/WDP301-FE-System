@@ -395,7 +395,28 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^academic\/sessions\/[^/]+\/(reschedule-preview|reschedule|cancel)$/,
+    path: /^academic\/sessions\/(?:[^/]+\/(?:reschedule-preview|reschedule|cancel|cancel-preview)|bulk-cancel|bulk-cancel-preview)$/,
+    roles: manager,
+  },
+  // Ngày nghỉ trung tâm: nhân sự đọc (Thiết kế GT dùng khi ước tính số bài), chỉ Quản lý sửa.
+  {
+    method: "GET",
+    path: /^academic\/center-closures$/,
+    roles: catalogReaders,
+  },
+  {
+    method: "POST",
+    path: /^academic\/center-closures$/,
+    roles: manager,
+  },
+  {
+    method: "PATCH",
+    path: /^academic\/center-closures\/[^/]+$/,
+    roles: manager,
+  },
+  {
+    method: "DELETE",
+    path: /^academic\/center-closures\/[^/]+$/,
     roles: manager,
   },
   // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa xác minh, Quản lý duyệt.
@@ -412,6 +433,23 @@ const rules: {
   {
     method: "PATCH",
     path: /^academic\/(outcome-sets\/[^/]+\/outcomes\/[^/]+|lessons\/[^/]+\/outcomes)$/,
+    roles: designer,
+  },
+  // BE getSet: Quản lý, Nhân viên, Giáo viên, Thiết kế GT (form "Dán nhiều mục tiêu" đọc bộ).
+  {
+    method: "GET",
+    path: /^academic\/outcome-sets\/[^/]+$/,
+    roles: catalogReaders,
+  },
+  // BE: xóa bộ nháp do Thiết kế GT hoặc Quản lý; xóa mục tiêu nháp chỉ Thiết kế GT.
+  {
+    method: "DELETE",
+    path: /^academic\/outcome-sets\/[^/]+$/,
+    roles: [...designer, ...manager],
+  },
+  {
+    method: "DELETE",
+    path: /^academic\/outcome-sets\/[^/]+\/outcomes\/[^/]+$/,
     roles: designer,
   },
   {

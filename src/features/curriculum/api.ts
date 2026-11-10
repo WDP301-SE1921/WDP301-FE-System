@@ -18,11 +18,19 @@ import {
   lessonOrderSchema,
   sessionRescheduleSchema,
   sessionCancelSchema,
+  bulkCancelSchema,
+  centerClosureFormSchema,
+  type BulkCancelInput,
+  type CenterClosureFormInput,
   type ImportCommitInput,
   type SessionRescheduleInput,
   type SessionCancelInput,
 } from "@/lib/validators/curriculum";
 import type {
+  BulkCancelPreview,
+  CenterClosure,
+  CenterClosureResult,
+  SessionCancelPreview,
   CurriculumUnit,
   CurriculumUnitDetail,
   CurriculumLesson,
@@ -218,10 +226,51 @@ export const curriculumApi = {
         idempotencyKey: key,
       },
     ),
+  cancelPreview: (id: string, shiftLessons: boolean) =>
+    apiRequest<SessionCancelPreview>(
+      `academic/sessions/${encodeURIComponent(id)}/cancel-preview`,
+      { method: "POST", body: { shiftLessons } },
+    ),
+  bulkCancelPreview: (input: BulkCancelInput) =>
+    apiRequest<BulkCancelPreview>("academic/sessions/bulk-cancel-preview", {
+      method: "POST",
+      body: bulkCancelSchema.parse(input),
+      timeoutMs: 70_000,
+    }),
+  bulkCancel: (input: BulkCancelInput, key: string) =>
+    apiRequest<unknown>("academic/sessions/bulk-cancel", {
+      method: "POST",
+      body: bulkCancelSchema.parse(input),
+      idempotencyKey: key,
+      timeoutMs: 70_000,
+    }),
+  centerClosures: (
+    range: { fromDate?: string; toDate?: string } = {},
+    signal?: AbortSignal,
+  ) =>
+    readArrayPages<CenterClosure>("academic/center-closures", range, signal),
+  createClosure: (input: CenterClosureFormInput) =>
+    apiRequest<CenterClosureResult>("academic/center-closures", {
+      method: "POST",
+      body: centerClosureFormSchema.parse(input),
+    }),
+  updateClosure: (
+    id: string,
+    input: Partial<CenterClosureFormInput> & { expectedRevision: number },
+  ) =>
+    apiRequest<CenterClosureResult>(
+      `academic/center-closures/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: input },
+    ),
+  deleteClosure: (id: string) =>
+    apiRequest<{ id: string; deleted: true }>(
+      `academic/center-closures/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
   sessions: async (
     classId: string,
     signal?: AbortSignal,
-    range: { fromDate?: string; toDate?: string } = {},
+    range: { fromDate?: string; toDate?: string; status?: string } = {},
   ) => {
     const rows: ScheduledSession[] = [];
     for (let page = 1; ; page++) {

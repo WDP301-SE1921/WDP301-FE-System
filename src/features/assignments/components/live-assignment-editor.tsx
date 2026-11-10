@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { useUnsavedChanges } from "@/components/shared/feedback/unsaved-changes-guard";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -35,6 +35,7 @@ import { useCurrentUser } from "@/hooks/use-current-role";
 import { todayInVietnam } from "@/features/registration-flow/calendar";
 import { displayMoment } from "@/features/academic/components/live-fields";
 import { AssignmentImportDialog } from "./assignment-import-dialog";
+import { ConfirmDialog } from "@/components/shared/feedback/confirm-dialog";
 import { TEST_TYPE_TEXT } from "../assessment-labels";
 import { ROUTES } from "@/constants/routes";
 import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
@@ -195,14 +196,20 @@ function AssignmentEditor({
   );
   const approvedSets = outcomeSets.data ?? [];
   const selectedSet = approvedSets.find((set) => set.id === outcomeSetId);
-  // Bài mới của khóa đã có bộ CLO được duyệt: chọn sẵn phiên bản mới nhất (BE trả version giảm dần).
-  useEffect(() => {
-    if (assignment || !outcomeSets.data?.length) return;
-    if (!form.getValues("outcomeSetId"))
-      form.setValue("outcomeSetId", outcomeSets.data[0].id);
-  }, [assignment, outcomeSets.data, form]);
-  const chooseOutcomeSet = (value: string) => {
+  // Mục tiêu không bắt buộc: không tự chọn bộ nào, giáo viên tự chọn nếu muốn.
+  const [confirmClear, setConfirmClear] = useState(false);
+  const chooseOutcomeSet = (value: string, confirmed = false) => {
     const next = value === NO_OUTCOME_SET ? "" : value;
+    // Bài đã lưu có mục tiêu: bỏ chọn bộ sẽ xóa luôn mục tiêu gắn ở các câu, nên hỏi lại.
+    if (
+      !confirmed &&
+      !next &&
+      assignment?.outcomeSetId &&
+      form.getValues("outcomeSetId")
+    ) {
+      setConfirmClear(true);
+      return;
+    }
     form.setValue("outcomeSetId", next, { shouldDirty: true });
     const allowed = new Set(
       approvedSets.find((set) => set.id === next)?.outcomes.map(({ id }) => id),
@@ -225,6 +232,18 @@ function AssignmentEditor({
     ].every((value) => !value.trim());
   return (
     <>
+      <ConfirmDialog
+        open={confirmClear}
+        onOpenChange={setConfirmClear}
+        title="Bỏ mục tiêu đã gắn?"
+        description="Bài này đã gắn mục tiêu. Bỏ chọn sẽ xóa mục tiêu gắn ở mọi câu khi bạn lưu bài."
+        confirmText="Bỏ mục tiêu"
+        variant="danger"
+        onConfirm={() => {
+          chooseOutcomeSet(NO_OUTCOME_SET, true);
+          setConfirmClear(false);
+        }}
+      />
       <form
         className="space-y-4"
         noValidate
@@ -274,7 +293,7 @@ function AssignmentEditor({
                       )?.programId;
                       field.onChange(value);
                       form.setValue("sessionId", undefined);
-                      if (nextProgram !== programId) chooseOutcomeSet("");
+                      if (nextProgram !== programId) chooseOutcomeSet("", true);
                     }}
                   />
                 )}
@@ -585,13 +604,18 @@ function AssignmentEditor({
                       control={form.control}
                       render={({ field }) => (
                         <LiveSelect
-                          label="Mục tiêu mà câu này đo"
-                          value={field.value}
-                          options={selectedSet.outcomes.map((outcome) => ({
-                            value: outcome.id,
-                            label: `${outcome.code} · ${outcome.title}`,
-                          }))}
-                          onChange={field.onChange}
+                          label="Mục tiêu mà câu này đo (không bắt buộc)"
+                          value={field.value || NO_OUTCOME_SET}
+                          options={[
+                            { value: NO_OUTCOME_SET, label: "Không gắn mục tiêu" },
+                            ...selectedSet.outcomes.map((outcome) => ({
+                              value: outcome.id,
+                              label: `${outcome.code} · ${outcome.title}`,
+                            })),
+                          ]}
+                          onChange={(next) =>
+                            field.onChange(next === NO_OUTCOME_SET ? "" : next)
+                          }
                         />
                       )}
                     />
@@ -705,20 +729,20 @@ function OutcomeSetField({
   if (!sets.length && !value)
     return (
       <p className="text-sm text-muted-foreground">
-        Khóa học chưa có bộ mục tiêu được duyệt áp dụng nên bài không cần gắn mục tiêu.
+        Khóa học chưa có bộ mục tiêu được duyệt áp dụng. Việc gắn mục tiêu không bắt buộc.
       </p>
     );
   return (
     <div className="space-y-2 rounded-xl bg-muted p-4">
       <LiveSelect
-        label="Mục tiêu khóa học"
+        label="Mục tiêu khóa học (không bắt buộc)"
         value={value || NO_OUTCOME_SET}
         options={[
           ...sets.map((set, index) => ({
             value: set.id,
             label: `${set.level} · bản ${set.version}${index === 0 ? " (mới nhất)" : ""}`,
           })),
-          { value: NO_OUTCOME_SET, label: "Không gắn mục tiêu (chỉ lưu nháp)" },
+          { value: NO_OUTCOME_SET, label: "Không gắn mục tiêu" },
         ]}
         onChange={onChange}
       />
@@ -728,8 +752,8 @@ function OutcomeSetField({
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Khóa đã có bộ mục tiêu được duyệt: mọi câu phải gắn mục tiêu trước khi giao bài
-          cho học sinh.
+          Không bắt buộc. Gắn mục tiêu để xem kết quả theo từng mục tiêu; bỏ trống vẫn
+          giao bài bình thường. Đã chọn bộ thì mỗi câu có thể gắn hoặc không.
         </p>
       )}
     </div>

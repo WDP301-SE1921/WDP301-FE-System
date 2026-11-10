@@ -64,12 +64,12 @@ export interface ProgramSetupInput {
   today: string;
 }
 
-/** Thứ tự bước. Sau W9 (Q2) chỉ cần đổi mảng này: mục tiêu đứng trước giáo trình. */
+/** Thứ tự bước (Q2): mục tiêu khóa học đứng trước giáo trình. */
 export const STEP_ORDER: SetupStepKey[] = [
   "info",
   "classes",
-  "curriculum",
   "outcomes",
+  "curriculum",
   "schedule",
 ];
 
@@ -236,6 +236,10 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
   }
 
   const latest = [...outcomeSets].sort((a, b) => b.version - a.version)[0];
+  const unlinkedCount = latest
+    ? latest.outcomes.filter((o) => !o.lessonLinks?.length).length
+    : 0;
+  // C28: bộ mục tiêu được duyệt cùng giáo trình nên bước này "xong" khi đã có bộ để đi cùng.
   let outcomes: SetupStep;
   if (!latest) {
     outcomes = {
@@ -249,19 +253,34 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
       summary: `Bản ${latest.version} đã duyệt`,
     };
   } else if (latest.status === "TECHNICALLY_APPROVED") {
+    // Giáo trình đã áp dụng mà bộ còn chờ duyệt (vd bước duyệt bộ lỗi): phụ huynh chưa thấy mục tiêu.
+    outcomes = appliedUnit
+      ? {
+          key: "outcomes", status: "current", owner: "MANAGER", title: "Mục tiêu khóa học",
+          summary: `Bản ${latest.version} chờ Quản lý duyệt áp dụng`,
+          cta: { kind: "outcomes", label: "Duyệt mục tiêu" },
+        }
+      : {
+          key: "outcomes", status: "done", owner: "MANAGER", title: "Mục tiêu khóa học",
+          summary: `Bản ${latest.version} đã duyệt nội dung, chờ Quản lý duyệt cùng giáo trình`,
+        };
+  } else if (latest.outcomes.length) {
     outcomes = {
-      key: "outcomes", status: "current", owner: "MANAGER", title: "Mục tiêu khóa học",
-      summary: `Bản ${latest.version} chờ Quản lý duyệt`,
-      cta: { kind: "outcomes", label: "Duyệt mục tiêu" },
+      key: "outcomes", status: "done", owner: "DESIGNER", title: "Mục tiêu khóa học",
+      summary: `Bản ${latest.version} đã soạn, duyệt cùng giáo trình`,
     };
   } else {
-    const unlinked = latest.outcomes.filter((o) => !o.lessonLinks?.length).length;
     outcomes = {
       key: "outcomes", status: "current", owner: "DESIGNER", title: "Mục tiêu khóa học",
-      summary: `Bản ${latest.version} đang soạn${unlinked ? `, ${unlinked} mục tiêu chưa gắn bài` : ""}`,
+      summary: `Bản ${latest.version} đang soạn, chưa có mục tiêu`,
       cta: { kind: "outcomes", label: "Tiếp tục soạn" },
     };
   }
+  // Ghi chú ở bước Giáo trình khi bộ đi cùng chưa duyệt được.
+  const outcomeNote =
+    latest && latest.status === "DRAFT" && unlinkedCount
+      ? `Mục tiêu khóa học: còn ${unlinkedCount} mục tiêu chưa gắn bài`
+      : undefined;
 
   let curriculum: SetupStep;
   if (appliedUnit) {
@@ -273,7 +292,7 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
     curriculum = {
       key: "curriculum", status: "done", owner: "MANAGER", title: "Giáo trình",
       summary: current ? "Giáo trình kỳ hiện tại đã áp dụng" : "Giáo trình kỳ tới đã áp dụng",
-      warning,
+      warning: warning ?? outcomeNote,
       cta: warning ? { kind: "curriculum", label: "Soạn giáo trình kỳ tới" } : undefined,
     };
     if (warning) curriculum.owner = "DESIGNER";
@@ -283,12 +302,17 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
       curriculum = {
         key: "curriculum", status: "current", owner: "TEACHER", title: "Giáo trình",
         summary: "Chờ giáo viên duyệt nội dung",
+        warning: outcomeNote,
         cta: { kind: "open_unit", label: "Xem giáo trình", unitId: waiting.id },
       };
     } else if (waiting) {
       curriculum = {
         key: "curriculum", status: "current", owner: "MANAGER", title: "Giáo trình",
-        summary: "Chờ Quản lý duyệt áp dụng",
+        summary:
+          latest?.status === "TECHNICALLY_APPROVED"
+            ? "Chờ Quản lý duyệt áp dụng giáo trình và mục tiêu"
+            : "Chờ Quản lý duyệt áp dụng",
+        warning: outcomeNote,
         cta: { kind: "open_unit", label: "Duyệt áp dụng", unitId: waiting.id },
       };
     } else {
@@ -296,6 +320,7 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
       curriculum = {
         key: "curriculum", status: "current", owner: "DESIGNER", title: "Giáo trình",
         summary: draft ? "Giáo trình đang soạn" : "Chưa có giáo trình",
+        warning: outcomeNote,
         cta: draft
           ? { kind: "open_unit", label: "Mở giáo trình", unitId: draft.id }
           : { kind: "curriculum", label: "Soạn giáo trình" },

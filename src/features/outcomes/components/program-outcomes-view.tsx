@@ -5,14 +5,12 @@ import { EmptyState } from "@/components/shared/feedback/empty-state";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { LiveSelect } from "@/features/academic/components/live-fields";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
-import { curriculumApi } from "@/features/curriculum/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { OUTCOME_MATRIX_FIRST_SET } from "@/lib/outcome-links";
 import { useHubTab } from "@/hooks/use-hub-tab";
 import {
   programsFromClasses,
-  programsFromUnits,
   type ProgramOption,
 } from "../rules";
 import { OutcomeLessonMatrix } from "./outcome-lesson-matrix";
@@ -80,16 +78,17 @@ function ProgramOutcomesBody({
   );
 }
 
-/** Tab "Chuẩn đầu ra (CLO)" của Thiết kế GT: khóa học lấy từ giáo trình mình soạn. */
+/** Tab "Chuẩn đầu ra (CLO)" của Thiết kế GT: mọi khóa học đang hoạt động. */
 export function DesignerOutcomesTab({
   tabs,
 }: {
   tabs: readonly CurriculumHubTab[];
 }) {
   const [tab] = useHubTab(tabs);
-  const units = useLiveQuery(
-    ["outcome-programs", "units"],
-    (signal) => curriculumApi.units(undefined, signal),
+  // Q2: soạn được mục tiêu trước khi có giáo trình nên liệt kê mọi khóa đang hoạt động.
+  const programs = useLiveQuery(
+    ["outcome-programs", "active"],
+    (signal) => registrationApi.programsFiltered({ isActive: "true" }, signal),
     tab === "outcomes",
   );
   if (tab !== "outcomes") return null;
@@ -100,14 +99,17 @@ export function DesignerOutcomesTab({
         Mục tiêu khóa học trước đây gọi là chuẩn đầu ra (CLO).
       </p>
       <AsyncBoundary
-        isLoading={units.isPending}
-        isError={units.isError}
-        error={units.error}
-        onRetry={() => void units.refetch()}
+        isLoading={programs.isPending}
+        isError={programs.isError}
+        error={programs.error}
+        onRetry={() => void programs.refetch()}
       >
         <ProgramOutcomesBody
-          programs={programsFromUnits(units.data ?? [])}
-          emptyDescription="Soạn giáo trình cho một khóa học trước, rồi tạo bộ mục tiêu cho khóa đó."
+          programs={(programs.data ?? []).map((program) => ({
+            id: program.id,
+            label: program.name,
+          }))}
+          emptyDescription="Chưa có khóa học nào đang hoạt động. Nhờ Quản lý tạo khóa học trước."
         />
       </AsyncBoundary>
     </div>

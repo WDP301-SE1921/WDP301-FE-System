@@ -36,6 +36,13 @@ export const REASON_PRESETS = {
   reject: ["Trùng lịch kiểm tra", "Thiếu thông tin"],
   cancelLeave: ["Phụ huynh rút đơn", "Ghi nhầm đơn"],
   reschedule: ["Phụ huynh đổi lịch", "Buổi bù cũ không còn phù hợp"],
+  closure: [
+    "Tết Nguyên đán",
+    "Giỗ Tổ Hùng Vương",
+    "Nghỉ lễ 30/4 và 1/5",
+    "Quốc khánh 2/9",
+  ],
+  cancelSession: ["Giáo viên bận đột xuất", "Nghỉ lễ", "Trung tâm bảo trì cơ sở"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type ReasonPresetKey = keyof typeof REASON_PRESETS;

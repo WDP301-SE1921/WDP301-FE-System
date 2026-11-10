@@ -343,19 +343,9 @@ export const assignmentEditorSchema = z
       .min(1)
       .max(100),
   })
-  .superRefine(validateAssessment)
-  .superRefine((value, context) => {
-    // BE: đã chọn bộ CLO thì mọi câu phải đo một CLO trong bộ (OUTCOME_MAPPING_INCOMPLETE).
-    if (!value.outcomeSetId) return;
-    value.questions.forEach((question, index) => {
-      if (!question.outcomeId)
-        context.addIssue({
-          code: "custom",
-          path: ["questions", index, "outcomeId"],
-          message: "Chọn mục tiêu mà câu hỏi này đo.",
-        });
-    });
-  });
+  .superRefine(validateAssessment);
+// Mục tiêu (CLO) không bắt buộc (B3): chọn bộ hay gắn từng câu đều tùy chọn. BE chỉ chặn bộ
+// chưa duyệt/sai khóa (INVALID_OUTCOME_SET) và câu gắn mục tiêu ngoài bộ (WRONG_SET).
 export type AssignmentEditorInput = z.infer<typeof assignmentEditorSchema>;
 /** Body tạo/sửa bài tập từ form soạn bài; bỏ CLO cũ khi bài không chọn bộ CLO. */
 export function assignmentEditorPayload(value: AssignmentEditorInput) {
@@ -365,7 +355,8 @@ export function assignmentEditorPayload(value: AssignmentEditorInput) {
     sessionId: value.kind === "TEST" ? value.sessionId : undefined,
     testType: value.kind === "TEST" ? value.testType : undefined,
     dueAt: vietnamDateTime(value.dueAt),
-    ...(outcomeSetId ? { outcomeSetId } : {}),
+    // null để sửa bài bỏ được bộ đã gắn (BE bỏ qua field thiếu nên không xóa được bộ cũ).
+    outcomeSetId: outcomeSetId || null,
     questions: value.questions.map((question) => ({
       ...toQuestionPayload(question),
       ...(outcomeSetId && question.outcomeId

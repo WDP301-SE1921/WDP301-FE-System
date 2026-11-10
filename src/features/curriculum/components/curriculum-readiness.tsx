@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { registrationApi } from "@/features/registration-flow/api";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { curriculumApi } from "../api";
+import { useCenterClosures } from "../hooks/use-center-closures";
 import { curriculumReadiness, type CurriculumReadiness } from "../readiness";
 import type { SubmitCheck, SubmitCheckState } from "../submit-checklist";
 
@@ -50,6 +51,11 @@ export function useCurriculumReadiness(
     enabled: active,
     retry: false,
   });
+  const { closures } = useCenterClosures(
+    unit?.fromDate ?? "",
+    unit?.toDate ?? "",
+    active,
+  );
   const reviewerCount = active ? reviewers.data?.length : undefined;
   if (!active || !program.data)
     return {
@@ -63,6 +69,7 @@ export function useCurriculumReadiness(
       reviewers: reviewers.data,
       fromDate: unit.fromDate,
       toDate: unit.toDate,
+      closures,
     }),
     reviewerCount,
     isLoading: false,

@@ -158,6 +158,17 @@ const ERROR_TEXT: Record<string, string> = {
     "Giờ mới nằm ngoài kỳ học hoặc thời gian học tại lớp của học viên.",
   SESSION_HAS_DEPENDENCIES:
     "Xử lý điểm danh và đơn nghỉ liên quan trước khi đổi hoặc hủy buổi.",
+  LESSON_SHIFT_BLOCKED:
+    "Dời bài sẽ đổi bài của buổi đã có học viên đặt học bù. Xử lý lịch học bù trước, hoặc chọn cách khác.",
+  BULK_CANCEL_BLOCKED:
+    "Có buổi chưa hủy được nên chưa buổi nào bị hủy. Xem danh sách buổi bị chặn, bỏ chúng ra rồi xem trước lại.",
+  ATTENDANCE_RECORDED: "Buổi đã có điểm danh nên không hủy được.",
+  LEAVE_EXISTS:
+    "Buổi có đơn xin nghỉ đang chờ hoặc đã duyệt. Xử lý đơn nghỉ trước khi hủy buổi.",
+  CENTER_CLOSURE_OVERLAP:
+    "Khoảng ngày này trùng với một ngày nghỉ đã có. Sửa ngày nghỉ cũ thay vì thêm mới.",
+  CENTER_CLOSURE_NOT_FOUND: "Không còn ngày nghỉ này. Tải lại danh sách.",
+  CLOSURE_TOO_LONG: "Mỗi ngày nghỉ tối đa 92 ngày. Chia thành hai lần.",
   MAKEUP_BOOKING_EXISTS:
     "Xử lý các lịch học bù liên quan trước khi đổi hoặc hủy buổi.",
   BILL_NOT_FOUND: "Không tìm thấy bill. Kiểm tra lại mã đăng ký.",
@@ -338,6 +349,20 @@ function detailedMessage(code: string, details: unknown): string | undefined {
       ? (details as Record<string, unknown>)
       : {};
   if (code === "CSV_INVALID") return csvInvalidMessage(details);
+  if (code === "OUTCOME_MAPPING_INCOMPLETE") {
+    const indexes = Array.isArray(info.questionIndexes)
+      ? info.questionIndexes.filter((item): item is number => Number.isInteger(item))
+      : [];
+    return indexes.length
+      ? `Câu ${indexes.map((index) => index + 1).join(", ")} gắn mục tiêu không thuộc bộ đã chọn. Chọn lại mục tiêu cho các câu đó hoặc để trống.`
+      : undefined;
+  }
+  if (code === "BULK_CANCEL_BLOCKED") {
+    const count = Array.isArray(info.blockers) ? info.blockers.length : 0;
+    return count
+      ? `Có ${count} buổi chưa hủy được nên chưa buổi nào bị hủy. Xem danh sách, bỏ các buổi đó ra rồi xem trước lại.`
+      : undefined;
+  }
   if (code === "SESSIONS_AFTER_RANGE_EXIST") {
     const last = typeof info.lastScheduledDate === "string" ? info.lastScheduledDate : "";
     const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(last);
@@ -384,6 +409,8 @@ export async function apiRequest<T>(
     body?: unknown;
     idempotencyKey?: string;
     signal?: AbortSignal;
+    /** Mặc định 60 giây; thao tác dài như hủy theo lô cần lâu hơn. */
+    timeoutMs?: number;
   } = {},
 ): Promise<T> {
   try {
@@ -392,6 +419,7 @@ export async function apiRequest<T>(
       method: options.method ?? "GET",
       data: options.body,
       signal: options.signal,
+      ...(options.timeoutMs ? { timeout: options.timeoutMs } : {}),
       headers: {
         "Content-Type":
           options.body instanceof FormData ? undefined : "application/json",

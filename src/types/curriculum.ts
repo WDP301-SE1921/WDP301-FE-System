@@ -172,3 +172,67 @@ export interface ImportPreview {
     errors: { code: string; field: string; rowNumber: number }[];
   })[];
 }
+
+export interface CancelLessonRef {
+  id: string;
+  title: string;
+}
+export interface CancelBlocker {
+  sessionId: string;
+  code: string;
+}
+export interface ShiftedSessionInfo {
+  sessionId: string;
+  startsAt: string;
+  fromLesson: CancelLessonRef;
+  toLesson: CancelLessonRef;
+  hasAssessments: boolean;
+}
+export interface SessionCancelPreview {
+  sessionId: string;
+  classId: string;
+  shiftLessons: boolean;
+  cancellable: boolean;
+  blockers: CancelBlocker[];
+  shiftedSessions: ShiftedSessionInfo[];
+  pushedLesson: (CancelLessonRef & { sequence: number }) | null;
+  pushedLessonFits: boolean;
+}
+export interface ClassCancellation {
+  classId: string;
+  className: string;
+  cancelledSessions: { id: string; startsAt: string; endsAt: string; lesson: CancelLessonRef }[];
+  shiftedSessions: ShiftedSessionInfo[];
+  pushedLessons: (CancelLessonRef & { sequence: number; fitsInTerm: boolean })[];
+}
+export interface BulkCancelPreview {
+  total: number;
+  shiftLessons: boolean;
+  cancellable: boolean;
+  blockers: CancelBlocker[];
+  classes: ClassCancellation[];
+}
+
+export interface CenterClosure {
+  id: string;
+  fromDate: string;
+  toDate: string;
+  reason: string;
+  createdById: string;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface AffectedClosureSession {
+  id: string;
+  classId: string;
+  className: string;
+  startsAt: string;
+  endsAt: string;
+  revision: number;
+  lesson: CancelLessonRef | null;
+}
+export interface CenterClosureResult extends CenterClosure {
+  affectedSessions: AffectedClosureSession[];
+  affectedTotal: number;
+}

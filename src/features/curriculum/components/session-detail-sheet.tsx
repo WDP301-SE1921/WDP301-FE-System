@@ -35,6 +35,9 @@ import { SubstituteForm } from "@/features/teachers/components/substitute-form";
 import type { ScheduledSessionDetail } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { sessionRange } from "../session-format";
+import { SessionCancelForm } from "./session-cancel-form";
+import { useCenterClosures } from "../hooks/use-center-closures";
+import { isClosedDay } from "../center-closures";
 import {
   sessionActionSchema,
   vietnamLocalInput,
@@ -148,6 +151,7 @@ export function SessionDetailSheet({
                       session={detail.data}
                       userId={user.id}
                       onDone={() => void setTab(null)}
+                      onSwitchToReschedule={() => void setTab("reschedule")}
                     />
                   )}
                 {isManager && activeTab === "substitute" && (
@@ -237,11 +241,13 @@ function SessionActions({
   session,
   userId,
   onDone,
+  onSwitchToReschedule,
 }: {
   action: "reschedule" | "cancel";
   session: ScheduledSessionDetail;
   userId: string;
   onDone: () => void;
+  onSwitchToReschedule: () => void;
 }) {
   const now = useCurrentTime();
   const client = useQueryClient(),
@@ -290,6 +296,7 @@ function SessionActions({
         ["academic-generations"],
         ["academic-generation"],
         ["registration-class"],
+        ["curriculum", "cancel-preview"],
       ])
         void client.invalidateQueries({ queryKey: key });
       toast.success(
@@ -310,8 +317,13 @@ function SessionActions({
         <ApiFeedback error={restored.error ?? commit.error} />
         <p role="status" className="rounded-xl bg-muted p-3 text-sm">
           Có thao tác{" "}
-          {attempt.body.action === "cancel" ? "hủy buổi" : "đổi giờ"} cần xác
-          nhận lại. Thử lại dùng nguyên dữ liệu đã gửi.
+          {attempt.body.action === "cancel"
+            ? attempt.body.body.shiftLessons
+              ? "hủy buổi và dời bài"
+              : "hủy buổi"
+            : "đổi giờ"}{" "}
+          cần xác nhận lại. Thử lại dùng nguyên dữ liệu đã gửi (cùng cách xử lý
+          bài).
         </p>
         <Button
           disabled={commit.isPending || !!restored.error}
@@ -331,6 +343,17 @@ function SessionActions({
             ? "Chỉ hủy buổi đã lên lịch và chưa bắt đầu."
             : "Chỉ đổi giờ buổi đã lên lịch và chưa bắt đầu."}
         </NotAllowed>
+      ) : action === "cancel" ? (
+        !restored.error && (
+          <SessionCancelForm
+            key={"cancel:" + session.revision}
+            session={session}
+            pending={commit.isPending}
+            onCommit={(input) => commit.mutate(input)}
+            onSwitchToReschedule={onSwitchToReschedule}
+            onClose={onDone}
+          />
+        )
       ) : (
         !restored.error && (
           <SessionActionForm
@@ -353,7 +376,7 @@ function SessionActionForm({
   onCommit,
   onClose,
 }: {
-  action: "reschedule" | "cancel";
+  action: "reschedule";
   session: ScheduledSessionDetail;
   pending: boolean;
   onCommit: (input: SessionAction) => void;
@@ -373,20 +396,15 @@ function SessionActionForm({
   });
   function input(value: SessionActionFormInput): SessionAction {
     return sessionActionSchema.parse(
-      action === "cancel"
-        ? {
-            action,
-            body: { reason: value.reason, expectedRevision: session.revision },
-          }
-        : {
-            action,
-            body: {
-              reason: value.reason,
-              expectedRevision: session.revision,
-              startsAt: utcFromVietnamLocal(value.startsAt),
-              endsAt: utcFromVietnamLocal(value.endsAt),
-            },
-          },
+      {
+        action,
+        body: {
+          reason: value.reason,
+          expectedRevision: session.revision,
+          startsAt: utcFromVietnamLocal(value.startsAt),
+          endsAt: utcFromVietnamLocal(value.endsAt),
+        },
+      },
     );
   }
   function previewMatches(value: SessionActionFormInput) {
@@ -402,6 +420,10 @@ function SessionActionForm({
     }
   }
   const values = useWatch({ control: form.control }) as SessionActionFormInput;
+  const newDay = values.startsAt?.slice(0, 10) ?? "";
+  const { closures } = useCenterClosures(newDay, newDay, action === "reschedule");
+  const inClosure =
+    action === "reschedule" && !!newDay && isClosedDay(newDay, closures);
   const busy = pending || preview.isPending;
   return (
     <form
@@ -418,11 +440,7 @@ function SessionActionForm({
         }
       })}
     >
-      <p className="font-medium">
-        {action === "cancel"
-          ? "Xác nhận hủy buổi học"
-          : "Xem trước giờ học mới"}
-      </p>
+      <p className="font-medium">Xem trước giờ học mới</p>
       {action === "reschedule" && (
         <>
           <Label htmlFor="move-start">Bắt đầu (giờ Việt Nam)</Label>
@@ -447,7 +465,7 @@ function SessionActionForm({
         </>
       )}
       <Label htmlFor="session-reason">
-        Lý do {action === "cancel" ? "hủy" : "đổi giờ"}
+        Lý do đổi giờ
       </Label>
       <Textarea
         id="session-reason"
@@ -456,6 +474,12 @@ function SessionActionForm({
       />
       <FieldError message={form.formState.errors.reason?.message} />
       <ApiFeedback error={preview.error} />
+      {inClosure && (
+        <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+          Ngày mới nằm trong ngày nghỉ của trung tâm. Vẫn đổi được, nhưng nên chọn
+          ngày khác.
+        </p>
+      )}
       {previewMatches(values) && (
         <p role="status">Giờ mới hợp lệ. Có thể xác nhận đổi giờ.</p>
       )}
@@ -482,13 +506,13 @@ function SessionActionForm({
         )}
         <Button
           type="submit"
-          variant={action === "cancel" ? "danger" : "default"}
+          variant="default"
           disabled={
             busy || (action === "reschedule" && !previewMatches(values))
           }
           isLoading={pending}
         >
-          {action === "cancel" ? "Xác nhận hủy" : "Xác nhận đổi giờ"}
+          Xác nhận đổi giờ
         </Button>
         <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
           Đóng

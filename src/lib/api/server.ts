@@ -81,6 +81,12 @@ export function backendConfigProblem(webPort = process.env.PORT) {
     return `BACKEND_API_URL=${url.origin} trỏ vào chính web đang chạy ở cổng ${webPort}. Chạy BE ở cổng khác hoặc chạy web ở cổng khác (vd. npm run dev -- -p 3001).`;
   return undefined;
 }
+/** Hủy theo lô chạy một transaction tới 60 giây ở BE nên được chờ lâu hơn mặc định 25 giây. */
+export function backendTimeoutMs(path: string) {
+  return /^academic\/sessions\/bulk-cancel(?:-preview)?$/.test(path)
+    ? 65_000
+    : 25_000;
+}
 export async function backendFetch(path: string, init: RequestInit = {}) {
   const problem = backendConfigProblem();
   if (problem) {
@@ -97,7 +103,7 @@ export async function backendFetch(path: string, init: RequestInit = {}) {
     return await fetch(`${base}/${path}`, {
       ...init,
       cache: "no-store",
-      signal: AbortSignal.timeout(25_000),
+      signal: AbortSignal.timeout(backendTimeoutMs(path)),
       headers: {
         ...(init.body instanceof FormData
           ? {}

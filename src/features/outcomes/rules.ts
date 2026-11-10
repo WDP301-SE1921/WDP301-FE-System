@@ -20,9 +20,7 @@ export function outcomeSetActions(
   const isReviewed = set.status === "TECHNICALLY_APPROVED";
   return {
     canEditOutcomes:
-      user.role === "curriculum_designer" &&
-      set.designerId === user.id &&
-      isDraft,
+      user.role === "curriculum_designer" && isDraft,
     canCopy: user.role === "curriculum_designer",
     canVerify: user.role === "teacher" && isDraft,
     canTechnicallyApprove: user.role === "teacher" && isDraft,
@@ -31,20 +29,12 @@ export function outcomeSetActions(
   };
 }
 
-/** BE chỉ cho duyệt nội dung bộ khi mọi mục tiêu do chính giáo viên đó xác minh và có bài học. */
-export function technicalApprovalBlockers(
-  set: OutcomeSet,
-  teacherId: string,
-): string[] {
+/** BE chỉ cho duyệt nội dung bộ khi bộ có mục tiêu và mỗi mục tiêu có bài học (xác minh nguồn không bắt buộc). */
+export function technicalApprovalBlockers(set: OutcomeSet): string[] {
   if (!set.outcomes.length) return ["Bộ chưa có mục tiêu nào."];
-  return set.outcomes.flatMap((outcome) => [
-    ...(outcome.sourceStatus === "VERIFIED" && outcome.verifiedById === teacherId
-      ? []
-      : [`${outcome.code}: bạn chưa tự xác minh nguồn.`]),
-    ...(outcome.lessonLinks.length
-      ? []
-      : [`${outcome.code}: chưa gắn bài học nào.`]),
-  ]);
+  return set.outcomes
+    .filter((outcome) => !outcome.lessonLinks.length)
+    .map((outcome) => `${outcome.code}: chưa gắn bài học nào.`);
 }
 
 /**
@@ -72,7 +62,5 @@ function uniquePrograms(
       seen.set(row.programId, row.program?.name ?? `Khóa học ${row.programId}`);
   return [...seen].map(([id, label]) => ({ id, label }));
 }
-/** Khóa học có giáo trình do Thiết kế GT soạn (điều kiện BE để tạo bộ CLO). */
-export const programsFromUnits = uniquePrograms;
 /** Khóa học của các lớp giáo viên đang dạy (điều kiện BE để xác minh CLO). */
 export const programsFromClasses = uniquePrograms;

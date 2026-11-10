@@ -49,7 +49,7 @@ function waitingText(step: SetupStep): string {
   if (kind === "create_schedule") return "Đang chờ Quản lý tạo lịch học";
   if (step.key === "outcomes")
     return step.owner === "MANAGER"
-      ? "Đang chờ Quản lý duyệt mục tiêu"
+      ? "Đang chờ Quản lý duyệt áp dụng cùng giáo trình"
       : "Đang chờ Thiết kế giáo trình soạn mục tiêu";
   if (step.key === "curriculum") {
     if (step.owner === "TEACHER") return "Đang chờ giáo viên duyệt nội dung";

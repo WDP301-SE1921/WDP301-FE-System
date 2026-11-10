@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { apiRequest } from "@/lib/api/client";
 import { academicApi } from "@/features/academic/api";
 import {
@@ -5,7 +6,6 @@ import {
   lessonOutcomeSchema,
   outcomeChangeRequestSchema,
   outcomeSetCreateSchema,
-  outcomeSetUpdateSchema,
   sourceReviewSchema,
 } from "@/lib/validators/outcomes";
 import type { LearningOutcome, OutcomeSet } from "@/types/outcomes";
@@ -15,6 +15,26 @@ const setPath = (id: string) =>
 const post = <T>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: "POST", body });
 
+const SOURCE_KEYS = ["sourceTitle", "sourceUrl", "sourceLocator", "sourceNote"] as const;
+
+/**
+ * Chuẩn hóa body mục tiêu cho BE (C16): `statement` trống thì lấy tên; ô nguồn trống khi sửa gửi
+ * `null` (xóa), khi tạo thì bỏ hẳn trường.
+ */
+export function outcomeBody(
+  input: z.infer<typeof learningOutcomeSchema>,
+  isEdit: boolean,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = { ...input, statement: input.statement || input.title };
+  for (const key of SOURCE_KEYS) {
+    if (!input[key]) {
+      if (isEdit) body[key] = null;
+      else delete body[key];
+    }
+  }
+  return body;
+}
+
 /** Vòng đời bộ CLO: Thiết kế GT soạn → Giáo viên của khóa xác minh → Quản lý duyệt. */
 export const outcomeApi = {
   sets: (programId: string, signal?: AbortSignal) =>
@@ -23,11 +43,6 @@ export const outcomeApi = {
     apiRequest<OutcomeSet>(setPath(setId), { signal }),
   createSet: (body: unknown) =>
     post<OutcomeSet>("academic/outcome-sets", outcomeSetCreateSchema.parse(body)),
-  updateSet: (setId: string, body: unknown) =>
-    apiRequest<OutcomeSet>(setPath(setId), {
-      method: "PATCH",
-      body: outcomeSetUpdateSchema.parse(body),
-    }),
   deleteSet: (setId: string) =>
     apiRequest<{ id: string; deleted: boolean }>(setPath(setId), {
       method: "DELETE",
@@ -44,7 +59,7 @@ export const outcomeApi = {
         : `${setPath(setId)}/outcomes`,
       {
         method: outcomeId ? "PATCH" : "POST",
-        body: learningOutcomeSchema.parse(body),
+        body: outcomeBody(learningOutcomeSchema.parse(body), !!outcomeId),
       },
     ),
   mapLesson: (lessonId: string, outcomeIds: string[]) =>

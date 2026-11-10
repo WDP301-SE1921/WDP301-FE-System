@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -23,6 +24,7 @@ import {
 } from "@/lib/calendar-date";
 import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role";
 import { ROUTES } from "@/constants/routes";
+import { CenterClosuresSheet } from "./center-closures-sheet";
 import { registrationApi } from "@/features/registration-flow/api";
 import {
   isSubstituteSession,
@@ -58,6 +60,7 @@ export function AcademicCalendarView({
 }) {
   const role = useCurrentRole();
   const user = useCurrentUser();
+  const [closuresOpen, setClosuresOpen] = useState(false);
   const [classId, setClassId] = useQueryState(
     "classId",
     parseAsString.withDefault(""),
@@ -138,21 +141,28 @@ export function AcademicCalendarView({
         title={isTeacherSchedule ? "Lịch dạy & điểm danh" : "Lịch học"}
         description="Lịch buổi học thực tế và nội dung đã được duyệt. Giờ hiển thị theo giờ Việt Nam."
         actions={
-          role === "center_manager" && (
-            <Button
-              variant="outline"
-              render={
-                <Link
-                  href={
-                    classId
-                      ? `${ROUTES.MANAGER.SESSIONS}?${new URLSearchParams({ classId })}`
-                      : ROUTES.MANAGER.SESSIONS
+          (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setClosuresOpen(true)}>
+                Ngày nghỉ trung tâm
+              </Button>
+              {role === "center_manager" && (
+                <Button
+                  variant="outline"
+                  render={
+                    <Link
+                      href={
+                        classId
+                          ? `${ROUTES.MANAGER.SESSIONS}?${new URLSearchParams({ classId })}`
+                          : ROUTES.MANAGER.SESSIONS
+                      }
+                    />
                   }
-                />
-              }
-            >
-              Tạo lịch học
-            </Button>
+                >
+                  Tạo lịch học
+                </Button>
+              )}
+            </div>
           )
         }
       />
@@ -278,6 +288,11 @@ export function AcademicCalendarView({
           onClose={() => void setSelected(null)}
         />
       )}
+      <CenterClosuresSheet
+        open={closuresOpen}
+        onOpenChange={setClosuresOpen}
+        canEdit={role === "center_manager"}
+      />
     </PageContainer>
   );
 }
