@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { MENU_BADGE_KEYS, type MenuBadgeCounts } from "@/constants/menu";
-import type { WebRole } from "@/constants/roles";
+import { actsAsManager, type WebRole } from "@/constants/roles";
 import { academicApi } from "@/features/academic/api";
 import { directoryApi } from "@/features/directory/api";
 import { submissionSummary } from "@/features/assignments/submission-selectors";
@@ -31,7 +31,7 @@ export function useMenuBadgeCounts(role: WebRole): MenuBadgeCounts {
   } as const;
   const failedEmails = useQuery({
     ...options,
-    enabled: options.enabled && role === "center_manager",
+    enabled: options.enabled && actsAsManager(role),
     queryKey: [...base, "menu-badges", "failed-emails"],
     queryFn: ({ signal }) =>
       academicApi.emailDeliveries(1, 1, signal, "FAILED"),
@@ -81,12 +81,14 @@ export function useMenuBadgeCounts(role: WebRole): MenuBadgeCounts {
   });
   const chatUnread = useQuery({
     ...options,
+    // BE không cho ADMIN dùng chat.
+    enabled: options.enabled && role !== "admin",
     queryKey: [...base, "chat", "unread-count"],
     queryFn: ({ signal }) => chatApi.unread(signal),
     select: (data) => data.unreadCount,
   });
   const chatCount = { [MENU_BADGE_KEYS.CHAT_UNREAD]: chatUnread.data };
-  if (role === "center_manager")
+  if (actsAsManager(role))
     return {
       ...chatCount,
       [MENU_BADGE_KEYS.FAILED_EMAILS]: failedEmails.data?.total,

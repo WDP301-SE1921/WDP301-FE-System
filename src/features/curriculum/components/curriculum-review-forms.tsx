@@ -224,7 +224,7 @@ export function CurriculumTechnicalReviewForm({
       const result = await curriculumApi.technicalReview(unit.id, input);
       // Giáo trình đã được duyệt: lỗi ở phần mục tiêu chỉ báo, không làm hỏng bước này.
       const failures = input.approved
-        ? await approveCompanionSets("teacher", plan.approvable)
+        ? await approveCompanionSets(plan.approvable)
         : [];
       if (input.approved && plan.approvable.length)
         await client.invalidateQueries({ queryKey: ["web-api"] });
@@ -286,7 +286,7 @@ export function CurriculumTechnicalReviewForm({
         <p className="text-sm text-muted-foreground">
           {approved
             ? plan.approvable.length
-              ? "Giáo trình và mục tiêu khóa học sẽ chuyển tới Quản lý để duyệt áp dụng."
+              ? "Mục tiêu khóa học đi cùng được duyệt luôn và dùng được ngay. Giáo trình chuyển tới Quản lý để duyệt áp dụng."
               : "Giáo trình sẽ chuyển tới Quản lý để duyệt áp dụng."
             : "Giáo trình trở về bản nháp để người thiết kế chỉnh sửa và gửi lại. Mục tiêu khóa học giữ nguyên bản nháp."}
         </p>

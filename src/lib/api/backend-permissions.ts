@@ -231,6 +231,7 @@ const rules: {
     roles: teacher,
   },
   { method: "POST", path: /^academic\/reports$/, roles: teacher },
+  { method: "POST", path: /^academic\/files$/, roles: teacher },
   {
     method: "GET",
     path: /^academic\/files\/[^/]+\/(preview|download)$/,
@@ -380,6 +381,7 @@ const rules: {
   },
   {
     method: "POST",
+    // Giáo trình vẫn duyệt hai bước: giáo viên thẩm định rồi Quản lý duyệt áp dụng.
     path: /^academic\/curriculum-units\/[^/]+\/(approve|request-changes)$/,
     roles: manager,
   },
@@ -419,7 +421,7 @@ const rules: {
     path: /^academic\/center-closures\/[^/]+$/,
     roles: manager,
   },
-  // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa xác minh, Quản lý duyệt.
+  // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa duyệt để sử dụng; quản lý theo dõi/yêu cầu điều chỉnh.
   {
     method: "GET",
     path: /^academic\/programs\/[^/]+\/outcome-sets$/,
@@ -459,13 +461,28 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^academic\/outcome-sets\/[^/]+\/(approve|request-changes)$/,
+    path: /^academic\/outcome-sets\/[^/]+\/request-changes$/,
     roles: manager,
   },
 ];
 
 export function backendRule(method: string, path: string) {
   return rules.find((rule) => rule.method === method && rule.path.test(path));
+}
+
+/**
+ * Role có được gọi route mở cho `roles` không. Giống `roleAllowed` của BE
+ * (`common/auth/role-access.ts`): Admin tổng qua mọi route mở cho Quản lý hoặc Nhân viên, trừ chat
+ * vì `CHAT_ROLES` của BE không có ADMIN.
+ */
+export function webRoleAllowed(
+  roles: readonly WebRole[],
+  role: WebRole,
+  path: string,
+): boolean {
+  if (roles.includes(role)) return true;
+  if (role !== "admin" || /^chat(?:\/|$)/.test(path)) return false;
+  return roles.includes("center_manager") || roles.includes("staff");
 }
 export function academicRoles(
   method: string,

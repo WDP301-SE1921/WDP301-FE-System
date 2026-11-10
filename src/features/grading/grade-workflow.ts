@@ -5,6 +5,7 @@ import type {
 } from "@/types/academic-workflows";
 
 export interface GradeInput {
+  expectedRevision?: number;
   scores: GradeScore[];
   feedback: string;
 }
@@ -25,7 +26,18 @@ export function sameGrade(left: GradeInput, right: GradeInput): boolean {
       feedback: input.feedback,
       scores: [...input.scores]
         .sort((a, b) => a.questionId.localeCompare(b.questionId))
-        .map(({ questionId, score, feedback }) => ({ questionId, score, feedback })),
+        .map(({ questionId, score, feedback, criteria }) => ({
+          questionId,
+          score,
+          feedback,
+          ...(criteria?.length
+            ? {
+                criteria: [...criteria].sort((a, b) =>
+                  a.criterionId.localeCompare(b.criterionId),
+                ),
+              }
+            : {}),
+        })),
     });
   return key(left) === key(right);
 }
@@ -86,7 +98,10 @@ export function createGradeWorkflow(commands: GradeCommands) {
   ): Promise<GradeReview> => {
     uncertainSave = { input, previousRevision };
     try {
-      const saved = await commands.save(input);
+      const saved = await commands.save({
+        ...input,
+        expectedRevision: previousRevision,
+      });
       uncertainSave = null;
       commands.onSaved?.(saved);
       return saved;

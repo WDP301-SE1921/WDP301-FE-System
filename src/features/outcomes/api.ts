@@ -35,7 +35,10 @@ export function outcomeBody(
   return body;
 }
 
-/** Vòng đời bộ CLO: Thiết kế GT soạn → Giáo viên của khóa xác minh → Quản lý duyệt. */
+/**
+ * Vòng đời bộ CLO (BE PR #12): Thiết kế GT soạn → giáo viên của khóa duyệt, bộ dùng được ngay.
+ * Quản lý không duyệt nữa, chỉ gửi yêu cầu điều chỉnh cho bộ đã duyệt.
+ */
 export const outcomeApi = {
   sets: (programId: string, signal?: AbortSignal) =>
     academicApi.outcomeSets(programId, {}, signal),
@@ -74,7 +77,6 @@ export const outcomeApi = {
     ),
   technicalApprove: (setId: string) =>
     post<OutcomeSet>(`${setPath(setId)}/technical-approve`),
-  approve: (setId: string) => post<OutcomeSet>(`${setPath(setId)}/approve`),
   requestChanges: (setId: string, body: unknown) =>
     post<OutcomeSet>(
       `${setPath(setId)}/request-changes`,

@@ -1,3 +1,4 @@
+import { actsAsManager } from "@/constants/roles";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets";
@@ -32,7 +33,7 @@ export const metadata: Metadata = { title: "Khóa học & giáo trình" };
 export default async function CurriculumPage() {
   const role = await getServerRole();
   const tabs =
-    role === "center_manager"
+    actsAsManager(role)
       ? MANAGER_CURRICULUM_TABS
       : role === "curriculum_designer"
         ? DESIGNER_CURRICULUM_TABS
@@ -49,10 +50,10 @@ export default async function CurriculumPage() {
         <PageContainer maxWidth="full" className="min-w-0">
           <PageHeader
             title={
-              role === "center_manager" ? "Khóa học & giáo trình" : "Giáo trình"
+              actsAsManager(role) ? "Khóa học & giáo trình" : "Giáo trình"
             }
             description={
-              role === "center_manager"
+              actsAsManager(role)
                 ? "Mỗi khóa học (môn + khối) có một giáo trình dùng cho mọi lớp của khóa, mỗi kỳ một bản. Giáo trình do Thiết kế giáo trình soạn, giáo viên duyệt nội dung, Quản lý duyệt áp dụng."
                 : "Soạn giáo trình theo khóa học, gửi giáo viên duyệt nội dung rồi chờ Quản lý duyệt áp dụng."
             }
@@ -65,7 +66,7 @@ export default async function CurriculumPage() {
             }))}
             resetKeys={CURRICULUM_HUB_RESET_KEYS}
           />
-          {role === "center_manager" ? (
+          {actsAsManager(role) ? (
             <>
               <ProgramsCatalogTab tabs={tabs} />
               <SubjectsCatalogTab tabs={tabs} />

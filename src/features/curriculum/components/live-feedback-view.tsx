@@ -1,4 +1,5 @@
 "use client";
+import { actsAsManager } from "@/constants/roles";
 import { z } from "zod";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { Button } from "@/components/ui/button";
@@ -237,7 +238,7 @@ export function CurriculumFeedbackBody() {
                           "Bản sửa đã gắn"}
                       </p>
                     )}
-                    {(user?.role === "center_manager" ||
+                    {(actsAsManager(user?.role) ||
                       user?.role === "curriculum_designer") && (
                       <ApiForm
                         key={`${selected.id}-${selected.status}-${selected.response}`}

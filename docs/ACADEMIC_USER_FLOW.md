@@ -65,7 +65,7 @@ Phụ huynh có tài khoản và hồ sơ con trên mobile; không tạo tài kh
 ## Cập nhật 10/11/2026
 
 - Thuật ngữ: "Mục tiêu khóa học" (trước đây gọi là chuẩn đầu ra, CLO) và "Tạo lịch học" (trước đây Sinh lịch).
-- Giáo viên bấm "Đồng ý nội dung" thì giáo trình và bộ mục tiêu đủ điều kiện (có mục tiêu, mỗi mục tiêu gắn ít nhất một bài) cùng được duyệt nội dung; mục tiêu chưa gắn bài không chặn giáo trình, bộ đó giữ bản nháp. Quản lý "Duyệt áp dụng" duyệt kèm bộ. Cảnh báo mục tiêu chưa gắn bài hiện lúc gửi duyệt và lúc giáo viên duyệt, đều không chặn giáo trình.
+- Giáo viên bấm "Đồng ý nội dung" thì giáo trình và bộ mục tiêu đủ điều kiện (có mục tiêu, mỗi mục tiêu gắn ít nhất một bài) cùng được duyệt; mục tiêu chưa gắn bài không chặn giáo trình, bộ đó giữ bản nháp. Từ BE PR #12 giáo viên duyệt là bước cuối của bộ mục tiêu (bộ `APPROVED`, dùng được ngay khi soạn bài); Quản lý "Duyệt áp dụng" chỉ duyệt giáo trình, với bộ mục tiêu chỉ gửi "Yêu cầu điều chỉnh" (bộ đang dùng giữ nguyên). Cảnh báo mục tiêu chưa gắn bài hiện lúc gửi duyệt và lúc giáo viên duyệt, đều không chặn giáo trình.
 - CSV giáo trình: xuất ra có cột `csvVersion` (1); để trống khi sửa rồi nhập lại. "Thay toàn bộ bài học" gỡ mục tiêu đã gắn cho các bài đó.
 - E2E trình duyệt thật (Playwright, project `academic`) phủ các luồng này trên BE và DB thử riêng: xem `e2e/README.md`.
 

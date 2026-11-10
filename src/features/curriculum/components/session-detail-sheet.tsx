@@ -1,4 +1,5 @@
 "use client";
+import { actsAsManager } from "@/constants/roles";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
@@ -73,7 +74,7 @@ export function SessionDetailSheet({
   onClose: () => void;
 }) {
   const user = useCurrentUser();
-  const isManager = user?.role === "center_manager";
+  const isManager = actsAsManager(user?.role);
   const [tab, setTab] = useQueryState(
     "sessionTab",
     parseAsStringLiteral(SESSION_TAB_KEYS).withDefault("content"),

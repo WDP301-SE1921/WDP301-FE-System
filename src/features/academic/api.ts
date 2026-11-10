@@ -337,13 +337,24 @@ export const academicApi = {
     readArrayPages<AssignmentSummary>("academic/assignments", {}, signal),
   assignment: (id: string, signal?: AbortSignal) =>
     apiRequest<AssignmentDetail>(itemPath("assignments", id), { signal }),
+  uploadFile: async (file: File) => {
+    const body = new FormData();
+    body.set("file", file);
+    return apiRequest<{
+      id: string;
+      name: string;
+      mimeType: string;
+      size: number;
+    }>("academic/files", { method: "POST", body });
+  },
   importAssignment: async (classId: string, file: File) => {
     const body = new FormData();
     body.set("classId", classId);
     body.set("file", file);
     const preview = await apiRequest<AssignmentImportPreview>(
       "academic/assignments/import-preview",
-      { method: "POST", body },
+      // Word/PDF đi qua AI đọc đề ở BE nên lâu hơn mặc định 60 giây.
+      { method: "POST", body, timeoutMs: 120_000 },
     );
     const parsed = assignmentImportPreviewSchema.safeParse(preview);
     if (!parsed.success)
@@ -391,8 +402,10 @@ export const academicApi = {
     ),
   gradeObjective: (id: string) =>
     command<GradeReview>(`${itemPath("submissions", id)}/grade-objective`),
-  gradeAi: (id: string) =>
-    command<GradingJob>(`${itemPath("submissions", id)}/grade-ai`),
+  gradeAi: (
+    id: string,
+    body?: { corrections: { questionId: string; answer: string }[] },
+  ) => command<GradingJob>(`${itemPath("submissions", id)}/grade-ai`, body),
   gradingJob: (id: string, signal?: AbortSignal) =>
     apiRequest<GradingJob>(itemPath("grading-jobs", id), { signal }),
   approveGrade: (id: string) =>

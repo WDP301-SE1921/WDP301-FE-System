@@ -1,4 +1,5 @@
 "use client";
+import { actsAsManager } from "@/constants/roles";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -101,7 +102,7 @@ export function AcademicCalendarView({
   });
   // Danh sách buổi chỉ trả `teacherId`; Giáo viên chỉ thấy buổi của mình.
   const { names: teacherNames } = useTeacherNames(
-    role === "center_manager" || role === "staff",
+    actsAsManager(role) || role === "staff",
   );
   const classById = new Map((classes.data ?? []).map((c) => [c.id, c]));
   const events: ScheduleBoardEvent[] =
@@ -146,7 +147,7 @@ export function AcademicCalendarView({
               <Button variant="outline" onClick={() => setClosuresOpen(true)}>
                 Ngày nghỉ trung tâm
               </Button>
-              {role === "center_manager" && (
+              {actsAsManager(role) && (
                 <Button
                   variant="outline"
                   render={
@@ -193,7 +194,7 @@ export function AcademicCalendarView({
             ))}
           </SelectContent>
         </Select>
-        {(role === "center_manager" || role === "staff") && (
+        {(actsAsManager(role) || role === "staff") && (
           <Select
             value={teacherId || "all"}
             items={[
@@ -291,7 +292,7 @@ export function AcademicCalendarView({
       <CenterClosuresSheet
         open={closuresOpen}
         onOpenChange={setClosuresOpen}
-        canEdit={role === "center_manager"}
+        canEdit={actsAsManager(role)}
       />
     </PageContainer>
   );

@@ -240,6 +240,7 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
     ? latest.outcomes.filter((o) => !o.lessonLinks?.length).length
     : 0;
   // C28: bộ mục tiêu được duyệt cùng giáo trình nên bước này "xong" khi đã có bộ để đi cùng.
+  // Từ BE PR #12 bộ chỉ có DRAFT và APPROVED: giáo viên duyệt là xong, Quản lý không duyệt bộ.
   let outcomes: SetupStep;
   if (!latest) {
     outcomes = {
@@ -249,21 +250,16 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
     };
   } else if (latest.status === "APPROVED") {
     outcomes = {
-      key: "outcomes", status: "done", owner: "MANAGER", title: "Mục tiêu khóa học",
+      key: "outcomes", status: "done", owner: "TEACHER", title: "Mục tiêu khóa học",
       summary: `Bản ${latest.version} đã duyệt`,
     };
-  } else if (latest.status === "TECHNICALLY_APPROVED") {
-    // Giáo trình đã áp dụng mà bộ còn chờ duyệt (vd bước duyệt bộ lỗi): phụ huynh chưa thấy mục tiêu.
-    outcomes = appliedUnit
-      ? {
-          key: "outcomes", status: "current", owner: "MANAGER", title: "Mục tiêu khóa học",
-          summary: `Bản ${latest.version} chờ Quản lý duyệt áp dụng`,
-          cta: { kind: "outcomes", label: "Duyệt mục tiêu" },
-        }
-      : {
-          key: "outcomes", status: "done", owner: "MANAGER", title: "Mục tiêu khóa học",
-          summary: `Bản ${latest.version} đã duyệt nội dung, chờ Quản lý duyệt cùng giáo trình`,
-        };
+  } else if (appliedUnit && latest.outcomes.length && !unlinkedCount) {
+    // Giáo trình đã áp dụng mà bộ còn nháp (vd giáo viên bỏ qua lúc duyệt): phụ huynh chưa thấy mục tiêu.
+    outcomes = {
+      key: "outcomes", status: "current", owner: "TEACHER", title: "Mục tiêu khóa học",
+      summary: `Bản ${latest.version} chờ giáo viên duyệt`,
+      cta: { kind: "outcomes", label: "Xem mục tiêu" },
+    };
   } else if (latest.outcomes.length) {
     outcomes = {
       key: "outcomes", status: "done", owner: "DESIGNER", title: "Mục tiêu khóa học",
@@ -308,10 +304,7 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
     } else if (waiting) {
       curriculum = {
         key: "curriculum", status: "current", owner: "MANAGER", title: "Giáo trình",
-        summary:
-          latest?.status === "TECHNICALLY_APPROVED"
-            ? "Chờ Quản lý duyệt áp dụng giáo trình và mục tiêu"
-            : "Chờ Quản lý duyệt áp dụng",
+        summary: "Chờ Quản lý duyệt áp dụng",
         warning: outcomeNote,
         cta: { kind: "open_unit", label: "Duyệt áp dụng", unitId: waiting.id },
       };

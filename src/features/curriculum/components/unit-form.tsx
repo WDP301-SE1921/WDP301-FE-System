@@ -1,4 +1,5 @@
 "use client";
+import { actsAsManager } from "@/constants/roles";
 
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -76,7 +77,7 @@ export function UnitForm({
   const toDate = useWatch({ control: form.control, name: "toDate" });
   const sources = useCurriculumUnits(selectedProgram || undefined);
   const canReadClasses =
-    role === "center_manager" || role === "teacher" || role === "staff";
+    actsAsManager(role) || role === "teacher" || role === "staff";
   const classes = useQuery({
     queryKey: ["registration-classes", "all"],
     queryFn: () => registrationApi.classes(),

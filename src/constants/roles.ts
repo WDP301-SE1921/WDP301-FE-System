@@ -32,6 +32,14 @@ export function isBackOfficeRole(value: unknown): value is BackOfficeRole {
   return typeof value === "string" && (BACK_OFFICE_ROLES as readonly string[]).includes(value)
 }
 
+/**
+ * Thao tác ở mức Quản lý: Quản lý trung tâm hoặc Admin tổng (BE `isManagerOrAdmin` trong
+ * `common/auth/role-access.ts`: ADMIN làm được mọi việc của Quản lý và Nhân viên).
+ */
+export function actsAsManager(role: string | null | undefined): boolean {
+  return role === ROLES.CENTER_MANAGER || role === ROLES.ADMIN
+}
+
 /** Nhãn tiếng Việt của vai trò, dùng khi hiển thị ra UI. */
 export const ROLE_LABEL: Record<Role, string> = {
   [ROLES.ADMIN]: "Quản trị viên",

@@ -1,4 +1,5 @@
 "use client";
+import { actsAsManager } from "@/constants/roles";
 
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, useQueryState } from "nuqs";
@@ -105,8 +106,8 @@ export function ScheduledSessionsView({
       {classId && detail.isPending && <p>Đang tải chi tiết lớp…</p>}
       {classroom && (
         <>
-          {role === "center_manager" && <GenerationHistory classId={classId} />}
-          {role === "center_manager" && user && (
+          {actsAsManager(role) && <GenerationHistory classId={classId} />}
+          {actsAsManager(role) && user && (
             <Card>
               <CardHeader>
                 <CardTitle>Xem trước và tạo lịch học · {classroom.name}</CardTitle>

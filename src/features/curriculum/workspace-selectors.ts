@@ -1,5 +1,5 @@
 import { closedDaysInRange, type ClosureRange } from "./center-closures";
-import type { WebRole } from "@/constants/roles";
+import { actsAsManager, type WebRole } from "@/constants/roles";
 import type { RegistrationClass } from "@/types/backend";
 import type { CurriculumLesson, CurriculumUnit } from "@/types/curriculum";
 
@@ -29,7 +29,7 @@ export function curriculumNeedsAction(
       unit.reviewerTeacherId === userId
     );
   return (
-    role === "center_manager" &&
+    actsAsManager(role) &&
     unit.status === "PENDING_REVIEW" &&
     !!unit.technicalReviewedAt
   );

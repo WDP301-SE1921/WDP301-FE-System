@@ -1,4 +1,5 @@
 "use client";
+import { actsAsManager } from "@/constants/roles";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -53,7 +54,7 @@ export function CurriculumUnitsView({ programId }: { programId?: string }) {
         title={
           role === "teacher"
             ? "Duyệt nội dung giáo trình"
-            : role === "center_manager"
+            : actsAsManager(role)
               ? "Duyệt áp dụng giáo trình"
               : "Thiết kế giáo trình"
         }

@@ -5,7 +5,6 @@ import type { OutcomeSet } from "@/types/outcomes";
 
 const STATUS_TEXT: Record<OutcomeSet["status"], string> = {
   DRAFT: "Bản nháp",
-  TECHNICALLY_APPROVED: "Chờ Quản lý duyệt áp dụng",
   APPROVED: "Đã duyệt áp dụng",
 };
 

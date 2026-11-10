@@ -81,8 +81,12 @@ export function backendConfigProblem(webPort = process.env.PORT) {
     return `BACKEND_API_URL=${url.origin} trỏ vào chính web đang chạy ở cổng ${webPort}. Chạy BE ở cổng khác hoặc chạy web ở cổng khác (vd. npm run dev -- -p 3001).`;
   return undefined;
 }
-/** Hủy theo lô chạy một transaction tới 60 giây ở BE nên được chờ lâu hơn mặc định 25 giây. */
+/**
+ * Mặc định 25 giây. Hủy theo lô chạy một transaction tới 60 giây ở BE; nhập đề Word/PDF đi qua AI
+ * đọc đề nên được chờ lâu hơn.
+ */
 export function backendTimeoutMs(path: string) {
+  if (path === "academic/assignments/import-preview") return 120_000;
   return /^academic\/sessions\/bulk-cancel(?:-preview)?$/.test(path)
     ? 65_000
     : 25_000;

@@ -1,4 +1,5 @@
 "use client";
+import { SubmissionFile } from "@/features/grading/components/submission-file";
 import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -87,18 +88,18 @@ export function LiveAssignmentSubmissions({ id }: { id: string }) {
                 disabled={!data.data.assignment.questions.length}
               />
               {data.data.assignment.status === "DRAFT" && (
-            <Button
-              variant="outline"
-              render={
+                <Button
+                  variant="outline"
+                  render={
                     <Link
                       href={ROUTES.TEACHER.ASSIGNMENT_EDIT(
                         data.data.assignment.id,
                       )}
                     />
-              }
-            >
-              Sửa nháp
-            </Button>
+                  }
+                >
+                  Sửa nháp
+                </Button>
               )}
             </div>
           )
@@ -161,6 +162,15 @@ function AssignmentWorkspace({
               {assignment.maxAttempts} lần
             </p>
             <p className="whitespace-pre-wrap">{assignment.instructions}</p>
+            {assignment.files?.map((f, i) => (
+              <section key={f.fileId} className="space-y-2">
+                <p>
+                  {f.file?.name} ·{" "}
+                  {f.teacherOnly ? "Chỉ giáo viên" : "Học sinh được xem"}
+                </p>
+                <SubmissionFile id={f.fileId} index={i} />
+              </section>
+            ))}
             {measuredTargets.length > 0 && (
               <section aria-label="Mục tiêu bài" className="space-y-2">
                 <p className="font-medium">Mục tiêu bài</p>
@@ -197,6 +207,11 @@ function AssignmentWorkspace({
                 {question.correctAnswer && (
                   <p>Đáp án: {question.correctAnswer}</p>
                 )}
+                {question.criteria?.map((c) => (
+                  <p key={c.id} className="text-sm">
+                    {c.title} · {c.maxScore} điểm — {c.description}
+                  </p>
+                ))}
                 {question.rubric && (
                   <p className="whitespace-pre-wrap">
                     Tiêu chí chấm: {question.rubric}
@@ -207,101 +222,101 @@ function AssignmentWorkspace({
           </CardContent>
         </Card>
         <div className="min-w-0 space-y-6">
-        {assignment.status === "DRAFT" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Giao bài cho học sinh</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {eligible.length ? (
-                <PublishRecipients
-                  key={assignment.id}
-                  assignment={assignment}
-                  enrollments={eligible}
+          {assignment.status === "DRAFT" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Giao bài cho học sinh</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {eligible.length ? (
+                  <PublishRecipients
+                    key={assignment.id}
+                    assignment={assignment}
+                    enrollments={eligible}
+                  />
+                ) : (
+                  <p>Chưa có học sinh đang trong kỳ học để giao bài.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          {assignment.status === "PUBLISHED" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Đóng nhận bài</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ApiForm
+                  schema={confirmationSchema}
+                  defaults={{ confirmed: false }}
+                  fields={[
+                    {
+                      name: "confirmed",
+                      label: "Xác nhận đóng nhận bài của học sinh",
+                      type: "checkbox",
+                    },
+                  ]}
+                  submitLabel="Đóng nhận bài"
+                  onSubmit={() => academicApi.closeAssignment(assignment.id)}
                 />
-              ) : (
-                <p>Chưa có học sinh đang trong kỳ học để giao bài.</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-        {assignment.status === "PUBLISHED" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Đóng nhận bài</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ApiForm
-                schema={confirmationSchema}
-                defaults={{ confirmed: false }}
-                fields={[
-                  {
-                    name: "confirmed",
-                    label: "Xác nhận đóng nhận bài của học sinh",
-                    type: "checkbox",
-                  },
-                ]}
-                submitLabel="Đóng nhận bài"
-                onSubmit={() => academicApi.closeAssignment(assignment.id)}
-              />
-            </CardContent>
-          </Card>
-        )}
-        {assignment.status !== "DRAFT" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Gia hạn / mở lại nhận bài</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ApiForm
-                schema={windowSchema}
-                defaults={{ maxAttempts: assignment.maxAttempts }}
-                fields={[
-                  {
-                    name: "dueAt",
-                    label: "Hạn nộp mới (giờ Việt Nam)",
-                    type: "datetime-local",
-                  },
-                  {
-                    name: "maxAttempts",
-                    label: "Số lần nộp tối đa",
-                    type: "number",
-                  },
-                ]}
-                submitLabel="Mở lại nhận bài"
-                onSubmit={(value) =>
-                  academicApi.reopenAssignment(assignment.id, {
-                    ...value,
-                    dueAt: vietnamDateTime(String(value.dueAt)),
-                  })
-                }
-              />
-            </CardContent>
-          </Card>
-        )}
-        {assignment.status === "CLOSED" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Công bố đáp án</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ApiForm
-                schema={confirmationSchema}
-                defaults={{ confirmed: false }}
-                fields={[
-                  {
-                    name: "confirmed",
-                    label:
-                      "Tôi xác nhận cho phụ huynh xem đáp án đúng. Sau công bố không thể mở lại nhận bài.",
-                    type: "checkbox",
-                  },
-                ]}
-                submitLabel="Công bố đáp án"
-                onSubmit={() => academicApi.publishAnswers(assignment.id)}
-              />
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
+          {assignment.status !== "DRAFT" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Gia hạn / mở lại nhận bài</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ApiForm
+                  schema={windowSchema}
+                  defaults={{ maxAttempts: assignment.maxAttempts }}
+                  fields={[
+                    {
+                      name: "dueAt",
+                      label: "Hạn nộp mới (giờ Việt Nam)",
+                      type: "datetime-local",
+                    },
+                    {
+                      name: "maxAttempts",
+                      label: "Số lần nộp tối đa",
+                      type: "number",
+                    },
+                  ]}
+                  submitLabel="Mở lại nhận bài"
+                  onSubmit={(value) =>
+                    academicApi.reopenAssignment(assignment.id, {
+                      ...value,
+                      dueAt: vietnamDateTime(String(value.dueAt)),
+                    })
+                  }
+                />
+              </CardContent>
+            </Card>
+          )}
+          {assignment.status === "CLOSED" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Công bố đáp án</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ApiForm
+                  schema={confirmationSchema}
+                  defaults={{ confirmed: false }}
+                  fields={[
+                    {
+                      name: "confirmed",
+                      label:
+                        "Tôi xác nhận cho phụ huynh xem đáp án đúng. Sau công bố không thể mở lại nhận bài.",
+                      type: "checkbox",
+                    },
+                  ]}
+                  submitLabel="Công bố đáp án"
+                  onSubmit={() => academicApi.publishAnswers(assignment.id)}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>

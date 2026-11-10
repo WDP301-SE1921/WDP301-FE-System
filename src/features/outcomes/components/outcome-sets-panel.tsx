@@ -43,22 +43,24 @@ type OutcomeDialog =
   | { kind: "outcome"; set: OutcomeSet; outcome?: LearningOutcome }
   | { kind: "delete-outcome"; set: OutcomeSet; outcome: LearningOutcome }
   | { kind: "verify"; set: OutcomeSet; outcome: LearningOutcome }
-  | { kind: "technical-approve" | "approve" | "request-changes"; set: OutcomeSet };
+  | { kind: "technical-approve" | "request-changes"; set: OutcomeSet };
 
 /** Hộp chỉ cần xác nhận: không có ô nhập, bấm nút là mở hộp hỏi lại. */
 const confirmOnlySchema = z.object({});
 
 const ROLE_HINT: Partial<Record<WebRole, string>> = {
   curriculum_designer:
-    "Soạn mục tiêu cho khóa học (có thể trước khi có giáo trình), gắn mục tiêu cho bài học rồi gửi duyệt cùng giáo trình. Giáo viên duyệt nội dung, sau đó Quản lý duyệt áp dụng.",
+    "Soạn mục tiêu cho khóa học (có thể trước khi có giáo trình), gắn mục tiêu cho bài học rồi gửi duyệt cùng giáo trình. Giáo viên của khóa duyệt bộ mục tiêu; bộ dùng được ngay sau khi duyệt.",
   teacher:
-    "Duyệt nội dung khi mỗi mục tiêu đã có bài học. Xác minh nguồn là không bắt buộc.",
+    "Duyệt bộ mục tiêu khi mỗi mục tiêu đã có bài học. Xác minh nguồn là không bắt buộc. Sau khi bạn duyệt, bộ dùng được ngay khi soạn và giao bài.",
   center_manager:
-    "Duyệt áp dụng bộ mục tiêu sau khi giáo viên đã duyệt nội dung. Từ khi khóa có bộ được duyệt áp dụng, bài tập mới phải gắn mục tiêu trước khi giao.",
+    "Theo dõi các bộ mục tiêu giáo viên đã duyệt. Cần sửa thì gửi yêu cầu điều chỉnh: bộ đang dùng giữ nguyên, Thiết kế giáo trình tạo bản mới để giáo viên duyệt lại.",
 };
-const SET_BADGE: Record<OutcomeSet["status"], "neutral" | "warning" | "success"> = {
+const SET_BADGE: Record<
+  OutcomeSet["status"],
+  "neutral" | "warning" | "success"
+> = {
   DRAFT: "neutral",
-  TECHNICALLY_APPROVED: "warning",
   APPROVED: "success",
 };
 
@@ -196,9 +198,9 @@ function OutcomeSetCard({
         </Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        {set.status === "DRAFT" && set.reviewNote && (
+        {set.reviewNote && (
           <Alert variant="warning">
-            <AlertTitle>Quản lý yêu cầu sửa</AlertTitle>
+            <AlertTitle>Yêu cầu điều chỉnh</AlertTitle>
             <AlertDescription className="whitespace-pre-wrap">
               {set.reviewNote}
             </AlertDescription>
@@ -218,7 +220,9 @@ function OutcomeSetCard({
                   <div className="flex flex-wrap gap-1">
                     <Badge
                       variant={
-                        outcome.sourceStatus === "VERIFIED" ? "success" : "neutral"
+                        outcome.sourceStatus === "VERIFIED"
+                          ? "success"
+                          : "neutral"
                       }
                     >
                       {outcome.sourceStatus === "VERIFIED"
@@ -247,7 +251,9 @@ function OutcomeSetCard({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onAction({ kind: "outcome", set, outcome })}
+                          onClick={() =>
+                            onAction({ kind: "outcome", set, outcome })
+                          }
                         >
                           Sửa mục tiêu
                         </Button>
@@ -267,7 +273,9 @@ function OutcomeSetCard({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => onAction({ kind: "verify", set, outcome })}
+                        onClick={() =>
+                          onAction({ kind: "verify", set, outcome })
+                        }
                       >
                         {outcome.sourceStatus === "VERIFIED" &&
                         outcome.verifiedById === user.id
@@ -324,12 +332,7 @@ function OutcomeSetCard({
               disabled={blockers.length > 0}
               onClick={() => onAction({ kind: "technical-approve", set })}
             >
-              Duyệt nội dung
-            </Button>
-          )}
-          {actions.canApprove && (
-            <Button onClick={() => onAction({ kind: "approve", set })}>
-              Duyệt áp dụng
+              Duyệt bộ mục tiêu
             </Button>
           )}
           {actions.canRequestChanges && (
@@ -337,7 +340,7 @@ function OutcomeSetCard({
               variant="outline"
               onClick={() => onAction({ kind: "request-changes", set })}
             >
-              Trả về nháp
+              Yêu cầu điều chỉnh
             </Button>
           )}
           {actions.canCopy && (
@@ -589,56 +592,49 @@ function OutcomeDialogBody({
     return (
       <>
         <DialogHeader>
-          <DialogTitle>Trả bộ mục tiêu về nháp</DialogTitle>
+          <DialogTitle>Yêu cầu điều chỉnh bộ mục tiêu</DialogTitle>
           <DialogDescription>
-            Thiết kế giáo trình sẽ thấy lý do và sửa lại; giáo viên phải duyệt
-            nội dung lần nữa.
+            Bộ đã duyệt vẫn được dùng như cũ. Thiết kế giáo trình sẽ thấy lý do,
+            tạo bản mới của bộ và gửi giáo viên duyệt lại.
           </DialogDescription>
         </DialogHeader>
         <ApiForm
           schema={outcomeChangeRequestSchema}
           defaults={{ reason: "" }}
           fields={[{ name: "reason", label: "Cần sửa gì", type: "textarea" }]}
-          submitLabel="Trả về nháp"
+          submitLabel="Gửi yêu cầu điều chỉnh"
           successMessage={false}
           onSubmit={(value) => outcomeApi.requestChanges(dialog.set.id, value)}
-          onSuccess={done("Đã trả bộ mục tiêu về nháp.")}
+          onSuccess={done(
+            "Đã gửi yêu cầu điều chỉnh. Bộ mục tiêu hiện tại vẫn được giữ nguyên.",
+          )}
         />
       </>
     );
-  const isApprove = dialog.kind === "approve";
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{isApprove ? "Duyệt áp dụng bộ mục tiêu" : "Duyệt nội dung bộ mục tiêu"}</DialogTitle>
+        <DialogTitle>Duyệt bộ mục tiêu</DialogTitle>
         <DialogDescription>
-          {isApprove
-            ? "Sau khi duyệt áp dụng, bài tập mới của khóa phải gắn mục tiêu của bộ này trước khi giao cho học sinh."
-            : "Bạn xác nhận các mục tiêu đúng kiến thức và mỗi mục tiêu đã có bài học tương ứng."}
+          Bạn xác nhận các mục tiêu đúng kiến thức và mỗi mục tiêu đã có bài học
+          tương ứng. Sau khi bạn duyệt, bộ dùng được ngay khi soạn và giao bài,
+          không cần Quản lý duyệt thêm.
         </DialogDescription>
       </DialogHeader>
       <ApiForm
         schema={confirmOnlySchema}
         fields={[]}
         confirm={{
-          title: isApprove
-            ? `Duyệt áp dụng ${dialog.set.level} · bản ${dialog.set.version}?`
-            : `Duyệt nội dung ${dialog.set.level} · bản ${dialog.set.version}?`,
+          title: `Duyệt ${dialog.set.level} · bản ${dialog.set.version}?`,
           description: () =>
-            isApprove
-              ? "Sau khi duyệt áp dụng, bài tập mới của khóa phải gắn mục tiêu của bộ này trước khi giao cho học sinh."
-              : "Bạn xác nhận các mục tiêu đúng kiến thức và mỗi mục tiêu đã có bài học tương ứng.",
-          confirmText: isApprove ? "Duyệt áp dụng" : "Duyệt nội dung",
+            "Bộ mục tiêu dùng được ngay khi soạn và giao bài. Cần sửa sau này thì tạo bản mới của bộ.",
+          confirmText: "Duyệt bộ mục tiêu",
         }}
-        submitLabel={isApprove ? "Duyệt áp dụng" : "Duyệt nội dung"}
+        submitLabel="Duyệt bộ mục tiêu"
         successMessage={false}
-        onSubmit={() =>
-          isApprove
-            ? outcomeApi.approve(dialog.set.id)
-            : outcomeApi.technicalApprove(dialog.set.id)
-        }
+        onSubmit={() => outcomeApi.technicalApprove(dialog.set.id)}
         onSuccess={done(
-          isApprove ? "Đã duyệt áp dụng bộ mục tiêu." : "Đã duyệt nội dung bộ mục tiêu.",
+          "Đã duyệt bộ mục tiêu. Bộ dùng được ngay khi soạn và giao bài.",
         )}
       />
     </>

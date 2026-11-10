@@ -30,6 +30,8 @@ export interface ApiEnvelope<T> {
   };
 }
 export const BACKEND_ROLE_MAP: Record<string, WebRole | undefined> = {
+  // Admin tổng (BE e61d480): làm mọi việc của Quản lý và Nhân viên, trừ chat.
+  ADMIN: "admin",
   MANAGER: "center_manager",
   STAFF: "staff",
   TEACHER: "teacher",

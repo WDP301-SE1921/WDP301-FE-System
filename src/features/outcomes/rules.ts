@@ -1,4 +1,4 @@
-import type { WebRole } from "@/constants/roles";
+import { actsAsManager, type WebRole } from "@/constants/roles";
 import type {
   LearningTarget,
   OutcomeSet,
@@ -7,7 +7,6 @@ import type {
 
 export const OUTCOME_SET_STATUS_TEXT: Record<OutcomeSetStatus, string> = {
   DRAFT: "Bản nháp",
-  TECHNICALLY_APPROVED: "Chờ Quản lý duyệt áp dụng",
   APPROVED: "Đã duyệt áp dụng",
 };
 
@@ -17,19 +16,18 @@ export function outcomeSetActions(
   user: { id: string; role: WebRole },
 ) {
   const isDraft = set.status === "DRAFT";
-  const isReviewed = set.status === "TECHNICALLY_APPROVED";
   return {
     canEditOutcomes:
       user.role === "curriculum_designer" && isDraft,
     canCopy: user.role === "curriculum_designer",
     canVerify: user.role === "teacher" && isDraft,
     canTechnicallyApprove: user.role === "teacher" && isDraft,
-    canApprove: user.role === "center_manager" && isReviewed,
-    canRequestChanges: user.role === "center_manager" && isReviewed,
+    canRequestChanges:
+      actsAsManager(user.role) && set.status === "APPROVED",
   };
 }
 
-/** BE chỉ cho duyệt nội dung bộ khi bộ có mục tiêu và mỗi mục tiêu có bài học (xác minh nguồn không bắt buộc). */
+/** BE (`technicalApprove`) chỉ cho giáo viên duyệt bộ khi bộ có mục tiêu và mỗi mục tiêu có bài học (xác minh nguồn không bắt buộc). */
 export function technicalApprovalBlockers(set: OutcomeSet): string[] {
   if (!set.outcomes.length) return ["Bộ chưa có mục tiêu nào."];
   return set.outcomes

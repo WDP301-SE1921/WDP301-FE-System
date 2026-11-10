@@ -156,6 +156,26 @@ export const attendanceSchema = z
       value.items.length,
     "Mỗi học viên chỉ có một kết quả.",
   );
+export const rubricCriterionSchema = z.object({
+  id: z.string().min(1).max(100),
+  title: z.string().trim().min(1, "Nhập tên tiêu chí.").max(255),
+  description: z.string().max(5000),
+  maxScore: z.number().min(0.01).max(100),
+});
+export const criterionScoreSchema = z.object({
+  criterionId: z.string().min(1).max(100),
+  score: z.number().min(0).max(100),
+  feedback: z.string().max(5000),
+});
+const assignmentFilesSchema = z
+  .array(
+    z.object({
+      fileId: z.string().min(1),
+      teacherOnly: z.boolean(),
+      questionPosition: z.number().int().min(0).max(99).nullable().optional(),
+    }),
+  )
+  .max(5);
 export const questionSchema = z
   .object({
     kind: z.enum(["MULTIPLE_CHOICE", "ESSAY"]),
@@ -163,12 +183,14 @@ export const questionSchema = z
     choices: z.array(z.string().min(1)).min(2).max(10).optional(),
     correctAnswer: z.string().max(10000).optional(),
     rubric: z.string().max(10000).optional(),
+    criteria: z.array(rubricCriterionSchema).max(30).optional(),
     maxScore: z.coerce.number().min(0.01).max(100),
     outcomeId: requiredId.optional(),
   })
   .superRefine((value, context) => {
     if (
       value.kind === "MULTIPLE_CHOICE" &&
+      value.correctAnswer &&
       (!value.choices?.includes(value.correctAnswer ?? "") ||
         new Set(value.choices).size !== value.choices.length)
     )
@@ -177,11 +199,14 @@ export const questionSchema = z
         path: ["correctAnswer"],
         message: "Đáp án phải thuộc các lựa chọn khác nhau.",
       });
-    if (value.kind === "ESSAY" && !value.rubric?.trim())
+    if (
+      value.criteria &&
+      new Set(value.criteria.map((c) => c.id)).size !== value.criteria.length
+    )
       context.addIssue({
         code: "custom",
         path: ["rubric"],
-        message: "Bài tự luận cần tiêu chí chấm.",
+        message: "Mã tiêu chí bị trùng.",
       });
   });
 const assessmentFields = {
@@ -217,6 +242,7 @@ function validateAssessment(
   }
 }
 const assignmentBaseSchema = z.object({
+  files: assignmentFilesSchema.optional(),
   ...assessmentFields,
   classId: requiredId,
   title: requiredText(255),
@@ -228,7 +254,8 @@ const assignmentBaseSchema = z.object({
       "Hạn nộp phải ở tương lai.",
     ),
   maxAttempts: z.coerce.number().int().min(1).max(10),
-  outcomeSetId: requiredId.optional(),
+  // null: bài sửa bỏ bộ mục tiêu đã gắn (BE `@IsOptional` nhận null, lưu `outcomeSetId ?? null`).
+  outcomeSetId: requiredId.nullable().optional(),
   questions: z.array(questionSchema).min(1).max(100),
 });
 export const assignmentSchema =
@@ -248,10 +275,12 @@ export const recipientsSchema = z.object({
     ),
 });
 export const gradeSchema = z.object({
+  expectedRevision: z.number().int().min(0).optional(),
   scores: z
     .array(
       z.object({
         questionId: requiredId,
+        criteria: z.array(criterionScoreSchema).max(30).optional(),
         score: z.coerce.number().min(0).max(100),
         feedback: z.string().max(5000),
       }),
@@ -305,6 +334,7 @@ export const localDateTimeSchema = z
   );
 export const assignmentEditorSchema = z
   .object({
+    files: assignmentFilesSchema.optional(),
     ...assessmentFields,
     kind: z.enum(["HOMEWORK", "TEST"]),
     classId: requiredId,
@@ -326,6 +356,7 @@ export const assignmentEditorSchema = z
             choices: z.string(),
             correctAnswer: z.string(),
             rubric: z.string(),
+            criteria: z.array(rubricCriterionSchema).max(30).optional(),
             maxScore: z.number().min(0.01).max(100),
             outcomeId: z.string(),
           })
@@ -371,6 +402,7 @@ export function toQuestionPayload(value: {
   choices: string;
   correctAnswer: string;
   rubric: string;
+  criteria?: z.infer<typeof rubricCriterionSchema>[];
   maxScore: number;
 }) {
   return {
@@ -385,7 +417,7 @@ export function toQuestionPayload(value: {
             .filter(Boolean),
           correctAnswer: value.correctAnswer.trim(),
         }
-      : { rubric: value.rubric }),
+      : { rubric: value.rubric, criteria: value.criteria ?? [] }),
   };
 }
 export function vietnamDateTime(value: string) {

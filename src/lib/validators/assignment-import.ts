@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ASSIGNMENT_FILE_LIMIT = 5 * 1024 * 1024;
-export const ASSIGNMENT_FILE_ACCEPT = ".csv,.docx,.pdf";
+export const ASSIGNMENT_FILE_ACCEPT = ".csv,.docx,.pdf,.jpg,.jpeg,.png";
 export const assignmentImportFileSchema = z.object({
   file: z.custom<FileList>((value) => {
     const files = value as FileList | undefined;
@@ -9,15 +9,15 @@ export const assignmentImportFileSchema = z.object({
       files?.length === 1 &&
       files[0].size > 0 &&
       files[0].size <= ASSIGNMENT_FILE_LIMIT &&
-      /\.(csv|docx|pdf)$/i.test(files[0].name)
+      /\.(csv|docx|pdf|jpe?g|png)$/i.test(files[0].name)
     );
-  }, "Chọn một file CSV, DOCX hoặc PDF tối đa 5 MiB."),
+  }, "Chọn một file CSV, DOCX, PDF, JPG hoặc PNG tối đa 5 MiB."),
 });
 
 // Extraction can omit answer keys; teachers complete them in the normal editor.
 export const assignmentImportPreviewSchema = z.object({
   fileName: z.string().max(255),
-  format: z.enum(["CSV", "DOCX", "PDF"]),
+  format: z.enum(["CSV", "DOCX", "PDF", "IMAGE"]),
   title: z.string().max(255).optional(),
   instructions: z.string().max(10000).optional(),
   usedAi: z.boolean(),

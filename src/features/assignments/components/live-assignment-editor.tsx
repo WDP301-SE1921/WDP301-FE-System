@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { RubricEditor } from "./rubric-editor";
+import { AssignmentFilesEditor } from "./assignment-files-editor";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { useUnsavedChanges } from "@/components/shared/feedback/unsaved-changes-guard";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -47,6 +49,7 @@ const emptyQuestion: AssignmentInput["questions"][number] = {
   choices: "",
   correctAnswer: "",
   rubric: "",
+  criteria: [],
   maxScore: 10,
   outcomeId: "",
 };
@@ -114,11 +117,13 @@ function AssignmentEditor({
   const presetKind = search.get("kind") === "TEST" ? "TEST" : "HOMEWORK";
   const action = useLiveCommand();
   const user = useCurrentUser();
+  const [uploading, setUploading] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const form = useForm<AssignmentInput>({
     resolver: zodResolver(assignmentEditorSchema),
     defaultValues: assignment
       ? {
+          files: assignment.files ?? [],
           classId: assignment.classId,
           kind: assignment.kind ?? "HOMEWORK",
           sessionId: assignment.sessionId ?? undefined,
@@ -134,11 +139,13 @@ function AssignmentEditor({
             choices: question.choices?.join("\n") ?? "",
             correctAnswer: question.correctAnswer ?? "",
             rubric: question.rubric ?? "",
+            criteria: question.criteria ?? [],
             maxScore: question.maxScore,
             outcomeId: question.outcomeId ?? "",
           })),
         }
       : {
+          files: [],
           classId: presetClassId,
           kind: presetKind,
           title: "",
@@ -164,7 +171,7 @@ function AssignmentEditor({
       sum + (Number.isFinite(question?.maxScore) ? question.maxScore : 0),
     0,
   );
-  useUnsavedChanges(form.formState.isDirty && !action.isSuccess);
+  useUnsavedChanges((form.formState.isDirty || uploading) && !action.isSuccess);
   const sessions = useLiveQuery(
     ["assignment-sessions", classId],
     (signal) =>
@@ -224,6 +231,7 @@ function AssignmentEditor({
   const blankOnly =
     questions.fields.length === 1 &&
     !!values?.[0] &&
+    !values[0].criteria?.length &&
     [
       values[0].prompt,
       values[0].choices,
@@ -248,6 +256,7 @@ function AssignmentEditor({
         className="space-y-4"
         noValidate
         onSubmit={form.handleSubmit((value) => {
+          if (uploading || action.isPending) return;
           const body = assignmentEditorPayload(value);
           action.mutate(
             () =>
@@ -266,7 +275,7 @@ function AssignmentEditor({
         })}
       >
         <fieldset
-          disabled={action.isPending}
+          disabled={action.isPending || uploading}
           className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]"
         >
           <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
@@ -275,6 +284,18 @@ function AssignmentEditor({
               <CardTitle>Thông tin chung</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <Controller
+                name="files"
+                control={form.control}
+                render={({ field }) => (
+                  <AssignmentFilesEditor
+                    questionCount={questions.fields.length}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    onBusy={setUploading}
+                  />
+                )}
+              />
               <Controller
                 name="classId"
                 control={form.control}
@@ -456,6 +477,7 @@ function AssignmentEditor({
                 type="submit"
                 className="w-full"
                 disabled={
+                  uploading ||
                   isSessionUnavailable ||
                     (kind === "TEST" &&
                       (sessions.isPending || sessions.isError))
@@ -472,6 +494,38 @@ function AssignmentEditor({
           </Card>
           </div>
           <div className="min-w-0 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rubric toàn bài</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Mỗi bài có rubric riêng, tổng hợp từ tiêu chí của các câu. Chỉnh
+                tiêu chí ngay bên dưới từng câu.
+              </p>
+              {(values ?? []).map((item, i) => (
+                <div
+                  key={questions.fields[i]?.id ?? i}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted p-3 text-sm"
+                >
+                  <span>
+                    Câu {i + 1} ·{" "}
+                    {(item.outcomeId &&
+                      selectedSet?.outcomes.find(
+                        (outcome) => outcome.id === item.outcomeId,
+                      )?.code) ||
+                      "Chưa gắn mục tiêu"}
+                  </span>
+                  <span>
+                    {item.kind === "MULTIPLE_CHOICE"
+                      ? "Đáp án chuẩn"
+                      : `${item.criteria?.length ?? 0} tiêu chí`}{" "}
+                    · {item.maxScore} điểm
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">
               Câu hỏi · {questions.fields.length} câu ·{" "}
@@ -579,23 +633,7 @@ function AssignmentEditor({
                     )}
                   </>
                 ) : (
-                  <>
-                    <Label htmlFor={`question-${index}-rubric`}>
-                      Tiêu chí chấm
-                    </Label>
-                    <Textarea
-                      id={`question-${index}-rubric`}
-                      {...form.register(`questions.${index}.rubric`)}
-                    />
-                    {form.formState.errors.questions?.[index]?.rubric && (
-                      <p role="alert" className="text-sm text-destructive">
-                        {
-                          form.formState.errors.questions[index]?.rubric
-                            ?.message
-                        }
-                      </p>
-                    )}
-                  </>
+                  <RubricEditor form={form} index={index} />
                 )}
                 {selectedSet && (
                   <>
@@ -648,7 +686,25 @@ function AssignmentEditor({
                   type="button"
                   variant="outline"
                   disabled={questions.fields.length <= 1}
-                  onClick={() => questions.remove(index)}
+                  onClick={() => {
+                    // Tệp gắn câu bị xóa chuyển về toàn bài; tệp của câu sau lùi một vị trí.
+                    const files = form.getValues("files") ?? [];
+                    form.setValue(
+                      "files",
+                      files.map((file) => ({
+                        ...file,
+                        questionPosition:
+                          file.questionPosition == null ||
+                          file.questionPosition === index
+                            ? null
+                            : file.questionPosition > index
+                              ? file.questionPosition - 1
+                              : file.questionPosition,
+                      })),
+                      { shouldDirty: true },
+                    );
+                    questions.remove(index);
+                  }}
                 >
                   Xóa câu này
                 </Button>
@@ -679,11 +735,22 @@ function AssignmentEditor({
               choices: question.choices?.join("\n") ?? "",
               correctAnswer: question.correctAnswer ?? "",
               rubric: question.rubric ?? "",
+              criteria: question.criteria ?? [],
               maxScore: question.maxScore,
               outcomeId: "",
             }));
-            if (replace || blankOnly) questions.replace(imported);
-            else questions.append(imported);
+            if (replace || blankOnly) {
+              questions.replace(imported);
+              // Câu cũ bị thay hết nên tệp gắn câu chuyển về toàn bài.
+              form.setValue(
+                "files",
+                (form.getValues("files") ?? []).map((file) => ({
+                  ...file,
+                  questionPosition: null,
+                })),
+                { shouldDirty: true },
+              );
+            } else questions.append(imported);
             if (!form.getValues("title") && preview.title)
               form.setValue("title", preview.title, { shouldDirty: true });
             if (!form.getValues("instructions") && preview.instructions)

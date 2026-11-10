@@ -91,7 +91,8 @@ const ALL_BACK_OFFICE_AREAS: readonly Area[] = [
 ];
 
 export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
-  [ROLES.ADMIN]: ALL_BACK_OFFICE_AREAS,
+  // BE không cho ADMIN dùng chat (`CHAT_ROLES`), nên Admin tổng có mọi khu trừ Tin nhắn.
+  [ROLES.ADMIN]: ALL_BACK_OFFICE_AREAS.filter((area) => area !== AREA.CHAT),
   [ROLES.CENTER_MANAGER]: [
     AREA.DASHBOARD,
     AREA.STUDENTS,

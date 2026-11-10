@@ -100,7 +100,7 @@ const PROGRAMS_PAGE_SIZE = 10;
 const PROGRAM_FILTERS = {
   all: "Tất cả khóa",
   review: "Có giáo trình chờ duyệt áp dụng",
-  outcomeReview: "Có mục tiêu chờ duyệt",
+  outcomeReview: "Có mục tiêu chờ giáo viên duyệt",
 } as const;
 /** BE chưa có route liệt kê bộ mục tiêu theo trạng thái cho mọi khóa (B9), nên kiểm từng khóa; giới hạn số khóa. */
 const OUTCOME_CHECK_LIMIT = 30;
@@ -185,7 +185,7 @@ function ProgramsCatalog() {
     queryFn: () => registrationApi.classes(),
     retry: false,
   });
-  // Chỉ gọi khi bộ lọc "Có mục tiêu chờ duyệt" đang bật: mỗi khóa một request.
+  // Chỉ gọi khi bộ lọc "Có mục tiêu chờ giáo viên duyệt" đang bật: mỗi khóa một request.
   const currentUser = useCurrentUser();
   const outcomeCheckOn = programFilter === "outcomeReview";
   const checkedPrograms = (programs.data ?? []).slice(0, OUTCOME_CHECK_LIMIT);
@@ -194,7 +194,7 @@ function ProgramsCatalog() {
       // Cùng tiền tố `useLiveQuery`: duyệt hoặc trả bộ mục tiêu (invalidate ["web-api", userId]) làm mới luôn bộ lọc này.
       queryKey: ["web-api", currentUser?.id, "outcome-sets-pending", program.id],
       queryFn: ({ signal }: { signal: AbortSignal }) =>
-        academicApi.outcomeSets(program.id, { status: "TECHNICALLY_APPROVED" }, signal),
+        academicApi.outcomeSets(program.id, { status: "DRAFT" }, signal),
       enabled: outcomeCheckOn,
       retry: false,
     })),
@@ -283,7 +283,16 @@ function ProgramsCatalog() {
     if (!check || !outcomeCheckOn) return;
     if (check.isPending) outcomeChecking++;
     else if (check.isError) outcomeFailed++;
-    else if (check.data?.some((set) => set.status === "TECHNICALLY_APPROVED"))
+    // Từ BE PR #12 giáo viên duyệt là xong, Quản lý chỉ theo dõi: bộ nháp đã đủ điều kiện duyệt
+    // (có mục tiêu, mục tiêu nào cũng có bài) là bộ đang chờ giáo viên.
+    else if (
+      check.data?.some(
+        (set) =>
+          set.status === "DRAFT" &&
+          set.outcomes.length > 0 &&
+          set.outcomes.every((outcome) => outcome.lessonLinks.length > 0),
+      )
+    )
       outcomePendingIds.add(program.id);
   });
   const outcomeUnchecked = outcomeCheckOn

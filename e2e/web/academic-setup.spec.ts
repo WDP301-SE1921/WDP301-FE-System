@@ -6,7 +6,8 @@ import { persistSessions, chooseCard, expectNoLegacyTerms, inRole, pickSelect, s
 
 /**
  * Luồng chuẩn bị một khóa học: Quản lý tạo khóa và lớp, Thiết kế giáo trình soạn mục tiêu và giáo trình,
- * giáo viên duyệt nội dung, Quản lý duyệt áp dụng rồi tạo lịch học. Các bước phụ thuộc nhau nên chạy tuần tự.
+ * giáo viên duyệt nội dung (kèm bộ mục tiêu, từ BE PR #12 là duyệt cuối của bộ), Quản lý duyệt áp dụng giáo
+ * trình rồi tạo lịch học. Các bước phụ thuộc nhau nên chạy tuần tự.
  */
 const sfx = suffix();
 const COURSE = `E2E Sinh 6 ${sfx}`;
@@ -178,20 +179,21 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await page.getByRole("button", { name: "Duyệt nội dung" }).first().click();
     const decision = page.locator("#curriculum-decision");
     await expect(decision.getByText("Đồng ý nội dung")).toBeVisible();
+    await expect(decision.getByText(/Mục tiêu khóa học đi cùng được duyệt luôn/)).toBeVisible();
     await decision.getByRole("button", { name: "Duyệt nội dung" }).click();
     await expect(page.getByText(/Chờ Quản lý duyệt/i).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Duyệt áp dụng" })).toHaveCount(0);
   });
 
-  test("Quản lý Duyệt áp dụng giáo trình và bộ mục tiêu đi kèm", async ({ browser }) => {
+  test("Quản lý Duyệt áp dụng giáo trình, bộ mục tiêu đã do giáo viên duyệt", async ({ browser }) => {
     const page = await open(browser, ROLES.CENTER_MANAGER);
     await page.goto(`/manager/curriculum/${state.unitId}`);
     await page.getByRole("button", { name: "Duyệt áp dụng", exact: true }).click();
     const confirm = page.getByRole("dialog").filter({ hasText: "Duyệt áp dụng giáo trình?" });
-    await expect(confirm).toContainText("Mục tiêu khóa học đi cùng cũng được duyệt áp dụng.");
+    // Quản lý không duyệt bộ mục tiêu nữa: hộp xác nhận không nhắc tới bộ đã duyệt.
+    await expect(confirm).not.toContainText("Mục tiêu khóa học đi cùng");
     await confirm.getByRole("button", { name: "Duyệt áp dụng" }).click();
-    // Giáo trình duyệt xong rồi mới duyệt bộ mục tiêu đi kèm: chờ câu cuối, đừng rời trang giữa chừng.
-    await expect(page.getByText("Đã duyệt áp dụng giáo trình và mục tiêu khóa học.")).toBeVisible();
+    await expect(page.getByText("Đã duyệt áp dụng giáo trình.")).toBeVisible();
 
     await page.goto(`/manager/curriculum?program=${state.programId}`);
     const checklist = page.getByRole("list", { name: "Chuẩn bị khóa" });
