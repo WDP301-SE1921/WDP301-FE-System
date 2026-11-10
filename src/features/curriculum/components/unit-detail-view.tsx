@@ -30,6 +30,12 @@ import { StatusBadge } from "@/components/shared/feedback/status-badge";
 import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role";
 import { calendarDateLabel } from "@/lib/calendar-date";
 import { ROUTES } from "@/constants/routes";
+import { registrationApi } from "@/features/registration-flow/api";
+import {
+  classesNeedingSchedule,
+  describeExcluded,
+  schedulableClasses,
+} from "@/features/registration-flow/program-setup";
 import {
   Sheet,
   SheetContent,
@@ -163,6 +169,12 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
   const [discard, setDiscard] = useState(false);
   const [confirmApply, setConfirmApply] = useState(false);
   const [notice, setNotice] = useState("");
+  const [scheduleOffer, setScheduleOffer] = useState<{
+    count: number;
+    href: string;
+    excluded: string;
+    allDone: boolean;
+  } | null>(null);
   const [deleting, setDeleting] = useState<"unit" | CurriculumLesson | null>(
     null,
   );
@@ -500,6 +512,26 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
               <p role="status" className="rounded-xl bg-primary/10 p-4 text-sm">
                 {notice}
               </p>
+            )}
+            {scheduleOffer && (
+              <div className="space-y-2 rounded-xl border border-border p-4 text-sm">
+                {scheduleOffer.count > 0 ? (
+                  <Button render={<Link href={scheduleOffer.href} />}>
+                    Tạo lịch học cho {scheduleOffer.count} lớp
+                  </Button>
+                ) : (
+                  <p>
+                    {scheduleOffer.allDone
+                      ? "Mọi lớp đã có buổi học tới hết kỳ."
+                      : "Chưa có lớp đủ điều kiện. Kiểm tra bước Lớp & giáo viên."}
+                  </p>
+                )}
+                {scheduleOffer.excluded && (
+                  <p className="text-muted-foreground">
+                    Chưa tạo cho: {scheduleOffer.excluded}.
+                  </p>
+                )}
+              </div>
             )}
             {(unit.reviewNote || unit.technicalReviewNote) && (
               <Card>
@@ -966,6 +998,31 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 try {
                   await approve.mutateAsync(undefined);
                   setNotice("Đã duyệt áp dụng giáo trình.");
+                  try {
+                    // Lớp đủ điều kiện (có giáo viên, đủ khung giờ) để mở thẳng màn Tạo lịch học.
+                    const program = await registrationApi.program(unit.programId);
+                    const { eligible, excluded } = schedulableClasses(
+                      program.classes,
+                      program.sessionsPerWeek,
+                    );
+                    const params = new URLSearchParams({
+                      programId: unit.programId,
+                      unitId: unit.id,
+                    });
+                    // Chỉ lớp chưa có buổi tới hết kỳ (và lớp chưa biết do BE cũ) mới cần tạo lịch.
+                    const { needs, unknown } = classesNeedingSchedule(eligible, unit.toDate);
+                    const targets = [...needs, ...unknown];
+                    if (targets.length)
+                      params.set("classIds", targets.map((c) => c.id).join(","));
+                    setScheduleOffer({
+                      count: targets.length,
+                      href: `${ROUTES.MANAGER.SESSIONS}?${params.toString()}`,
+                      excluded: describeExcluded(excluded),
+                      allDone: eligible.length > 0 && targets.length === 0,
+                    });
+                  } catch {
+                    setScheduleOffer(null);
+                  }
                 } catch {
                   /* API feedback remains visible. */
                 }

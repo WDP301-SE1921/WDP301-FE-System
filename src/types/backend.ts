@@ -117,6 +117,8 @@ export interface RegistrationProgram {
     isOpen: boolean;
     /** Chi tiết khóa (`GET programs/:id`) từ BE 19/10; bản cũ không có. */
     teacherId?: string | null;
+    /** Ngày (UTC+7) của buổi cuối không bị hủy; null = chưa có buổi; thiếu = BE cũ. */
+    scheduledUntil?: string | null;
     weeklySchedules?: Pick<
       WeeklySchedule,
       "weekday" | "startTime" | "endTime"
@@ -161,6 +163,8 @@ export interface RegistrationClass {
   isOpen: boolean;
   isActive?: boolean;
   scheduleLocked?: boolean;
+  /** Ngày (UTC+7) của buổi cuối không bị hủy; null = chưa có buổi; thiếu = BE cũ. */
+  scheduledUntil?: string | null;
   roomId?: string | null;
   room?: {
     id: string;

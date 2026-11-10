@@ -75,6 +75,7 @@ export default async function CurriculumPage() {
             <>
               <CurriculumUnitsTab tabs={tabs} />
               <DesignerOutcomesTab tabs={tabs} />
+              <ProgramSheet />
             </>
           )}
           <CurriculumFeedbackTab tabs={tabs} />

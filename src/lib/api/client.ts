@@ -179,6 +179,8 @@ const ERROR_TEXT: Record<string, string> = {
   LESSON_NOT_FOUND: "Không tìm thấy bài học trong giáo trình.",
   LESSON_NOT_APPROVED: "Nội dung bài học chưa được duyệt.",
   INSUFFICIENT_LESSONS: "Giáo trình chưa đủ bài cho lịch lớp trong kỳ áp dụng.",
+  SESSIONS_AFTER_RANGE_EXIST:
+    "Lớp đã có lịch học sau ngày bắt đầu này. Chọn ngày bắt đầu muộn hơn.",
   LESSON_SEQUENCE_GAP: "Thứ tự bài học phải liên tục từ 1.",
   MISSING_MONTHLY_TEST: "Cần soạn kiểm tra cho mỗi tháng có lịch học.",
   NO_SCHEDULED_CLASS:
@@ -336,6 +338,13 @@ function detailedMessage(code: string, details: unknown): string | undefined {
       ? (details as Record<string, unknown>)
       : {};
   if (code === "CSV_INVALID") return csvInvalidMessage(details);
+  if (code === "SESSIONS_AFTER_RANGE_EXIST") {
+    const last = typeof info.lastScheduledDate === "string" ? info.lastScheduledDate : "";
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(last);
+    return match
+      ? `Lớp đã có lịch học đến ngày ${match[3]}/${match[2]}/${match[1]}. Chọn ngày bắt đầu sau ngày đó.`
+      : undefined;
+  }
   if (code === "OUTCOME_SET_INCOMPLETE") {
     const codes = Array.isArray(info.codes)
       ? info.codes.filter((item): item is string => typeof item === "string")

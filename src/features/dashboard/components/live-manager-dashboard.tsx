@@ -48,6 +48,7 @@ import { ROUTES } from "@/constants/routes";
 import { dashboardApi } from "../api";
 import { DashboardStatCard } from "./dashboard-stat-card";
 import { ColumnChart, HorizontalBars } from "./column-chart";
+import { RunningOutClassesCard } from "./running-out-classes-card";
 import type { AnalyticsFilters } from "../types";
 
 const dashboardRangeSchema = dateRangeSchema.refine(
@@ -409,6 +410,8 @@ export function LiveManagerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <RunningOutClassesCard classes={classes} units={units} today={today} />
 
       <div className="grid min-w-0 items-start gap-6 xl:grid-cols-3">
         <Card className="min-w-0">

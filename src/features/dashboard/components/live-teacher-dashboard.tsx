@@ -40,12 +40,14 @@ import {
 } from "@/features/academic/components/live-fields";
 import { readAssignmentWorkspaces } from "@/features/assignments/workspace-api";
 import { latestSubmissions } from "@/features/assignments/submission-selectors";
+import { classesMissingMonthlyTest } from "@/features/assignments/monthly-test";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { addCalendarDays, todayInVietnam } from "@/lib/calendar-date";
 import { dashboardApi } from "../api";
 import { DashboardStatCard } from "./dashboard-stat-card";
 import { ColumnChart } from "./column-chart";
+import { MonthlyTestReminder } from "./monthly-test-reminder";
 
 /** Buổi đã kết thúc trong khoảng này mà chưa chốt thì tính là chưa điểm danh. */
 const LOOKBACK_DAYS = 30;
@@ -74,6 +76,15 @@ export function LiveTeacherDashboard() {
   const workspaces = useLiveQuery(["teacher-assignment-workspaces"], (signal) =>
     readAssignmentWorkspaces(signal),
   );
+  // Danh sách tóm tắt (không gọi chi tiết/bài nộp) đủ để biết lớp nào đã có bài kiểm tra trong tháng.
+  const assignmentSummaries = useLiveQuery(
+    ["teacher-assignment-summaries"],
+    (signal) => academicApi.assignments(signal),
+  );
+  const missingTests =
+    classes.data && assignmentSummaries.data
+      ? classesMissingMonthlyTest(classes.data, assignmentSummaries.data, today)
+      : [];
   const units = useLiveQuery(["teacher-dashboard-units"], (signal) =>
     curriculumApi.units(undefined, signal),
   );
@@ -195,6 +206,8 @@ export function LiveTeacherDashboard() {
           icon={<HugeiconsIcon icon={CheckListIcon} />}
         />
       </div>
+
+      <MonthlyTestReminder classes={missingTests} today={today} />
 
       <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Card className="min-w-0">

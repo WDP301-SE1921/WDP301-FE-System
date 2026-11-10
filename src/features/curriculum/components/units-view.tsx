@@ -117,6 +117,8 @@ export function CurriculumUnitsBody({
     parseAsString.withDefault(""),
   );
   const programId = fixedProgramId ?? (selectedProgramId || undefined);
+  /** Thiết kế giáo trình mở Sheet "Chuẩn bị khóa" của khóa (`?program=<id>`). */
+  const [, setProgramSheet] = useQueryState("program", parseAsString);
   const [search, setSearch] = useQueryState(
     "search",
     parseAsString.withDefault(""),
@@ -298,6 +300,16 @@ export function CurriculumUnitsBody({
                         <p className="text-xs text-muted-foreground">
                           Bản {unit.version}
                         </p>
+                        {role === "curriculum_designer" && (
+                          <Button
+                            size="sm"
+                            variant="link"
+                            className="h-auto p-0"
+                            onClick={() => void setProgramSheet(unit.programId)}
+                          >
+                            Chuẩn bị khóa
+                          </Button>
+                        )}
                       </TableCell>
                       <TableCell>
                         {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}

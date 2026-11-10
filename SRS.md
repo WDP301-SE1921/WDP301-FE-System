@@ -2,6 +2,8 @@
 
 WDP301-SE1921 · 3 thg 10, 2026
 
+Cập nhật 2026-11-10: mô hình Khóa học – Giáo trình – Mục tiêu khóa học (xem mục 1.4, 3.1, 3.2, 5.4, 6.2, 7, 8).
+
 ## **1\. Giới thiệu**
 
 ### **1.1 Mục đích tài liệu**
@@ -17,7 +19,7 @@ Single-tenant — không có khái niệm nhiều trung tâm. Không có tài kh
 | Vai trò | Nền tảng | Mô tả ngắn |
 | ----- | ----- | ----- |
 | Quản lý trung tâm | Web | CRUD nhân viên/giáo viên/phụ huynh, dashboard, tạo lớp, assign giáo viên |
-| Thiết kế giáo trình | Web | Soạn nội dung chương trình học theo môn |
+| Thiết kế giáo trình | Web | Soạn giáo trình và mục tiêu khóa học theo môn |
 | Nhân viên | Web | Đăng ký học sinh, thu học phí, đổi lịch/học bù/nghỉ |
 | Giáo viên | Web (xem ghi chú) | Điểm danh, bài tập, chấm bài AI, báo cáo |
 | Phụ huynh | Mobile | Quản lý hồ sơ con, xem lịch/điểm, nộp bài |
@@ -30,7 +32,12 @@ Ghi chú: danh sách vai trò gốc ghi "Giáo viên — Web", trong khi mục n
 * **Enrollment**: một lượt đăng ký học (1 học sinh – 1 môn – 1 lớp – số tháng)  
 * **Debounce**: trì hoãn gọi API tìm kiếm đến khi người dùng ngừng gõ một khoảng ngắn, tránh gọi liên tục theo từng ký tự  
 * **StudentProfile**: hồ sơ học sinh (con), gắn dưới 1 tài khoản phụ huynh  
-* **ClassSession**: một buổi học cụ thể, sinh từ lịch cố định của lớp
+* **ClassSession**: một buổi học cụ thể, được tạo khi Quản lý trung tâm bấm "Tạo lịch học" cho lớp  
+* **Khóa học (Program)**: môn \+ khối, ví dụ Toán 7; lớp thuộc về một khóa học  
+* **Giáo trình (CurriculumUnit)**: các bài học của khóa học, chia theo kỳ (kỳ là một khoảng ngày: từ ngày – đến ngày). Mỗi giáo trình có "bản N" (mỗi lần sửa sau khi đã duyệt là một bản mới) và các trạng thái: bản nháp, chờ duyệt, đã duyệt, lưu trữ. Khi chờ duyệt, người dùng thấy giáo trình đang "chờ giáo viên duyệt nội dung" hay "chờ Quản lý duyệt áp dụng"  
+* **Mục tiêu khóa học (OutcomeSet/LearningOutcome; trước đây gọi là "CLO")**: những điều học sinh cần đạt, viết bằng tên phụ huynh đọc được, kèm mô tả và loại Bắt buộc hoặc Mở rộng; nguồn (sách, chương trình) là tùy chọn  
+* **Ngày nghỉ của trung tâm (CenterClosure)**: khoảng ngày trung tâm không có buổi học (nghỉ lễ, nghỉ Tết...) kèm lý do  
+* **Tạo lịch học**: thao tác của Quản lý trung tâm để tạo các buổi học của lớp từ lịch cố định, có xem trước
 
   ## **2\. Mô tả tổng quan**
 
@@ -40,7 +47,7 @@ Trung tâm hiện quản lý học sinh, lịch học, điểm danh và học ph
 
 ### **2.2 Mô hình vai trò (5 vai trò, tách từ 3 vai trò ban đầu)**
 
-Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huynh. Vai trò Quản lý sau đó được tách thành 3: **Quản lý trung tâm** (giữ quyền CRUD nhân sự, dashboard, tạo lớp), **Thiết kế giáo trình** (mới — tách riêng phần nội dung chương trình học), **Nhân viên** (mới — tách riêng phần vận hành hằng ngày: đăng ký học sinh, thu học phí, đổi lịch/học bù/nghỉ). Giáo viên và Phụ huynh giữ nguyên vai trò, có bổ sung chi tiết nghiệp vụ (xem mục 3).
+Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huynh. Vai trò Quản lý sau đó được tách thành 3: **Quản lý trung tâm** (giữ quyền CRUD nhân sự, dashboard, tạo lớp, tạo lịch học, duyệt áp dụng giáo trình), **Thiết kế giáo trình** (mới — tách riêng phần soạn giáo trình và mục tiêu khóa học; chỉ soạn, không duyệt), **Nhân viên** (mới — tách riêng phần vận hành hằng ngày: đăng ký học sinh, thu học phí, đổi lịch/học bù/nghỉ). Giáo viên và Phụ huynh giữ nguyên vai trò, có bổ sung chi tiết nghiệp vụ (xem mục 3).
 
 ### **2.3 Ràng buộc chung**
 
@@ -56,15 +63,22 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 * Xếp/đổi giáo viên phụ trách lớp, xếp giáo viên dạy thay (giáo viên không tự nhận lớp)  
 * Mời thêm quản lý khác, xem danh sách, phân quyền trong phạm vi trung tâm  
 * CRUD nhân viên, giáo viên, phụ huynh — xem danh sách, tìm kiếm, xem thông tin  
-* Tạo lớp: chọn môn, khối, chương trình, phòng, lịch cố định, giáo viên  
-* Dashboard: tổng doanh thu học phí, số học sinh, số giáo viên, số nhân viên
+* Tạo lớp: chọn khóa học (môn \+ khối), phòng, lịch cố định, giáo viên. Tạo lớp chưa tạo buổi học  
+* Duyệt áp dụng giáo trình và mục tiêu khóa học (cấp duyệt thứ hai, sau khi giáo viên duyệt nội dung)  
+* Tạo lịch học cho lớp: bấm tay, có xem trước, không tự tạo  
+* Hủy buổi học (có dời bài) và hủy nhiều buổi một lần  
+* Quản lý ngày nghỉ của trung tâm (khoảng ngày \+ lý do)  
+* Dashboard: tổng doanh thu học phí, số học sinh, số giáo viên, số nhân viên  
+* Dashboard: thẻ "Lớp sắp hết buổi học" (buổi cuối cách hôm nay dưới 14 ngày) kèm nút Tạo lịch học
 
   ### **3.2 Thiết kế giáo trình (vai trò mới)**
 
-* Soạn nội dung chương trình học theo môn (Toán, Lý, Hóa, Sinh), dựa theo sách giáo khoa  
-* Thiết lập nhịp độ: 1 buổi học 1 bài, 1 tháng 1 bài kiểm tra  
-* Quản lý Bài học (Lesson), gắn đúng thứ tự trong Chương trình (Program)  
-* Không can thiệp việc tạo lớp hay xếp phòng/lịch — thuộc về Quản lý trung tâm
+* Soạn Giáo trình theo kỳ cho từng khóa học (Toán, Lý, Hóa, Sinh), dựa theo sách giáo khoa, và soạn Mục tiêu khóa học (bản nhẹ: tên phụ huynh đọc được, mô tả, Bắt buộc hoặc Mở rộng; nguồn tùy chọn). Gắn mục tiêu cho câu hỏi là tùy chọn; mỗi mục tiêu cần ít nhất 1 bài trước khi được duyệt  
+* Mọi người dùng vai trò Thiết kế giáo trình đều sửa được bản nháp giáo trình và mục tiêu  
+* Gửi duyệt một lần: giáo viên duyệt nội dung, Quản lý duyệt áp dụng (xem 3.4 và 3.1)  
+* Thiết lập nhịp độ: 1 buổi học 1 bài; 1 tháng 1 bài kiểm tra là khuyến nghị — hệ thống chỉ nhắc giáo viên, không chặn  
+* Quản lý Bài học (Lesson), gắn đúng thứ tự trong Giáo trình  
+* Không duyệt, không tạo lớp, không tạo lịch, không xếp phòng — thuộc về Quản lý trung tâm
 
   ### **3.3 Nhân viên (vai trò mới)**
 
@@ -82,7 +96,9 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 * Tạo bài tập/đề kiểm tra, đáp án/tiêu chí chấm  
 * Xem/sửa/duyệt/công bố kết quả AI chấm (xem 3.9)  
 * Yêu cầu tổng hợp kết quả, tải báo cáo Excel/PDF (xem 3.10)  
-* Xác nhận ("set cứng") lịch cố định cho lớp được phân công
+* Xác nhận ("set cứng") lịch cố định cho lớp được phân công  
+* Duyệt nội dung giáo trình và mục tiêu khóa học (cấp duyệt thứ nhất). Giáo viên duyệt được chọn khi gửi duyệt; danh sách ưu tiên giáo viên của khóa, rồi giáo viên cùng môn, rồi các giáo viên đang hoạt động khác  
+* Nhận nhắc "Lớp X: tháng này chưa có bài kiểm tra" (chỉ nhắc, không chặn)
 
   ### **3.5 Phụ huynh**
 
@@ -105,9 +121,9 @@ Xác nhận thanh toán sau khi nhận đủ tiền (không phân biệt tiền 
 
 ### **3.8 Nghỉ học / học bù / đổi lịch (Nhân viên thực hiện)**
 
-* Nghỉ một buổi \+ học bù: tìm buổi thay thế cùng chương trình, cùng bài học, chưa diễn ra, còn chỗ  
+* Nghỉ một buổi \+ học bù: tìm buổi thay thế cùng khóa học, cùng bài học, chưa diễn ra, còn chỗ  
 * Đổi 1 buổi cụ thể, không đổi lịch cố định — bản chất là một dạng học bù  
-* Đổi lịch học cố định: thay đổi lâu dài, chuyển sang lớp khác cùng chương trình  
+* Đổi lịch học cố định: thay đổi lâu dài, chuyển sang lớp khác cùng khóa học  
 * Nghỉ dài hạn: có ngày bắt đầu/kết thúc, các buổi trong khoảng tự động excused  
 * Nghỉ 1 môn / nghỉ hẳn: lưu lịch sử, gửi email xác nhận
 
@@ -182,9 +198,14 @@ Mở rộng theo số lượng học sinh, giáo viên, nhân viên, môn học;
 
     ### **5.4 Lớp và lịch**
 
-13. Mỗi lớp thuộc một chương trình, có một lịch cố định.  
-14. Hai lớp hỗ trợ học bù cho nhau phải cùng chương trình.  
-15. Hệ thống tự tạo buổi học từ lịch cố định, gắn bài học theo thứ tự chương trình.  
+13. Mỗi lớp thuộc một khóa học, có một lịch cố định.  
+14. Hai lớp hỗ trợ học bù cho nhau phải cùng khóa học.  
+15. Buổi học không tự sinh. Quản lý trung tâm bấm "Tạo lịch học" cho lớp: xem trước các buổi rồi mới tạo. Chỉ tạo lịch học được khi giáo trình đã được duyệt áp dụng.  
+    * Gắn bài học theo ngày, theo thứ tự giáo trình: lần tạo lịch đầu của lớp gán bài theo vị trí buổi tính từ đầu kỳ, bỏ qua ngày nghỉ của trung tâm. Lần tạo lịch tiếp theo nối từ bài sau bài của buổi cuối chưa hủy. Hết buổi mà còn bài thì bài đó chưa xếp buổi, và vào buổi đầu của lần tạo lịch sau.  
+    * Ngày nghỉ của trung tâm (khoảng ngày \+ lý do) do Quản lý trung tâm quản lý, mọi nhân sự xem được. Thêm ngày nghỉ không tự hủy buổi đã có: Quản lý hủy các buổi đó bằng hủy nhiều buổi.  
+    * Hủy một buổi có ba cách, theo thứ tự khuyên dùng: (1) "Đổi sang ngày khác" — giữ bài; (2) "Hủy và dời bài sang buổi sau"; (3) "Hủy, bỏ bài".  
+    * Hủy và dời bài sang buổi sau: bài của buổi cuối bị đẩy ra khỏi các buổi đã tạo và vào buổi đầu của lần tạo lịch sau. Hủy, bỏ bài: bài của buổi bị hủy không được xếp lại; riêng khi buổi bị hủy là buổi cuối cùng đã tạo thì bài đó quay lại ở lần tạo lịch sau (vì lịch mới nối từ bài sau bài của buổi cuối chưa hủy).  
+    * Hủy nhiều buổi một lần: chỉ Quản lý trung tâm, tối đa 200 buổi, được cả hoặc không được buổi nào. Phụ huynh của lớp nhận thông báo hủy buổi kèm lý do (không có thông báo riêng khi tạo ngày nghỉ).  
 16. Chỉ Quản lý trung tâm được xếp/đổi giáo viên phụ trách và xếp giáo viên dạy thay.
 
     ### **5.5 Điểm danh**
@@ -192,19 +213,21 @@ Mở rộng theo số lượng học sinh, giáo viên, nhân viên, môn học;
 17. Trạng thái: present, absent, made\_up, excused.  
 18. Tỷ lệ đi học \= (present \+ made\_up) / tổng số buổi phải học.  
 19. Excused trong thời gian tạm nghỉ không tính là buổi phải học.  
+    * Buổi bị hủy không tính vào số buổi phải học.  
 20. Tỷ lệ đi học cập nhật ngay khi điểm danh thay đổi.
 
     ### **5.6 Học bù / đổi buổi**
 
 21. Chỉ Nhân viên được xếp học bù/đổi 1 buổi cụ thể.  
-22. Buổi thay thế phải: cùng chương trình, cùng bài học, chưa diễn ra, còn chỗ.  
+22. Buổi thay thế phải: cùng khóa học, cùng bài học, chưa diễn ra, còn chỗ.  
+    * Không dời bài khi buổi bị đổi bài là buổi gốc hoặc buổi thay thế của một học bù đã đặt.  
 23. Đi học bù → buổi gốc thành made\_up; không đi → giữ absent.  
 24. Đổi 1 buổi cụ thể không thay đổi lịch cố định.
 
     ### **5.7 Đổi lịch cố định**
 
 25. Chỉ Nhân viên thực hiện; là thay đổi lâu dài.  
-26. Lớp mới phải cùng chương trình, lịch khác, còn chỗ.  
+26. Lớp mới phải cùng khóa học, lịch khác, còn chỗ.  
 27. Các buổi tiếp theo dùng lịch mới; lưu lịch sử.
 
     ### **5.8 Nghỉ dài hạn**
@@ -263,9 +286,13 @@ Không còn link/mã kích hoạt trong bất kỳ trường hợp nào — tài
 
 \[embed: node/7201825e-4b84\]
 
-### **6.2 Sinh lịch học từ lớp**
+### **6.2 Tạo lịch học cho lớp**
 
-Quản lý trung tâm tạo lớp → chọn môn → khối → chương trình → lịch cố định → giáo viên → phòng → hệ thống tạo ClassSession → gắn bài học theo thứ tự.
+Quản lý trung tâm tạo khóa học (môn \+ khối) và lớp (chọn lịch cố định, giáo viên, phòng; lớp chưa có buổi học) → Thiết kế giáo trình soạn Giáo trình và Mục tiêu khóa học → gửi duyệt một lần → giáo viên Duyệt nội dung → Quản lý Duyệt áp dụng → Quản lý bấm Tạo lịch học (xem trước rồi tạo) → hệ thống tạo ClassSession và gắn bài học theo thứ tự giáo trình.
+
+Hủy buổi: Quản lý chọn buổi → chọn một trong ba cách ("Đổi sang ngày khác", "Hủy và dời bài sang buổi sau", "Hủy, bỏ bài") → buổi thành đã hủy kèm lý do → phụ huynh của lớp nhận thông báo. Hủy nhiều buổi (tối đa 200) làm cùng cách trong một lần, được cả hoặc không được buổi nào.
+
+Ngày nghỉ của trung tâm: Quản lý thêm khoảng ngày \+ lý do → lần Tạo lịch học sau bỏ qua các ngày đó → buổi đã có trong khoảng ngày không tự hủy, Quản lý hủy bằng hủy nhiều buổi.
 
 ### **6.3 Điểm danh bình thường**
 
@@ -273,7 +300,7 @@ Giáo viên mở buổi → điểm danh → lưu → tính lại tỷ lệ đi 
 
 ### **6.4 Nghỉ một buổi \+ học bù**
 
-Phụ huynh báo nghỉ → Nhân viên đánh dấu absent → tìm buổi khác (cùng chương trình \+ bài học \+ chưa diễn ra \+ còn chỗ) → xếp học bù → gửi email → đi bù? Có → made\_up / Không → absent.
+Phụ huynh báo nghỉ → Nhân viên đánh dấu absent → tìm buổi khác (cùng khóa học \+ bài học \+ chưa diễn ra \+ còn chỗ) → xếp học bù → gửi email → đi bù? Có → made\_up / Không → absent.
 
 ### **6.5 Đổi một buổi cụ thể**
 
@@ -281,7 +308,7 @@ Lịch cố định 2-4-6, bận thứ 2 → Nhân viên tìm lớp dạy cùng 
 
 ### **6.6 Đổi lịch cố định**
 
-Lịch cũ 2-4-6, con bận cố định → Nhân viên tìm lớp khác (cùng chương trình, khác lịch, còn chỗ) → chuyển sang lớp mới → áp dụng lâu dài → ghi lịch sử.
+Lịch cũ 2-4-6, con bận cố định → Nhân viên tìm lớp khác (cùng khóa học, khác lịch, còn chỗ) → chuyển sang lớp mới → áp dụng lâu dài → ghi lịch sử.
 
 ### **6.7 Nghỉ dài hạn**
 
@@ -312,9 +339,13 @@ Không còn thực thể ActivationLink trong mô hình — tài khoản và h�
 | Enrollment | id, studentProfileId, subjectId, classId, months, status | months trong khoảng 1–12 |
 | Class | id, subjectId, gradeLevel, programId, roomId, teacherId, fixedSchedule | tạo bởi Quản lý trung tâm |
 | Payment | id, enrollmentId, confirmedAt, confirmedBy | confirmedBy luôn là Nhân viên |
-| ClassSession | id, classId, lessonId, programId, date, capacity | sinh tự động từ fixedSchedule của Class |
+| ClassSession | id, classId, lessonId, programId, date, capacity | tạo khi Quản lý bấm Tạo lịch học (từ fixedSchedule của Class); buổi có thể bị hủy kèm lý do |
 | AttendanceRecord | id, classSessionId, studentProfileId, status | status ∈ {present, absent, made\_up, excused} |
-| Program | id, subjectId, gradeLevel, lessons (có thứ tự) | nội dung do Thiết kế giáo trình soạn, theo sách giáo khoa |
+| Program (Khóa học) | id, subjectId, gradeLevel, sessionsPerWeek | môn \+ khối; lớp thuộc một khóa học |
+| CurriculumUnit | id, programId, title, fromDate, toDate, version, status (DRAFT, PENDING\_REVIEW, APPROVED, ARCHIVED), lessons (có thứ tự) | Giáo trình theo kỳ (khoảng ngày) do Thiết kế giáo trình soạn, theo sách giáo khoa; duyệt hai cấp |
+| OutcomeSet | id, programId, level, version, status | Bộ Mục tiêu khóa học của một khóa học |
+| LearningOutcome | id, outcomeSetId, code, title, statement, required, nguồn (tùy chọn) | Một mục tiêu khóa học; gắn cho câu hỏi là tùy chọn |
+| CenterClosure | id, fromDate, toDate, reason, createdById | Ngày nghỉ của trung tâm; do Quản lý tạo |
 
 ## **8\. Ma trận phân quyền**
 
@@ -325,7 +356,12 @@ Không còn thực thể ActivationLink trong mô hình — tài khoản và h�
 | CRUD nhân viên/giáo viên/phụ huynh | ✓ | — | — | — | — |
 | Dashboard (doanh thu, số lượng) | ✓ | — | — | — | — |
 | Tạo lớp, assign giáo viên | ✓ | — | — | — | — |
-| Soạn nội dung chương trình (Program/Lesson) | — | ✓ | — | — | — |
+| Soạn Giáo trình và Mục tiêu khóa học (Lesson) | — | ✓ | — | — | — |
+| Duyệt nội dung giáo trình và mục tiêu | — | — | — | ✓ | — |
+| Duyệt áp dụng giáo trình và mục tiêu | ✓ | — | — | — | — |
+| Tạo lịch học cho lớp | ✓ | — | — | — | — |
+| Hủy buổi, hủy nhiều buổi | ✓ | — | — | — | — |
+| Ngày nghỉ của trung tâm (ghi / xem) | ✓ (ghi, xem) | ✓ (xem) | ✓ (xem) | ✓ (xem) | — |
 | Đăng ký học sinh / tra cứu qua email | — | — | ✓ | — | — |
 | Xác nhận thanh toán | — | — | ✓ | — | — |
 | Đổi lịch / học bù / nghỉ | — | — | ✓ | — | — |
@@ -344,5 +380,13 @@ Nhân viên và Quản lý trung tâm không dùng chung quyền truy cập dù 
 * **"Set cứng lịch"**: hiểu là Giáo viên xác nhận/khoá lịch cố định cho lớp được phân công, không phải Giáo viên tự tạo lớp — cần xác nhận lại.  
 * **"Admin"**: dòng "admin: có tất cả, quản lí các nhân viên" được hiểu là mô tả quyền hạn của Quản lý trung tâm, không phải một vai trò thứ 6 riêng biệt.  
 * **Luồng A3 (mới cập nhật)**: đã bỏ bước link/mã — Nhân viên nhập email phụ huynh, hệ thống hiện sẵn danh sách con, Nhân viên chọn trực tiếp. Đã xác nhận: không cần thêm bước xác thực, vì đây là quy trình trực tiếp tại quầy — phụ huynh có mặt khi Nhân viên thao tác. Ô nhập email có gợi ý tự động (debounce, 1–2 ký tự). Nếu phụ huynh chưa có tài khoản (trường hợp A1), Nhân viên hướng dẫn tải app để phụ huynh tự tạo tài khoản \+ hồ sơ con ngay tại chỗ.  
+* **Mô hình Khóa học – Giáo trình – Mục tiêu khóa học** — đã chốt ngày 2026-11-09/10:  
+  * Bài gắn theo ngày; hủy buổi có ba cách (đổi sang ngày khác, hủy và dời bài, hủy bỏ bài) (5.4).  
+  * Mục tiêu khóa học bản nhẹ; gắn cho câu hỏi là tùy chọn; mỗi mục tiêu cần ít nhất 1 bài trước khi duyệt (3.2).  
+  * Duyệt hai cấp, một lần gửi: giáo viên duyệt nội dung, Quản lý duyệt áp dụng (3.1, 3.4).  
+  * Tạo lịch học bấm tay, không tự tạo; dashboard nhắc "Lớp sắp hết buổi học".  
+  * "1 tháng 1 bài kiểm tra" là khuyến nghị, hệ thống chỉ nhắc giáo viên, không chặn (3.2, 3.4).  
+  * Mọi Thiết kế giáo trình sửa được bản nháp giáo trình và mục tiêu.  
+  * Ngày nghỉ của trung tâm do Quản lý quản lý, thêm ngày nghỉ không tự hủy buổi đã có; hủy nhiều buổi chỉ Quản lý, tối đa 200 buổi (5.4).  
     
   

@@ -20,7 +20,9 @@ import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { OutcomeSetsPanel } from "@/features/outcomes/components/outcome-sets-panel";
 import { calendarDateLabel } from "@/lib/calendar-date";
+import { useCurrentRole } from "@/hooks/use-current-role";
 import { registrationApi } from "../api";
+import { ProgramSetupChecklist } from "./program-setup-checklist";
 
 const PROGRAM_TABS = {
   overview: "Tổng quan",
@@ -71,6 +73,10 @@ function ProgramSheetContent({ programId }: { programId: string }) {
     enabled: programTab === "curriculum",
   });
   const data = program.data;
+  const role = useCurrentRole();
+  const isManager = role === "center_manager" || role === "admin";
+  const viewer =
+    isManager ? "MANAGER" : role === "curriculum_designer" ? "DESIGNER" : null;
   return (
     <>
       <SheetHeader className="pr-12">
@@ -110,11 +116,12 @@ function ProgramSheetContent({ programId }: { programId: string }) {
           onRetry={() => void program.refetch()}
         >
           {data && programTab === "overview" && (
-            <p className="text-sm text-muted-foreground">
-              Mỗi kỳ, khóa học có một giáo trình đã duyệt dùng chung cho mọi
-              lớp của khóa. Quản lý chọn bản đã duyệt áp dụng khi tạo lịch học
-              cho các lớp của khóa.
-            </p>
+            <ProgramSetupChecklist
+              programId={programId}
+              program={data}
+              viewer={viewer}
+              onOpenTab={(tab) => void setSheet({ programTab: tab })}
+            />
           )}
           {data && programTab === "classes" && (
             <ul className="space-y-2">
@@ -134,13 +141,15 @@ function ProgramSheetContent({ programId }: { programId: string }) {
                           : "Đóng đăng ký"}
                     </span>
                   </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    render={<Link href={ROUTES.MANAGER.CLASS_DETAIL(classroom.id)} />}
-                  >
-                    Xem lớp
-                  </Button>
+                  {isManager && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      render={<Link href={ROUTES.MANAGER.CLASS_DETAIL(classroom.id)} />}
+                    >
+                      Xem lớp
+                    </Button>
+                  )}
                 </li>
               ))}
               {!data.classes?.length && (
@@ -190,7 +199,7 @@ function ProgramSheetContent({ programId }: { programId: string }) {
           </AsyncBoundary>
         )}
       </div>
-      {data && data.isActive !== false && (
+      {isManager && data && data.isActive !== false && (
         <SheetFooter className="pt-6">
           <Button
             render={

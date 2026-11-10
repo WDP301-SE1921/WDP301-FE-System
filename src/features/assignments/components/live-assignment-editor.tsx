@@ -4,7 +4,7 @@ import { useCurrentTime } from "@/hooks/use-current-time";
 import { useUnsavedChanges } from "@/components/shared/feedback/unsaved-changes-guard";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
@@ -105,6 +105,12 @@ function AssignmentEditor({
   assignment?: AssignmentDetail;
 }) {
   const router = useRouter();
+  const search = useSearchParams();
+  // Từ thẻ nhắc ở dashboard giáo viên: `?classId=<id>&kind=TEST` điền sẵn lớp và loại bài.
+  const presetClassId = classes.some((item) => item.id === search.get("classId"))
+    ? (search.get("classId") ?? "")
+    : "";
+  const presetKind = search.get("kind") === "TEST" ? "TEST" : "HOMEWORK";
   const action = useLiveCommand();
   const user = useCurrentUser();
   const [showImport, setShowImport] = useState(false);
@@ -132,8 +138,8 @@ function AssignmentEditor({
           })),
         }
       : {
-          classId: "",
-          kind: "HOMEWORK",
+          classId: presetClassId,
+          kind: presetKind,
           title: "",
           instructions: "",
           dueAt: "",

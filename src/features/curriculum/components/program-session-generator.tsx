@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseAsArrayOf, parseAsString, useQueryStates } from "nuqs";
@@ -39,7 +39,8 @@ import { registrationApi } from "@/features/registration-flow/api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { ROUTES } from "@/constants/routes";
-import { calendarDateLabel } from "@/lib/calendar-date";
+import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
+import { groupClassesByStart, scheduleStartDate } from "@/features/registration-flow/program-setup";
 import {
   scheduleRangeSchema,
   type ScheduleRangeInput,
@@ -67,13 +68,14 @@ export function ProgramSessionGenerator({
   initialClassId?: string;
 }) {
   const [
-    { programId: queryProgram, classId: legacyClass, classIds, session },
+    { programId: queryProgram, classId: legacyClass, classIds, session, unitId: queryUnit },
     setSelection,
   ] = useQueryStates({
     programId: parseAsString.withDefault(""),
     classId: parseAsString.withDefault(""),
     classIds: parseAsArrayOf(parseAsString),
     session: parseAsString.withDefault(""),
+    unitId: parseAsString.withDefault(""),
   });
   const context = useQuery({
     queryKey: ["curriculum", "generation-context"],
@@ -112,6 +114,7 @@ export function ProgramSessionGenerator({
             programId: String(value ?? ""),
             classId: null,
             classIds: null,
+            unitId: null,
           })
         }
       >
@@ -170,6 +173,7 @@ export function ProgramSessionGenerator({
                 key={`${user.id}:${programId}`}
                 userId={user.id}
                 units={units.data}
+                initialUnitId={queryUnit}
                 sessionsPerWeek={context.data?.programs.find((item) => item.id === programId)?.sessionsPerWeek}
                 classes={(context.data?.classes ?? []).filter(
                   (item) =>
@@ -197,6 +201,7 @@ export function ProgramSessionGenerator({
 function GenerationWorkspace({
   userId,
   units,
+  initialUnitId,
   classes,
   selectedIds,
   onSelection,
@@ -205,6 +210,8 @@ function GenerationWorkspace({
 }: {
   userId: string;
   units: CurriculumUnit[];
+  /** Từ `?unitId=` sau Duyệt áp dụng: chọn sẵn đúng giáo trình và tự xem trước. */
+  initialUnitId?: string;
   classes: RegistrationClass[];
   selectedIds: string[];
   onSelection: (ids: string[]) => void;
@@ -212,12 +219,26 @@ function GenerationWorkspace({
   sessionsPerWeek?: number | null;
 }) {
   const approved = units.filter((unit) => unit.status === "APPROVED");
-  const first = approved[0];
+  const requested = approved.find((unit) => unit.id === initialUnitId);
+  const first = requested ?? approved[0];
+  const selectedAtStart = classes.filter((item) => selectedIds.includes(item.id));
+  // Các lớp có ngày bắt đầu khác nhau thì chỉ chọn sẵn nhóm bắt đầu sớm nhất, nhóm còn lại tạo sau.
+  const startGroups = requested
+    ? groupClassesByStart(selectedAtStart, first.fromDate, todayInVietnam())
+    : [];
+  const [deferred] = useState(() =>
+    startGroups.slice(1).flatMap((group) => group.classes.map((item) => item.name)),
+  );
   const form = useForm<ScheduleRangeInput>({
     resolver: zodResolver(scheduleRangeSchema),
     defaultValues: {
       curriculumUnitId: "",
-      fromDate: first?.fromDate.slice(0, 10) ?? "",
+      fromDate: first
+        ? requested
+          ? (startGroups[0]?.startDate ??
+            scheduleStartDate(first.fromDate, todayInVietnam()))
+          : first.fromDate.slice(0, 10)
+        : "",
       toDate: first?.toDate.slice(0, 10) ?? "",
     },
   });
@@ -279,6 +300,23 @@ function GenerationWorkspace({
       setBusy(null);
     }
   }
+  // Mở bằng `?unitId=` (sau Duyệt áp dụng): tự xem trước một lần, người dùng chỉ còn bấm Tạo lịch học.
+  const autoPreviewed = useRef(false);
+  const narrowed = useRef(false);
+  useEffect(() => {
+    if (narrowed.current || !requested || startGroups.length < 2) return;
+    narrowed.current = true;
+    onSelection(startGroups[0].classes.map((item) => item.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (autoPreviewed.current || !initialUnitId || !selectionValid) return;
+    if (startGroups.length > 1) return; // đang thu hẹp về nhóm lớp bắt đầu sớm nhất
+    if (!selected.length || unitId !== initialUnitId) return;
+    autoPreviewed.current = true;
+    void previewAll(input);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUnitId, selectionValid, selected.length, unitId]);
   async function generateAll() {
     if (lock.current) return;
     lock.current = true;
@@ -549,6 +587,12 @@ function GenerationWorkspace({
             {selected.filter((item) => ready(results[item.id])).length} lớp
           </Button>
         </div>
+        {deferred.length > 0 && (
+          <p role="status" className="rounded-xl bg-primary/10 p-4 text-sm">
+            Còn {deferred.length} lớp ({deferred.join(", ")}) bắt đầu từ ngày khác.
+            Tạo xong nhóm này rồi tạo tiếp cho các lớp đó.
+          </p>
+        )}
         {notice && (
           <p role="status" className="text-sm">
             {notice}
