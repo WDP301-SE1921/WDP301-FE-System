@@ -1,7 +1,7 @@
 "use client";
 import { SubmissionFile } from "@/features/grading/components/submission-file";
 import Link from "next/link";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { PageContainer } from "@/components/shared/layout/page-container";
@@ -222,21 +222,20 @@ function AssignmentWorkspace({
           </CardContent>
         </Card>
         <div className="min-w-0 space-y-6">
-          {assignment.status === "DRAFT" && (
+          {assignment.status === "DRAFT" && eligible.length > 0 && (
+            <PublishRecipients
+              key={assignment.id}
+              assignment={assignment}
+              enrollments={eligible}
+            />
+          )}
+          {assignment.status === "DRAFT" && eligible.length === 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Giao bài cho học sinh</CardTitle>
               </CardHeader>
               <CardContent>
-                {eligible.length ? (
-                  <PublishRecipients
-                    key={assignment.id}
-                    assignment={assignment}
-                    enrollments={eligible}
-                  />
-                ) : (
-                  <p>Chưa có học sinh đang trong kỳ học để giao bài.</p>
-                )}
+                <p>Chưa có học sinh đang trong kỳ học để giao bài.</p>
               </CardContent>
             </Card>
           )}
@@ -334,8 +333,26 @@ function PublishRecipients({
     resolver: zodResolver(publishSchema),
     defaultValues: { enrollmentIds: [], confirmed: false },
   });
+  const selectedIds = useWatch({
+    control: form.control,
+    name: "enrollmentIds",
+  });
+  const confirmed = useWatch({ control: form.control, name: "confirmed" });
+  const selectedCount = selectedIds.length;
+  const allSelected = enrollments.every((item) =>
+    selectedIds.includes(item.id),
+  );
+  const changeRecipients = (ids: string[]) => {
+    form.setValue("enrollmentIds", ids, {
+      shouldDirty: true,
+      shouldValidate: form.formState.isSubmitted,
+    });
+    // Confirmation applies to the reviewed recipients, not a later selection.
+    form.setValue("confirmed", false, { shouldDirty: true });
+  };
   return (
     <form
+      aria-label="Giao bài cho học sinh"
       className="space-y-4"
       onSubmit={form.handleSubmit((value) =>
         action.mutate(() =>
@@ -343,60 +360,166 @@ function PublishRecipients({
         ),
       )}
     >
-      <fieldset className="space-y-3" disabled={action.isPending}>
-        {enrollments.map((enrollment) => (
-          <div key={enrollment.id} className="flex items-center gap-3">
-            <Controller
-              name="enrollmentIds"
-              control={form.control}
-              render={({ field }) => (
-                <Checkbox
-                  id={`recipient-${enrollment.id}`}
-                  checked={field.value.includes(enrollment.id)}
-                  onCheckedChange={(checked) =>
-                    field.onChange(
-                      checked
-                        ? [...field.value, enrollment.id]
-                        : field.value.filter((id) => id !== enrollment.id),
-                    )
-                  }
-                />
-              )}
-            />
-            <Label htmlFor={`recipient-${enrollment.id}`}>
-              {enrollment.studentProfile?.fullName}
-            </Label>
-          </div>
-        ))}
-        {form.formState.errors.enrollmentIds && (
-          <p role="alert" className="text-sm text-destructive">
-            {form.formState.errors.enrollmentIds.message}
-          </p>
-        )}
-        <div className="flex items-center gap-3">
-          <Controller
-            name="confirmed"
-            control={form.control}
-            render={({ field }) => (
-              <Checkbox
-                id="publish-recipients-confirm"
-                checked={field.value}
-                onCheckedChange={field.onChange}
+      <fieldset className="min-w-0 space-y-4" disabled={action.isPending}>
+        <legend className="sr-only">
+          Chọn người nhận và xác nhận giao bài
+        </legend>
+        <Card>
+          <CardHeader>
+            <CardTitle id="publish-students-title">
+              Chọn học sinh nhận bài
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p
+                id="publish-students-count"
+                role="status"
+                className="text-sm text-muted-foreground"
+              >
+                Đã chọn {selectedCount}/{enrollments.length} học sinh
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={action.isPending}
+                onClick={() =>
+                  changeRecipients(
+                    allSelected ? [] : enrollments.map((item) => item.id),
+                  )
+                }
+              >
+                {allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+              </Button>
+            </div>
+            <fieldset
+              aria-labelledby="publish-students-title"
+              aria-describedby="publish-students-count"
+              className="max-h-80 min-w-0 space-y-2 overflow-y-auto overscroll-contain"
+            >
+              <Controller
+                name="enrollmentIds"
+                control={form.control}
+                render={({ field }) => (
+                  <>
+                    {enrollments.map((enrollment) => (
+                      <div
+                        key={enrollment.id}
+                        className="flex items-center gap-3 rounded-xl border border-border px-3"
+                      >
+                        <Checkbox
+                          id={`recipient-${enrollment.id}`}
+                          checked={field.value.includes(enrollment.id)}
+                          disabled={action.isPending}
+                          aria-invalid={!!form.formState.errors.enrollmentIds}
+                          aria-describedby={
+                            form.formState.errors.enrollmentIds
+                              ? "publish-recipients-error"
+                              : undefined
+                          }
+                          onCheckedChange={(checked) =>
+                            changeRecipients(
+                              checked
+                                ? [...field.value, enrollment.id]
+                                : field.value.filter(
+                                    (id) => id !== enrollment.id,
+                                  ),
+                            )
+                          }
+                        />
+                        <Label
+                          className="min-h-11 flex-1 cursor-pointer py-3 leading-normal"
+                          htmlFor={`recipient-${enrollment.id}`}
+                        >
+                          {enrollment.studentProfile?.fullName}
+                        </Label>
+                      </div>
+                    ))}
+                  </>
+                )}
               />
+            </fieldset>
+            {form.formState.errors.enrollmentIds && (
+              <p
+                id="publish-recipients-error"
+                role="alert"
+                className="text-sm text-destructive"
+              >
+                {form.formState.errors.enrollmentIds.message}
+              </p>
             )}
-          />
-          <Label htmlFor="publish-recipients-confirm">
-            Tôi đã kiểm tra đề bài và các học sinh được giao.
-          </Label>
-        </div>
-        {form.formState.errors.confirmed && (
-          <p role="alert" className="text-sm text-destructive">
-            {form.formState.errors.confirmed.message}
-          </p>
-        )}
-        <Button type="submit">
-          {action.isPending ? "Đang giao…" : "Giao bài"}
-        </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle id="publish-confirm-title">Xác nhận giao bài</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <section
+              aria-labelledby="publish-confirm-title"
+              className="space-y-4"
+            >
+              <p className="text-sm text-muted-foreground">
+                {selectedCount > 0 ? (
+                  <>
+                    Bài tập sẽ được giao cho{" "}
+                    <strong className="text-foreground">
+                      {selectedCount} học sinh
+                    </strong>{" "}
+                    đã chọn ở trên.
+                  </>
+                ) : (
+                  "Chọn ít nhất một học sinh ở danh sách phía trên để tiếp tục."
+                )}
+              </p>
+              <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-3">
+                <Controller
+                  name="confirmed"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="publish-recipients-confirm"
+                      className="mt-0.5"
+                      checked={field.value}
+                      disabled={action.isPending || selectedCount === 0}
+                      aria-invalid={!!form.formState.errors.confirmed}
+                      aria-describedby={
+                        form.formState.errors.confirmed
+                          ? "publish-confirm-error"
+                          : undefined
+                      }
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <Label
+                  className="cursor-pointer leading-normal"
+                  htmlFor="publish-recipients-confirm"
+                >
+                  Tôi đã kiểm tra đề bài và danh sách học sinh nhận bài.
+                </Label>
+              </div>
+              {form.formState.errors.confirmed && (
+                <p
+                  id="publish-confirm-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {form.formState.errors.confirmed.message}
+                </p>
+              )}
+              <Button
+                className="w-full"
+                type="submit"
+                isLoading={action.isPending}
+                disabled={selectedCount === 0 || !confirmed}
+              >
+                {action.isPending ? "Đang giao…" : "Giao bài"}
+              </Button>
+            </section>
+          </CardContent>
+        </Card>
       </fieldset>
       <ApiFeedback error={action.error} />
     </form>
