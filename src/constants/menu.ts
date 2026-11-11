@@ -39,16 +39,15 @@ export interface MenuGroup {
 
 /**
  * Menu chung của khu back-office `/manager/*`; mỗi role thấy phần giao với `ROLE_AREAS`.
- * Quản lý trung tâm thấy 8 mục; các mục Đăng ký học và Lịch sử thanh toán chỉ vai trò
- * `admin` vào được (BE không có admin) nên giữ nguyên. Nghỉ/học bù nằm trong panel "Xử lý"
- * của Nhân viên (`/staff/students`).
+ * Thứ tự theo mức dùng: Tổng quan → việc hằng ngày → liên lạc → đào tạo → học phí → quản trị.
+ * Các mục Đăng ký học và Lịch sử thanh toán chỉ vai trò `admin` vào được (BE không có admin)
+ * nên giữ nguyên. Nghỉ/học bù nằm trong panel "Xử lý" của Nhân viên (`/staff/students`).
  */
 export const MENU_BACK_OFFICE: MenuGroup[] = [
   {
-    groupTitle: "TỔNG QUAN",
     items: [
       {
-        title: "Dashboard",
+        title: "Tổng quan",
         href: ROUTES.MANAGER.DASHBOARD,
         iconName: "DashboardSquare01Icon",
         area: AREA.DASHBOARD,
@@ -63,37 +62,15 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     ],
   },
   {
-    groupTitle: "HỌC SINH",
+    groupTitle: "HẰNG NGÀY",
     items: [
       {
-        // Gồm tab Học sinh và tab Phụ huynh (`?tab=parents`).
-        title: "Học sinh & phụ huynh",
-        href: ROUTES.MANAGER.STUDENTS,
-        iconName: "StudentsIcon",
-        area: AREA.STUDENTS,
+        // Đổi giờ, hủy buổi và xếp dạy thay nằm trong Sheet buổi học.
+        title: "Lịch học",
+        href: ROUTES.MANAGER.SCHEDULE,
+        iconName: "Calendar03Icon",
+        area: AREA.SCHEDULE,
       },
-      {
-        title: "Đăng ký học",
-        href: ROUTES.STAFF.ENROLLMENT_NEW,
-        iconName: "UserAdd01Icon",
-        area: AREA.ENROLLMENTS,
-      },
-    ],
-  },
-  {
-    groupTitle: "THANH TOÁN",
-    items: [
-      {
-        title: "Lịch sử thanh toán",
-        href: ROUTES.STAFF.PAYMENTS,
-        iconName: "Invoice01Icon",
-        area: AREA.PAYMENTS,
-      },
-    ],
-  },
-  {
-    groupTitle: "LỚP HỌC & LỊCH",
-    items: [
       {
         // Gồm tab Phòng học (`?tab=rooms`) cho vai trò có quyền phòng.
         title: "Lớp học",
@@ -102,11 +79,30 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
         area: AREA.CLASSES,
       },
       {
-        // Đổi giờ, hủy buổi và xếp dạy thay nằm trong Sheet buổi học.
-        title: "Lịch học",
-        href: ROUTES.MANAGER.SCHEDULE,
-        iconName: "Calendar03Icon",
-        area: AREA.SCHEDULE,
+        // Gồm tab Học sinh và tab Phụ huynh (`?tab=parents`).
+        title: "Học sinh & phụ huynh",
+        href: ROUTES.MANAGER.STUDENTS,
+        iconName: "StudentsIcon",
+        area: AREA.STUDENTS,
+      },
+    ],
+  },
+  {
+    groupTitle: "LIÊN LẠC",
+    items: [
+      {
+        title: "Tin nhắn",
+        href: ROUTES.MANAGER.CHAT,
+        iconName: "BubbleChatIcon",
+        area: AREA.CHAT,
+        badgeKey: MENU_BADGE_KEYS.CHAT_UNREAD,
+      },
+      {
+        title: "Thông báo",
+        href: ROUTES.MANAGER.NOTIFICATIONS,
+        iconName: "Megaphone01Icon",
+        area: AREA.NOTIFICATIONS,
+        badgeKey: MENU_BADGE_KEYS.FAILED_EMAILS,
       },
     ],
   },
@@ -123,27 +119,30 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
     ],
   },
   {
-    groupTitle: "TRUNG TÂM",
+    groupTitle: "HỌC PHÍ",
     items: [
       {
-        title: "Trò chuyện",
-        href: ROUTES.MANAGER.CHAT,
-        iconName: "BubbleChatIcon",
-        area: AREA.CHAT,
-        badgeKey: MENU_BADGE_KEYS.CHAT_UNREAD,
+        title: "Đăng ký học",
+        href: ROUTES.STAFF.ENROLLMENT_NEW,
+        iconName: "UserAdd01Icon",
+        area: AREA.ENROLLMENTS,
       },
+      {
+        title: "Lịch sử thanh toán",
+        href: ROUTES.STAFF.PAYMENTS,
+        iconName: "Invoice01Icon",
+        area: AREA.PAYMENTS,
+      },
+    ],
+  },
+  {
+    groupTitle: "QUẢN TRỊ",
+    items: [
       {
         title: "Nhân sự",
         href: ROUTES.MANAGER.PEOPLE,
         iconName: "UserSettings01Icon",
         area: AREA.STAFF_ACCOUNTS,
-      },
-      {
-        title: "Thông báo",
-        href: ROUTES.MANAGER.NOTIFICATIONS,
-        iconName: "Megaphone01Icon",
-        area: AREA.NOTIFICATIONS,
-        badgeKey: MENU_BADGE_KEYS.FAILED_EMAILS,
       },
       {
         title: "Lịch sử thay đổi",
@@ -155,12 +154,12 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
   },
 ];
 
+/** Menu Nhân viên: việc quầy hằng ngày lên đầu, rồi lịch/lớp, cuối là liên lạc. */
 export const MENU_STAFF: MenuGroup[] = [
   {
-    groupTitle: "TỔNG QUAN",
     items: [
       {
-        title: "Dashboard",
+        title: "Tổng quan",
         href: ROUTES.STAFF.DASHBOARD,
         iconName: "DashboardSquare01Icon",
         area: AREA.DASHBOARD,
@@ -168,7 +167,7 @@ export const MENU_STAFF: MenuGroup[] = [
     ],
   },
   {
-    groupTitle: "HỌC SINH",
+    groupTitle: "HẰNG NGÀY",
     items: [
       {
         // Gồm cả tab Phụ huynh và panel Xử lý nghỉ học, học bù, đổi lớp, nghỉ hẳn.
@@ -177,28 +176,6 @@ export const MENU_STAFF: MenuGroup[] = [
         iconName: "StudentsIcon",
         area: AREA.STUDENTS,
       },
-    ],
-  },
-  {
-    groupTitle: "LỚP HỌC & LỊCH",
-    items: [
-      {
-        title: "Lớp học",
-        href: ROUTES.STAFF.CLASSES,
-        iconName: "SchoolIcon",
-        area: AREA.CLASSES,
-      },
-      {
-        title: "Lịch học",
-        href: ROUTES.STAFF.SCHEDULE,
-        iconName: "Calendar03Icon",
-        area: AREA.SCHEDULE,
-      },
-    ],
-  },
-  {
-    groupTitle: "ĐĂNG KÝ & HỌC PHÍ",
-    items: [
       {
         title: "Đăng ký học",
         href: ROUTES.STAFF.ENROLLMENT_NEW,
@@ -212,13 +189,25 @@ export const MENU_STAFF: MenuGroup[] = [
         area: AREA.PAYMENTS,
         badgeKey: MENU_BADGE_KEYS.PENDING_REGISTRATIONS,
       },
+      {
+        title: "Lịch học",
+        href: ROUTES.STAFF.SCHEDULE,
+        iconName: "Calendar03Icon",
+        area: AREA.SCHEDULE,
+      },
+      {
+        title: "Lớp học",
+        href: ROUTES.STAFF.CLASSES,
+        iconName: "SchoolIcon",
+        area: AREA.CLASSES,
+      },
     ],
   },
   {
     groupTitle: "LIÊN LẠC",
     items: [
       {
-        title: "Trò chuyện",
+        title: "Tin nhắn",
         href: ROUTES.STAFF.CHAT,
         iconName: "BubbleChatIcon",
         area: AREA.CHAT,
@@ -228,12 +217,12 @@ export const MENU_STAFF: MenuGroup[] = [
   },
 ];
 
+/** Menu Giáo viên: việc hằng ngày (dạy, chấm, nhắn tin) trước, lớp và tài liệu sau. */
 export const MENU_TEACHER: MenuGroup[] = [
   {
-    groupTitle: "TỔNG QUAN",
     items: [
       {
-        title: "Dashboard",
+        title: "Tổng quan",
         href: ROUTES.TEACHER.DASHBOARD,
         iconName: "DashboardSquare01Icon",
         area: AREA.TEACHER_PORTAL,
@@ -241,7 +230,7 @@ export const MENU_TEACHER: MenuGroup[] = [
     ],
   },
   {
-    groupTitle: "GIẢNG DẠY",
+    groupTitle: "HẰNG NGÀY",
     items: [
       {
         title: "Lịch dạy & điểm danh",
@@ -251,6 +240,25 @@ export const MENU_TEACHER: MenuGroup[] = [
         badgeKey: MENU_BADGE_KEYS.UNMARKED_SESSIONS_TODAY,
       },
       {
+        title: "Bài tập & chấm bài",
+        href: ROUTES.TEACHER.ASSIGNMENTS,
+        iconName: "AssignmentsIcon",
+        area: AREA.TEACHER_PORTAL,
+        badgeKey: MENU_BADGE_KEYS.UNGRADED_SUBMISSIONS,
+      },
+      {
+        title: "Tin nhắn",
+        href: ROUTES.TEACHER.CHAT,
+        iconName: "BubbleChatIcon",
+        area: AREA.CHAT,
+        badgeKey: MENU_BADGE_KEYS.CHAT_UNREAD,
+      },
+    ],
+  },
+  {
+    groupTitle: "LỚP & TÀI LIỆU",
+    items: [
+      {
         title: "Lớp của tôi",
         href: ROUTES.TEACHER.CLASSES,
         iconName: "SchoolIcon",
@@ -259,43 +267,14 @@ export const MENU_TEACHER: MenuGroup[] = [
       {
         title: "Giáo trình",
         href: ROUTES.TEACHER.CURRICULUM,
-        iconName: "AssignmentsIcon",
+        iconName: "LibraryIcon",
         area: AREA.TEACHER_PORTAL,
       },
-    ],
-  },
-  {
-    groupTitle: "BÀI TẬP",
-    items: [
       {
-        title: "Bài tập & chấm bài",
-        href: ROUTES.TEACHER.ASSIGNMENTS,
-        iconName: "AssignmentsIcon",
-        area: AREA.TEACHER_PORTAL,
-        badgeKey: MENU_BADGE_KEYS.UNGRADED_SUBMISSIONS,
-      },
-    ],
-  },
-  {
-    groupTitle: "BÁO CÁO",
-    items: [
-      {
-        title: "Báo cáo",
+        title: "Báo cáo học tập",
         href: ROUTES.TEACHER.REPORTS,
         iconName: "Analytics01Icon",
         area: AREA.TEACHER_PORTAL,
-      },
-    ],
-  },
-  {
-    groupTitle: "LIÊN LẠC",
-    items: [
-      {
-        title: "Trò chuyện",
-        href: ROUTES.TEACHER.CHAT,
-        iconName: "BubbleChatIcon",
-        area: AREA.CHAT,
-        badgeKey: MENU_BADGE_KEYS.CHAT_UNREAD,
       },
     ],
   },
