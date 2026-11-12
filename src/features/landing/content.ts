@@ -10,6 +10,15 @@ export const LANDING_NAV = [
   { label: "Liên hệ", href: "#contact" },
 ] as const
 
+/**
+ * Trang pháp lý tĩnh trong `public/`, khai với App Store và Google Play cho app mobile.
+ * Phải có liên kết ở chân trang để người xét duyệt của cửa hàng tìm thấy.
+ */
+export const LANDING_LEGAL_LINKS = [
+  { label: "Chính sách quyền riêng tư", href: "/privacy.html" },
+  { label: "Xoá tài khoản", href: "/delete-account.html" },
+] as const
+
 export const LANDING_CONTENT = {
   BRAND_NAME: "EduGrade",
   BRAND_TAGLINE: "Hệ thống quản lý trung tâm",
