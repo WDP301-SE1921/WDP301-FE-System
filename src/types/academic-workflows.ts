@@ -136,6 +136,8 @@ export interface AssignmentDetail extends AssignmentSummary {
   /** Bộ CLO đã duyệt mà bài đo; `null` khi bài không gắn CLO. */
   outcomeSetId?: string | null;
   learningTargets?: LearningTarget[];
+  /** Lúc giáo viên công bố đáp án; `null` khi chưa công bố (BE trả cùng chi tiết bài). */
+  answersPublishedAt?: string | null;
 }
 export interface AssignmentImportPreview {
   fileName: string;

@@ -166,6 +166,7 @@ export function notificationHref(
 
 const timeFormat = new Intl.DateTimeFormat("vi-VN", {
   hour: "2-digit",
+  hourCycle: "h23",
   minute: "2-digit",
   timeZone: "Asia/Ho_Chi_Minh",
 });

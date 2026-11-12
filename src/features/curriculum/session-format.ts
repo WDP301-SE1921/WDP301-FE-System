@@ -6,7 +6,7 @@ export function sessionTime(value: string) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false,
+    hourCycle: "h23",
   }).format(new Date(value));
 }
 
@@ -21,7 +21,7 @@ const sessionClockFormat = new Intl.DateTimeFormat("vi-VN", {
   timeZone: "Asia/Ho_Chi_Minh",
   hour: "2-digit",
   minute: "2-digit",
-  hour12: false,
+  hourCycle: "h23",
 });
 
 /** "Thứ Hai, 19/10/2026 · 18:30–20:00" theo giờ Việt Nam. */

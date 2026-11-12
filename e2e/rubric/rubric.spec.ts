@@ -195,7 +195,7 @@ test("teacher adds rubric criteria and uploads a private-by-default file", async
       req.method() === "PATCH" &&
       req.url().includes("academic/assignments/draft"),
   );
-  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu đề, tiếp: giao bài", exact: true }).click();
   const payload = (await request).postDataJSON();
   expect(payload.questions[0].criteria[0]).toMatchObject({
     title: "Phương pháp",

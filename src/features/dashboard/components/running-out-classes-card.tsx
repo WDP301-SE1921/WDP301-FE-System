@@ -46,9 +46,11 @@ export function RunningOutClassesCard({
   return (
     <Card className="min-w-0">
       <CardHeader>
-        <CardTitle>Lớp sắp hết buổi học</CardTitle>
+        <CardTitle>Lớp cần tạo lịch học</CardTitle>
         <CardDescription>
-          Buổi học cuối cách hôm nay dưới 14 ngày và đã có giáo trình cho kỳ sau.
+          Lớp chưa có buổi học nào, hoặc buổi cuối cách hôm nay dưới 14 ngày, và
+          đã có giáo trình được duyệt. Phụ huynh chỉ thấy buổi học trên ứng dụng
+          sau khi lịch được tạo.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -67,7 +69,7 @@ export function RunningOutClassesCard({
             </p>
           ) : rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Chưa có lớp nào sắp hết buổi học.
+              Không có lớp nào cần tạo lịch học.
             </p>
           ) : (
             <ul className="space-y-2">
@@ -79,10 +81,13 @@ export function RunningOutClassesCard({
                   <span className="min-w-0">
                     <span className="font-medium">{row.name}</span>
                     <span className="block text-sm text-muted-foreground">
-                      {row.daysLeft === 0
-                        ? "Đã hết buổi học"
-                        : `Còn ${row.daysLeft} ngày`}{" "}
-                      · buổi cuối {calendarDateLabel(row.scheduledUntil)}
+                      {row.scheduledUntil === null
+                        ? "Chưa có buổi học nào"
+                        : `${
+                            row.daysLeft === 0
+                              ? "Đã hết buổi học"
+                              : `Còn ${row.daysLeft} ngày`
+                          } · buổi cuối ${calendarDateLabel(row.scheduledUntil)}`}
                     </span>
                   </span>
                   <Button

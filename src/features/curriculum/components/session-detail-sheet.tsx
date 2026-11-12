@@ -2,7 +2,7 @@
 import { actsAsManager } from "@/constants/roles";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import {
@@ -18,8 +18,8 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { SheetCloseButton } from "@/components/shared/actions/sheet-close-button";
+import { DateTimeInput } from "@/components/shared/pickers/date-time-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -445,19 +445,39 @@ function SessionActionForm({
       {action === "reschedule" && (
         <>
           <Label htmlFor="move-start">Bắt đầu (giờ Việt Nam)</Label>
-          <Input
-            id="move-start"
-            type="datetime-local"
-            disabled={busy}
-            {...form.register("startsAt", { onChange: () => preview.reset() })}
+          <Controller
+            control={form.control}
+            name="startsAt"
+            render={({ field, fieldState }) => (
+              <DateTimeInput
+                id="move-start"
+                value={field.value ?? ""}
+                disabled={busy}
+                invalid={fieldState.invalid}
+                onChange={(value) => {
+                  field.onChange(value);
+                  preview.reset();
+                }}
+              />
+            )}
           />
           <FieldError message={form.formState.errors.startsAt?.message} />
           <Label htmlFor="move-end">Kết thúc (giờ Việt Nam)</Label>
-          <Input
-            id="move-end"
-            type="datetime-local"
-            disabled={busy}
-            {...form.register("endsAt", { onChange: () => preview.reset() })}
+          <Controller
+            control={form.control}
+            name="endsAt"
+            render={({ field, fieldState }) => (
+              <DateTimeInput
+                id="move-end"
+                value={field.value ?? ""}
+                disabled={busy}
+                invalid={fieldState.invalid}
+                onChange={(value) => {
+                  field.onChange(value);
+                  preview.reset();
+                }}
+              />
+            )}
           />
           <FieldError message={form.formState.errors.endsAt?.message} />
           <p className="text-sm text-muted-foreground">

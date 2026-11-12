@@ -39,7 +39,11 @@ import {
   STATUS_TEXT,
 } from "@/features/academic/components/live-fields";
 import { readAssignmentWorkspaces } from "@/features/assignments/workspace-api";
-import { latestSubmissions } from "@/features/assignments/submission-selectors";
+import {
+  latestSubmissions,
+  submissionSummary,
+} from "@/features/assignments/submission-selectors";
+import { assignmentFollowUps } from "@/features/assignments/assignment-steps";
 import { classesMissingMonthlyTest } from "@/features/assignments/monthly-test";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { useCurrentUser } from "@/hooks/use-current-role";
@@ -54,6 +58,7 @@ const LOOKBACK_DAYS = 30;
 const ATTENDANCE_WEEKS = 8;
 const clock = new Intl.DateTimeFormat("vi-VN", {
   hour: "2-digit",
+  hourCycle: "h23",
   minute: "2-digit",
   timeZone: "Asia/Ho_Chi_Minh",
 });
@@ -141,6 +146,15 @@ export function LiveTeacherDashboard() {
       )
       .map((submission) => ({ assignment, submission })),
   );
+  // Bài cần làm tiếp theo từng bước (Luồng 4): nháp chưa giao, hết hạn chưa đóng, chưa gửi điểm/đáp án.
+  const followUps = assignmentFollowUps(workspaces.data ?? [], (row) => ({
+    status: row.assignment.status,
+    dueAt: row.assignment.dueAt,
+    answersPublishedAt: row.assignment.answersPublishedAt,
+    questionCount: row.assignment.questions.length,
+    summary: submissionSummary(row.assignment, row.submissions),
+    now,
+  }));
   const toReview = (units.data ?? []).filter(
     (unit) =>
       unit.status === "PENDING_REVIEW" &&
@@ -421,6 +435,38 @@ export function LiveTeacherDashboard() {
                       </Link>
                     </li>
                   ))}
+              </ul>
+            </AsyncBoundary>
+          </CardContent>
+        </Card>
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle>Bài tập cần làm tiếp</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AsyncBoundary
+              isLoading={workspaces.isPending}
+              isError={workspaces.isError}
+              error={workspaces.error}
+              onRetry={() => void workspaces.refetch()}
+              data={followUps}
+              emptyProps={{ title: "Không có bài tập chờ bạn làm tiếp" }}
+            >
+              <ul className="divide-y divide-border">
+                {followUps.slice(0, 5).map(({ item, step, position }) => (
+                  <li key={item.assignment.id}>
+                    <Link
+                      href={`${ROUTES.TEACHER.ASSIGNMENT_SUBMISSIONS(item.assignment.id)}?step=${step.key}`}
+                      className="block py-2.5 text-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="block font-medium">{item.assignment.title}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {item.className} · Bước {position}/5: {step.title}
+                        {step.summary ? ` · ${step.summary}` : ""}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </AsyncBoundary>
           </CardContent>

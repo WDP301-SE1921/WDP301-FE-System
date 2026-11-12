@@ -51,6 +51,7 @@ export function displayMoment(value: string) {
   return new Intl.DateTimeFormat("vi-VN", {
     dateStyle: "short",
     timeStyle: "short",
+    hourCycle: "h23",
     timeZone: "Asia/Ho_Chi_Minh",
   }).format(new Date(value));
 }
@@ -62,6 +63,8 @@ export const STATUS_TEXT: Record<string, string> = {
   CLOSED: "Đã đóng",
   APPROVED: "Đã duyệt",
   PENDING: "Chờ duyệt",
+  PENDING_REVIEW: "Chờ duyệt",
+  ARCHIVED: "Đã lưu trữ",
   REJECTED: "Từ chối",
   CANCELLED: "Đã hủy",
   SCHEDULED: "Đã lên lịch",

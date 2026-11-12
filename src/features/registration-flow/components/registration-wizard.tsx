@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -33,6 +34,7 @@ import {
   nextStudyDate,
   scheduleText,
   todayInVietnam,
+  unscheduledTermNotice,
 } from "../calendar";
 import { registrationSchema, type RegistrationInput } from "../schemas";
 import {
@@ -194,6 +196,9 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
   // Lớp vừa chọn nhưng không đăng ký được (vd. con đã học lớp này trong kỳ): không đưa vào tóm tắt / học phí.
   const summaryClass =
     selectedClass?.isEligible === false ? undefined : selectedClass;
+  const scheduleNotice = summaryClass
+    ? unscheduledTermNotice(summaryClass.scheduledUntil, values.startDate)
+    : null;
   const gradeClasses =
     classes.data?.filter((item) => item.program.grade === child?.grade) ?? [];
   const order = useQuery({
@@ -822,6 +827,11 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
                   />
                 </div>
               </div>
+              {scheduleNotice && (
+                <Alert variant="warning" role="status">
+                  {scheduleNotice}
+                </Alert>
+              )}
               <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">
                 Bản nháp chưa giữ chỗ. Sĩ số và trùng lịch được kiểm tra khi lập
                 nháp và xác nhận thu tiền.
@@ -861,8 +871,9 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
             <div className="rounded-2xl border border-border bg-card p-5">
               <h2 className="text-xl font-semibold">Đăng ký học thành công</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Hồ sơ con đã được ghi danh. Phụ huynh có thể xem lớp và lịch học
-                trên ứng dụng.
+                Hồ sơ con đã được ghi danh. Phụ huynh xem được biên lai và lớp
+                của con trên ứng dụng ngay bây giờ; lịch học hiện khi lớp đã có
+                buổi học.
               </p>
             </div>
             {receipt.isPending && <p>Đang tải biên lai…</p>}

@@ -69,6 +69,15 @@ Phụ huynh có tài khoản và hồ sơ con trên mobile; không tạo tài kh
 - CSV giáo trình: xuất ra có cột `csvVersion` (1); để trống khi sửa rồi nhập lại. "Thay toàn bộ bài học" gỡ mục tiêu đã gắn cho các bài đó.
 - E2E trình duyệt thật (Playwright, project `academic`) phủ các luồng này trên BE và DB thử riêng: xem `e2e/README.md`.
 
+## Cập nhật 12/11/2026: thao tác từng bước
+
+Mỗi luồng có thanh bước ở đầu màn hình (Xong / Đang làm / Chờ vai trò khác / Chưa tới), trạng thái tính từ dữ liệu BE nên đổi máy hay đổi người làm vẫn đúng. Mỗi màn chỉ có một nút chính; làm xong một bước thì màn hình tự sang bước sau. Kế hoạch và quyết định: `PLAN_GUIDED_WORKFLOWS.md` ở gốc workspace.
+
+- **Nội dung khóa (Thiết kế GT, Giáo viên, Quản lý).** "Soạn khóa học từng bước" (`/manager/curriculum/setup`, nút ở Khóa học & giáo trình và Tổng quan Thiết kế GT): Mục tiêu khóa học (không bắt buộc) → Bài học → Gắn mục tiêu vào bài → Kiểm tra và gửi duyệt → Giáo viên duyệt nội dung → Quản lý duyệt áp dụng. Checklist Chuẩn bị khóa chia hai nhóm: Nội dung khóa và Lớp & lịch học.
+- **Tạo lớp (Quản lý).** Wizard 5 bước: Thông tin → Lịch mỗi tuần → Giáo viên & phòng (bấm Tạo lớp) → Giáo trình & mục tiêu (lớp tự dùng của khóa) → Lịch học (tự xem trước cả kỳ, mỗi buổi một bài, bấm "Tạo N buổi học"). Lớp chưa có giáo viên hoặc khóa chưa có giáo trình duyệt thì để tạo lịch sau. Quản lý "Duyệt áp dụng" giáo trình xong, màn Tạo lịch học tự mở cho các lớp còn thiếu buổi, đã xem trước sẵn.
+- **Ghi danh (Nhân viên).** Wizard 5 bước giữ nguyên; nút "Thu phí" ở Tổng quan mở thẳng bước Thu học phí của đơn. Trên ứng dụng phụ huynh có thẻ "Đăng ký học" 4 bước: Tạo hồ sơ → Đăng ký tại trung tâm → Đóng học phí (xem bill, biên lai) → Lịch học.
+- **Bài tập (Giáo viên).** Trang bài tập có 5 bước: Soạn đề → Giao bài → Học sinh làm bài → Chấm bài → Trả điểm & đáp án. Soạn đề xong bấm "Lưu đề, tiếp: giao bài". Bước chấm có "Chấm bài tiếp theo" và "Chấm trắc nghiệm tự động" cho mọi bài chưa chấm (điểm ở bản nháp); bước trả điểm có "Gửi điểm N bài" rồi Đóng nhận bài và Công bố đáp án. Gửi điểm một bài xong tự mở bài chưa chấm kế tiếp. Tổng quan Giáo viên có khối "Bài tập cần làm tiếp". Trên ứng dụng, chi tiết bài có hàng 4 bước Nhận bài → Làm bài → Nộp bài → Có điểm.
+
 ## Kịch bản nghiệm thu mẫu
 
 | Giai đoạn     | Thao tác mẫu                                                                                  | Kết quả mong đợi                                            |

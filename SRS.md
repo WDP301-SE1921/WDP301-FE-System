@@ -69,7 +69,7 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 * Hủy buổi học (có dời bài) và hủy nhiều buổi một lần  
 * Quản lý ngày nghỉ của trung tâm (khoảng ngày \+ lý do)  
 * Dashboard: tổng doanh thu học phí, số học sinh, số giáo viên, số nhân viên  
-* Dashboard: thẻ "Lớp sắp hết buổi học" (buổi cuối cách hôm nay dưới 14 ngày) kèm nút Tạo lịch học
+* Dashboard: thẻ "Lớp cần tạo lịch học" (lớp chưa có buổi học nào, hoặc buổi cuối cách hôm nay dưới 14 ngày) kèm nút Tạo lịch học
 
   ### **3.2 Thiết kế giáo trình (vai trò mới)**
 
@@ -384,7 +384,7 @@ Nhân viên và Quản lý trung tâm không dùng chung quyền truy cập dù 
   * Bài gắn theo ngày; hủy buổi có ba cách (đổi sang ngày khác, hủy và dời bài, hủy bỏ bài) (5.4).  
   * Mục tiêu khóa học bản nhẹ; gắn cho câu hỏi là tùy chọn; mỗi mục tiêu cần ít nhất 1 bài trước khi duyệt (3.2).  
   * Duyệt hai cấp, một lần gửi: giáo viên duyệt nội dung, Quản lý duyệt áp dụng (3.1, 3.4).  
-  * Tạo lịch học bấm tay, không tự tạo; dashboard nhắc "Lớp sắp hết buổi học".  
+  * Tạo lịch học bấm tay, không tự tạo; dashboard nhắc "Lớp cần tạo lịch học".  
   * "1 tháng 1 bài kiểm tra" là khuyến nghị, hệ thống chỉ nhắc giáo viên, không chặn (3.2, 3.4).  
   * Mọi Thiết kế giáo trình sửa được bản nháp giáo trình và mục tiêu.  
   * Ngày nghỉ của trung tâm do Quản lý quản lý, thêm ngày nghỉ không tự hủy buổi đã có; hủy nhiều buổi chỉ Quản lý, tối đa 200 buổi (5.4).  

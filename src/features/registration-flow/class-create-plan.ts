@@ -27,8 +27,6 @@ export interface ScheduleConflict {
   endTime: string;
 }
 
-/** Giờ bắt đầu chọn nhanh; "Khác…" cho nhập tay. */
-export const QUICK_START_TIMES = ["17:30", "18:00", "19:30"] as const;
 export const DEFAULT_LESSON_MINUTES = 120;
 const LAST_MINUTE_OF_DAY = 23 * 60 + 59;
 

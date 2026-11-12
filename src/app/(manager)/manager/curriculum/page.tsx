@@ -1,5 +1,8 @@
 import { actsAsManager } from "@/constants/roles";
 import { Suspense } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
 import type { Metadata } from "next";
 import { SkeletonTable } from "@/components/shared/feedback/skeleton-presets";
 import { HubTabs } from "@/components/shared/layout/hub-tabs";
@@ -56,6 +59,11 @@ export default async function CurriculumPage() {
               actsAsManager(role)
                 ? "Mỗi khóa học (môn + khối) có một giáo trình dùng cho mọi lớp của khóa, mỗi kỳ một bản. Giáo trình do Thiết kế giáo trình soạn, giáo viên duyệt nội dung, Quản lý duyệt áp dụng."
                 : "Soạn giáo trình theo khóa học, gửi giáo viên duyệt nội dung rồi chờ Quản lý duyệt áp dụng."
+            }
+            actions={
+              <Button render={<Link href={ROUTES.MANAGER.CURRICULUM_SETUP} />}>
+                Soạn khóa học từng bước
+              </Button>
             }
           />
           <HubTabs

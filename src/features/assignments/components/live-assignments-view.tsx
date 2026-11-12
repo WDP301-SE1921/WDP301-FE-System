@@ -2,13 +2,13 @@
 import { SubmissionFile } from "@/features/grading/components/submission-file";
 import Link from "next/link";
 import { Controller, useForm, useWatch } from "react-hook-form";
+import { parseAsStringLiteral, useQueryStates } from "nuqs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
-import { ApiForm } from "@/components/shared/forms/api-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,9 +26,7 @@ import {
 } from "@/features/academic/components/live-fields";
 import {
   confirmationSchema,
-  localDateTimeSchema,
   recipientsSchema,
-  vietnamDateTime,
 } from "@/lib/validators/web-workflows";
 import { todayInVietnam } from "@/features/registration-flow/calendar";
 import type {
@@ -37,16 +35,26 @@ import type {
   SubmissionRecord,
 } from "@/types/academic-workflows";
 import { ROUTES } from "@/constants/routes";
+import { FlowSteps } from "@/components/shared/workflows/flow-steps";
+import { useCurrentTime } from "@/hooks/use-current-time";
+import {
+  ASSIGNMENT_STEP_KEYS,
+  assignmentSteps,
+  defaultAssignmentStep,
+  type AssignmentStepKey,
+} from "../assignment-steps";
+import { latestSubmissions, submissionSummary } from "../submission-selectors";
+import {
+  CollectPanel,
+  GradePanel,
+  ReturnPanel,
+} from "./assignment-step-panels";
 import { AssignmentsTable } from "./assignments-table";
 import { AssignmentSubmissionsTable } from "./assignment-submissions-table";
 import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
 import { assignmentCsv, assignmentCsvTemplate } from "../csv-export";
 const publishSchema = recipientsSchema.extend({
   confirmed: confirmationSchema.shape.confirmed,
-});
-const windowSchema = z.object({
-  dueAt: localDateTimeSchema,
-  maxAttempts: z.coerce.number().int().min(1).max(10),
 });
 /** Danh sách bài tập của giáo viên (bảng có lọc `?filter=`). */
 export function LiveAssignmentsView() {
@@ -127,6 +135,7 @@ function AssignmentWorkspace({
   enrollments: EnrollmentRecord[];
 }) {
   const today = todayInVietnam();
+  const now = useCurrentTime();
   const eligible = enrollments.filter(
     (item) =>
       currentEnrollmentClass(item) === assignment.classId &&
@@ -141,192 +150,261 @@ function AssignmentWorkspace({
     assignment.learningTargets,
     assignment.questions,
   );
+  const summary = submissionSummary(assignment, submissions);
+  const recipientIds = new Set(assignment.recipients.map((item) => item.id));
+  const latest = [...latestSubmissions(submissions).values()].filter((item) =>
+    recipientIds.has(item.recipientId),
+  );
+  const steps = assignmentSteps({
+    status: assignment.status,
+    dueAt: assignment.dueAt,
+    answersPublishedAt: assignment.answersPublishedAt,
+    questionCount: assignment.questions.length,
+    summary,
+    now,
+  });
+  const [{ step: chosen }, setChosen] = useQueryStates({
+    step: parseAsStringLiteral(ASSIGNMENT_STEP_KEYS),
+  });
+  // Bước người dùng bấm chọn; không chọn (hoặc bước chưa tới) thì mở bước đang làm.
+  const active =
+    steps.find((item) => item.key === chosen && item.status !== "todo")?.key ??
+    defaultAssignmentStep(steps);
+  const go = (key: AssignmentStepKey | null) => void setChosen({ step: key });
+  const isOverdue = now >= Date.parse(assignment.dueAt);
+  const isDraft = assignment.status === "DRAFT";
+  const hasQuestions = assignment.questions.length > 0;
+  const questionsCard = (
+    <QuestionsCard assignment={assignment} measuredTargets={measuredTargets} />
+  );
+  const recipientNames = assignment.recipients.map(
+    (recipient) =>
+      enrollments.find((item) => item.id === recipient.enrollmentId)
+        ?.studentProfile?.fullName ?? "Học sinh được giao bài",
+  );
+  const afterSubmissions =
+    active === "collect" || active === "grade" || active === "return";
   return (
-    <>
-      {assignment.status !== "DRAFT" && (
-        <AssignmentSubmissionsTable
+    <div className="min-w-0 space-y-6">
+      <FlowSteps
+        steps={steps}
+        activeKey={active}
+        onSelect={(key) => go(key as AssignmentStepKey)}
+        label="Các bước của bài tập"
+      />
+      {active === "compose" && (
+        <div className="space-y-4">
+          {isDraft && (
+            <Card>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm">
+                  {hasQuestions
+                    ? `Đề có ${assignment.questions.length} câu. Kiểm tra lại đề rồi giao cho học sinh.`
+                    : "Đề chưa có câu hỏi. Thêm câu hỏi trước khi giao bài."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={hasQuestions ? "outline" : "default"}
+                    render={
+                      <Link
+                        href={ROUTES.TEACHER.ASSIGNMENT_EDIT(assignment.id)}
+                      />
+                    }
+                  >
+                    Sửa đề
+                  </Button>
+                  {hasQuestions && (
+                    <Button type="button" onClick={() => go("assign")}>
+                      Tiếp: giao bài
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {questionsCard}
+        </div>
+      )}
+      {active === "assign" &&
+        (isDraft ? (
+          <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+            {questionsCard}
+            <div className="min-w-0 space-y-6">
+              {eligible.length > 0 ? (
+                <PublishRecipients
+                  key={assignment.id}
+                  assignment={assignment}
+                  enrollments={eligible}
+                  onPublished={() => go(null)}
+                />
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Giao bài cho học sinh</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Chưa có học sinh đang trong kỳ học để giao bài.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Đã giao bài cho {assignment.recipients.length} học sinh
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Học sinh nhận bài trên ứng dụng của phụ huynh. Hạn nộp{" "}
+                {displayMoment(assignment.dueAt)}.
+              </p>
+              <ul className="flex flex-wrap gap-2 text-sm">
+                {recipientNames.map((name, index) => (
+                  <li key={index}>
+                    <Badge variant="outline">{name}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        ))}
+      {active === "collect" && (
+        <CollectPanel
           assignment={assignment}
-          submissions={submissions}
-          enrollments={enrollments}
+          summary={summary}
+          isOverdue={isOverdue}
+          onGoGrade={() => go("grade")}
+          onDone={() => go(null)}
         />
       )}
-      <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Đề bài</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Badge>{STATUS_TEXT[assignment.status]}</Badge>
-            <p>
-              Hạn nộp {displayMoment(assignment.dueAt)} · tối đa{" "}
-              {assignment.maxAttempts} lần
-            </p>
-            <p className="whitespace-pre-wrap">{assignment.instructions}</p>
-            {assignment.files?.map((f, i) => (
-              <section key={f.fileId} className="space-y-2">
-                <p>
-                  {f.file?.name} ·{" "}
-                  {f.teacherOnly ? "Chỉ giáo viên" : "Học sinh được xem"}
-                </p>
-                <SubmissionFile id={f.fileId} index={i} />
-              </section>
-            ))}
-            {measuredTargets.length > 0 && (
-              <section aria-label="Mục tiêu bài" className="space-y-2">
-                <p className="font-medium">Mục tiêu bài</p>
-                <ul className="space-y-1 text-sm">
-                  {measuredTargets.map((target) => (
-                    <li key={target.id}>
-                      <span className="font-medium">{target.code}</span> ·{" "}
-                      {target.title}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {assignment.questions.map((question, index) => (
-              <div
-                key={question.id}
-                className="space-y-2 rounded-2xl border border-border p-4"
-              >
-                <p className="font-medium">
-                  Câu {index + 1} · {question.maxScore} điểm
-                </p>
-                {question.outcomeId && (
-                  <Badge variant="outline">
-                    Mục tiêu{" "}
-                    {assignment.learningTargets?.find(
-                      (target) => target.id === question.outcomeId,
-                    )?.code ?? ""}
-                  </Badge>
-                )}
-                <p className="whitespace-pre-wrap">{question.prompt}</p>
-                {question.choices?.map((choice) => (
-                  <p key={choice}>{choice}</p>
-                ))}
-                {question.correctAnswer && (
-                  <p>Đáp án: {question.correctAnswer}</p>
-                )}
-                {question.criteria?.map((c) => (
-                  <p key={c.id} className="text-sm">
-                    {c.title} · {c.maxScore} điểm — {c.description}
-                  </p>
-                ))}
-                {question.rubric && (
-                  <p className="whitespace-pre-wrap">
-                    Tiêu chí chấm: {question.rubric}
-                  </p>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <div className="min-w-0 space-y-6">
-          {assignment.status === "DRAFT" && eligible.length > 0 && (
-            <PublishRecipients
-              key={assignment.id}
-              assignment={assignment}
-              enrollments={eligible}
-            />
-          )}
-          {assignment.status === "DRAFT" && eligible.length === 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Giao bài cho học sinh</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Chưa có học sinh đang trong kỳ học để giao bài.</p>
-              </CardContent>
-            </Card>
-          )}
-          {assignment.status === "PUBLISHED" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Đóng nhận bài</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ApiForm
-                  schema={confirmationSchema}
-                  defaults={{ confirmed: false }}
-                  fields={[
-                    {
-                      name: "confirmed",
-                      label: "Xác nhận đóng nhận bài của học sinh",
-                      type: "checkbox",
-                    },
-                  ]}
-                  submitLabel="Đóng nhận bài"
-                  onSubmit={() => academicApi.closeAssignment(assignment.id)}
-                />
-              </CardContent>
-            </Card>
-          )}
-          {assignment.status !== "DRAFT" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Gia hạn / mở lại nhận bài</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ApiForm
-                  schema={windowSchema}
-                  defaults={{ maxAttempts: assignment.maxAttempts }}
-                  fields={[
-                    {
-                      name: "dueAt",
-                      label: "Hạn nộp mới (giờ Việt Nam)",
-                      type: "datetime-local",
-                    },
-                    {
-                      name: "maxAttempts",
-                      label: "Số lần nộp tối đa",
-                      type: "number",
-                    },
-                  ]}
-                  submitLabel="Mở lại nhận bài"
-                  onSubmit={(value) =>
-                    academicApi.reopenAssignment(assignment.id, {
-                      ...value,
-                      dueAt: vietnamDateTime(String(value.dueAt)),
-                    })
-                  }
-                />
-              </CardContent>
-            </Card>
-          )}
-          {assignment.status === "CLOSED" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Công bố đáp án</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ApiForm
-                  schema={confirmationSchema}
-                  defaults={{ confirmed: false }}
-                  fields={[
-                    {
-                      name: "confirmed",
-                      label:
-                        "Tôi xác nhận cho phụ huynh xem đáp án đúng. Sau công bố không thể mở lại nhận bài.",
-                      type: "checkbox",
-                    },
-                  ]}
-                  submitLabel="Công bố đáp án"
-                  onSubmit={() => academicApi.publishAnswers(assignment.id)}
-                />
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-    </>
+      {active === "grade" && (
+        <GradePanel
+          assignment={assignment}
+          latest={latest}
+          summary={summary}
+          onGoReturn={() => go("return")}
+        />
+      )}
+      {active === "return" && (
+        <ReturnPanel
+          assignment={assignment}
+          latest={latest}
+          summary={summary}
+          isOverdue={isOverdue}
+          onGoGrade={() => go("grade")}
+          onDone={() => go(null)}
+        />
+      )}
+      {afterSubmissions && (
+        <>
+          <AssignmentSubmissionsTable
+            assignment={assignment}
+            submissions={submissions}
+            enrollments={enrollments}
+          />
+          <details className="rounded-2xl border border-border p-4">
+            <summary className="cursor-pointer text-sm font-medium">
+              Xem đề bài
+            </summary>
+            <div className="pt-4">{questionsCard}</div>
+          </details>
+        </>
+      )}
+    </div>
   );
 }
+
+function QuestionsCard({
+  assignment,
+  measuredTargets,
+}: {
+  assignment: AssignmentDetail;
+  measuredTargets: ReturnType<typeof measuredLearningTargets>;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Đề bài</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Badge>{STATUS_TEXT[assignment.status]}</Badge>
+        <p>
+          Hạn nộp {displayMoment(assignment.dueAt)} · tối đa{" "}
+          {assignment.maxAttempts} lần
+        </p>
+        <p className="whitespace-pre-wrap">{assignment.instructions}</p>
+        {assignment.files?.map((f, i) => (
+          <section key={f.fileId} className="space-y-2">
+            <p>
+              {f.file?.name} ·{" "}
+              {f.teacherOnly ? "Chỉ giáo viên" : "Học sinh được xem"}
+            </p>
+            <SubmissionFile id={f.fileId} index={i} />
+          </section>
+        ))}
+        {measuredTargets.length > 0 && (
+          <section aria-label="Mục tiêu bài" className="space-y-2">
+            <p className="font-medium">Mục tiêu bài</p>
+            <ul className="space-y-1 text-sm">
+              {measuredTargets.map((target) => (
+                <li key={target.id}>
+                  <span className="font-medium">{target.code}</span> ·{" "}
+                  {target.title}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {assignment.questions.map((question, index) => (
+          <div
+            key={question.id}
+            className="space-y-2 rounded-2xl border border-border p-4"
+          >
+            <p className="font-medium">
+              Câu {index + 1} · {question.maxScore} điểm
+            </p>
+            {question.outcomeId && (
+              <Badge variant="outline">
+                Mục tiêu{" "}
+                {assignment.learningTargets?.find(
+                  (target) => target.id === question.outcomeId,
+                )?.code ?? ""}
+              </Badge>
+            )}
+            <p className="whitespace-pre-wrap">{question.prompt}</p>
+            {question.choices?.map((choice) => (
+              <p key={choice}>{choice}</p>
+            ))}
+            {question.correctAnswer && <p>Đáp án: {question.correctAnswer}</p>}
+            {question.criteria?.map((c) => (
+              <p key={c.id} className="text-sm">
+                {c.title} · {c.maxScore} điểm — {c.description}
+              </p>
+            ))}
+            {question.rubric && (
+              <p className="whitespace-pre-wrap">
+                Tiêu chí chấm: {question.rubric}
+              </p>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 function PublishRecipients({
   assignment,
   enrollments,
+  onPublished,
 }: {
   assignment: AssignmentDetail;
   enrollments: EnrollmentRecord[];
+  /** Giao xong: trang tự sang bước "Học sinh làm bài". */
+  onPublished: () => void;
 }) {
   const action = useLiveCommand();
   const form = useForm<z.infer<typeof publishSchema>>({
@@ -355,8 +433,9 @@ function PublishRecipients({
       aria-label="Giao bài cho học sinh"
       className="space-y-4"
       onSubmit={form.handleSubmit((value) =>
-        action.mutate(() =>
-          academicApi.publishAssignment(assignment.id, value),
+        action.mutate(
+          () => academicApi.publishAssignment(assignment.id, value),
+          { onSuccess: onPublished },
         ),
       )}
     >

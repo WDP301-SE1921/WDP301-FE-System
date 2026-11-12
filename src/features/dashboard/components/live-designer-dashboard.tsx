@@ -83,9 +83,17 @@ export function LiveDesignerDashboard() {
         title="Tổng quan giáo trình"
         description="Giáo trình đang soạn, bị trả lại, chờ duyệt và phản hồi từ giáo viên."
         actions={
-          <Button render={<Link href={ROUTES.MANAGER.CURRICULUM} />}>
-            Danh sách giáo trình
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button render={<Link href={ROUTES.MANAGER.CURRICULUM_SETUP} />}>
+              Soạn khóa học từng bước
+            </Button>
+            <Button
+              variant="outline"
+              render={<Link href={ROUTES.MANAGER.CURRICULUM} />}
+            >
+              Danh sách giáo trình
+            </Button>
+          </div>
         }
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -211,7 +211,8 @@ export function LiveStaffDashboard() {
                             size="xs"
                             render={
                               <Link
-                                href={`${ROUTES.STAFF.PAYMENTS}?${new URLSearchParams({ registrationId: order.id })}`}
+                                // Mở thẳng bước "Thu học phí" của wizard ghi danh (Luồng 3).
+                                href={`${ROUTES.STAFF.ENROLLMENT_NEW}?${new URLSearchParams({ registrationId: order.id })}`}
                               />
                             }
                           >

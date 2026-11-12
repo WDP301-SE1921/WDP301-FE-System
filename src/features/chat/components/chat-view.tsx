@@ -59,6 +59,7 @@ const ROLE_MAP = {
 
 const messageTime = new Intl.DateTimeFormat("vi-VN", {
   hour: "2-digit",
+  hourCycle: "h23",
   minute: "2-digit",
   day: "2-digit",
   month: "2-digit",

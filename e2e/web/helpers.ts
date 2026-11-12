@@ -104,6 +104,15 @@ export async function pickSelect(page: Page, trigger: Locator, option: string | 
   await page.getByRole("option", { name: option }).first().click();
 }
 
+/** Chọn giờ `HH:mm` trong `TimeInput` (ô Giờ mang `id`, ô Phút nằm cạnh). */
+export async function pickTime(page: Page, id: string, time: string) {
+  const [hour, minute] = time.split(":");
+  const hourTrigger = page.locator(`#${id}`);
+  await pickSelect(page, hourTrigger, new RegExp(`^${hour}$`));
+  const minuteTrigger = hourTrigger.locator("xpath=..").getByRole("combobox", { name: "Phút" });
+  await pickSelect(page, minuteTrigger, new RegExp(`^${minute}$`));
+}
+
 const LEGACY_TERMS = [/\bCLO\b/, /Sinh lịch/, /Chuẩn đầu ra/, /bộ CLO/i];
 
 /** Chỉ dòng ghi chú của màn Thiết kế giáo trình được nhắc tên cũ. */

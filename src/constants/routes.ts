@@ -36,6 +36,7 @@ export const ROUTES = {
     CURRICULUM: "/manager/curriculum",
     /** Tổng quan của Thiết kế giáo trình (giáo trình đang soạn, chờ duyệt, phản hồi). */
     CURRICULUM_OVERVIEW: "/manager/curriculum/overview",
+    CURRICULUM_SETUP: "/manager/curriculum/setup",
     CURRICULUM_FEEDBACK: "/manager/curriculum/feedback",
     CURRICULUM_UNIT: (id: string) => `/manager/curriculum/${id}`,
     CLASS_SESSIONS: (id: string) => `/manager/classes/${id}/sessions`,

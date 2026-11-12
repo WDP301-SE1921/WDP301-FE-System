@@ -148,6 +148,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     "lesson",
     parseAsString.withDefault(""),
   );
+  const [from] = useQueryState("from", parseAsString.withDefault(""));
+  const fromSetup = from === "setup";
   const [editorKind, setEditorKind] = useQueryState(
     "editor",
     parseAsStringLiteral([
@@ -376,8 +378,16 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
     unlinkedOutcomes: outcomeSets.data ? countUnlinked(unlinkedGroups) : undefined,
   });
   const blocked = hasBlockingCheck(checks);
+  // Mở từ trang "Soạn khóa học từng bước" (`?from=setup`): nút quay lại về đúng khóa ở trang đó.
+  const setupHref = unit
+    ? `${ROUTES.MANAGER.CURRICULUM_SETUP}?programId=${encodeURIComponent(unit.programId)}`
+    : ROUTES.MANAGER.CURRICULUM_SETUP;
   const backHref =
-    role === "teacher" ? ROUTES.TEACHER.CURRICULUM : ROUTES.MANAGER.CURRICULUM;
+    role === "teacher"
+      ? ROUTES.TEACHER.CURRICULUM
+      : fromSetup
+        ? setupHref
+        : ROUTES.MANAGER.CURRICULUM;
   const openEditor = (value: Editor) => {
     setFormState({ dirty: false, busy: false });
     setNotice("");
@@ -572,6 +582,11 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   </p>
                 </div>
                 <ApprovalSteps unit={unit} />
+                {role !== "teacher" && (
+                  <Link href={setupHref} className="inline-block text-sm text-primary underline">
+                    Xem các bước soạn và duyệt khóa học
+                  </Link>
+                )}
                 {(comparison.previous || comparison.isPending || comparison.error) && (
                   <ComparisonNotice comparison={comparison} />
                 )}
@@ -1154,7 +1169,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
               open={confirmApply}
               onOpenChange={setConfirmApply}
               title="Duyệt áp dụng giáo trình?"
-              description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản cho kỳ sau chờ tới ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi học đã tạo được giữ nguyên.${managerWarning ? " " + managerWarning : ""}`}
+              description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản cho kỳ sau chờ tới ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi học đã tạo được giữ nguyên. Duyệt xong, hệ thống mở màn tạo lịch học cho các lớp của khóa (đã xem trước, bạn bấm một lần để tạo).${managerWarning ? " " + managerWarning : ""}`}
               confirmText="Duyệt áp dụng"
               isLoading={approve.isPending}
               onConfirm={async () => {
@@ -1177,12 +1192,16 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                     const targets = [...needs, ...unknown];
                     if (targets.length)
                       params.set("classIds", targets.map((c) => c.id).join(","));
+                    const href = `${ROUTES.MANAGER.SESSIONS}?${params.toString()}`;
                     setScheduleOffer({
                       count: targets.length,
-                      href: `${ROUTES.MANAGER.SESSIONS}?${params.toString()}`,
+                      href,
                       excluded: describeExcluded(excluded),
                       allDone: eligible.length > 0 && targets.length === 0,
                     });
+                    // D1 (a): có lớp cần lịch thì mở luôn màn tạo lịch; màn đó tự xem trước theo
+                    // `unitId`, Quản lý chỉ còn bấm "Tạo lịch học cho N lớp".
+                    if (targets.length) router.push(href);
                   } catch {
                     setScheduleOffer(null);
                   }

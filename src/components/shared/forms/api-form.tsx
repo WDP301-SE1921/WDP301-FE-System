@@ -19,6 +19,7 @@ import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { ConfirmDialog } from "@/components/shared/feedback/confirm-dialog";
 import { ChoiceCards } from "@/components/shared/forms/choice-cards";
 import { ReasonSelect } from "@/components/shared/forms/reason-select";
+import { DateTimeInput } from "@/components/shared/pickers/date-time-input";
 import { useLiveCommand } from "@/features/academic/hooks/use-live-api";
 import { userFacingMessage } from "@/lib/api/error-message";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,8 @@ export interface ApiFormField {
     | "choices";
   options?: { value: string; label: string; description?: ReactNode }[];
   presets?: readonly string[];
+  /** `datetime-local`: giờ điền sẵn khi mới chọn ngày (mặc định `00:00`), vd `23:59` cho hạn nộp. */
+  defaultTime?: string;
   disabled?: boolean;
   description?: string;
   /** Chiếm nửa hàng từ `sm` trở lên (vd. hai ô ngày cạnh nhau). */
@@ -251,6 +254,22 @@ export function ApiForm({
                     {input.label}
                   </Label>
                 </div>
+              ) : input.type === "datetime-local" ? (
+                // Ô native vẽ giờ theo ngôn ngữ của máy (AM/PM trên máy tiếng Anh), nên dùng ô 24 giờ.
+                <Controller
+                  name={input.name}
+                  control={form.control}
+                  render={({ field }) => (
+                    <DateTimeInput
+                      id={fieldId}
+                      value={String(field.value ?? "")}
+                      onChange={field.onChange}
+                      disabled={input.disabled || action.isPending || disabled}
+                      invalid={!!message}
+                      defaultTime={input.defaultTime}
+                    />
+                  )}
+                />
               ) : input.type === "textarea" ? (
                 <Textarea
                   id={fieldId}

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { ROLES, type WebRole } from "../../src/constants/roles";
 import { bff, createCourse, createDraftUnit } from "./flows";
-import { persistSessions, chooseCard, expectNoLegacyTerms, inRole, pickSelect, suffix, vnDate, closeSessions, nextWeekOffset, type RoleSession } from "./helpers";
+import { persistSessions, chooseCard, expectNoLegacyTerms, inRole, pickSelect, pickTime, suffix, vnDate, closeSessions, nextWeekOffset, type RoleSession } from "./helpers";
 
 /**
  * Luồng chuẩn bị một khóa học: Quản lý tạo khóa và lớp, Thiết kế giáo trình soạn mục tiêu và giáo trình,
@@ -71,7 +71,7 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await page.waitForURL(/[?&]program=/);
     state.programId = new URL(page.url()).searchParams.get("program") ?? "";
     expect(state.programId).not.toBe("");
-    const checklist = page.getByRole("list", { name: "Chuẩn bị khóa" });
+    const checklist = page.getByRole("group", { name: "Chuẩn bị khóa" });
     await expect(checklist).toBeVisible();
     await expect(checklist.getByText("Chưa có lớp nào")).toBeVisible();
     await expect(checklist.getByText("2 buổi mỗi tuần")).toBeVisible();
@@ -83,25 +83,30 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await page.goto(`/manager/classes/new?programId=${state.programId}`);
     await page.getByLabel("Tên lớp").fill(CLASS_NAME);
     await page.locator("#wizard-fee").fill("500000");
-    await page.getByRole("button", { name: "Tiếp: lịch học" }).click();
+    await page.getByRole("button", { name: "Tiếp: lịch mỗi tuần" }).click();
     // Khóa 2 buổi/tuần nên có sẵn 2 dòng lịch; đổi giờ sang buổi sớm để khỏi trùng lớp trong seed.
     for (const index of [0, 1]) {
-      const slot = page.getByRole("group", { name: `Buổi ${index + 1}`, exact: true });
-      await slot.getByRole("button", { name: "Khác…" }).click();
-      await page.locator(`#wizard-start-${index}`).fill("05:30");
-      await page.locator(`#wizard-end-${index}`).fill("06:30");
+      await pickTime(page, `wizard-start-${index}`, "05:30");
+      await pickTime(page, `wizard-end-${index}`, "06:30");
     }
     await page.getByRole("button", { name: "Tiếp: giáo viên và phòng" }).click();
     // teacher@ (Nguyễn Minh Đức) là tài khoản giáo viên có phiên web; lớp ở giờ sớm nên không trùng lớp Toán của thầy.
     await chooseCard(page, /Nguyễn Minh Đức/);
     await page.getByRole("button", { name: "Tạo lớp", exact: true }).click();
+    // Bước 4: lớp theo khóa nên tự dùng giáo trình và mục tiêu của khóa; khóa chưa có giáo trình duyệt.
+    await expect(page.getByText(/Giáo trình và mục tiêu của lớp/)).toBeVisible();
+    await expect(page.getByText("Chưa có bản duyệt")).toBeVisible();
+    await page.getByRole("button", { name: "Tiếp: lịch học" }).click();
+    // Bước 5: chưa có giáo trình duyệt nên chưa tạo được buổi; lịch tạo sau khi Quản lý duyệt áp dụng.
+    await expect(page.getByText("Chưa tạo được lịch học cho lớp này")).toBeVisible();
+    await page.getByRole("button", { name: "Tiếp: mở đăng ký" }).click();
     await page.getByRole("button", { name: "Xem lớp" }).click();
     await page.waitForURL(/\/manager\/classes\/[^/?]+$/);
     state.classId = new URL(page.url()).pathname.split("/").pop() ?? "";
     expect(state.classId).not.toBe("");
 
     await page.goto(`/manager/curriculum?program=${state.programId}`);
-    const checklist = page.getByRole("list", { name: "Chuẩn bị khóa" });
+    const checklist = page.getByRole("group", { name: "Chuẩn bị khóa" });
     await expect(checklist.getByText("1 lớp đang hoạt động")).toBeVisible();
   });
 
@@ -193,10 +198,12 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     // Quản lý không duyệt bộ mục tiêu nữa: hộp xác nhận không nhắc tới bộ đã duyệt.
     await expect(confirm).not.toContainText("Mục tiêu khóa học đi cùng");
     await confirm.getByRole("button", { name: "Duyệt áp dụng" }).click();
-    await expect(page.getByText("Đã duyệt áp dụng giáo trình.")).toBeVisible();
+    // D1 (a): lớp của khóa chưa có buổi nên duyệt xong tự mở màn tạo lịch học, đã chọn sẵn giáo trình.
+    await page.waitForURL(/\/manager\/sessions\?.*unitId=/);
+    await expect(page.getByRole("heading", { name: "Tạo lịch học" })).toBeVisible();
 
     await page.goto(`/manager/curriculum?program=${state.programId}`);
-    const checklist = page.getByRole("list", { name: "Chuẩn bị khóa" });
+    const checklist = page.getByRole("group", { name: "Chuẩn bị khóa" });
     await expect(checklist.getByText(/Bản 1 đã duyệt/)).toBeVisible();
     await expect(checklist.getByRole("button", { name: "Tạo lịch học cho 1 lớp" })).toBeVisible();
     await expectNoLegacyTerms(page);
@@ -211,7 +218,8 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     const region = page.getByRole("region", { name: "Xem trước theo lớp" });
     const table = region.getByRole("table");
     // Mở từ checklist thì bản xem trước có thể đã chạy sẵn; nếu chưa thì bấm "Xem trước 1 lớp".
-    await expect(preview.or(table)).toBeVisible({ timeout: 30_000 });
+    // Duyệt áp dụng xong màn này tự xem trước, nên nút và bảng có thể cùng hiện: lấy cái đầu tiên.
+    await expect(preview.or(table).first()).toBeVisible({ timeout: 30_000 });
     if ((await table.count()) === 0) await preview.click();
     await expect(table).toBeVisible();
     const rows = table.getByRole("row");
@@ -234,7 +242,7 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     expect(sessions.map((item) => item.lesson?.title)).toEqual(LESSONS);
 
     await page.goto(`/manager/curriculum?program=${state.programId}`);
-    const checklist = page.getByRole("list", { name: "Chuẩn bị khóa" });
+    const checklist = page.getByRole("group", { name: "Chuẩn bị khóa" });
     await expect(checklist.getByText("Mọi lớp đã có buổi học tới hết kỳ")).toBeVisible();
     await expect(checklist.getByRole("button", { name: /Tạo lịch học cho/ })).toHaveCount(0);
     await expectNoLegacyTerms(page);

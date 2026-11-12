@@ -57,6 +57,7 @@ import {
 } from "../presentation";
 import { ROUTES } from "@/constants/routes";
 import { latestSubmissions } from "@/features/assignments/submission-selectors";
+import { nextUngraded } from "@/features/assignments/assignment-steps";
 import { normalizeGradeSuggestion } from "../suggestions";
 import { ReadingCorrection } from "./reading-correction";
 import { SubmissionFile } from "./submission-file";
@@ -236,11 +237,21 @@ function GradeWorkspace({
       setSaved(grade);
       setBaselineRevision(grade.revision);
       form.reset({ scores: grade.scores, feedback: grade.feedback });
-      if (variables.mode === "send") setConfirming(null);
+      if (variables.mode !== "send") {
+        toast.success("Đã lưu bản chấm nháp.");
+        return;
+      }
+      setConfirming(null);
+      // Chấm lần lượt (Luồng 4, bước 4): gửi điểm xong tự mở bài chưa chấm kế tiếp; hết bài thì
+      // về trang bài tập ở bước "Trả điểm & đáp án".
       toast.success(
-        variables.mode === "send"
-          ? "Đã gửi điểm cho phụ huynh."
-          : "Đã lưu bản chấm nháp.",
+        nextHref
+          ? "Đã gửi điểm cho phụ huynh. Đang mở bài chưa chấm tiếp theo."
+          : "Đã gửi điểm cho phụ huynh. Không còn bài chưa chấm.",
+      );
+      router.push(
+        nextHref ||
+          `${ROUTES.TEACHER.ASSIGNMENT_SUBMISSIONS(assignment.id)}?step=return`,
       );
     },
     onSettled: () => {
@@ -280,8 +291,12 @@ function GradeWorkspace({
   const peers = useLiveQuery(["grading-peers", assignment.id], (signal) =>
     academicApi.submissions(assignment.id, signal),
   );
-  const next = [...latestSubmissions(peers.data ?? []).values()].find(
-    (item) => item.id !== submission.id && !item.grades.length,
+  const recipientIds = new Set(assignment.recipients.map((item) => item.id));
+  const next = nextUngraded(
+    [...latestSubmissions(peers.data ?? []).values()].filter((item) =>
+      recipientIds.has(item.recipientId),
+    ),
+    submission.id,
   );
   const nextHref = next
     ? `${ROUTES.TEACHER.GRADING_DETAIL(next.id)}?assignmentId=${assignment.id}`

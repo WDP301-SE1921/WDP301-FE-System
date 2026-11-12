@@ -6,3 +6,6 @@ export type { WizardLayoutProps } from "./wizard-layout"
 
 export { StickyFormFooter } from "./sticky-form-footer"
 export type { StickyFormFooterProps } from "./sticky-form-footer"
+
+export { FlowSteps } from "./flow-steps"
+export type { FlowStep, FlowStepStatus } from "./flow-steps"

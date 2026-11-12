@@ -37,6 +37,10 @@ import { useCurrentUser } from "@/hooks/use-current-role";
 import { todayInVietnam } from "@/features/registration-flow/calendar";
 import { displayMoment } from "@/features/academic/components/live-fields";
 import { AssignmentImportDialog } from "./assignment-import-dialog";
+import { DateTimeInput } from "@/components/shared/pickers/date-time-input";
+
+/** Mới chọn ngày hạn nộp thì điền sẵn cuối ngày, tránh hạn nộp lúc 00:00 đầu ngày. */
+const END_OF_DAY = "23:59";
 import { ConfirmDialog } from "@/components/shared/feedback/confirm-dialog";
 import { TEST_TYPE_TEXT } from "../assessment-labels";
 import { ROUTES } from "@/constants/routes";
@@ -264,11 +268,12 @@ function AssignmentEditor({
                 ? academicApi.updateAssignment(assignment.id, body)
                 : academicApi.createAssignment(body),
             {
+              // Lưu xong sang thẳng bước "Giao bài" của trang bài tập (Luồng 4, bước 2).
               onSuccess: (result) =>
                 router.push(
-                  ROUTES.TEACHER.ASSIGNMENT_SUBMISSIONS(
+                  `${ROUTES.TEACHER.ASSIGNMENT_SUBMISSIONS(
                     (result as AssignmentDetail).id,
-                  ),
+                  )}?step=assign`,
                 ),
             },
           );
@@ -442,10 +447,18 @@ function AssignmentEditor({
                 {...form.register("instructions")}
               />
               <Label htmlFor="assignment-due">Hạn nộp (giờ Việt Nam)</Label>
-              <Input
-                id="assignment-due"
-                type="datetime-local"
-                {...form.register("dueAt")}
+              <Controller
+                control={form.control}
+                name="dueAt"
+                render={({ field, fieldState }) => (
+                  <DateTimeInput
+                    id="assignment-due"
+                    value={field.value ?? ""}
+                    invalid={fieldState.invalid}
+                    defaultTime={END_OF_DAY}
+                    onChange={field.onChange}
+                  />
+                )}
               />
               {form.formState.errors.dueAt && (
                 <p role="alert" className="text-sm text-destructive">
@@ -484,10 +497,11 @@ function AssignmentEditor({
                 }
                 isLoading={action.isPending}
               >
-                Lưu nháp
+                Lưu đề, tiếp: giao bài
               </Button>
               <p className="text-xs text-muted-foreground">
-                Lưu nháp xong, chọn học sinh rồi giao bài ở trang bài nộp.
+                Đề được lưu ở bản nháp. Bước tiếp theo là chọn học sinh và
+                giao bài; học sinh chỉ thấy bài sau khi bạn bấm “Giao bài”.
               </p>
               <ApiFeedback error={action.error} />
             </CardContent>

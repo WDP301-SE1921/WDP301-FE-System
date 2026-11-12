@@ -56,6 +56,7 @@ import { StatusBadge } from "@/components/shared/feedback/status-badge";
 import { RowActions } from "@/components/shared/data-table/row-actions";
 import { TablePagination } from "@/components/shared/data-table/table-pagination";
 import { ClassRoster } from "@/components/shared/academic/class-roster";
+import { TimeInput } from "@/components/shared/pickers/time-input";
 import { toast } from "@/components/ui/toast";
 import { canAccessPath } from "@/constants/role-access";
 import { ROUTES } from "@/constants/routes";
@@ -158,7 +159,7 @@ function ClassCreateView() {
     <PageContainer>
       <PageHeader
         title="Tạo lớp học"
-        description="Tạo lớp qua 3 bước: thông tin, lịch học, giáo viên và phòng. Lớp mới đóng đăng ký cho tới khi bạn mở."
+        description="Tạo lớp qua 5 bước: thông tin, lịch mỗi tuần, giáo viên và phòng, giáo trình của khóa, rồi lịch học tự xếp theo bài. Lớp mới đóng đăng ký cho tới khi bạn mở."
         actions={
           <Button
             variant="outline"
@@ -1146,10 +1147,17 @@ function ClassSchedulesForm({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={"schedule-start-" + i}>Bắt đầu</Label>
-                  <Input
-                    id={"schedule-start-" + i}
-                    type="time"
-                    {...form.register(`schedules.${i}.startTime`)}
+                  <Controller
+                    control={form.control}
+                    name={`schedules.${i}.startTime`}
+                    render={({ field, fieldState }) => (
+                      <TimeInput
+                        id={"schedule-start-" + i}
+                        value={field.value}
+                        invalid={fieldState.invalid}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                   <FieldError
                     message={
@@ -1159,10 +1167,17 @@ function ClassSchedulesForm({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={"schedule-end-" + i}>Kết thúc</Label>
-                  <Input
-                    id={"schedule-end-" + i}
-                    type="time"
-                    {...form.register(`schedules.${i}.endTime`)}
+                  <Controller
+                    control={form.control}
+                    name={`schedules.${i}.endTime`}
+                    render={({ field, fieldState }) => (
+                      <TimeInput
+                        id={"schedule-end-" + i}
+                        value={field.value}
+                        invalid={fieldState.invalid}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                   <FieldError
                     message={
@@ -1326,6 +1341,7 @@ function sessionDay(value: string) {
 function sessionTime(value: string) {
   return new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
+    hourCycle: "h23",
     minute: "2-digit",
     timeZone: "Asia/Ho_Chi_Minh",
   }).format(new Date(value));

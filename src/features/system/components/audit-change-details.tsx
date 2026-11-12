@@ -121,7 +121,7 @@ function displayValue(value: unknown) {
     if (!Number.isNaN(date.getTime())) {
       return new Intl.DateTimeFormat("vi-VN", {
         dateStyle: "short",
-        ...(value.includes("T") ? { timeStyle: "short" as const } : {}),
+        ...(value.includes("T") ? { timeStyle: "short" as const, hourCycle: "h23" as const } : {}),
         timeZone: "Asia/Ho_Chi_Minh",
       }).format(date);
     }

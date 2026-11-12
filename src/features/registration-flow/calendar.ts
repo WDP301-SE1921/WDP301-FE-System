@@ -61,6 +61,21 @@ export function displayDate(value: string) {
   const [year, month, day] = dateOnly(value).split("-");
   return `${day}/${month}/${year}`;
 }
+/**
+ * Nhắc Nhân viên khi lớp chưa có buổi học cho kỳ đăng ký: phụ huynh chỉ thấy lịch trên ứng dụng sau
+ * khi Quản lý bấm "Tạo lịch học". Không chặn đăng ký. `scheduledUntil` thiếu (BE cũ) thì không nhắc.
+ */
+export function unscheduledTermNotice(
+  scheduledUntil: string | null | undefined,
+  startDate: string,
+) {
+  if (scheduledUntil === undefined) return null;
+  if (scheduledUntil === null)
+    return "Lớp chưa có buổi học nào. Vẫn đăng ký được, nhưng phụ huynh chỉ thấy lịch học trên ứng dụng sau khi Quản lý tạo lịch học cho lớp.";
+  if (startDate && dateOnly(scheduledUntil) < dateOnly(startDate))
+    return `Lớp mới có buổi học tới ${displayDate(scheduledUntil)}, trước ngày bắt đầu. Vẫn đăng ký được, nhưng phụ huynh chỉ thấy lịch học trên ứng dụng sau khi Quản lý tạo thêm lịch học.`;
+  return null;
+}
 export function money(value: number | string) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
