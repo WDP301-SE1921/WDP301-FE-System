@@ -15,7 +15,6 @@ import { UserCell } from "@/components/shared/display/user-cell"
 import { type SessionBlockProps } from "./session-block"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  Clock01Icon,
   Location01Icon,
   Calendar01Icon,
   UserGroupIcon,

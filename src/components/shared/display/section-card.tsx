@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { cn } from "cn"
 
 export interface SectionCardProps {

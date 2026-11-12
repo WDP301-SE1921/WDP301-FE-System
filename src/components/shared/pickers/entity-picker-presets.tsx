@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { EntityPicker, type EntityOption, type EntityPickerProps } from "./entity-picker"
+import { EntityPicker, type EntityPickerProps } from "./entity-picker"
 
 export interface PresetPickerProps extends Omit<EntityPickerProps, "queryKey" | "placeholder"> {
   placeholder?: string
