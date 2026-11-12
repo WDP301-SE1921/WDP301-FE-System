@@ -1,5 +1,9 @@
 import Link from "next/link"
-import { LANDING_CONTENT, LANDING_NAV } from "@/features/landing/content"
+import {
+  LANDING_CONTENT,
+  LANDING_LEGAL_LINKS,
+  LANDING_NAV,
+} from "@/features/landing/content"
 import { LandingLogo } from "@/features/landing/components/landing-logo"
 
 function LandingFooter() {
@@ -20,9 +24,26 @@ function LandingFooter() {
           ))}
         </nav>
 
-        <p className="text-xs text-muted-foreground">
-          {LANDING_CONTENT.FOOTER_COPYRIGHT(new Date().getFullYear())}
-        </p>
+        <div className="flex flex-col gap-2 md:items-end">
+          <nav
+            aria-label="Pháp lý"
+            className="flex flex-wrap items-center gap-x-4 gap-y-1"
+          >
+            {/* Tệp tĩnh trong public/, không phải route của Next nên dùng <a> */}
+            {LANDING_LEGAL_LINKS.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <p className="text-xs text-muted-foreground">
+            {LANDING_CONTENT.FOOTER_COPYRIGHT(new Date().getFullYear())}
+          </p>
+        </div>
       </div>
     </footer>
   )

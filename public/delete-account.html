@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  Trang xoa tai khoan cua app mobile EduGrade (Google Play bat buoc co URL nay trong Data safety) - 2026-11-12.
+  Ban DUY NHAT: web phuc vu tinh o /delete-account.html. Phap nhan, email, hotline, thoi han xu ly giong VanGo.
+  Mo ta dung theo DELETE /auth/me cua BE (CHANGELOG_UPDATES.md muc 1.17): xoa thong tin ca nhan cua phu huynh,
+  GIU ho so con, ghi danh, diem, don dang ky va thanh toan cho trung tam. BE doi thi sua trang nay.
+-->
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Xoá tài khoản - EduGrade</title>
+    <style>
+      :root { color-scheme: only light; }
+      body { margin: 0; background: #ffffff; color: #0f172a; font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+      main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+      h1 { font-size: 28px; line-height: 1.25; }
+      h2 { font-size: 20px; margin-top: 32px; }
+      a { color: #2563eb; }
+      .muted { color: #64748b; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Yêu cầu xoá tài khoản EduGrade</h1>
+      <p class="muted">
+        Ứng dụng EduGrade (com.wdp301.fem) — Nhà phát triển: Công ty TNHH Công nghệ Nadius — MST 0319699551
+      </p>
+      <p>Trang này hướng dẫn phụ huynh xoá tài khoản ứng dụng EduGrade và cho biết dữ liệu nào bị xoá, dữ liệu nào được giữ lại.</p>
+
+      <h2>Cách 1: Xoá ngay trong ứng dụng</h2>
+      <p>
+        Mở ứng dụng EduGrade → tab <strong>Tài khoản</strong> → <strong>Xóa tài khoản</strong>, nhập mật khẩu hiện tại
+        để xác nhận. Tài khoản bị xoá ngay và mọi phiên đăng nhập trên các thiết bị đều bị đăng xuất.
+      </p>
+
+      <h2>Cách 2: Gửi yêu cầu qua email</h2>
+      <p>Dùng cách này khi bạn không còn đăng nhập được vào ứng dụng.</p>
+      <ol>
+        <li>
+          Gửi email tới
+          <a href="mailto:support@vangon.vn?subject=Y%C3%AAu%20c%E1%BA%A7u%20xo%C3%A1%20t%C3%A0i%20kho%E1%BA%A3n%20EduGrade">support@vangon.vn</a>
+          từ chính email đăng nhập ứng dụng, tiêu đề “Yêu cầu xoá tài khoản EduGrade”.
+        </li>
+        <li>Trong email, ghi họ tên phụ huynh và email đăng nhập.</li>
+        <li>Chúng tôi xác minh qua email đã đăng ký và phản hồi trong vòng 7 ngày làm việc.</li>
+        <li>Sau khi xác minh, tài khoản bị vô hiệu hoá và dữ liệu cá nhân được xoá theo phạm vi dưới đây trong vòng 30 ngày.</li>
+      </ol>
+
+      <h2>Dữ liệu được xoá</h2>
+      <ul>
+        <li>Họ tên, số điện thoại, ảnh đại diện và mật khẩu của tài khoản phụ huynh.</li>
+        <li>Email đăng nhập được gỡ khỏi tài khoản, nên bạn có thể dùng lại email đó để đăng ký mới.</li>
+        <li>Mọi phiên đăng nhập, mã xác minh và liên kết đặt lại mật khẩu đang còn hiệu lực.</li>
+      </ul>
+
+      <h2>Dữ liệu được lưu lại (và lý do)</h2>
+      <ul>
+        <li>
+          Hồ sơ học tập của con (hồ sơ học sinh, ghi danh, lịch học, điểm danh, bài làm đã nộp, điểm): đây là hồ sơ
+          của trung tâm về việc dạy và học, con đang học vẫn được học tiếp. Muốn trung tâm xoá cả hồ sơ của con, gửi
+          yêu cầu qua email ở Cách 2.
+        </li>
+        <li>
+          Đơn đăng ký học, phiếu thu và biên lai học phí: là chứng từ kế toán của trung tâm, được lưu theo thời hạn
+          pháp luật về kế toán yêu cầu.
+        </li>
+        <li>Nhật ký kỹ thuật và nhật ký kiểm toán: lưu để truy vết bảo mật và nghĩa vụ pháp lý, không dùng cho mục đích khác.</li>
+      </ul>
+
+      <h2>Liên hệ</h2>
+      <p>
+        Email: <a href="mailto:support@vangon.vn">support@vangon.vn</a><br />
+        Điện thoại: 0559 294 401<br />
+        Chính sách đầy đủ: <a href="privacy.html">Chính sách quyền riêng tư</a>
+      </p>
+    </main>
+  </body>
+</html>
