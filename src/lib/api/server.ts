@@ -230,6 +230,11 @@ function refreshLifetime(token: string) {
     return 30 * 86400;
   }
 }
+function isSecureCookie() {
+  if (process.env.COOKIE_SECURE === "false") return false;
+  if (process.env.COOKIE_SECURE === "true") return true;
+  return process.env.NODE_ENV === "production";
+}
 export function setSessionCookies(
   response: NextResponse,
   auth: BackendAuth,
@@ -237,7 +242,7 @@ export function setSessionCookies(
 ) {
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     sameSite: "lax" as const,
     path: "/",
   };
@@ -264,7 +269,7 @@ export function clearSessionCookies(response: NextResponse) {
       maxAge: 0,
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureCookie(),
     });
 }
 export function webUser(user: BackendUser) {
