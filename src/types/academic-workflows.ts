@@ -131,13 +131,46 @@ export interface AssignmentQuestion {
 export interface AssignmentDetail extends AssignmentSummary {
   files?: AssignmentAttachment[];
   instructions: string;
-  recipients: { id: string; enrollmentId: string }[];
+  recipients: AssignmentRecipient[];
   questions: AssignmentQuestion[];
   /** Bộ CLO đã duyệt mà bài đo; `null` khi bài không gắn CLO. */
   outcomeSetId?: string | null;
   learningTargets?: LearningTarget[];
   /** Lúc giáo viên công bố đáp án; `null` khi chưa công bố (BE trả cùng chi tiết bài). */
   answersPublishedAt?: string | null;
+  canAssignSupplemental?: boolean;
+  activeSupplementalRecipientCount?: number;
+  canPublishAnswers?: boolean;
+}
+export interface AssignmentRecipient {
+  id: string;
+  enrollmentId: string;
+  assignedAt?: string | null;
+  dueAtOverride?: string | null;
+  effectiveDueAt?: string;
+  isSupplemental?: boolean;
+  canSubmit?: boolean;
+  submissionBlockReason?: string | null;
+}
+export interface EligibleAssignmentRecipient {
+  enrollmentId: string;
+  studentId: string;
+  fullName: string;
+}
+export interface EligibleAssignmentRecipients {
+  assignmentId: string;
+  status: AssignmentSummary["status"];
+  canAssignSupplemental: boolean;
+  blockReason: string | null;
+  items: EligibleAssignmentRecipient[];
+  page: number;
+  limit: number;
+  total: number;
+}
+export interface SupplementalAssignmentResult {
+  assignmentId: string;
+  addedRecipients: AssignmentRecipient[];
+  skippedEnrollmentIds: string[];
 }
 export interface AssignmentImportPreview {
   fileName: string;

@@ -200,12 +200,12 @@ const rules: {
   },
   {
     method: "GET",
-    path: /^academic\/assignments(?:\/[^/]+(?:\/submissions)?)?$/,
+    path: /^academic\/assignments(?:\/[^/]+(?:\/(?:submissions|eligible-recipients))?)?$/,
     roles: teacher,
   },
   {
     method: "POST",
-    path: /^academic\/assignments(?:\/[^/]+\/(publish|close|reopen|publish-answers))?$/,
+    path: /^academic\/assignments(?:\/[^/]+\/(publish|close|reopen|publish-answers|recipients))?$/,
     roles: teacher,
   },
   { method: "PATCH", path: /^academic\/assignments\/[^/]+$/, roles: teacher },

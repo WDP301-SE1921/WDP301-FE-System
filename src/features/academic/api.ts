@@ -15,6 +15,7 @@ import type {
   StudentGradeRecord,
   CurriculumFeedbackRecord,
   EmailDelivery,
+  EligibleAssignmentRecipients,
   EnrollmentRecord,
   GradeReview,
   GradingJob,
@@ -27,6 +28,7 @@ import type {
   QueuedEmailResult,
   SessionParticipant,
   SubmissionRecord,
+  SupplementalAssignmentResult,
   SubstituteCandidate,
 } from "@/types/academic-workflows";
 import {
@@ -40,6 +42,7 @@ import {
   makeupSchema,
   reasonSchema,
   recipientsSchema,
+  supplementalRecipientsSchema,
   reminderSchema,
   reportSchema,
   rescheduleMakeupSchema,
@@ -379,6 +382,19 @@ export const academicApi = {
     command(
       `${itemPath("assignments", id)}/publish`,
       recipientsSchema.parse(body),
+    ),
+  eligibleAssignmentRecipients: (id: string, signal?: AbortSignal) =>
+    apiRequest<EligibleAssignmentRecipients>(
+      queryPath(`${itemPath("assignments", id)}/eligible-recipients`, {
+        page: 1,
+        limit: 100,
+      }),
+      { signal },
+    ),
+  addAssignmentRecipients: (id: string, body: unknown) =>
+    command<SupplementalAssignmentResult>(
+      `${itemPath("assignments", id)}/recipients`,
+      supplementalRecipientsSchema.parse(body),
     ),
   closeAssignment: (id: string) =>
     command(`${itemPath("assignments", id)}/close`),

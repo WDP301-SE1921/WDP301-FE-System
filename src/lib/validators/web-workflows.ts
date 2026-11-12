@@ -274,6 +274,16 @@ export const recipientsSchema = z.object({
       "Không chọn ghi danh trùng.",
     ),
 });
+export const supplementalRecipientsSchema = recipientsSchema.extend({
+  enrollmentIds: recipientsSchema.shape.enrollmentIds.max(100),
+  dueAt: z
+    .string()
+    .datetime({ offset: true })
+    .refine(
+      (value) => Date.parse(value) > Date.now(),
+      "Hạn nộp phải ở tương lai.",
+    ),
+});
 export const gradeSchema = z.object({
   expectedRevision: z.number().int().min(0).optional(),
   scores: z

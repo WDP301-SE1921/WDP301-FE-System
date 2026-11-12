@@ -36,6 +36,8 @@ interface SubmissionRow {
   name: string;
   submission?: SubmissionRecord;
   attempts: SubmissionRecord[];
+  effectiveDueAt: string;
+  isSupplemental: boolean;
 }
 
 export function AssignmentSubmissionsTable({
@@ -64,6 +66,8 @@ export function AssignmentSubmissionsTable({
       attempts: submissions
         .filter((item) => item.recipientId === recipient.id)
         .sort((a, b) => b.attemptNo - a.attemptNo),
+      effectiveDueAt: recipient.effectiveDueAt ?? assignment.dueAt,
+      isSupplemental: recipient.isSupplemental ?? !!recipient.dueAtOverride,
     }))
     .filter((row) => {
       if (submissionFilter === "missing") return !row.submission;
@@ -88,6 +92,18 @@ export function AssignmentSubmissionsTable({
       header: "Học sinh",
       cell: ({ row }) => (
         <span className="font-medium">{row.original.name}</span>
+      ),
+    },
+    {
+      id: "deadline",
+      header: "Hạn nộp",
+      cell: ({ row }) => (
+        <div className="space-y-1">
+          <span>{displayMoment(row.original.effectiveDueAt)}</span>
+          {row.original.isSupplemental && (
+            <Badge variant="info">Giao bổ sung</Badge>
+          )}
+        </div>
       ),
     },
     {

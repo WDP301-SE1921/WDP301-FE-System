@@ -1,6 +1,7 @@
 "use client";
 import { SubmissionFile } from "@/features/grading/components/submission-file";
 import Link from "next/link";
+import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { parseAsStringLiteral, useQueryStates } from "nuqs";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { DateTimeInput } from "@/components/shared/pickers/date-time-input";
 import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
 import { measuredLearningTargets } from "@/features/outcomes/rules";
 import {
@@ -26,6 +29,7 @@ import {
 } from "@/features/academic/components/live-fields";
 import {
   confirmationSchema,
+  localDateTimeSchema,
   recipientsSchema,
 } from "@/lib/validators/web-workflows";
 import { todayInVietnam } from "@/features/registration-flow/calendar";
@@ -33,6 +37,7 @@ import type {
   AssignmentDetail,
   EnrollmentRecord,
   SubmissionRecord,
+  SupplementalAssignmentResult,
 } from "@/types/academic-workflows";
 import { ROUTES } from "@/constants/routes";
 import { FlowSteps } from "@/components/shared/workflows/flow-steps";
@@ -56,6 +61,19 @@ import { assignmentCsv, assignmentCsvTemplate } from "../csv-export";
 const publishSchema = recipientsSchema.extend({
   confirmed: confirmationSchema.shape.confirmed,
 });
+const supplementalFormSchema = recipientsSchema.extend({
+  enrollmentIds: recipientsSchema.shape.enrollmentIds.max(100),
+  dueAt: localDateTimeSchema.refine(
+    (value) => Date.parse(`${value}:00+07:00`) > Date.now(),
+    "Hạn nộp phải ở tương lai.",
+  ),
+});
+
+function tomorrowDeadline() {
+  const vietnam = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  vietnam.setUTCDate(vietnam.getUTCDate() + 1);
+  return `${vietnam.toISOString().slice(0, 10)}T23:59`;
+}
 /** Danh sách bài tập của giáo viên (bảng có lọc `?filter=`). */
 export function LiveAssignmentsView() {
   return <AssignmentsTable />;
@@ -192,6 +210,21 @@ function AssignmentWorkspace({
         onSelect={(key) => go(key as AssignmentStepKey)}
         label="Các bước của bài tập"
       />
+      {assignment.canAssignSupplemental && (
+        <SupplementalRecipientsCard assignment={assignment} />
+      )}
+      {assignment.status === "CLOSED" &&
+        (assignment.activeSupplementalRecipientCount ?? 0) > 0 && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent>
+              <p className="font-medium">
+                Đợt chung đã đóng — còn{" "}
+                {assignment.activeSupplementalRecipientCount} học sinh được nộp
+                bổ sung.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       {active === "compose" && (
         <div className="space-y-4">
           {isDraft && (
@@ -314,6 +347,193 @@ function AssignmentWorkspace({
         </>
       )}
     </div>
+  );
+}
+
+function SupplementalRecipientsCard({
+  assignment,
+}: {
+  assignment: AssignmentDetail;
+}) {
+  const [search, setSearch] = useState("");
+  const [result, setResult] = useState<SupplementalAssignmentResult | null>(
+    null,
+  );
+  const eligibility = useLiveQuery(
+    ["assignment-eligible-recipients", assignment.id],
+    (signal) => academicApi.eligibleAssignmentRecipients(assignment.id, signal),
+    assignment.canAssignSupplemental === true,
+  );
+  const action = useLiveCommand();
+  const form = useForm<z.infer<typeof supplementalFormSchema>>({
+    resolver: zodResolver(supplementalFormSchema),
+    defaultValues: { enrollmentIds: [], dueAt: tomorrowDeadline() },
+  });
+  const selectedIds = useWatch({
+    control: form.control,
+    name: "enrollmentIds",
+  });
+  const students = eligibility.data?.items ?? [];
+  const normalizedSearch = search.trim().toLocaleLowerCase("vi");
+  const visibleStudents = normalizedSearch
+    ? students.filter((student) =>
+        student.fullName.toLocaleLowerCase("vi").includes(normalizedSearch),
+      )
+    : students;
+
+  const setRecipients = (ids: string[]) =>
+    form.setValue("enrollmentIds", ids, {
+      shouldDirty: true,
+      shouldValidate: form.formState.isSubmitted,
+    });
+
+  return (
+    <Card className="border-primary/30">
+      <CardHeader>
+        <CardTitle>Giao bổ sung cho học sinh mới</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="space-y-5"
+          onSubmit={form.handleSubmit((value) =>
+            action.mutate(
+              () =>
+                academicApi.addAssignmentRecipients(assignment.id, {
+                  enrollmentIds: value.enrollmentIds,
+                  dueAt: new Date(`${value.dueAt}:00+07:00`).toISOString(),
+                }),
+              {
+                onSuccess: (data) => {
+                  setResult(data as SupplementalAssignmentResult);
+                  form.reset({
+                    enrollmentIds: [],
+                    dueAt: tomorrowDeadline(),
+                  });
+                },
+              },
+            ),
+          )}
+        >
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+            <div className="space-y-3">
+              <Label htmlFor="supplemental-search">
+                Tìm học sinh chưa nhận bài
+              </Label>
+              <Input
+                id="supplemental-search"
+                type="search"
+                value={search}
+                placeholder="Nhập tên học sinh"
+                disabled={action.isPending || eligibility.isPending}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              {eligibility.isPending ? (
+                <p className="text-sm text-muted-foreground">
+                  Đang tải danh sách…
+                </p>
+              ) : students.length === 0 ? (
+                <p className="rounded-xl bg-muted/50 p-3 text-sm">
+                  Hiện chưa có học sinh mới đủ điều kiện nhận bài.
+                </p>
+              ) : (
+                <fieldset className="max-h-64 space-y-2 overflow-y-auto rounded-2xl border border-border p-2">
+                  <legend className="sr-only">
+                    Chọn học sinh nhận bài bổ sung
+                  </legend>
+                  {visibleStudents.map((student) => (
+                    <div
+                      key={student.enrollmentId}
+                      className="flex items-center gap-3 rounded-xl px-3 hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        id={`supplemental-${student.enrollmentId}`}
+                        checked={selectedIds.includes(student.enrollmentId)}
+                        disabled={action.isPending}
+                        onCheckedChange={(checked) =>
+                          setRecipients(
+                            checked
+                              ? [...selectedIds, student.enrollmentId]
+                              : selectedIds.filter(
+                                  (id) => id !== student.enrollmentId,
+                                ),
+                          )
+                        }
+                      />
+                      <Label
+                        htmlFor={`supplemental-${student.enrollmentId}`}
+                        className="min-h-11 flex-1 cursor-pointer py-3"
+                      >
+                        {student.fullName}
+                      </Label>
+                    </div>
+                  ))}
+                  {visibleStudents.length === 0 && (
+                    <p className="p-3 text-sm text-muted-foreground">
+                      Không tìm thấy học sinh phù hợp.
+                    </p>
+                  )}
+                </fieldset>
+              )}
+              {form.formState.errors.enrollmentIds && (
+                <p className="text-sm text-destructive" role="alert">
+                  {form.formState.errors.enrollmentIds.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-4 rounded-2xl bg-muted/40 p-4">
+              <div className="space-y-2">
+                <Label htmlFor="supplemental-due-at">
+                  Hạn nộp riêng (giờ Việt Nam)
+                </Label>
+                <Controller
+                  name="dueAt"
+                  control={form.control}
+                  render={({ field }) => (
+                    <DateTimeInput
+                      id="supplemental-due-at"
+                      value={field.value}
+                      onChange={field.onChange}
+                      defaultTime="23:59"
+                      disabled={action.isPending}
+                      invalid={!!form.formState.errors.dueAt}
+                    />
+                  )}
+                />
+                {form.formState.errors.dueAt && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {form.formState.errors.dueAt.message}
+                  </p>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Đã chọn{" "}
+                <strong className="text-foreground">
+                  {selectedIds.length}
+                </strong>{" "}
+                học sinh. Hạn này chỉ áp dụng cho các em được giao bổ sung.
+              </p>
+              <Button
+                className="w-full"
+                type="submit"
+                isLoading={action.isPending}
+                disabled={!selectedIds.length || action.isPending}
+              >
+                {action.isPending ? "Đang giao…" : "Giao bổ sung"}
+              </Button>
+            </div>
+          </div>
+          {result && (
+            <p className="rounded-xl bg-primary/10 p-3 text-sm" role="status">
+              Đã giao bổ sung cho {result.addedRecipients.length} học sinh
+              {result.skippedEnrollmentIds.length
+                ? `; bỏ qua ${result.skippedEnrollmentIds.length} học sinh đã nhận bài.`
+                : "."}
+            </p>
+          )}
+          <ApiFeedback error={eligibility.error ?? action.error} />
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
