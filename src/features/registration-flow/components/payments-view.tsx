@@ -45,6 +45,8 @@ const MIN_LOOKUP_LENGTH = 20;
 const ORDER_STATUS_TEXT: Record<RegistrationOrder["status"], string> = {
   DRAFT: "Bản nháp, chờ thu học phí",
   COMPLETED: "Đã thu tiền",
+  PAYMENT_CONFIRMED: "Đã thu tiền",
+  LINKED: "Đã vào lớp",
   CANCELLED: "Đã hủy",
 };
 function subscribe(callback: () => void) {

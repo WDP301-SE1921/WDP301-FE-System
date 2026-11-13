@@ -31,6 +31,8 @@ import { directoryApi, type PaymentRecord } from "../api";
 const ORDER_ACTION: Record<RegistrationOrder["status"], string> = {
   DRAFT: "Thu phí",
   COMPLETED: "Biên lai",
+  PAYMENT_CONFIRMED: "Biên lai",
+  LINKED: "Biên lai",
   CANCELLED: "Xem",
 };
 
@@ -120,14 +122,16 @@ export function LivePaymentHistory({
       cell: ({ row }) => (
         <Badge
           variant={
-            row.original.status === "COMPLETED"
+            row.original.status === "COMPLETED" ||
+            row.original.status === "PAYMENT_CONFIRMED" ||
+            row.original.status === "LINKED"
               ? "success"
               : row.original.status === "DRAFT"
                 ? "warning"
                 : "secondary"
           }
         >
-          {STATUS_TEXT[row.original.status]}
+          {STATUS_TEXT[row.original.status] ?? row.original.status}
         </Badge>
       ),
     },
