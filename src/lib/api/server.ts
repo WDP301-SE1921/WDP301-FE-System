@@ -14,10 +14,14 @@ export const SESSION_COOKIES = {
 export const VERIFIED_ROLE_HEADER = "x-edugrade-verified-role";
 
 export function browserRedirectUrl(request: NextRequest, path: string) {
-  const url = new URL(path, request.url);
-  const host = request.headers.get("host");
-  if (host) url.host = host;
-  return url;
+  const host =
+    request.headers.get("x-forwarded-host") ??
+    request.headers.get("host") ??
+    request.nextUrl.host;
+  const proto =
+    request.headers.get("x-forwarded-proto") ??
+    (request.nextUrl.protocol ? request.nextUrl.protocol.replace(":", "") : "http");
+  return new URL(path, `${proto}://${host}`);
 }
 
 export function isSameOriginRequest(request: NextRequest) {

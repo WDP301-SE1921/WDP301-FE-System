@@ -69,6 +69,8 @@ export const STATUS_TEXT: Record<string, string> = {
   CANCELLED: "Đã hủy",
   SCHEDULED: "Đã lên lịch",
   COMPLETED: "Hoàn tất",
+  PAYMENT_CONFIRMED: "Đã thu tiền",
+  LINKED: "Đã vào lớp",
   BOOKED: "Đã xếp",
   MISSED: "Không đi học bù",
   SUPERSEDED: "Đã có bản mới",

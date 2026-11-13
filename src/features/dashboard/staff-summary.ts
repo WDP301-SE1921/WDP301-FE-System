@@ -37,7 +37,7 @@ export async function readCompletedSummary(signal?: AbortSignal) {
     directoryApi.payments({ page: 1, limit: 1 }, signal),
   ]);
   return {
-    count: registrations.total,
+    count: registrations.total > 0 ? registrations.total : (payments.total ?? 0),
     amount: amount(payments.totalAmount),
   };
 }
