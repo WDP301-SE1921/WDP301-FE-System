@@ -17,12 +17,8 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { FormPageHeader } from "@/components/shared/layout/form-page-header";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,17 +76,12 @@ function LoginForm() {
   return (
     <div data-slot="login-form" className="space-y-6">
       <Card className="gap-6 p-5 sm:p-8">
-        <CardHeader className="gap-2">
-          <h1
-            id="login-heading"
-            className="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
-          >
-            {AUTH_MSG.LOGIN_TITLE}
-          </h1>
-          <CardDescription id="login-description" className="leading-relaxed">
-            {AUTH_MSG.LOGIN_DESC}
-          </CardDescription>
-        </CardHeader>
+        <FormPageHeader
+          title={AUTH_MSG.LOGIN_TITLE}
+          description={AUTH_MSG.LOGIN_DESC}
+          titleId="login-heading"
+          descriptionId="login-description"
+        />
 
         <CardContent className="space-y-5">
           {submitError && (

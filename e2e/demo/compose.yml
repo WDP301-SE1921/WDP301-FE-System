@@ -1,0 +1,33 @@
+name: wdp-demonstration-e2e
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: WdpE2E_database_local
+      MYSQL_DATABASE: edugrade_e2e
+    ports:
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - mysql-e2e:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+  storage:
+    image: dhi.io/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: wdp_e2e_local
+      MINIO_ROOT_PASSWORD: WdpE2E_storage_local
+    ports:
+      - "127.0.0.1:9002:9000"
+    volumes:
+      - storage-e2e:/data
+volumes:
+  mysql-e2e:
+  storage-e2e:

@@ -15,13 +15,8 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FormPageHeader } from "@/components/shared/layout/form-page-header";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AUTH_MSG } from "@/constants/messages/events/auth";
@@ -71,13 +66,11 @@ function ResetPasswordForm() {
 
   return (
     <Card className="gap-5">
-      <CardHeader className="gap-3">
-        <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <HugeiconsIcon icon={ShieldKeyIcon} className="size-5" />
-        </span>
-        <CardTitle className="text-2xl">{AUTH_MSG.RESET_TITLE}</CardTitle>
-        <CardDescription>{AUTH_MSG.RESET_DESC}</CardDescription>
-      </CardHeader>
+      <FormPageHeader
+        title={AUTH_MSG.RESET_TITLE}
+        description={AUTH_MSG.RESET_DESC}
+        icon={<HugeiconsIcon icon={ShieldKeyIcon} className="size-5" />}
+      />
       <CardContent className="space-y-5">
         {reset.isSuccess ? (
           <Alert variant="success">

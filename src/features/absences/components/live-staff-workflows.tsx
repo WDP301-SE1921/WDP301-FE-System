@@ -35,7 +35,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffectedSessions } from "@/components/shared/display/affected-sessions";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
-import { ApiForm, type ApiFormValues } from "@/components/shared/forms/api-form";
+import {
+  ApiForm,
+  type ApiFormValues,
+} from "@/components/shared/forms/api-form";
 import { ChoiceCards } from "@/components/shared/forms/choice-cards";
 import {
   CompareTable,
@@ -72,8 +75,8 @@ import {
   vietnamDateTime,
   confirmationSchema,
 } from "@/lib/validators/web-workflows";
+import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
 import {
-  LiveSelect,
   displayMoment,
   STATUS_TEXT,
 } from "@/features/academic/components/live-fields";
@@ -133,7 +136,11 @@ const panelParsers = {
   sourceId: parseAsString,
   targetSessionId: parseAsString,
 };
-const CLEARED_PANEL = { sessionId: null, sourceId: null, targetSessionId: null };
+const CLEARED_PANEL = {
+  sessionId: null,
+  sourceId: null,
+  targetSessionId: null,
+};
 
 /** Lớp đang học của ghi danh (theo xếp lớp hiện hành), kèm lịch tuần, giáo viên, phòng. */
 function currentClassOf(enrollment: EnrollmentRecord): RegistrationClass {
@@ -149,7 +156,9 @@ const teacherText = (item?: RegistrationClass) =>
 const roomText = (item?: RegistrationClass) =>
   item?.room?.name ?? "Chưa xếp phòng";
 const scheduleOf = (item?: RegistrationClass) =>
-  item?.weeklySchedules?.length ? scheduleText(item.weeklySchedules) : "Chưa có lịch tuần";
+  item?.weeklySchedules?.length
+    ? scheduleText(item.weeklySchedules)
+    : "Chưa có lịch tuần";
 const localMoment = (value: unknown) =>
   typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)
     ? `${displayDate(value.slice(0, 10))}, ${value.slice(11)}`
@@ -171,7 +180,11 @@ export function StudentWorkflowSheet() {
       open={!!studentId}
       onOpenChange={(open) => {
         if (open) return;
-        void setSelection({ studentId: null, enrollmentId: null, action: null });
+        void setSelection({
+          studentId: null,
+          enrollmentId: null,
+          action: null,
+        });
         void setPanel(CLEARED_PANEL);
       }}
     >
@@ -420,7 +433,12 @@ function LeavePanel({
     const to = values.toDate;
     if (!isDay(from) || !isDay(to) || from > to) return null;
     const list = scheduledBetween(sessions.data ?? [], from, to);
-    return { from, to, list, back: firstScheduledAfter(sessions.data ?? [], to) };
+    return {
+      from,
+      to,
+      list,
+      back: firstScheduledAfter(sessions.data ?? [], to),
+    };
   };
   return (
     <Card>
@@ -450,7 +468,9 @@ function LeavePanel({
           }
           preview={(values) => {
             const result = impact(values);
-            const count = result ? `${result.list.length} buổi` : "Chọn khoảng ngày";
+            const count = result
+              ? `${result.list.length} buổi`
+              : "Chọn khoảng ngày";
             const rows: CompareRow[] = [
               {
                 label: "Trạng thái",
@@ -460,7 +480,11 @@ function LeavePanel({
                   : "Chọn khoảng ngày",
                 state: result ? "changed" : "same",
               },
-              { label: "Lịch tuần", before: scheduleOf(current), after: "Giữ nguyên" },
+              {
+                label: "Lịch tuần",
+                before: scheduleOf(current),
+                after: "Giữ nguyên",
+              },
               {
                 label: "Buổi trong khoảng",
                 before: result ? `${count} đi học` : count,
@@ -486,7 +510,11 @@ function LeavePanel({
                     isLoading={sessions.isPending}
                     isError={sessions.isError}
                     onRetry={() => void sessions.refetch()}
-                    first={{ sessions: result.list, tag: "Nghỉ có phép", tone: "warning" }}
+                    first={{
+                      sessions: result.list,
+                      tag: "Nghỉ có phép",
+                      tone: "warning",
+                    }}
                     second={{
                       sessions: result.back ? [result.back] : [],
                       tag: "Học bình thường",
@@ -717,7 +745,9 @@ function TransferPanel({
       Number(item.monthlyFee) === Number(enrollment.class.monthlyFee),
   );
   const seats = (item?: RegistrationClass) =>
-    item?.rosterCount === undefined ? undefined : item.capacity - item.rosterCount;
+    item?.rosterCount === undefined
+      ? undefined
+      : item.capacity - item.rosterCount;
   return (
     <Card>
       <CardHeader>
@@ -777,10 +807,15 @@ function TransferPanel({
               })
             }
             preview={(values) => {
-              const target = options.find((item) => item.id === values.targetClassId);
+              const target = options.find(
+                (item) => item.id === values.targetClassId,
+              );
               const differs = (a: string, b: string) =>
                 target ? (a === b ? "same" : "changed") : "same";
-              const seatText = (item: RegistrationClass | undefined, extra: number) =>
+              const seatText = (
+                item: RegistrationClass | undefined,
+                extra: number,
+              ) =>
                 item?.rosterCount === undefined
                   ? `Sức chứa ${item?.capacity ?? "?"}`
                   : `${item.rosterCount + extra} / ${item.capacity}`;
@@ -833,7 +868,9 @@ function TransferPanel({
               return <CompareTable rows={rows} />;
             }}
             summary={(values) => {
-              const target = options.find((item) => item.id === values.targetClassId);
+              const target = options.find(
+                (item) => item.id === values.targetClassId,
+              );
               const when = localMoment(values.effectiveAt);
               if (!target || !when)
                 return "Chọn lớp mới và thời điểm hiệu lực để xem thay đổi.";
@@ -876,7 +913,9 @@ function WithdrawPanel({
     },
     {
       label: "Tài khoản phụ huynh",
-      before: student.parentProfile.user.displayName || student.parentProfile.user.email,
+      before:
+        student.parentProfile.user.displayName ||
+        student.parentProfile.user.email,
       after: "Giữ nguyên",
     },
     { label: "Các con khác", before: "Không đổi", after: "Không ảnh hưởng" },
@@ -948,10 +987,16 @@ function WithdrawPanel({
             danger: true,
           }}
           onSubmit={(value) => {
-            const body = { reason: typeof value.reason === "string" ? value.reason : undefined };
+            const body = {
+              reason:
+                typeof value.reason === "string" ? value.reason : undefined,
+            };
             return isAll
               ? academicApi.endStudent(student.id, body)
-              : academicApi.endEnrollment((enrollment as EnrollmentRecord).id, body);
+              : academicApi.endEnrollment(
+                  (enrollment as EnrollmentRecord).id,
+                  body,
+                );
           }}
         />
       </CardContent>
@@ -969,7 +1014,10 @@ function LeaveHistory({ studentId }: { studentId: string }) {
   const leaves = useLiveQuery(["leaves", studentId], (signal) =>
     academicApi.leaves({ studentId }, signal),
   );
-  const [active, setActive] = useState<{ leave: LeaveRecord; action: LeaveAction } | null>(null);
+  const [active, setActive] = useState<{
+    leave: LeaveRecord;
+    action: LeaveAction;
+  } | null>(null);
   const close = () => setActive(null);
   return (
     <Card>
@@ -1004,27 +1052,38 @@ function LeaveHistory({ studentId }: { studentId: string }) {
                     dateOnly(leave.toDate) >= todayLocalDate();
                   const canCancel =
                     leave.status === "PENDING" || leave.status === "APPROVED";
-                  const open = (action: LeaveAction) => setActive({ leave, action });
+                  const open = (action: LeaveAction) =>
+                    setActive({ leave, action });
                   return (
                     <TableRow key={leave.id}>
                       <TableCell>
-                        <p className="font-medium">{leave.enrollment.class.name}</p>
+                        <p className="font-medium">
+                          {leave.enrollment.class.name}
+                        </p>
                         <p className="text-muted-foreground">
-                          {leave.kind === "PERIOD_PAUSE" ? "Nghỉ dài hạn" : "Nghỉ một buổi"}
+                          {leave.kind === "PERIOD_PAUSE"
+                            ? "Nghỉ dài hạn"
+                            : "Nghỉ một buổi"}
                         </p>
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {dateOnly(leave.fromDate) === dateOnly(leave.toDate)
                           ? displayDate(leave.fromDate)
-                          : rangeText(dateOnly(leave.fromDate), dateOnly(leave.toDate))}
+                          : rangeText(
+                              dateOnly(leave.fromDate),
+                              dateOnly(leave.toDate),
+                            )}
                       </TableCell>
                       <TableCell className="max-w-56">
-                        <p className="line-clamp-2 whitespace-pre-wrap">{leave.reason}</p>
-                        {leave.decisionNote && leave.decisionNote !== leave.reason && (
-                          <p className="line-clamp-2 text-muted-foreground">
-                            {leave.decisionNote}
-                          </p>
-                        )}
+                        <p className="line-clamp-2 whitespace-pre-wrap">
+                          {leave.reason}
+                        </p>
+                        {leave.decisionNote &&
+                          leave.decisionNote !== leave.reason && (
+                            <p className="line-clamp-2 text-muted-foreground">
+                              {leave.decisionNote}
+                            </p>
+                          )}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -1036,28 +1095,49 @@ function LeaveHistory({ studentId }: { studentId: string }) {
                                 : "secondary"
                           }
                         >
-                          {STATUS_TEXT[leave.status] ?? "Chưa xác định trạng thái"}
+                          {STATUS_TEXT[leave.status] ??
+                            "Chưa xác định trạng thái"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap justify-end gap-2">
                           {leave.status === "PENDING" && (
                             <>
-                              <Button type="button" size="sm" variant="outline" onClick={() => open("approve")}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => open("approve")}
+                              >
                                 Duyệt
                               </Button>
-                              <Button type="button" size="sm" variant="outline" onClick={() => open("reject")}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => open("reject")}
+                              >
                                 Từ chối
                               </Button>
                             </>
                           )}
                           {canEndEarly && (
-                            <Button type="button" size="sm" variant="outline" onClick={() => open("endEarly")}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => open("endEarly")}
+                            >
                               Kết thúc sớm
                             </Button>
                           )}
                           {canCancel && (
-                            <Button type="button" size="sm" variant="ghost" onClick={() => open("cancel")}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => open("cancel")}
+                            >
                               Hủy đơn
                             </Button>
                           )}
@@ -1080,10 +1160,17 @@ function LeaveHistory({ studentId }: { studentId: string }) {
                 <DialogTitle>{LEAVE_ACTION_TITLE[active.action]}</DialogTitle>
                 <DialogDescription>
                   {active.leave.enrollment.class.name},{" "}
-                  {rangeText(dateOnly(active.leave.fromDate), dateOnly(active.leave.toDate))}
+                  {rangeText(
+                    dateOnly(active.leave.fromDate),
+                    dateOnly(active.leave.toDate),
+                  )}
                 </DialogDescription>
               </DialogHeader>
-              <LeaveActionForm leave={active.leave} action={active.action} onDone={close} />
+              <LeaveActionForm
+                leave={active.leave}
+                action={active.action}
+                onDone={close}
+              />
             </>
           )}
         </DialogContent>
@@ -1100,7 +1187,8 @@ function LeaveActionForm({
   action: LeaveAction;
   onDone: () => void;
 }) {
-  if (action === "endEarly") return <EndLeaveEarly leave={leave} onDone={onDone} />;
+  if (action === "endEarly")
+    return <EndLeaveEarly leave={leave} onDone={onDone} />;
   if (action === "cancel")
     return (
       <ApiForm
@@ -1213,7 +1301,13 @@ function RescheduleMakeup({ booking }: { booking: MakeupRecord }) {
     </div>
   );
 }
-function EndLeaveEarly({ leave, onDone }: { leave: LeaveRecord; onDone: () => void }) {
+function EndLeaveEarly({
+  leave,
+  onDone,
+}: {
+  leave: LeaveRecord;
+  onDone: () => void;
+}) {
   const fromDate = dateOnly(leave.fromDate);
   const toDate = dateOnly(leave.toDate);
   const schema = endLeaveEarlySchema.refine(

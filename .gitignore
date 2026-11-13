@@ -51,3 +51,11 @@ next-env.d.ts
 /e2e/.auth/
 /e2e/.results/
 /e2e/.report/
+/e2e/.demo-results/
+/e2e/.demo-report/
+/e2e/.demo-runtime/
+/e2e/.production-runtime/
+/e2e/.production-results/
+/e2e/.production-report/
+/e2e/.system-results/
+/e2e/.system-report/

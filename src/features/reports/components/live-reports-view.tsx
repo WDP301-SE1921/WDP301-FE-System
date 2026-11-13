@@ -21,10 +21,8 @@ import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { academicApi, currentEnrollmentClass } from "@/features/academic/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { dateSchema } from "@/lib/validators/web-workflows";
-import {
-  LiveSelect,
-  displayMoment,
-} from "@/features/academic/components/live-fields";
+import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
+import { displayMoment } from "@/features/academic/components/live-fields";
 import { downloadReport } from "@/lib/api/client";
 const ALL_STUDENTS = "all";
 const reportFormSchema = z

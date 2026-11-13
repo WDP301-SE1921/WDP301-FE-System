@@ -3,13 +3,8 @@
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { FormPageHeader } from "@/components/shared/layout/form-page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -45,14 +40,14 @@ export function RegisterParentForm() {
   }
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>
-          {registration.isSuccess
+      <FormPageHeader
+        title={
+          registration.isSuccess
             ? AUTH_MSG.REGISTER_SUCCESS
-            : AUTH_MSG.REGISTER_TITLE}
-        </CardTitle>
-        <CardDescription>{AUTH_MSG.REGISTER_DESC}</CardDescription>
-      </CardHeader>
+            : AUTH_MSG.REGISTER_TITLE
+        }
+        description={AUTH_MSG.REGISTER_DESC}
+      />
       <CardContent>
         {registration.isSuccess ? (
           <div role="status" className="space-y-3">

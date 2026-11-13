@@ -327,6 +327,10 @@ async function handle(
       });
       const disposition = upstream.headers.get("content-disposition");
       if (disposition) headers.set("Content-Disposition", disposition);
+      if (/^academic\/files\/[^/]+\/content$/.test(path)) {
+        headers.set("X-Content-Type-Options", "nosniff");
+        headers.set("Content-Security-Policy", "default-src 'none'; sandbox");
+      }
       response = new NextResponse(await upstream.arrayBuffer(), {
         status: upstream.status,
         headers,
