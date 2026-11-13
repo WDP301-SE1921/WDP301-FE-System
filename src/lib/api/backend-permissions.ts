@@ -100,7 +100,9 @@ const rules: {
     path: /^academic\/students\/[^/]+\/grades$/,
     roles: managerOrStaff,
   },
-  { method: "GET", path: /^(registrations|payments)$/, roles: staff },
+  { method: "GET", path: /^registrations$/, roles: staff },
+  // Quản lý chỉ đọc lịch sử biên lai cho dashboard (BE đã cho STAFF + MANAGER); thu phí vẫn là Nhân viên.
+  { method: "GET", path: /^payments$/, roles: managerOrStaff },
   {
     method: "GET",
     path: /^academic\/(enrollments|sessions)$/,
@@ -118,8 +120,14 @@ const rules: {
   },
   {
     method: "GET",
-    path: /^academic\/(leaves|makeup-sources|makeups)$/,
+    path: /^academic\/makeups$/,
     roles: staff,
+  },
+  {
+    // Quản lý chỉ đọc số đơn nghỉ chờ duyệt và buổi chờ học bù cho dashboard (BE cho MANAGER + STAFF).
+    method: "GET",
+    path: /^academic\/(leaves|makeup-sources)$/,
+    roles: managerOrStaff,
   },
   {
     method: "GET",

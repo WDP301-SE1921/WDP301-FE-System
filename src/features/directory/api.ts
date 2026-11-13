@@ -63,7 +63,16 @@ export interface PaymentRecord {
     id: string;
     parentEmail: string;
     studentFullName: string;
-    class: { id: string; name: string };
+    /** BE `GET payments` có trả các trường dưới; để optional vì vài màn cũ mock thiếu. */
+    studentGrade?: number;
+    packageMonths?: number;
+    startDate?: string | null;
+    endDate?: string | null;
+    class: {
+      id: string;
+      name: string;
+      program?: { id: string; name: string; subject: string; grade: number };
+    };
   };
 }
 export type DirectoryFilters = Record<string, string | number | undefined>;

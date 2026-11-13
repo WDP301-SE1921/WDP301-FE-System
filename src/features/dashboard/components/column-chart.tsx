@@ -36,7 +36,10 @@ export function ColumnChart({
   valueLabel,
   format,
   labelEvery = 1,
+  partialKey,
 }: {
+  /** Cột của kỳ chưa kết thúc (vd. tháng đang chạy): vẽ nhạt + viền nét đứt. */
+  partialKey?: string;
   data: ColumnDatum[];
   ariaLabel: string;
   /** Tên cột số trong bảng (vd. "Học phí"). */
@@ -133,6 +136,10 @@ export function ColumnChart({
                     <path
                       d={`M${x},${height} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + bar - r},${y} Q${x + bar},${y} ${x + bar},${y + r} L${x + bar},${height} Z`}
                       fill="var(--primary)"
+                      fillOpacity={item.key === partialKey ? 0.35 : 1}
+                      stroke={item.key === partialKey ? "var(--primary)" : undefined}
+                      strokeDasharray={item.key === partialKey ? "4 3" : undefined}
+                      vectorEffect="non-scaling-stroke"
                       opacity={active === null || active === index ? 1 : 0.45}
                     />
                   )}
