@@ -208,6 +208,8 @@ export interface RegistrationClass {
 export interface RegistrationOrder {
   id: string;
   status: "DRAFT" | "COMPLETED" | "CANCELLED";
+  /** BE trả cùng đơn (include toàn bộ cột); dùng để tính đơn chờ bao lâu. */
+  createdAt?: string;
   targetStudentId: string;
   parentEmail: string;
   studentFullName: string;
