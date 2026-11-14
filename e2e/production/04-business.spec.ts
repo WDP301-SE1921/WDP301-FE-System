@@ -329,46 +329,52 @@ test("production attendance locked report and exports", async ({
   });
 });
 
-test("production teacher corrects transcript and publishes grades", async ({
+test("production teacher corrections preserve published grades", async ({
   page,
   context,
 }, info) => {
   const f = read();
-  if (!f.grade) {
-    if (!f.correctedJob) {
-      f.correctedJob = await call(
-        "teacher",
-        `academic/submissions/${f.submission.id}/grade-ai`,
-        "POST",
-        {
-          corrections: [
-            {
-              questionId: f.assignment.questions[1].id,
-              answer: "2x + 3 = 7\n2x = 4\nx = 2",
-            },
-          ],
-        },
-      );
-      save(f);
-    }
-    await expect
-      .poll(
-        async () => {
-          const job = await call(
-            "teacher",
-            `academic/grading-jobs/${f.correctedJob.id}`,
-          );
-          return job.status;
-        },
-        { timeout: 120000, intervals: [1000, 2000, 3000] },
-      )
-      .toMatch(/SUCCEEDED|FAILED/);
-    const job = await call(
+  const correction = {
+    questionId: f.assignment.questions[1].id,
+    answer: "2x + 3 = 7\n2x = 4\nx = 2",
+  };
+  if (!f.correctedJob || process.env.E2E_RECHECK_AI === "1") {
+    f.correctedJob = await call(
       "teacher",
-      `academic/grading-jobs/${f.correctedJob.id}`,
+      `academic/submissions/${f.submission.id}/grade-ai`,
+      "POST",
+      { corrections: [correction] },
     );
-    expect(job.status).toBe("SUCCEEDED");
-    expect(job.result.scores).toHaveLength(2);
+    save(f);
+  }
+  await expect
+    .poll(
+      async () => {
+        const job = await call(
+          "teacher",
+          `academic/grading-jobs/${f.correctedJob.id}`,
+        );
+        return job.status;
+      },
+      { timeout: 120000, intervals: [1000, 2000, 3000] },
+    )
+    .toMatch(/SUCCEEDED|FAILED/);
+  const job = await call(
+    "teacher",
+    `academic/grading-jobs/${f.correctedJob.id}`,
+  );
+  expect(job.status).toBe("SUCCEEDED");
+  expect(job.result.scores).toHaveLength(2);
+  expect(job.result.correctedById).toBe(session("teacher").user.id);
+  expect(job.result.corrections).toContainEqual(correction);
+  expect(job.result.readings).toContainEqual(
+    expect.objectContaining({ ...correction, readable: true, sources: [] }),
+  );
+  await info.attach("teacher correction used by real AI job", {
+    body: JSON.stringify(job, null, 2),
+    contentType: "application/json",
+  });
+  if (!f.grade) {
     f.grade = await call(
       "teacher",
       `academic/submissions/${f.submission.id}/grades`,
