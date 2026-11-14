@@ -129,13 +129,14 @@ export function resolveSubject(
   const label = value?.trim() ?? ""
   if (!label) return OTHER_SUBJECT
   const key = normalizeSubjectKey(label)
-  const known = KNOWN_SUBJECTS.find(
-    (subject) => subject.codes.includes(key) || subject.namePattern.test(key),
-  )
+  const byCode = KNOWN_SUBJECTS.find((subject) => subject.codes.includes(key))
+  const known =
+    byCode ?? KNOWN_SUBJECTS.find((subject) => subject.namePattern.test(key))
   if (known)
     return {
       code: known.code,
-      name: known.name,
+      // Đưa vào mã thì dùng tên chuẩn; đưa vào tên thì giữ đúng tên Quản lý đặt ở danh mục.
+      name: byCode ? known.name : label,
       tone: known.tone,
       badgeVariant: known.tone,
       badgeClassName: "",

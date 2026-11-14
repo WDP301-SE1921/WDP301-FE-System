@@ -46,7 +46,8 @@ function SubjectsSection({ subjects }: { subjects: PublicSubject[] }) {
         ) : (
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {subjects.map((subject) => {
-              const { tone } = resolveSubject(subject.code)
+              // Theo tên như lịch và danh sách lớp, để một môn có cùng màu ở mọi màn.
+              const { tone } = resolveSubject(subject.name)
               const blurb = SUBJECT_BLURBS[tone]
               return (
                 <Card
@@ -59,7 +60,7 @@ function SubjectsSection({ subjects }: { subjects: PublicSubject[] }) {
                       className="size-6"
                     />
                   </span>
-                  <SubjectTag code={subject.code} />
+                  <SubjectTag code={subject.name} />
                   {blurb && (
                     <p className="text-sm leading-relaxed text-muted-foreground">
                       {blurb}
