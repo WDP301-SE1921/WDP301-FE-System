@@ -14,7 +14,7 @@ Lượt chạy ngày **14/11/2026 (giờ Việt Nam)**: **97/97 passed**, 0 fail
 
 Báo cáo tương tác có ảnh, video và trace tại `e2e/.system-report/index.html`; mở bằng `npm run test:e2e:system:report`. JSON của lượt chạy nằm tại `e2e/.system-results/results.json`. Các bằng chứng này được giữ trên máy và không đưa vào Git/image ứng dụng. Hướng dẫn chạy lại: [README.md](./README.md).
 
-Các bản sửa đã có phép kiểm chứng: dùng chung tiêu đề và bộ chọn trong biểu mẫu; bảng quyền Admin không tràn màn hình nhỏ; đường dẫn About trỏ tới mục hiện có; chuyển hướng đăng nhập sau reverse proxy; xem ảnh riêng tư qua HTTPS cùng origin. Backend đã được kiểm tra lại 551 unit test; mobile nhánh develop/Expo 58 đạt 668 test; Admin đạt 61 test; kiểm tra FE hiện có đạt 63 test và thêm 4 phép hồi quy chuyển hướng.
+Các bản sửa đã có phép kiểm chứng: dùng chung tiêu đề và bộ chọn trong biểu mẫu; bảng quyền Admin không tràn màn hình nhỏ; đường dẫn About trỏ tới mục hiện có; chuyển hướng đăng nhập sau reverse proxy; xem ảnh riêng tư qua HTTPS cùng origin. Backend đã được kiểm tra lại 551 unit test; mobile nhánh develop/Expo 58 đạt 668 test; Admin đạt 61 test; kiểm tra FE hiện có đạt 63 test và thêm 9 phép hồi quy (4 chuyển hướng, 5 xác nhận đúng commit công khai sau triển khai).
 
 Frontend dùng Next.js 16.4.6, Zod 4.6.6 và khóa các bản vá gián tiếp tương thích; công cụ shadcn được giữ ở nhóm dependency phát triển. `npm audit --omit=dev` trả 0 cảnh báo cho runtime frontend. Xem [thông báo bảo mật Next.js](https://github.com/advisories/GHSA-2464-fhr4-w9xw). Đây không phải kết luận toàn bộ bốn kho đã qua kiểm toán bảo mật: thư viện công cụ phát triển và backend vẫn có advisory, gồm Prisma cần nâng major; không áp dụng tự động các bản nâng phá vỡ tương thích.
 
