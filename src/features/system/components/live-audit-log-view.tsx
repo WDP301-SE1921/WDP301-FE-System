@@ -19,15 +19,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  directoryApi,
-  type DirectoryFilters,
-} from "@/features/directory/api";
+import { directoryApi, type DirectoryFilters } from "@/features/directory/api";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
-import {
-  LiveSelect,
-  displayMoment,
-} from "@/features/academic/components/live-fields";
+import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
+import { displayMoment } from "@/features/academic/components/live-fields";
 import { dateRangeSchema } from "@/lib/validators/web-workflows";
 import { AuditChangeDetails } from "@/features/system/components/audit-change-details";
 import { ROLE_LABEL } from "@/constants/roles";
@@ -296,9 +291,7 @@ function AuditRow({
         <TableCell>
           <div className="min-w-40 space-y-1">
             <Badge variant="outline">{auditEntityLabel(log.entityType)}</Badge>
-            <p className="text-xs text-muted-foreground">
-              Mã {log.entityId}
-            </p>
+            <p className="text-xs text-muted-foreground">Mã {log.entityId}</p>
           </div>
         </TableCell>
         <TableCell>

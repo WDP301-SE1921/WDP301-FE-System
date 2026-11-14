@@ -1,0 +1,705 @@
+{
+  "startedAt": "2026-11-13T12:00:11.850Z",
+  "command": "node e2e/demo/run.mjs --reuse --headed",
+  "stats": {
+    "startTime": "2026-11-13T12:00:11.850Z",
+    "duration": 130967.049,
+    "expected": 13,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "fatalErrors": 0,
+  "nodeVersion": "v24.21.0",
+  "headed": true,
+  "repositories": [
+    {
+      "repository": "WDP301-BE-System",
+      "branch": "dev",
+      "testedRemote": "origin/dev",
+      "commit": "0ea84d4fbb8326c2e4d7690656be03c3ef7da02f"
+    },
+    {
+      "repository": "WDP301-FE-System",
+      "branch": "feature/demo-e2e",
+      "testedRemote": "origin/main",
+      "commit": "aea670b034ef8d7d515f4218a73e0946e90e46ef"
+    },
+    {
+      "repository": "WDP301-ADMIN-System",
+      "branch": "dev",
+      "testedRemote": "origin/dev",
+      "commit": "704a337bf7bb2e98d54fffacc2450435423580b6"
+    },
+    {
+      "repository": "WDP301-FEM-System",
+      "branch": "dev",
+      "testedRemote": "origin/dev",
+      "commit": "2bc8be8b9214643670f4ed09a7c6e71ef557bd38"
+    }
+  ],
+  "boundaries": {
+    "database": "Dedicated localhost:3308/edugrade_e2e; real MySQL, migrations and Prisma",
+    "app": "Real Next.js and Expo web, not Android/iOS native",
+    "ai": "Deterministic local HTTP provider; external model quality not verified",
+    "email": "Real SMTP to local capture server; external inbox delivery not verified",
+    "webPush": "Disabled without VAPID/subscription; OS push delivery not verified",
+    "parentAbsence": "Real parent API; no absence form exists in mobile UI"
+  },
+  "tests": [
+    {
+      "title": "01 - Giáo trình và lịch học",
+      "file": "01-curriculum.spec.ts",
+      "status": "passed",
+      "durationMs": 11005,
+      "attachments": [
+        {
+          "name": "01-imported",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/01-imported-975583fc17f7b9756f05a15356e8f118cdad5b53.png"
+        },
+        {
+          "name": "01-teacher-reviewed",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/01-teacher-reviewed-fbd51a7fe178c35de14fb895b5050af0421f2028.png"
+        },
+        {
+          "name": "01-schedule-generated",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/01-schedule-generated-a4e86c9310ea010d16ef0f82648885d4fc9c7f1f.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/test-finished-1.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/test-finished-3.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/test-finished-2.png"
+        },
+        {
+          "name": "designer-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/designer-0-final-c8f7fbf1703a5920db6aeb51bae0dd59230fcc20.png"
+        },
+        {
+          "name": "designer-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/designer-0-video-c84ed5b9650f711799a30d36dd6ce8cb18acb3d1.webm"
+        },
+        {
+          "name": "teacher-1-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/teacher-1-final-0782667acb61e6178fbccba35b2c72a501d1c9e4.png"
+        },
+        {
+          "name": "teacher-1 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/teacher-1-video-cf9646a7ea148144133075730f486a8a10d3e615.webm"
+        },
+        {
+          "name": "manager-2-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/manager-2-final-db47d63a5f993a7d59a02da0924d652d14a1f16f.png"
+        },
+        {
+          "name": "manager-2 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/attachments/manager-2-video-7407a07622d6220df0fd0a3c25a235abd7fdcee7.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/01-curriculum-01---Giáo-trình-và-lịch-học/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "02 - Ghi danh và học phí",
+      "file": "02-enrollment.spec.ts",
+      "status": "passed",
+      "durationMs": 9675,
+      "attachments": [
+        {
+          "name": "02-child-created",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/attachments/02-child-created-831d9b8bb9bf6ade0bd4b43ffc17994cfcf2172b.png"
+        },
+        {
+          "name": "02-unpaid-bill",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/attachments/02-unpaid-bill-5371373f4077664fc3a2d9c6b4db3ec82486a101.png"
+        },
+        {
+          "name": "02-receipt-persisted",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/attachments/02-receipt-persisted-ad8ebfac3ed3affb6ae5d61df930325486fed8aa.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/test-finished-2.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/test-finished-1.png"
+        },
+        {
+          "name": "parent-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/attachments/parent-0-final-66816999c92d345f701d86af40b2609eda9b64fd.png"
+        },
+        {
+          "name": "parent-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/attachments/parent-0-video-60fc8dd50784e4847dc05683ac8d33d0992b6ed4.webm"
+        },
+        {
+          "name": "staff-1-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/attachments/staff-1-final-e3e8734332dee59bf4a5e65a0c3e4efcb2dd48f4.png"
+        },
+        {
+          "name": "staff-1 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/attachments/staff-1-video-c43230c3f7c0b9e640a3a05290bfff114afe18a7.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/02-enrollment-02---Ghi-danh-và-học-phí/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "03 - Giao bài và chấm điểm",
+      "file": "03-homework.spec.ts",
+      "status": "passed",
+      "durationMs": 19585,
+      "attachments": [
+        {
+          "name": "03-assignment-published",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/03-assignment-published-1882c0d85be9c13ef8f4e84e3b35ba32f97788bd.png"
+        },
+        {
+          "name": "03-files-per-question",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/03-files-per-question-a9506afa6be2d3fffe967e2f00d85e1ac6ede0cb.png"
+        },
+        {
+          "name": "03-ai-suggestion-only",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/03-ai-suggestion-only-5b1e2f42bbfac0a88e8137d193c5e426af4c3543.png"
+        },
+        {
+          "name": "03-parent-published-grade",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/03-parent-published-grade-32ad96be59c7ef04f99a586a28cb8cd0a1f0753c.png"
+        },
+        {
+          "name": "External provider boundary",
+          "contentType": "text/plain"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/test-finished-2.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/test-finished-1.png"
+        },
+        {
+          "name": "teacher-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/teacher-0-final-930922a94e629c43490fd048e793a69d4c11e36d.png"
+        },
+        {
+          "name": "teacher-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/teacher-0-video-f141e5301c0b45a9de4892e11141cb90ddb217b2.webm"
+        },
+        {
+          "name": "parent-1-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/parent-1-final-9bf4d14476bc2595b699c1c9bfd2017d65849556.png"
+        },
+        {
+          "name": "parent-1 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/attachments/parent-1-video-b9f7d488cc597b296515a7ecfc3e7602612a82c9.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/03-homework-03---Giao-bài-và-chấm-điểm/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "04 - Nghỉ học và xếp học bù",
+      "file": "04-leave-makeup.spec.ts",
+      "status": "passed",
+      "durationMs": 8734,
+      "attachments": [
+        {
+          "name": "Parent absence entry",
+          "contentType": "text/plain"
+        },
+        {
+          "name": "04-booked-with-exclusions",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/attachments/04-booked-with-exclusions-36af188da6fa74927b2cbdbd907a3bb2a667cc74.png"
+        },
+        {
+          "name": "04-teacher-makeup-roster",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/attachments/04-teacher-makeup-roster-f8af9cd60cacad19a920f2eeadbd71c91d97f7c7.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/test-finished-2.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/test-finished-1.png"
+        },
+        {
+          "name": "staff-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/attachments/staff-0-final-0c8852ecd87054a93488a5fb17a3b9e1ba28850d.png"
+        },
+        {
+          "name": "staff-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/attachments/staff-0-video-6459599e640f813256afa318da44de1072c3ac67.webm"
+        },
+        {
+          "name": "teacher-1-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/attachments/teacher-1-final-fabac5220f05be6d58d179271e82634dd1fd7d79.png"
+        },
+        {
+          "name": "teacher-1 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/attachments/teacher-1-video-c576e568251bc4e799b2e5c28721073bb2c2782e.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/04-leave-makeup-04---Nghỉ-học-và-xếp-học-bù/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "05 - Điểm danh và tỷ lệ chuyên cần",
+      "file": "05-attendance.spec.ts",
+      "status": "passed",
+      "durationMs": 13588,
+      "attachments": [
+        {
+          "name": "Time arrangement",
+          "contentType": "text/plain"
+        },
+        {
+          "name": "05-attendance-locked",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/attachments/05-attendance-locked-879a7ece0556cce58e54551f5ef29ea945caa39f.png"
+        },
+        {
+          "name": "05-makeup-completed",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/attachments/05-makeup-completed-a313097b53018d155c064bfdc6c156eba80b5d49.png"
+        },
+        {
+          "name": "05-parent-same-rate",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/attachments/05-parent-same-rate-e0143c5ced5df155c0d75a68a32cbbfc757cc385.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/test-finished-2.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/test-finished-1.png"
+        },
+        {
+          "name": "teacher-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/attachments/teacher-0-final-fb25c03c11c59f806fa3cf60908086230ca8c432.png"
+        },
+        {
+          "name": "teacher-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/attachments/teacher-0-video-ee6447368dd7fc5cf41a484a6b687c0ccef926fb.webm"
+        },
+        {
+          "name": "parent-1-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/attachments/parent-1-final-d1dff865b0437d4314816d124b6246964d3673b4.png"
+        },
+        {
+          "name": "parent-1 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/attachments/parent-1-video-20e2faf883e36e706cec66b0332647874e531a50.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/05-attendance-05---Điểm-danh-và-tỷ-lệ-chuyên-cần/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "06 - Báo cáo học tập và xuất file",
+      "file": "06-reports.spec.ts",
+      "status": "passed",
+      "durationMs": 4687,
+      "attachments": [
+        {
+          "name": "06-report-created",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/attachments/06-report-created-ac86bd94494966ccb15fff2a2f17841c08e023dc.png"
+        },
+        {
+          "name": "Báo cáo pdf",
+          "contentType": "application/pdf",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/attachments/Báo-cáo-pdf-c2b1868cceaec02ace6eac2a941df477adbba4f2.pdf"
+        },
+        {
+          "name": "Báo cáo xlsx",
+          "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/attachments/Báo-cáo-xlsx-39a4fe8c0719500aa47c0e20d673c0750594895d.xlsx"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/test-finished-1.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/test-finished-2.png"
+        },
+        {
+          "name": "teacher-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/attachments/teacher-0-final-04f9360b207030dcf05d374c009b8a5e709205b3.png"
+        },
+        {
+          "name": "teacher-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/attachments/teacher-0-video-7b4138ffbaff092bd3a4d9f4f8b14ca933207483.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/06-reports-06---Báo-cáo-học-tập-và-xuất-file/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "07 - Tạm nghỉ dài hạn",
+      "file": "07-enrollment-operations.spec.ts",
+      "status": "passed",
+      "durationMs": 3362,
+      "attachments": [
+        {
+          "name": "07-pause-range",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-07---Tạm-nghỉ-dài-hạn/attachments/07-pause-range-f35f1288c1027db0852bf3a78da238b81c2ac6ea.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-07---Tạm-nghỉ-dài-hạn/test-finished-1.png"
+        },
+        {
+          "name": "staff-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-07---Tạm-nghỉ-dài-hạn/attachments/staff-0-final-de4eaaf25b17e6f755bf9b9858579f241f4f520c.png"
+        },
+        {
+          "name": "staff-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/07-enrollment-operations-07---Tạm-nghỉ-dài-hạn/attachments/staff-0-video-df813906a708ba7664e90247451ea18163fd7ad3.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/07-enrollment-operations-07---Tạm-nghỉ-dài-hạn/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "08 - Chuyển lớp có ngày hiệu lực",
+      "file": "07-enrollment-operations.spec.ts",
+      "status": "passed",
+      "durationMs": 3856,
+      "attachments": [
+        {
+          "name": "08-transfer-history",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-08---Chuyển-lớp-có-ngày-hiệu-lực/attachments/08-transfer-history-1b127afbba0a4c28d6341bb6a8413efdb25de4cb.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-08---Chuyển-lớp-có-ngày-hiệu-lực/test-finished-1.png"
+        },
+        {
+          "name": "staff-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-08---Chuyển-lớp-có-ngày-hiệu-lực/attachments/staff-0-final-508d12bb7fa074027ba564f745e7d8303944f911.png"
+        },
+        {
+          "name": "staff-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/07-enrollment-operations-08---Chuyển-lớp-có-ngày-hiệu-lực/attachments/staff-0-video-3e13ea38e2b5cb21a4ca2fc3a2684733a36919b4.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/07-enrollment-operations-08---Chuyển-lớp-có-ngày-hiệu-lực/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "09 - Kết thúc môn và đăng ký lại",
+      "file": "07-enrollment-operations.spec.ts",
+      "status": "passed",
+      "durationMs": 4131,
+      "attachments": [
+        {
+          "name": "09-old-enrollment-ended",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-09---Kết-thúc-môn-và-đăng-ký-lại/attachments/09-old-enrollment-ended-60c8432480e8a68ab669cf75d47d06534b47bc85.png"
+        },
+        {
+          "name": "09-new-payment-required",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-09---Kết-thúc-môn-và-đăng-ký-lại/attachments/09-new-payment-required-094862a65faaa1fe287c21c23ccece02958187de.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-09---Kết-thúc-môn-và-đăng-ký-lại/test-finished-1.png"
+        },
+        {
+          "name": "staff-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/07-enrollment-operations-09---Kết-thúc-môn-và-đăng-ký-lại/attachments/staff-0-final-4e553a770689e1a39846552384ad8f2bf1a708a9.png"
+        },
+        {
+          "name": "staff-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/07-enrollment-operations-09---Kết-thúc-môn-và-đăng-ký-lại/attachments/staff-0-video-7520c0801ac47721f418c8d1a367744d05f3a079.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/07-enrollment-operations-09---Kết-thúc-môn-và-đăng-ký-lại/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "10 - Dạy thay và đổi giáo viên",
+      "file": "10-teacher-changes.spec.ts",
+      "status": "passed",
+      "durationMs": 2051,
+      "attachments": [
+        {
+          "name": "10-substitute-session",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/10-teacher-changes-10---Dạy-thay-và-đổi-giáo-viên/attachments/10-substitute-session-9ffe2d78e7f64868cec0ee8abf6418c84ae74119.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/10-teacher-changes-10---Dạy-thay-và-đổi-giáo-viên/test-finished-1.png"
+        },
+        {
+          "name": "manager-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/10-teacher-changes-10---Dạy-thay-và-đổi-giáo-viên/attachments/manager-0-final-71884c5c55f7f886501818680d4d21be76d01082.png"
+        },
+        {
+          "name": "manager-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/10-teacher-changes-10---Dạy-thay-và-đổi-giáo-viên/attachments/manager-0-video-bcafa79502e4828dae028ee95415c43498aa23eb.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/10-teacher-changes-10---Dạy-thay-và-đổi-giáo-viên/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "11 - Dời buổi và ngày nghỉ trung tâm",
+      "file": "11-schedule-operations.spec.ts",
+      "status": "passed",
+      "durationMs": 3802,
+      "attachments": [
+        {
+          "name": "11-cancel-shift-lessons",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/11-schedule-operations-11---Dời-buổi-và-ngày-nghỉ-trung-tâm/attachments/11-cancel-shift-lessons-13a20123c1445af335efd3b1cd0c69a9d62bde1c.png"
+        },
+        {
+          "name": "11-holiday-batch-cancel",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/11-schedule-operations-11---Dời-buổi-và-ngày-nghỉ-trung-tâm/attachments/11-holiday-batch-cancel-44e47ce43e1f7779d509a2dc19aac8a872a1426f.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/11-schedule-operations-11---Dời-buổi-và-ngày-nghỉ-trung-tâm/test-finished-1.png"
+        },
+        {
+          "name": "manager-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/11-schedule-operations-11---Dời-buổi-và-ngày-nghỉ-trung-tâm/attachments/manager-0-final-b5a6d7c8fafc0672279894c8e2f781ac631d99bf.png"
+        },
+        {
+          "name": "manager-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/11-schedule-operations-11---Dời-buổi-và-ngày-nghỉ-trung-tâm/attachments/manager-0-video-7803bc6ce699a57ce5cc842bc5eb1271232e7751.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/11-schedule-operations-11---Dời-buổi-và-ngày-nghỉ-trung-tâm/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "12 - Thông báo và nhắc học phí",
+      "file": "12-notifications-chat.spec.ts",
+      "status": "passed",
+      "durationMs": 26778,
+      "attachments": [
+        {
+          "name": "12-parent-realtime-notice",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/attachments/12-parent-realtime-notice-051af65fa6fd463695a0780269f5890f83a81285.png"
+        },
+        {
+          "name": "12-tuition-reminder",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/attachments/12-tuition-reminder-d0f82d2c89d1ad70da315f3724ea606cf66726d8.png"
+        },
+        {
+          "name": "Email boundary",
+          "contentType": "text/plain"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/test-finished-2.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/test-finished-1.png"
+        },
+        {
+          "name": "parent-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/attachments/parent-0-final-5f9f2567ef20a23c68a76df338bc837d5a168cb1.png"
+        },
+        {
+          "name": "parent-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/attachments/parent-0-video-d422ae97740d1c8b7660f9ea78911b53dc0654a3.webm"
+        },
+        {
+          "name": "manager-1-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/attachments/manager-1-final-6dfab7b873146f935e46f279ddbf05d6d258f403.png"
+        },
+        {
+          "name": "manager-1 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/attachments/manager-1-video-becd0a52bbe15cc2ca1834af6053e3d464b9384d.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/12-notifications-chat-12---Thông-báo-và-nhắc-học-phí/trace.zip"
+        }
+      ]
+    },
+    {
+      "title": "13 - Chat nội bộ nhiều vai trò",
+      "file": "12-notifications-chat.spec.ts",
+      "status": "passed",
+      "durationMs": 6194,
+      "attachments": [
+        {
+          "name": "13-manager-realtime-chat",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/attachments/13-manager-realtime-chat-21299447f35caa3bcee0f20c7ab18edf100a36bd.png"
+        },
+        {
+          "name": "13-staff-realtime-chat",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/attachments/13-staff-realtime-chat-3d3abae9ee74a5913e5c5a98e74614b7bb6dcce1.png"
+        },
+        {
+          "name": "Web Push boundary",
+          "contentType": "text/plain"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/test-finished-2.png"
+        },
+        {
+          "name": "screenshot",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/test-finished-1.png"
+        },
+        {
+          "name": "manager-0-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/attachments/manager-0-final-ee5d61c0de68c6d7ef60c64a8d40bfb44ff50054.png"
+        },
+        {
+          "name": "manager-0 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/attachments/manager-0-video-49ff43215de7be8c8326b4f1124ca251364e40d3.webm"
+        },
+        {
+          "name": "staff-1-final",
+          "contentType": "image/png",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/attachments/staff-1-final-98ada18b11c44b48578f31234512c15eb1280c64.png"
+        },
+        {
+          "name": "staff-1 video",
+          "contentType": "video/webm",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/attachments/staff-1-video-6144c11bdd6088397464ecd3d3cd8051bebbc77e.webm"
+        },
+        {
+          "name": "trace",
+          "contentType": "application/zip",
+          "path": "e2e/.demo-results/12-notifications-chat-13---Chat-nội-bộ-nhiều-vai-trò/trace.zip"
+        }
+      ]
+    }
+  ]
+}

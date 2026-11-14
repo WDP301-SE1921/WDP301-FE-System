@@ -37,6 +37,8 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
           tags: |
             ghcr.io/wdp301-se1921/edugrade-web:${{ github.sha }}
             ghcr.io/wdp301-se1921/edugrade-web:${{ github.sha }}
@@ -52,4 +54,15 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
-            /home/deploy/edugrade/deploy.sh web ghcr.io/wdp301-se1921/edugrade-web:${{ github.sha }}
+            image=ghcr.io/wdp301-se1921/edugrade-web:${{ github.sha }}
+            deploy_status=0
+            /home/deploy/edugrade/deploy.sh web "$image" || deploy_status=$?
+            # The immediate local curl can reset during startup. The next mandatory
+            # step verifies the exact served commit from the public client boundary.
+            echo "Deployment command returned $deploy_status; checking public readiness next."
+
+      - name: Verify public frontend commit
+        env:
+          PUBLIC_WEB_ORIGIN: ${{ vars.PUBLIC_WEB_ORIGIN || 'https://edugrade.45.77.168.110.sslip.io' }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: node e2e/system/deployment-readiness.mjs "$PUBLIC_WEB_ORIGIN" "$EXPECTED_COMMIT"

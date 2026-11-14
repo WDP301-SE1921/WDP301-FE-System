@@ -1,0 +1,282 @@
+{
+  "checkedAt": "2026-11-13T17:29:28.190Z",
+  "policy": "Fetched all remotes, fast-forwarded clean main/dev/develop branches. Divergent feature branches were inspected, never silently merged.",
+  "repositories": [
+    {
+      "repository": "WDP301-BE-System",
+      "checkout": "dev",
+      "testedRemote": "origin/dev",
+      "testedCommit": "cd454f2157b620441062da3eb66e1bb54e401698",
+      "localHead": "cd454f2157b620441062da3eb66e1bb54e401698",
+      "changes": "M Dockerfile\n M src/integrations/academic-storage.service.ts\n M src/modules/academic/academic.controller.ts\n M tests/e2e/demo-seed.e2e-spec.ts\n M tests/unit/academic-storage.spec.ts\n M tests/unit/minio-smoke.spec.ts",
+      "branches": [
+        {
+          "ref": "origin/codex/parent-registration-flow",
+          "commit": "4f71a2d5623301fae20b6a85bec84c82c09ff13e",
+          "selectedOnlyCommits": 88,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/dev",
+          "commit": "cd454f2157b620441062da3eb66e1bb54e401698",
+          "selectedOnlyCommits": 0,
+          "candidateOnlyCommits": 0,
+          "sameTree": true,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/AI",
+          "commit": "8c99e415a07ac06cc0f0b07478272c282c8eb930",
+          "selectedOnlyCommits": 32,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/academic-workflows",
+          "commit": "d4f108fa4d53d39c761c6a4cef7d7471f5b883f2",
+          "selectedOnlyCommits": 91,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/admin-dashboard",
+          "commit": "dab6380d5059c32f51a4148663006944905b208b",
+          "selectedOnlyCommits": 2,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/auth",
+          "commit": "5eb15bd186b2a4b70665b3fe9aa5f4abe8e662d1",
+          "selectedOnlyCommits": 92,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/create-schedule",
+          "commit": "6e4387cfe038556fb36e27984d80c229eefbe5a4",
+          "selectedOnlyCommits": 84,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/curriculum",
+          "commit": "e976b3be6ee6f93b8d1c2c09afc93148ee861b33",
+          "selectedOnlyCommits": 74,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/handoff",
+          "commit": "02cf6a9e165e372fe0d84c2b68e8e875419d8edf",
+          "selectedOnlyCommits": 73,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/intergare-ai",
+          "commit": "abbfc8d7d6e3f82c1fafda8111f58a0e3713c916",
+          "selectedOnlyCommits": 32,
+          "candidateOnlyCommits": 1,
+          "sameTree": false,
+          "candidateOnlyHistory": [
+            "abbfc8d docs(ai): add AI flow implementation guide and updated UI quality audit report"
+          ]
+        },
+        {
+          "ref": "origin/feature/payment-bill",
+          "commit": "4616ce380fdda3e751a01d269b99cc5e79452ba2",
+          "selectedOnlyCommits": 83,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/realtime-chat-web-push",
+          "commit": "1f23dfd97180897e8addc9551cd8dcc662fe9748",
+          "selectedOnlyCommits": 28,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/rubric-clo",
+          "commit": "73b9ac566ffdbfc5cda6a56434d9820bb0e8221a",
+          "selectedOnlyCommits": 21,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/staff-parent-search",
+          "commit": "b0452730fbe6aee19ec90b43233f43c626e5b071",
+          "selectedOnlyCommits": 86,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/supplemental-assignment-recipients",
+          "commit": "2b825627537c8996439c9aa74a8fc0861c4f2392",
+          "selectedOnlyCommits": 7,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feture/data-sees-clo",
+          "commit": "9ec6e6082f736b710cf7034e6785db9a90f4aad6",
+          "selectedOnlyCommits": 39,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/main",
+          "commit": "3e97e0796b9beeaf8b59f6ce8d193a0417784e9f",
+          "selectedOnlyCommits": 3,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        }
+      ]
+    },
+    {
+      "repository": "WDP301-FE-System",
+      "checkout": "feature/demo-e2e",
+      "testedRemote": "origin/dev",
+      "testedCommit": "0d3cc877c6978a0a1275a9a2053045c4021f034b",
+      "localHead": "0d3cc877c6978a0a1275a9a2053045c4021f034b",
+      "changes": "M .dockerignore\n M .github/workflows/deploy.yml\nM  .gitignore\n M Dockerfile\n M e2e/web/role-pages.spec.ts\nM  eslint.config.mjs\nMM package.json\n M playwright.config.ts\n M src/app/api/backend/[...path]/route.ts\nM  src/constants/routes.ts\nM  src/features/absences/components/live-staff-workflows.tsx\nM  src/features/academic/components/live-fields.tsx\nM  src/features/assignments/components/assignment-files-editor.tsx\nM  src/features/assignments/components/live-assignment-editor.tsx\nM  src/features/auth/components/accept-invitation-form.tsx\nM  src/features/auth/components/forgot-password-form.tsx\nM  src/features/auth/components/login-form.tsx\nM  src/features/auth/components/register-parent-form.tsx\nM  src/features/auth/components/reset-password-form.tsx\nM  src/features/directory/components/payment-history.tsx\n M src/features/grading/components/submission-file.tsx\nM  src/features/outcomes/components/program-outcomes-view.tsx\nM  src/features/reports/components/live-reports-view.tsx\nM  src/features/system/components/live-audit-log-view.tsx\n M src/lib/api/backend-permissions.ts\n M tsconfig.json\n?? docs/superpowers/plans/2026-11-13-demonstration-e2e.md\n?? docs/superpowers/plans/2026-11-13-full-system-e2e.md\n?? e2e/demo/\n?? e2e/production/\n?? e2e/system/\n?? playwright.demo.config.ts\n?? playwright.production.config.ts\n?? playwright.system.config.ts\n?? playwright.web.config.ts\n?? src/app/api/health/\n?? src/components/shared/layout/form-page-header.tsx\n?? src/components/shared/pickers/labeled-select.tsx\n?? tsconfig.e2e.json",
+      "branches": [
+        {
+          "ref": "origin/dev",
+          "commit": "0d3cc877c6978a0a1275a9a2053045c4021f034b",
+          "selectedOnlyCommits": 0,
+          "candidateOnlyCommits": 0,
+          "sameTree": true,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/intergare-ai",
+          "commit": "9a847d0e6dc11d43db8caa02eebd453e982d0d25",
+          "selectedOnlyCommits": 44,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/realtime-chat-web-push",
+          "commit": "dccd6a36a454a510b1b5386fc2e963ea14ce660b",
+          "selectedOnlyCommits": 42,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/rubric-clo",
+          "commit": "81cae0089a614f9df43c4dcfbc3243d3b0e497e5",
+          "selectedOnlyCommits": 27,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/supplemental-assignment-recipients-ui",
+          "commit": "86b6643098577e40020069a36e57457869801dad",
+          "selectedOnlyCommits": 13,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/feature/web-auth-parent-registration",
+          "commit": "3f956cdba9ded82f10b1b2e8c72edadd0b1bfda5",
+          "selectedOnlyCommits": 101,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/main",
+          "commit": "90f4f11d1b6e5e5faf56634fb5b85786aba56041",
+          "selectedOnlyCommits": 2,
+          "candidateOnlyCommits": 0,
+          "sameTree": true,
+          "candidateOnlyHistory": []
+        }
+      ]
+    },
+    {
+      "repository": "WDP301-ADMIN-System",
+      "checkout": "dev",
+      "testedRemote": "origin/dev",
+      "testedCommit": "f2053c8185cb79e08f9148b0f7a2a5d23343c0af",
+      "localHead": "f2053c8185cb79e08f9148b0f7a2a5d23343c0af",
+      "changes": "M src/components/ui/data-table.css",
+      "branches": [
+        {
+          "ref": "origin/dev",
+          "commit": "f2053c8185cb79e08f9148b0f7a2a5d23343c0af",
+          "selectedOnlyCommits": 0,
+          "candidateOnlyCommits": 0,
+          "sameTree": true,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/main",
+          "commit": "f2053c8185cb79e08f9148b0f7a2a5d23343c0af",
+          "selectedOnlyCommits": 0,
+          "candidateOnlyCommits": 0,
+          "sameTree": true,
+          "candidateOnlyHistory": []
+        }
+      ]
+    },
+    {
+      "repository": "WDP301-FEM-System",
+      "checkout": "develop",
+      "testedRemote": "origin/develop",
+      "testedCommit": "e68d91add7461486153eb60c71e8eb1630029e5e",
+      "localHead": "e68d91add7461486153eb60c71e8eb1630029e5e",
+      "changes": "M src/__tests__/parent-assignment-detail.test.tsx",
+      "branches": [
+        {
+          "ref": "origin/dev",
+          "commit": "2bc8be8b9214643670f4ed09a7c6e71ef557bd38",
+          "selectedOnlyCommits": 19,
+          "candidateOnlyCommits": 1,
+          "sameTree": false,
+          "candidateOnlyHistory": [
+            "2bc8be8 feat(parent-dashboard): gui anh va file PDF rieng cho tung cau tu luan"
+          ]
+        },
+        {
+          "ref": "origin/develop",
+          "commit": "e68d91add7461486153eb60c71e8eb1630029e5e",
+          "selectedOnlyCommits": 0,
+          "candidateOnlyCommits": 0,
+          "sameTree": true,
+          "candidateOnlyHistory": []
+        },
+        {
+          "ref": "origin/main",
+          "commit": "597c4b3db2f49627327f4886cfdd47c666138c01",
+          "selectedOnlyCommits": 27,
+          "candidateOnlyCommits": 0,
+          "sameTree": false,
+          "candidateOnlyHistory": []
+        }
+      ]
+    }
+  ]
+}

@@ -207,7 +207,7 @@ function FilePreview({ id, index }: { id: string; index: number }) {
     <div className="space-y-2">
       {kind === "image" && !imageFailed ? (
         <Image
-          src={query.data.url}
+          src={`/api/backend/academic/files/${encodeURIComponent(id)}/content`}
           unoptimized
           width={1200}
           height={1600}

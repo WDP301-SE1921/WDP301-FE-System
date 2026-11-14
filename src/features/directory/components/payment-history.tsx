@@ -18,8 +18,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
+import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
 import {
-  LiveSelect,
   displayMoment,
   STATUS_TEXT,
 } from "@/features/academic/components/live-fields";
@@ -57,21 +57,21 @@ export function LivePaymentHistory({
     { view, listPage, search, fromDate, toDate, status, recentOnly },
     setFilters,
   ] = useQueryStates({
-      view: parseAsStringLiteral(["registrations", "payments"]).withDefault(
-        "registrations",
-      ),
-      listPage: parseAsInteger.withDefault(1),
-      search: parseAsString.withDefault(""),
-      fromDate: parseAsString.withDefault(""),
-      toDate: parseAsString.withDefault(""),
-      status: parseAsStringLiteral([
-        "all",
-        "DRAFT",
-        "COMPLETED",
-        "CANCELLED",
-      ]).withDefault("all"),
-      recentOnly: parseAsBoolean.withDefault(false),
-    });
+    view: parseAsStringLiteral(["registrations", "payments"]).withDefault(
+      "registrations",
+    ),
+    listPage: parseAsInteger.withDefault(1),
+    search: parseAsString.withDefault(""),
+    fromDate: parseAsString.withDefault(""),
+    toDate: parseAsString.withDefault(""),
+    status: parseAsStringLiteral([
+      "all",
+      "DRAFT",
+      "COMPLETED",
+      "CANCELLED",
+    ]).withDefault("all"),
+    recentOnly: parseAsBoolean.withDefault(false),
+  });
   const showRecent = view === "registrations" && recentOnly && !!recent;
   const today = todayLocalDate();
   const monthStart = `${today.slice(0, 8)}01`;
@@ -412,25 +412,25 @@ export function LivePaymentHistory({
           </div>
         )}
         {!showRecent && (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            disabled={listPage <= 1 || active.isFetching}
-            onClick={() => void setFilters({ listPage: listPage - 1 })}
-          >
-            Trang trước
-          </Button>
-          <span>
-            Trang {Math.max(1, listPage)} · {total} kết quả
-          </span>
-          <Button
-            variant="outline"
-            disabled={listPage * 20 >= total || active.isFetching}
-            onClick={() => void setFilters({ listPage: listPage + 1 })}
-          >
-            Trang sau
-          </Button>
-        </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              disabled={listPage <= 1 || active.isFetching}
+              onClick={() => void setFilters({ listPage: listPage - 1 })}
+            >
+              Trang trước
+            </Button>
+            <span>
+              Trang {Math.max(1, listPage)} · {total} kết quả
+            </span>
+            <Button
+              variant="outline"
+              disabled={listPage * 20 >= total || active.isFetching}
+              onClick={() => void setFilters({ listPage: listPage + 1 })}
+            >
+              Trang sau
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

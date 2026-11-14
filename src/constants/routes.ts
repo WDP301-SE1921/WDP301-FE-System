@@ -1,7 +1,7 @@
 export const ROUTES = {
   PUBLIC: {
     HOME: "/",
-    ABOUT: "/about",
+    ABOUT: "/#benefits",
   },
   AUTH: {
     LOGIN: "/login",
