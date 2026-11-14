@@ -21,7 +21,8 @@ import {
   useLiveCommand,
   useLiveQuery,
 } from "@/features/academic/hooks/use-live-api";
-import { LiveSelect } from "@/features/academic/components/live-fields";
+import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
+
 import { academicApi } from "@/features/academic/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import {
@@ -115,7 +116,9 @@ function AssignmentEditor({
   const router = useRouter();
   const search = useSearchParams();
   // Từ thẻ nhắc ở dashboard giáo viên: `?classId=<id>&kind=TEST` điền sẵn lớp và loại bài.
-  const presetClassId = classes.some((item) => item.id === search.get("classId"))
+  const presetClassId = classes.some(
+    (item) => item.id === search.get("classId"),
+  )
     ? (search.get("classId") ?? "")
     : "";
   const presetKind = search.get("kind") === "TEST" ? "TEST" : "HOMEWORK";
@@ -229,7 +232,7 @@ function AssignmentEditor({
       if (question.outcomeId && !allowed.has(question.outcomeId))
         form.setValue(`questions.${index}.outcomeId`, "", {
           shouldDirty: true,
-    });
+        });
     });
   };
   const blankOnly =
@@ -284,267 +287,268 @@ function AssignmentEditor({
           className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]"
         >
           <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Thông tin chung</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Controller
-                name="files"
-                control={form.control}
-                render={({ field }) => (
-                  <AssignmentFilesEditor
-                    questionCount={questions.fields.length}
-                    value={field.value ?? []}
-                    onChange={field.onChange}
-                    onBusy={setUploading}
-                  />
+            <Card>
+              <CardHeader>
+                <CardTitle>Thông tin chung</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Controller
+                  name="files"
+                  control={form.control}
+                  render={({ field }) => (
+                    <AssignmentFilesEditor
+                      questionCount={questions.fields.length}
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      onBusy={setUploading}
+                    />
+                  )}
+                />
+                <Controller
+                  name="classId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <LiveSelect
+                      label="Lớp được giao"
+                      value={field.value}
+                      disabled={!!assignment}
+                      options={classes.map((item) => ({
+                        value: item.id,
+                        label: item.name,
+                      }))}
+                      onChange={(value) => {
+                        const nextProgram = classes.find(
+                          (item) => item.id === value,
+                        )?.programId;
+                        field.onChange(value);
+                        form.setValue("sessionId", undefined);
+                        if (nextProgram !== programId)
+                          chooseOutcomeSet("", true);
+                      }}
+                    />
+                  )}
+                />
+                {form.formState.errors.classId && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {form.formState.errors.classId.message}
+                  </p>
                 )}
-              />
-              <Controller
-                name="classId"
-                control={form.control}
-                render={({ field }) => (
-                  <LiveSelect
-                    label="Lớp được giao"
-                    value={field.value}
-                    disabled={!!assignment}
-                    options={classes.map((item) => ({
-                      value: item.id,
-                      label: item.name,
-                    }))}
-                    onChange={(value) => {
-                      const nextProgram = classes.find(
-                        (item) => item.id === value,
-                      )?.programId;
-                      field.onChange(value);
-                      form.setValue("sessionId", undefined);
-                      if (nextProgram !== programId) chooseOutcomeSet("", true);
-                    }}
-                  />
-                )}
-              />
-              {form.formState.errors.classId && (
-                <p role="alert" className="text-sm text-destructive">
-                  {form.formState.errors.classId.message}
-                </p>
-              )}
-              {programId && (
-                <OutcomeSetField
-                  isLoading={outcomeSets.isPending}
-                  error={outcomeSets.error}
-                  onRetry={() => void outcomeSets.refetch()}
-                  sets={approvedSets}
-                  value={outcomeSetId}
+                {programId && (
+                  <OutcomeSetField
+                    isLoading={outcomeSets.isPending}
+                    error={outcomeSets.error}
+                    onRetry={() => void outcomeSets.refetch()}
+                    sets={approvedSets}
+                    value={outcomeSetId}
                     isMissing={
                       !!outcomeSetId && outcomeSets.isSuccess && !selectedSet
                     }
-                  onChange={chooseOutcomeSet}
-                />
-              )}
-              <Controller
-                name="kind"
-                control={form.control}
-                render={({ field }) => (
-                  <LiveSelect
-                    label="Loại nội dung"
-                    value={field.value}
-                    options={[
-                      { value: "HOMEWORK", label: "Bài tập" },
-                      { value: "TEST", label: "Bài kiểm tra" },
-                    ]}
-                    onChange={(value) => {
-                      field.onChange(value);
-                      if (value === "HOMEWORK") {
-                        form.setValue("sessionId", undefined);
-                        form.setValue("testType", undefined);
-                      }
-                    }}
+                    onChange={chooseOutcomeSet}
                   />
                 )}
-              />
-              {kind === "TEST" && (
-                <div className="space-y-4 rounded-xl bg-muted p-4">
-                  <p className="text-sm text-muted-foreground">
-                    Chọn buổi học tổ chức kiểm tra. Bài kiểm tra do giáo viên
-                    chuẩn bị riêng, không thay đổi nội dung giáo trình.
-                  </p>
-                  <Controller
-                    name="testType"
-                    control={form.control}
-                    render={({ field }) => (
-                      <LiveSelect
-                        label="Loại bài kiểm tra"
-                        value={field.value ?? ""}
-                        options={Object.entries(TEST_TYPE_TEXT).map(
-                          ([value, label]) => ({ value, label }),
-                        )}
-                        onChange={field.onChange}
-                      />
-                    )}
-                  />
-                  <FieldError
-                    message={form.formState.errors.testType?.message}
-                  />
-                  <Controller
-                    name="sessionId"
-                    control={form.control}
-                    render={({ field }) => (
-                      <LiveSelect
-                        label="Buổi học tổ chức kiểm tra"
-                        value={field.value ?? ""}
-                        disabled={!classId || sessions.isPending}
-                        options={availableSessions.map((session) => ({
-                          value: session.id,
-                          label: `${displayMoment(session.startsAt)} · ${session.lesson?.title ?? "Buổi học"}`,
-                        }))}
-                        onChange={field.onChange}
-                      />
-                    )}
-                  />
-                  <FieldError
-                    message={form.formState.errors.sessionId?.message}
-                  />
-                  {isSessionUnavailable && (
-                    <p role="alert" className="text-sm text-destructive">
-                      Buổi đã chọn không còn phù hợp. Chọn một buổi chưa kết
-                      thúc được phân công cho bạn.
-                    </p>
+                <Controller
+                  name="kind"
+                  control={form.control}
+                  render={({ field }) => (
+                    <LiveSelect
+                      label="Loại nội dung"
+                      value={field.value}
+                      options={[
+                        { value: "HOMEWORK", label: "Bài tập" },
+                        { value: "TEST", label: "Bài kiểm tra" },
+                      ]}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        if (value === "HOMEWORK") {
+                          form.setValue("sessionId", undefined);
+                          form.setValue("testType", undefined);
+                        }
+                      }}
+                    />
                   )}
-                  {classId && sessions.isPending && (
+                />
+                {kind === "TEST" && (
+                  <div className="space-y-4 rounded-xl bg-muted p-4">
+                    <p className="text-sm text-muted-foreground">
+                      Chọn buổi học tổ chức kiểm tra. Bài kiểm tra do giáo viên
+                      chuẩn bị riêng, không thay đổi nội dung giáo trình.
+                    </p>
+                    <Controller
+                      name="testType"
+                      control={form.control}
+                      render={({ field }) => (
+                        <LiveSelect
+                          label="Loại bài kiểm tra"
+                          value={field.value ?? ""}
+                          options={Object.entries(TEST_TYPE_TEXT).map(
+                            ([value, label]) => ({ value, label }),
+                          )}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <FieldError
+                      message={form.formState.errors.testType?.message}
+                    />
+                    <Controller
+                      name="sessionId"
+                      control={form.control}
+                      render={({ field }) => (
+                        <LiveSelect
+                          label="Buổi học tổ chức kiểm tra"
+                          value={field.value ?? ""}
+                          disabled={!classId || sessions.isPending}
+                          options={availableSessions.map((session) => ({
+                            value: session.id,
+                            label: `${displayMoment(session.startsAt)} · ${session.lesson?.title ?? "Buổi học"}`,
+                          }))}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <FieldError
+                      message={form.formState.errors.sessionId?.message}
+                    />
+                    {isSessionUnavailable && (
+                      <p role="alert" className="text-sm text-destructive">
+                        Buổi đã chọn không còn phù hợp. Chọn một buổi chưa kết
+                        thúc được phân công cho bạn.
+                      </p>
+                    )}
+                    {classId && sessions.isPending && (
                       <p
                         role="status"
                         className="text-sm text-muted-foreground"
                       >
-                      Đang tải buổi học…
-                    </p>
-                  )}
-                  {classId &&
-                    !sessions.isPending &&
-                    !sessions.isError &&
-                    availableSessions.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        Chưa có buổi học được phân công phù hợp. Cần tạo lịch
-                        học trước khi xếp kiểm tra.
+                        Đang tải buổi học…
                       </p>
                     )}
-                  <ApiFeedback
-                    error={sessions.error}
-                    retry={() => void sessions.refetch()}
-                  />
-                </div>
-              )}
-              <Label htmlFor="assignment-title">Tiêu đề</Label>
-              <Input id="assignment-title" {...form.register("title")} />
-              {form.formState.errors.title && (
-                <p role="alert" className="text-sm text-destructive">
-                  {form.formState.errors.title.message}
-                </p>
-              )}
-              <Label htmlFor="assignment-instructions">Hướng dẫn</Label>
-              <Textarea
-                id="assignment-instructions"
-                {...form.register("instructions")}
-              />
-              <Label htmlFor="assignment-due">Hạn nộp (giờ Việt Nam)</Label>
-              <Controller
-                control={form.control}
-                name="dueAt"
-                render={({ field, fieldState }) => (
-                  <DateTimeInput
-                    id="assignment-due"
-                    value={field.value ?? ""}
-                    invalid={fieldState.invalid}
-                    defaultTime={END_OF_DAY}
-                    onChange={field.onChange}
-                  />
+                    {classId &&
+                      !sessions.isPending &&
+                      !sessions.isError &&
+                      availableSessions.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Chưa có buổi học được phân công phù hợp. Cần tạo lịch
+                          học trước khi xếp kiểm tra.
+                        </p>
+                      )}
+                    <ApiFeedback
+                      error={sessions.error}
+                      retry={() => void sessions.refetch()}
+                    />
+                  </div>
                 )}
-              />
-              {form.formState.errors.dueAt && (
-                <p role="alert" className="text-sm text-destructive">
-                  {form.formState.errors.dueAt.message}
-                </p>
-              )}
-              <Label htmlFor="assignment-attempts">
-                Số lần nộp tối đa (1–10)
-              </Label>
-              <Input
-                id="assignment-attempts"
-                type="number"
-                {...form.register("maxAttempts", { valueAsNumber: true })}
-              />
-              {form.formState.errors.maxAttempts && (
-                <p role="alert" className="text-sm text-destructive">
-                  {form.formState.errors.maxAttempts.message}
-                </p>
-              )}
-              <div className="flex items-center justify-between rounded-xl bg-muted px-4 py-3 text-sm">
-                <span className="text-muted-foreground">
-                  {questions.fields.length} câu hỏi
-                </span>
-                <span className="font-semibold tabular-nums">
-                  Tổng {Math.round(totalScore * 100) / 100} điểm
-                </span>
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={
-                  uploading ||
-                  isSessionUnavailable ||
+                <Label htmlFor="assignment-title">Tiêu đề</Label>
+                <Input id="assignment-title" {...form.register("title")} />
+                {form.formState.errors.title && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {form.formState.errors.title.message}
+                  </p>
+                )}
+                <Label htmlFor="assignment-instructions">Hướng dẫn</Label>
+                <Textarea
+                  id="assignment-instructions"
+                  {...form.register("instructions")}
+                />
+                <Label htmlFor="assignment-due">Hạn nộp (giờ Việt Nam)</Label>
+                <Controller
+                  control={form.control}
+                  name="dueAt"
+                  render={({ field, fieldState }) => (
+                    <DateTimeInput
+                      id="assignment-due"
+                      value={field.value ?? ""}
+                      invalid={fieldState.invalid}
+                      defaultTime={END_OF_DAY}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+                {form.formState.errors.dueAt && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {form.formState.errors.dueAt.message}
+                  </p>
+                )}
+                <Label htmlFor="assignment-attempts">
+                  Số lần nộp tối đa (1–10)
+                </Label>
+                <Input
+                  id="assignment-attempts"
+                  type="number"
+                  {...form.register("maxAttempts", { valueAsNumber: true })}
+                />
+                {form.formState.errors.maxAttempts && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {form.formState.errors.maxAttempts.message}
+                  </p>
+                )}
+                <div className="flex items-center justify-between rounded-xl bg-muted px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">
+                    {questions.fields.length} câu hỏi
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    Tổng {Math.round(totalScore * 100) / 100} điểm
+                  </span>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={
+                    uploading ||
+                    isSessionUnavailable ||
                     (kind === "TEST" &&
                       (sessions.isPending || sessions.isError))
-                }
-                isLoading={action.isPending}
-              >
-                Lưu đề, tiếp: giao bài
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Đề được lưu ở bản nháp. Bước tiếp theo là chọn học sinh và
-                giao bài; học sinh chỉ thấy bài sau khi bạn bấm “Giao bài”.
-              </p>
-              <ApiFeedback error={action.error} />
-            </CardContent>
-          </Card>
+                  }
+                  isLoading={action.isPending}
+                >
+                  Lưu đề, tiếp: giao bài
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Đề được lưu ở bản nháp. Bước tiếp theo là chọn học sinh và
+                  giao bài; học sinh chỉ thấy bài sau khi bạn bấm “Giao bài”.
+                </p>
+                <ApiFeedback error={action.error} />
+              </CardContent>
+            </Card>
           </div>
           <div className="min-w-0 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rubric toàn bài</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Mỗi bài có rubric riêng, tổng hợp từ tiêu chí của các câu. Chỉnh
-                tiêu chí ngay bên dưới từng câu.
-              </p>
-              {(values ?? []).map((item, i) => (
-                <div
-                  key={questions.fields[i]?.id ?? i}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted p-3 text-sm"
-                >
-                  <span>
-                    Câu {i + 1} ·{" "}
-                    {(item.outcomeId &&
-                      selectedSet?.outcomes.find(
-                        (outcome) => outcome.id === item.outcomeId,
-                      )?.code) ||
-                      "Chưa gắn mục tiêu"}
-                  </span>
-                  <span>
-                    {item.kind === "MULTIPLE_CHOICE"
-                      ? "Đáp án chuẩn"
-                      : `${item.criteria?.length ?? 0} tiêu chí`}{" "}
-                    · {item.maxScore} điểm
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">
-              Câu hỏi · {questions.fields.length} câu ·{" "}
-              {Math.round(totalScore * 100) / 100} điểm
-            </h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Rubric toàn bài</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Mỗi bài có rubric riêng, tổng hợp từ tiêu chí của các câu.
+                  Chỉnh tiêu chí ngay bên dưới từng câu.
+                </p>
+                {(values ?? []).map((item, i) => (
+                  <div
+                    key={questions.fields[i]?.id ?? i}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted p-3 text-sm"
+                  >
+                    <span>
+                      Câu {i + 1} ·{" "}
+                      {(item.outcomeId &&
+                        selectedSet?.outcomes.find(
+                          (outcome) => outcome.id === item.outcomeId,
+                        )?.code) ||
+                        "Chưa gắn mục tiêu"}
+                    </span>
+                    <span>
+                      {item.kind === "MULTIPLE_CHOICE"
+                        ? "Đáp án chuẩn"
+                        : `${item.criteria?.length ?? 0} tiêu chí`}{" "}
+                      · {item.maxScore} điểm
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">
+                Câu hỏi · {questions.fields.length} câu ·{" "}
+                {Math.round(totalScore * 100) / 100} điểm
+              </h2>
               <div className="flex flex-wrap items-start gap-2">
                 <CsvDownloadButton
                   label="Tải mẫu CSV"
@@ -556,183 +560,187 @@ function AssignmentEditor({
                   filename={assignmentTitle || "bai-tap"}
                   disabled={blankOnly}
                 />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!classId}
-              onClick={() => setShowImport(true)}
-            >
-              Nhập câu hỏi từ file
-            </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!classId}
+                  onClick={() => setShowImport(true)}
+                >
+                  Nhập câu hỏi từ file
+                </Button>
               </div>
-            {blankOnly && (
-              <p className="w-full text-sm text-muted-foreground">
-                Nhập nội dung câu hỏi trước khi xuất CSV.
-              </p>
-            )}
+              {blankOnly && (
+                <p className="w-full text-sm text-muted-foreground">
+                  Nhập nội dung câu hỏi trước khi xuất CSV.
+                </p>
+              )}
               <p className="w-full text-xs text-muted-foreground">
                 CSV gồm câu hỏi đang trên form, kể cả nội dung chưa lưu. Lớp,
-                hạn nộp, người nhận và mục tiêu được chọn riêng khi nhập
-                lại.
+                hạn nộp, người nhận và mục tiêu được chọn riêng khi nhập lại.
               </p>
-            {!classId && (
-              <p className="w-full text-sm text-muted-foreground">
-                Chọn lớp trước khi nhập câu hỏi từ file.
-              </p>
-            )}
-          </div>
-          {questions.fields.map((question, index) => (
-            <Card key={question.id}>
-              <CardHeader>
-                <CardTitle>Câu {index + 1}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Controller
-                  name={`questions.${index}.kind`}
-                  control={form.control}
-                  render={({ field }) => (
-                    <LiveSelect
-                      label="Loại câu hỏi"
-                      value={field.value}
-                      options={[
-                        { value: "ESSAY", label: "Tự luận" },
-                        { value: "MULTIPLE_CHOICE", label: "Trắc nghiệm" },
-                      ]}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                <Label htmlFor={`question-${index}-prompt`}>Đề bài</Label>
-                <Textarea
-                  id={`question-${index}-prompt`}
-                  {...form.register(`questions.${index}.prompt`)}
-                />
-                {form.formState.errors.questions?.[index]?.prompt && (
-                  <p role="alert" className="text-sm text-destructive">
-                    {form.formState.errors.questions[index]?.prompt?.message}
-                  </p>
-                )}
-                {values?.[index]?.kind === "MULTIPLE_CHOICE" ? (
-                  <>
-                    <Label htmlFor={`question-${index}-choices`}>
-                      Các lựa chọn (mỗi dòng một lựa chọn)
-                    </Label>
-                    <Textarea
-                      id={`question-${index}-choices`}
-                      {...form.register(`questions.${index}.choices`)}
-                    />
-                    {form.formState.errors.questions?.[index]?.choices && (
-                      <p role="alert" className="text-sm text-destructive">
-                        {
-                          form.formState.errors.questions[index]?.choices
-                            ?.message
-                        }
-                      </p>
+              {!classId && (
+                <p className="w-full text-sm text-muted-foreground">
+                  Chọn lớp trước khi nhập câu hỏi từ file.
+                </p>
+              )}
+            </div>
+            {questions.fields.map((question, index) => (
+              <Card key={question.id}>
+                <CardHeader>
+                  <CardTitle>Câu {index + 1}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Controller
+                    name={`questions.${index}.kind`}
+                    control={form.control}
+                    render={({ field }) => (
+                      <LiveSelect
+                        label="Loại câu hỏi"
+                        value={field.value}
+                        options={[
+                          { value: "ESSAY", label: "Tự luận" },
+                          { value: "MULTIPLE_CHOICE", label: "Trắc nghiệm" },
+                        ]}
+                        onChange={field.onChange}
+                      />
                     )}
-                    <Label htmlFor={`question-${index}-answer`}>
-                      Đáp án đúng (trùng nội dung một lựa chọn)
-                    </Label>
-                    <Input
-                      id={`question-${index}-answer`}
-                      {...form.register(`questions.${index}.correctAnswer`)}
-                    />
-                    {form.formState.errors.questions?.[index]
-                      ?.correctAnswer && (
-                      <p role="alert" className="text-sm text-destructive">
-                        {
+                  />
+                  <Label htmlFor={`question-${index}-prompt`}>Đề bài</Label>
+                  <Textarea
+                    id={`question-${index}-prompt`}
+                    {...form.register(`questions.${index}.prompt`)}
+                  />
+                  {form.formState.errors.questions?.[index]?.prompt && (
+                    <p role="alert" className="text-sm text-destructive">
+                      {form.formState.errors.questions[index]?.prompt?.message}
+                    </p>
+                  )}
+                  {values?.[index]?.kind === "MULTIPLE_CHOICE" ? (
+                    <>
+                      <Label htmlFor={`question-${index}-choices`}>
+                        Các lựa chọn (mỗi dòng một lựa chọn)
+                      </Label>
+                      <Textarea
+                        id={`question-${index}-choices`}
+                        {...form.register(`questions.${index}.choices`)}
+                      />
+                      {form.formState.errors.questions?.[index]?.choices && (
+                        <p role="alert" className="text-sm text-destructive">
+                          {
+                            form.formState.errors.questions[index]?.choices
+                              ?.message
+                          }
+                        </p>
+                      )}
+                      <Label htmlFor={`question-${index}-answer`}>
+                        Đáp án đúng (trùng nội dung một lựa chọn)
+                      </Label>
+                      <Input
+                        id={`question-${index}-answer`}
+                        {...form.register(`questions.${index}.correctAnswer`)}
+                      />
+                      {form.formState.errors.questions?.[index]
+                        ?.correctAnswer && (
+                        <p role="alert" className="text-sm text-destructive">
+                          {
                             form.formState.errors.questions[index]
                               ?.correctAnswer?.message
-                        }
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <RubricEditor form={form} index={index} />
-                )}
-                {selectedSet && (
-                  <>
-                    <Controller
-                      name={`questions.${index}.outcomeId`}
-                      control={form.control}
-                      render={({ field }) => (
-                        <LiveSelect
-                          label="Mục tiêu mà câu này đo (không bắt buộc)"
-                          value={field.value || NO_OUTCOME_SET}
-                          options={[
-                            { value: NO_OUTCOME_SET, label: "Không gắn mục tiêu" },
-                            ...selectedSet.outcomes.map((outcome) => ({
-                              value: outcome.id,
-                              label: `${outcome.code} · ${outcome.title}`,
-                            })),
-                          ]}
-                          onChange={(next) =>
-                            field.onChange(next === NO_OUTCOME_SET ? "" : next)
                           }
-                        />
+                        </p>
                       )}
-                    />
-                    <FieldError
-                      message={
-                        form.formState.errors.questions?.[index]?.outcomeId
-                          ?.message
-                      }
-                    />
-                  </>
-                )}
-                <Label htmlFor={`question-${index}-max`}>Điểm tối đa</Label>
-                <Input
-                  id={`question-${index}-max`}
-                  type="number"
-                  step="0.01"
-                  {...form.register(`questions.${index}.maxScore`, {
-                    valueAsNumber: true,
-                  })}
-                />
-                {form.formState.errors.questions?.[index]?.maxScore && (
-                  <p role="alert" className="text-sm text-destructive">
+                    </>
+                  ) : (
+                    <RubricEditor form={form} index={index} />
+                  )}
+                  {selectedSet && (
+                    <>
+                      <Controller
+                        name={`questions.${index}.outcomeId`}
+                        control={form.control}
+                        render={({ field }) => (
+                          <LiveSelect
+                            label="Mục tiêu mà câu này đo (không bắt buộc)"
+                            value={field.value || NO_OUTCOME_SET}
+                            options={[
+                              {
+                                value: NO_OUTCOME_SET,
+                                label: "Không gắn mục tiêu",
+                              },
+                              ...selectedSet.outcomes.map((outcome) => ({
+                                value: outcome.id,
+                                label: `${outcome.code} · ${outcome.title}`,
+                              })),
+                            ]}
+                            onChange={(next) =>
+                              field.onChange(
+                                next === NO_OUTCOME_SET ? "" : next,
+                              )
+                            }
+                          />
+                        )}
+                      />
+                      <FieldError
+                        message={
+                          form.formState.errors.questions?.[index]?.outcomeId
+                            ?.message
+                        }
+                      />
+                    </>
+                  )}
+                  <Label htmlFor={`question-${index}-max`}>Điểm tối đa</Label>
+                  <Input
+                    id={`question-${index}-max`}
+                    type="number"
+                    step="0.01"
+                    {...form.register(`questions.${index}.maxScore`, {
+                      valueAsNumber: true,
+                    })}
+                  />
+                  {form.formState.errors.questions?.[index]?.maxScore && (
+                    <p role="alert" className="text-sm text-destructive">
                       {
                         form.formState.errors.questions[index]?.maxScore
                           ?.message
                       }
-                  </p>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={questions.fields.length <= 1}
-                  onClick={() => {
-                    // Tệp gắn câu bị xóa chuyển về toàn bài; tệp của câu sau lùi một vị trí.
-                    const files = form.getValues("files") ?? [];
-                    form.setValue(
-                      "files",
-                      files.map((file) => ({
-                        ...file,
-                        questionPosition:
-                          file.questionPosition == null ||
-                          file.questionPosition === index
-                            ? null
-                            : file.questionPosition > index
-                              ? file.questionPosition - 1
-                              : file.questionPosition,
-                      })),
-                      { shouldDirty: true },
-                    );
-                    questions.remove(index);
-                  }}
-                >
-                  Xóa câu này
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            disabled={questions.fields.length >= 100}
-            onClick={() => questions.append({ ...emptyQuestion })}
-          >
-            Thêm câu hỏi
-          </Button>
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={questions.fields.length <= 1}
+                    onClick={() => {
+                      // Tệp gắn câu bị xóa chuyển về toàn bài; tệp của câu sau lùi một vị trí.
+                      const files = form.getValues("files") ?? [];
+                      form.setValue(
+                        "files",
+                        files.map((file) => ({
+                          ...file,
+                          questionPosition:
+                            file.questionPosition == null ||
+                            file.questionPosition === index
+                              ? null
+                              : file.questionPosition > index
+                                ? file.questionPosition - 1
+                                : file.questionPosition,
+                        })),
+                        { shouldDirty: true },
+                      );
+                      questions.remove(index);
+                    }}
+                  >
+                    Xóa câu này
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={questions.fields.length >= 100}
+              onClick={() => questions.append({ ...emptyQuestion })}
+            >
+              Thêm câu hỏi
+            </Button>
           </div>
         </fieldset>
       </form>
@@ -810,7 +818,8 @@ function OutcomeSetField({
   if (!sets.length && !value)
     return (
       <p className="text-sm text-muted-foreground">
-        Khóa học chưa có bộ mục tiêu được duyệt áp dụng. Việc gắn mục tiêu không bắt buộc.
+        Khóa học chưa có bộ mục tiêu được duyệt áp dụng. Việc gắn mục tiêu không
+        bắt buộc.
       </p>
     );
   return (
@@ -829,12 +838,14 @@ function OutcomeSetField({
       />
       {isMissing ? (
         <p role="alert" className="text-sm text-destructive">
-          Bộ mục tiêu đã chọn không còn được duyệt. Chọn lại bộ mục tiêu của khóa.
+          Bộ mục tiêu đã chọn không còn được duyệt. Chọn lại bộ mục tiêu của
+          khóa.
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Không bắt buộc. Gắn mục tiêu để xem kết quả theo từng mục tiêu; bỏ trống vẫn
-          giao bài bình thường. Đã chọn bộ thì mỗi câu có thể gắn hoặc không.
+          Không bắt buộc. Gắn mục tiêu để xem kết quả theo từng mục tiêu; bỏ
+          trống vẫn giao bài bình thường. Đã chọn bộ thì mỗi câu có thể gắn hoặc
+          không.
         </p>
       )}
     </div>

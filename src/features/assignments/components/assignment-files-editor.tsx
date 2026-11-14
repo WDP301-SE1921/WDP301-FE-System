@@ -5,7 +5,8 @@ import { apiErrorMessage } from "@/lib/api/client";
 import type { AssignmentAttachment } from "@/types/academic-workflows";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { LiveSelect } from "@/features/academic/components/live-fields";
+import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmissionFile } from "@/features/grading/components/submission-file";

@@ -1,39 +1,34 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { HugeiconsIcon } from "@hugeicons/react"
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertCircleIcon,
   ArrowLeft01Icon,
   Mail01Icon,
-} from "@hugeicons/core-free-icons"
+} from "@hugeicons/core-free-icons";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { AUTH_MSG } from "@/constants/messages/events/auth"
-import { ROUTES } from "@/constants/routes"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FormPageHeader } from "@/components/shared/layout/form-page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AUTH_MSG } from "@/constants/messages/events/auth";
+import { ROUTES } from "@/constants/routes";
 import {
   forgotPasswordSchema,
   type ForgotPasswordInput,
-} from "@/lib/validators/auth"
-import { apiErrorMessage } from "@/lib/api/client"
-import { useForgotPassword } from "@/features/auth/hooks/use-forgot-password"
+} from "@/lib/validators/auth";
+import { apiErrorMessage } from "@/lib/api/client";
+import { useForgotPassword } from "@/features/auth/hooks/use-forgot-password";
 
-const EMAIL_FIELD_ID = "forgot-password-email"
+const EMAIL_FIELD_ID = "forgot-password-email";
 
 function ForgotPasswordForm() {
-  const forgotPassword = useForgotPassword()
+  const forgotPassword = useForgotPassword();
 
   const {
     register,
@@ -42,21 +37,21 @@ function ForgotPasswordForm() {
   } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { email: "" },
-  })
+  });
 
-  const submitError = forgotPassword.error ? apiErrorMessage(forgotPassword.error) : null
+  const submitError = forgotPassword.error
+    ? apiErrorMessage(forgotPassword.error)
+    : null;
 
-  const sentToEmail = forgotPassword.data?.email ?? null
+  const sentToEmail = forgotPassword.data?.email ?? null;
 
   return (
     <Card className="gap-5">
-      <CardHeader className="gap-3">
-        <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <HugeiconsIcon icon={Mail01Icon} className="size-5" />
-        </span>
-        <CardTitle className="text-2xl">{AUTH_MSG.FORGOT_TITLE}</CardTitle>
-        <CardDescription>{AUTH_MSG.FORGOT_DESC}</CardDescription>
-      </CardHeader>
+      <FormPageHeader
+        title={AUTH_MSG.FORGOT_TITLE}
+        description={AUTH_MSG.FORGOT_DESC}
+        icon={<HugeiconsIcon icon={Mail01Icon} className="size-5" />}
+      />
 
       <CardContent className="space-y-5">
         {sentToEmail && (
@@ -104,7 +99,9 @@ function ForgotPasswordForm() {
             <p
               id={`${EMAIL_FIELD_ID}-hint`}
               className={
-                errors.email ? "text-xs text-destructive" : "text-xs text-muted-foreground"
+                errors.email
+                  ? "text-xs text-destructive"
+                  : "text-xs text-muted-foreground"
               }
             >
               {errors.email?.message ?? AUTH_MSG.FORGOT_EMAIL_HINT}
@@ -130,7 +127,7 @@ function ForgotPasswordForm() {
         </Link>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export { ForgotPasswordForm }
+export { ForgotPasswordForm };

@@ -8,6 +8,8 @@ RUN npm run build && npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
+ARG COMMIT_SHA=unknown
+ENV APP_COMMIT_SHA=$COMMIT_SHA
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3001
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/.next ./.next

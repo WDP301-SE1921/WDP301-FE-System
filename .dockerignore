@@ -5,3 +5,7 @@ node_modules
 .env.*
 coverage
 *.log
+e2e
+tests
+playwright*.config.ts
+docs/screenshots

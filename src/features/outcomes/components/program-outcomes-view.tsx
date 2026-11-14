@@ -3,16 +3,14 @@ import { parseAsString, useQueryState } from "nuqs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { EmptyState } from "@/components/shared/feedback/empty-state";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
-import { LiveSelect } from "@/features/academic/components/live-fields";
+import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
+
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { OUTCOME_MATRIX_FIRST_SET } from "@/lib/outcome-links";
 import { useHubTab } from "@/hooks/use-hub-tab";
-import {
-  programsFromClasses,
-  type ProgramOption,
-} from "../rules";
+import { programsFromClasses, type ProgramOption } from "../rules";
 import { OutcomeLessonMatrix } from "./outcome-lesson-matrix";
 import { OutcomeSetsPanel } from "./outcome-sets-panel";
 
@@ -24,7 +22,10 @@ function ProgramOutcomesBody({
   programs: ProgramOption[];
   emptyDescription: string;
 }) {
-  const [selected, setSelected] = useQueryState("outcomeProgram", parseAsString);
+  const [selected, setSelected] = useQueryState(
+    "outcomeProgram",
+    parseAsString,
+  );
   const [matrix, setMatrix] = useQueryState("outcomeMatrix", parseAsString);
   const user = useCurrentUser();
   const programId = programs.some((program) => program.id === selected)
@@ -34,7 +35,9 @@ function ProgramOutcomesBody({
     return (
       <EmptyState title="Chưa có khóa học" description={emptyDescription} />
     );
-  const programName = programs.find((program) => program.id === programId)?.label;
+  const programName = programs.find(
+    (program) => program.id === programId,
+  )?.label;
   // Màn gắn bài hàng loạt chỉ dành cho Thiết kế GT; vai trò khác mở link thì về danh sách.
   const matrixOpen = matrix !== null && user?.role === "curriculum_designer";
   return (
