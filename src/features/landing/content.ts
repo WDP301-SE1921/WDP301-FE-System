@@ -87,15 +87,13 @@ export const LANDING_CONTENT = {
   CTA_ACTION: "Đăng nhập ngay",
 
   CONTACT_TITLE: "Liên hệ trung tâm",
-  CONTACT_ITEMS: [
-    { iconName: "phone", label: "Hotline", value: "0913 345 678" },
-    { iconName: "mail", label: "Email", value: "lienhe@edugrade.vn" },
-    {
-      iconName: "address",
-      label: "Địa chỉ",
-      value: "Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội",
-    },
-  ],
+  /** Nhãn các mục liên hệ; giá trị lấy từ `GET /center` (Admin tổng sửa ở trang Thông tin trung tâm). */
+  CONTACT_LABELS: {
+    phone: "Hotline",
+    mail: "Email",
+    address: "Địa chỉ",
+    clock: "Giờ mở cửa",
+  },
 
   FOOTER_COPYRIGHT: (year: number) => `© ${year} EduGrade. Bảo lưu mọi quyền.`,
 } as const

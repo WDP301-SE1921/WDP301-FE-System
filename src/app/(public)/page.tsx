@@ -4,14 +4,16 @@ import {
   HeroSection,
   SubjectsSection,
 } from "@/features/landing/components"
+import { loadLandingData } from "@/features/landing/load-landing"
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const data = await loadLandingData()
   return (
     <>
       <HeroSection />
       <SubjectsSection />
       <BenefitsSection />
-      <CtaSection />
+      <CtaSection contactItems={data.contactItems} />
     </>
   )
 }

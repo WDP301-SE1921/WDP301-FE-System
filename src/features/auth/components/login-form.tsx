@@ -35,7 +35,8 @@ const FIELD_ID = {
   REMEMBER_ME: "login-remember-me",
 } as const;
 
-function LoginForm() {
+/** `supportPhone`: hotline trong `GET /center`; `null` thì dòng hỗ trợ không kèm số. */
+function LoginForm({ supportPhone }: { supportPhone: string | null }) {
   const router = useRouter();
   const login = useLogin();
   const isSubmitting = React.useRef(false);
@@ -94,7 +95,7 @@ function LoginForm() {
                 <HugeiconsIcon icon={AlertCircleIcon} aria-hidden="true" />
                 <AlertTitle>{submitError}</AlertTitle>
                 <AlertDescription>
-                  <p>{AUTH_MSG.SUPPORT_CONTACT}</p>
+                  <p>{AUTH_MSG.SUPPORT_CONTACT(supportPhone)}</p>
                 </AlertDescription>
               </Alert>
             </div>
@@ -249,7 +250,7 @@ function LoginForm() {
         </p>
         <p>{AUTH_MSG.SUPPORT_HINT}</p>
         <p className="font-medium text-foreground">
-          {AUTH_MSG.SUPPORT_CONTACT}
+          {AUTH_MSG.SUPPORT_CONTACT(supportPhone)}
         </p>
       </div>
     </div>

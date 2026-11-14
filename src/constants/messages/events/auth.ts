@@ -85,8 +85,11 @@ export const AUTH_MSG = {
 
   // ---------- Hỗ trợ ----------
   SUPPORT_HINT: "Bạn chưa có tài khoản hoặc cần đặt lại mật khẩu?",
-  SUPPORT_CONTACT:
-    "Vui lòng liên hệ Trưởng ban quản trị EduGrade: 0913 345 678",
+  /** Số điện thoại lấy từ `GET /center`; chưa có thì bỏ số. */
+  SUPPORT_CONTACT: (phone: string | null) =>
+    phone
+      ? `Vui lòng liên hệ Trưởng ban quản trị EduGrade: ${phone}`
+      : "Vui lòng liên hệ Trưởng ban quản trị EduGrade.",
 
   // ---------- Phiên đăng nhập hết hạn (overlay) ----------
   SESSION_EXPIRED_TITLE: "Phiên đăng nhập đã hết hạn",
