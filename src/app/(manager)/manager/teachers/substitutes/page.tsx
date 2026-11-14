@@ -13,8 +13,8 @@ export default async function Page({
     legacyHref(
       ROUTES.MANAGER.SCHEDULE,
       query.sessionId
-        ? { view: "board", sessionTab: "substitute" }
-        : { view: "board" },
+        ? { view: "week", sessionTab: "substitute" }
+        : { view: "week" },
       query,
       { sessionId: "session", fromDate: "date" },
     ),

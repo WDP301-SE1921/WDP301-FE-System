@@ -117,7 +117,7 @@ export function ScheduleBoard({
           className="min-w-0 overflow-x-auto overscroll-x-contain rounded-2xl pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           tabIndex={0}
           role="region"
-          aria-label="Bảng Kanban lịch học theo bảy ngày trong tuần"
+          aria-label="Lịch học theo bảy ngày trong tuần"
         >
           <div className="grid min-w-252 grid-cols-7 gap-3">
             {days.map((day) => (
