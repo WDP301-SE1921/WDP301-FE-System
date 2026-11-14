@@ -27,7 +27,13 @@ const files = [
   "02-api",
   ...(providers ? ["03-providers"] : []),
   ...(write
-    ? ["04-business", "05-dynamic-routes", "06-curriculum", "07-attachments"]
+    ? [
+        "04-business",
+        "05-dynamic-routes",
+        "06-curriculum",
+        "07-attachments",
+        "08-admin",
+      ]
     : []),
 ];
 process.exitCode = await command("node_modules/@playwright/test/cli.js", [

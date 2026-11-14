@@ -22,6 +22,8 @@ npm run test:e2e:production:report
 
 Kiểm tra mọi thao tác API bảo vệ bằng yêu cầu không có token với ID giả không tồn tại. Public invitation acceptance được loại khỏi nhóm này vì xác thực bằng token lời mời dùng một lần, dù Swagger kế thừa nhãn bearer từ controller. API tìm phụ huynh dùng vai trò STAFF; giao bài/báo cáo dùng TEACHER; các API quản trị dùng ADMIN.
 
+Bộ đầy đủ còn đăng nhập Admin tổng tại `https://admin.edugrade.45.77.168.110.sslip.io`, kiểm tra 19 route lấy từ source ở kích thước 1440 và 390, và xác nhận không hiển thị nhãn dữ liệu mẫu. Trang chi tiết dùng đúng ID của fixture riêng; bài này chỉ đọc dữ liệu.
+
 Provider test gửi bài toán và ảnh tổng hợp qua đúng lớp tích hợp AI của backend; không gửi dữ liệu học sinh thật. Bài nộp production dùng ảnh/PDF tổng hợp tải lên MinIO thật. AI chỉ đề xuất, không tự công bố điểm. Test riêng kiểm tra giáo viên sửa bản chép bài trước khi duyệt/công bố. `SUCCEEDED` của tác vụ AI vẫn có thể chứa câu cần giáo viên đọc lại; suite kiểm tra cả kết quả chi tiết đó.
 
 SMTP `verify()` chứng minh kết nối/xác thực. Outbox `SENT` của email biên lai chứng minh ứng dụng đã chuyển thư cho SMTP. Không tuyên bố thư đã vào inbox nếu chưa mở hộp thư nhận.

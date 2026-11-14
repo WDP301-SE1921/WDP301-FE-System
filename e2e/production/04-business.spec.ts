@@ -37,11 +37,19 @@ test("production payment receipt and actual email delivery", async ({}, info) =>
       eventType: string;
       aggregateId?: string;
       dedupeKey?: string;
+      recipient: string;
       createdAt: string;
-    }) => e.eventType === "PAYMENT_CONFIRMED" && e.createdAt >= f.createdAt,
+    }) =>
+      e.eventType === "PAYMENT_CONFIRMED" &&
+      e.aggregateId === f.registration.id &&
+      e.dedupeKey === `PAYMENT_CONFIRMED:${f.registration.id}` &&
+      e.recipient === config.accounts.parent &&
+      e.createdAt >= f.createdAt,
   );
   expect(delivery, "This run's production receipt email").toBeTruthy();
   expect(delivery.status).toBe("SENT");
+  expect(delivery.attemptCount).toBeGreaterThan(0);
+  expect(delivery.sentAt).toBeTruthy();
   await info.attach("real outbox delivery", {
     body: JSON.stringify({
       eventType: delivery.eventType,
