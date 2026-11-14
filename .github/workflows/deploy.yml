@@ -57,18 +57,12 @@ jobs:
             image=ghcr.io/wdp301-se1921/edugrade-web:${{ github.sha }}
             deploy_status=0
             /home/deploy/edugrade/deploy.sh web "$image" || deploy_status=$?
-            # The deploy script's immediate curl can reset while Next is still starting.
-            # Accept recovery only when a running container uses this exact immutable image.
-            for attempt in $(seq 1 40); do
-              container=$(docker ps -q --filter "ancestor=$image" | head -n 1)
-              if [ -n "$container" ] && [ "$(docker inspect -f '{{.Config.Image}}' "$container")" = "$image" ]; then
-                public_origin='${{ vars.PUBLIC_WEB_ORIGIN }}'
-                public_origin=${public_origin:-https://edugrade.45.77.168.110.sslip.io}
-                if docker exec "$container" node -e "fetch('$public_origin/api/health',{cache:'no-store',signal:AbortSignal.timeout(5000)}).then(async r=>{const b=await r.json();process.exit(r.ok&&b.status==='ok'&&b.commit==='${{ github.sha }}'?0:1)}).catch(()=>process.exit(1))"; then
-                  exit 0
-                fi
-              fi
-              sleep 3
-            done
-            echo "The requested frontend image did not become ready (deploy exit $deploy_status)."
-            exit 1
+            # The immediate local curl can reset during startup. The next mandatory
+            # step verifies the exact served commit from the public client boundary.
+            echo "Deployment command returned $deploy_status; checking public readiness next."
+
+      - name: Verify public frontend commit
+        env:
+          PUBLIC_WEB_ORIGIN: ${{ vars.PUBLIC_WEB_ORIGIN || 'https://edugrade.45.77.168.110.sslip.io' }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: node e2e/system/deployment-readiness.mjs "$PUBLIC_WEB_ORIGIN" "$EXPECTED_COMMIT"
