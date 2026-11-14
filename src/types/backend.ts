@@ -290,3 +290,19 @@ export interface RegistrationBill {
     confirmedAt: string;
   } | null;
 }
+
+/** `GET /center` (công khai): mọi trường là `null` khi Admin chưa nhập. */
+export interface CenterInfo {
+  name: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  openingHours: string | null;
+}
+
+/** `GET /center/subjects` (công khai): môn đang hoạt động, sắp theo tên. */
+export interface PublicSubject {
+  id: string;
+  code: string;
+  name: string;
+}
