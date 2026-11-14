@@ -79,12 +79,12 @@ import {
   type AcademicProgramInput,
 } from "@/lib/validators/academic-catalog";
 import type { AcademicSubject, RegistrationProgram } from "@/types/backend";
+import { GRADES, gradeLabel } from "@/constants/grades";
 import { curriculumEffectiveLabel } from "@/features/curriculum/workspace-selectors";
 import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { registrationApi } from "../api";
 import {
-  PROGRAM_GRADES,
   SESSIONS_PER_WEEK,
   findSameSubjectGradeProgram,
   isSubjectCodeTaken,
@@ -1215,9 +1215,9 @@ function ProgramForm({
               disabled={save.isPending}
               invalid={!!errors.grade}
               describedBy={`${id}-grade-error`}
-              options={PROGRAM_GRADES.map((value) => ({
+              options={GRADES.map((value) => ({
                 value: String(value),
-                label: `Khối ${value}`,
+                label: gradeLabel(value),
               }))}
               onChange={(value) => {
                 const next = Number(value);

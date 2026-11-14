@@ -1,5 +1,6 @@
 "use client";
 import { actsAsManager } from "@/constants/roles";
+import { GRADES, GRADE_FILTER_ITEMS, gradeLabel } from "@/constants/grades";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -213,13 +214,7 @@ export function CurriculumUnitsBody({
           />
           <Select
             value={grade || "all"}
-            items={{
-              all: "Tất cả khối",
-              6: "Khối 6",
-              7: "Khối 7",
-              8: "Khối 8",
-              9: "Khối 9",
-            }}
+            items={GRADE_FILTER_ITEMS}
             onValueChange={(value) =>
               void setGrade(value === "all" ? null : String(value))
             }
@@ -229,9 +224,9 @@ export function CurriculumUnitsBody({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả khối</SelectItem>
-              {[6, 7, 8, 9].map((item) => (
+              {GRADES.map((item) => (
                 <SelectItem key={item} value={String(item)}>
-                  Khối {item}
+                  {gradeLabel(item)}
                 </SelectItem>
               ))}
             </SelectContent>

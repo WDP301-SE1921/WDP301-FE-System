@@ -1,7 +1,6 @@
 // Hàm thuần của hộp tạo khóa và form môn (chỉ import type, để `node --test` nạp thẳng được).
 import type { AcademicSubject, RegistrationProgram } from "@/types/backend";
 
-export const PROGRAM_GRADES = [6, 7, 8, 9] as const;
 export const SESSIONS_PER_WEEK = { min: 1, max: 14, default: 2 } as const;
 
 /** Tên khóa tự điền: "Toán" + khối 7 → "Toán 7". Chưa đủ môn và khối thì rỗng. */

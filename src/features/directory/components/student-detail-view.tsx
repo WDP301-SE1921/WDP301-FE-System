@@ -11,6 +11,7 @@ import {
   UserRemove01Icon,
 } from "@hugeicons/core-free-icons";
 import { PageContainer } from "@/components/shared/layout/page-container";
+import { GRADES, gradeLabel } from "@/constants/grades";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { RowActions } from "@/components/shared/data-table/row-actions";
@@ -88,9 +89,9 @@ const day = new Intl.DateTimeFormat("vi-VN", {
   timeZone: "Asia/Ho_Chi_Minh",
 });
 const scoreFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
-const GRADE_OPTIONS = [6, 7, 8, 9].map((grade) => ({
+const GRADE_OPTIONS = GRADES.map((grade) => ({
   value: String(grade),
-  label: `Khối ${grade}`,
+  label: gradeLabel(grade),
 }));
 const STAT_COLUMNS = ["", "xl:grid-cols-1", "xl:grid-cols-2", "xl:grid-cols-3", "xl:grid-cols-4"];
 
