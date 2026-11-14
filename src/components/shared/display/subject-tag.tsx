@@ -1,23 +1,25 @@
 import * as React from "react"
 import { Badge } from "@/components/ui/badge"
-import { SUBJECT_MAP, FALLBACK_SUBJECT } from "@/constants/subjects"
+import { resolveSubject } from "@/constants/subjects"
 import { cn } from "cn"
 
 export interface SubjectTagProps {
-  /** Subject code: "MATH" | "PHYS" | "CHEM" | "BIOL" */
+  /** Mã môn (`MATH`, `PHYSICS`, …) hoặc tên môn BE trả (`Hóa học`). */
   code: string
   className?: string
 }
 
 /**
- * Displays a subject label as a colored badge resolved from SUBJECT_MAP.
- * Falls back gracefully for unknown codes.
+ * Nhãn môn có màu, lấy từ `resolveSubject`: môn mới vẫn hiện đúng tên và có màu riêng.
  */
 function SubjectTag({ code, className }: SubjectTagProps) {
-  const config = SUBJECT_MAP[code] ?? FALLBACK_SUBJECT
+  const config = resolveSubject(code)
 
   return (
-    <Badge variant={config.badgeVariant} className={cn(className)}>
+    <Badge
+      variant={config.badgeVariant}
+      className={cn(config.badgeClassName, className)}
+    >
       {config.name}
     </Badge>
   )
