@@ -10,8 +10,8 @@ export default async function LandingPage() {
   const data = await loadLandingData()
   return (
     <>
-      <HeroSection />
-      <SubjectsSection />
+      <HeroSection stats={data.stats} />
+      <SubjectsSection subjects={data.subjects} />
       <BenefitsSection />
       <CtaSection contactItems={data.contactItems} />
     </>

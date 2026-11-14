@@ -1,6 +1,7 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Atom01Icon,
+  BookOpen01Icon,
   CalculatorIcon,
   Leaf01Icon,
   TestTube01Icon,
@@ -8,18 +9,22 @@ import {
 
 import { Card } from "@/components/ui/card"
 import { SubjectTag } from "@/components/shared/display/subject-tag"
-import { SUBJECT_MAP } from "@/constants/subjects"
+import { resolveSubject, type SubjectTone } from "@/constants/subjects"
 import { LANDING_CONTENT, LANDING_NAV } from "@/features/landing/content"
+import type { PublicSubject } from "@/types/backend"
 
-/** Icon minh họa theo mã môn — màu chữ/nền lấy từ `SubjectTag` qua `SUBJECT_MAP`. */
-const SUBJECT_ICON: Record<string, typeof CalculatorIcon> = {
-  [SUBJECT_MAP.MATH.code]: CalculatorIcon,
-  [SUBJECT_MAP.PHYS.code]: Atom01Icon,
-  [SUBJECT_MAP.CHEM.code]: TestTube01Icon,
-  [SUBJECT_MAP.BIOL.code]: Leaf01Icon,
+/** Icon minh họa theo môn; môn Quản lý tạo thêm dùng icon sách. Màu nhãn lấy từ `SubjectTag`. */
+const SUBJECT_ICON: Partial<Record<SubjectTone, typeof CalculatorIcon>> = {
+  math: CalculatorIcon,
+  physics: Atom01Icon,
+  chemistry: TestTube01Icon,
+  biology: Leaf01Icon,
 }
+const SUBJECT_BLURBS: Partial<Record<SubjectTone, string>> =
+  LANDING_CONTENT.SUBJECT_BLURBS
 
-function SubjectsSection() {
+/** `subjects` lấy từ `GET /center/subjects`; rỗng (chưa có môn hoặc BE lỗi) thì hiện dòng thông báo. */
+function SubjectsSection({ subjects }: { subjects: PublicSubject[] }) {
   const sectionId = LANDING_NAV[0].href.replace("#", "")
 
   return (
@@ -34,25 +39,37 @@ function SubjectsSection() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {LANDING_CONTENT.SUBJECTS.map((subject) => (
-            <Card
-              key={subject.code}
-              className="gap-4 rounded-2xl transition-shadow hover:shadow-md"
-            >
-              <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <HugeiconsIcon
-                  icon={SUBJECT_ICON[subject.code]}
-                  className="size-6"
-                />
-              </span>
-              <SubjectTag code={subject.code} />
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {subject.desc}
-              </p>
-            </Card>
-          ))}
-        </div>
+        {subjects.length === 0 ? (
+          <p className="mt-12 text-center text-sm text-muted-foreground">
+            {LANDING_CONTENT.SUBJECTS_EMPTY}
+          </p>
+        ) : (
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {subjects.map((subject) => {
+              const { tone } = resolveSubject(subject.code)
+              const blurb = SUBJECT_BLURBS[tone]
+              return (
+                <Card
+                  key={subject.id}
+                  className="gap-4 rounded-2xl transition-shadow hover:shadow-md"
+                >
+                  <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <HugeiconsIcon
+                      icon={SUBJECT_ICON[tone] ?? BookOpen01Icon}
+                      className="size-6"
+                    />
+                  </span>
+                  <SubjectTag code={subject.code} />
+                  {blurb && (
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {blurb}
+                    </p>
+                  )}
+                </Card>
+              )
+            })}
+          </div>
+        )}
       </div>
     </section>
   )

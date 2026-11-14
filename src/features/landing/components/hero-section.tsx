@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ROUTES } from "@/constants/routes"
 import { LANDING_CONTENT, LANDING_NAV } from "@/features/landing/content"
+import type { LandingStat } from "@/features/landing/landing-stats"
 
 const HERO_HIGHLIGHTS = [
   { icon: Calendar01Icon, label: "Lịch học của con", value: "T2 · T4 · T6 · 18:00" },
@@ -19,7 +20,8 @@ const HERO_HIGHLIGHTS = [
   { icon: CheckmarkCircle02Icon, label: "Tỷ lệ đi học", value: "96%" },
 ] as const
 
-function HeroSection() {
+/** `stats`: số liệu dưới tiêu đề, số môn đếm theo BE (`landingStats`). */
+function HeroSection({ stats }: { stats: LandingStat[] }) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
       <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-24">
@@ -63,7 +65,7 @@ function HeroSection() {
           </p>
 
           <dl className="grid grid-cols-3 gap-4 border-t border-border pt-7">
-            {LANDING_CONTENT.STATS.map((stat) => (
+            {stats.map((stat) => (
               <div key={stat.label} className="space-y-1">
                 <dt className="font-heading text-2xl font-bold text-foreground">
                   {stat.value}

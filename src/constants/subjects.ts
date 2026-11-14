@@ -157,11 +157,3 @@ export function resolveSubject(
 export function subjectDotClass(value: string): string {
   return resolveSubject(value).dotClass
 }
-
-/** @deprecated Chỉ còn cho landing page đến khi đọc môn từ BE; dùng `resolveSubject`. */
-export const SUBJECT_MAP = {
-  MATH: { code: "MATH" },
-  PHYS: { code: "PHYSICS" },
-  CHEM: { code: "CHEMISTRY" },
-  BIOL: { code: "BIOLOGY" },
-} as const
