@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   ApiFeedback,
@@ -43,6 +44,8 @@ export function SessionCancelForm({
   onClose: () => void;
 }) {
   const [mode, setMode] = useState<CancelMode>("move");
+  // Buổi trung tâm hủy mà không đổi ngày: mặc định bù 1 buổi vào hạn học của từng em.
+  const [extendTerm, setExtendTerm] = useState(true);
   const form = useForm<{ reason: string }>({
     resolver: zodResolver(reviewReasonSchema),
     defaultValues: { reason: "" },
@@ -72,6 +75,7 @@ export function SessionCancelForm({
             reason: value.reason,
             expectedRevision: session.revision,
             ...(shift ? { shiftLessons: true } : {}),
+            ...(extendTerm ? { extendTerm: true } : {}),
           },
         });
       })}
@@ -167,6 +171,24 @@ export function SessionCancelForm({
               )}
             />
             <FieldError message={form.formState.errors.reason?.message} />
+          </div>
+          <div className="flex items-start gap-3 rounded-xl border border-border p-3">
+            <Checkbox
+              id="cancel-extend-term"
+              className="mt-0.5"
+              checked={extendTerm}
+              onCheckedChange={(value) => setExtendTerm(value === true)}
+              disabled={pending}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="cancel-extend-term">
+                Gia hạn bù 1 buổi cho học sinh của buổi này
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Hạn học của từng em được kéo tới buổi học kế tiếp sau ngày hết hạn.
+                Bỏ chọn nếu buổi hủy vì nghỉ lễ, Tết (đã tính trong học phí).
+              </p>
+            </div>
           </div>
         </>
       )}

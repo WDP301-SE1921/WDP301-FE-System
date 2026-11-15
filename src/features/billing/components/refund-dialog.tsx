@@ -34,13 +34,14 @@ import {
 } from "@/lib/validators/refund";
 
 export interface RefundTarget {
-  paymentId: string;
-  receiptNumber: string;
+  /** Có thể bỏ trống khi có ghi danh: lấy từ đề xuất. */
+  paymentId?: string;
+  receiptNumber?: string;
   studentName: string;
   /** Có ghi danh thì hiện đề xuất các tháng chưa bắt đầu. */
   enrollmentId?: string | null;
   /** Đã thu trừ đã hoàn (dùng khi không có đề xuất). */
-  remaining: number;
+  remaining?: number;
 }
 
 /**
@@ -63,11 +64,13 @@ export function RefundDialog({
     retry: false,
   });
   const proposed = quote.data ? Number(quote.data.refundable) : null;
+  const paymentId = target.paymentId ?? quote.data?.paymentId;
+  const receiptNumber = target.receiptNumber ?? quote.data?.receiptNumber ?? "";
   const max = quote.data
     ? Number(quote.data.paidAmount) -
       Number(quote.data.refundedAmount) -
       Number(quote.data.pendingAmount)
-    : target.remaining;
+    : (target.remaining ?? 0);
   const schema = useMemo(() => refundFormSchema(Math.max(0, max)), [max]);
   const form = useForm<RefundFormInput>({
     resolver: zodResolver(schema),
@@ -81,7 +84,7 @@ export function RefundDialog({
   const amount = useWatch({ control: form.control, name: "amount" });
   const save = useMutation({
     mutationFn: (input: RefundFormInput) =>
-      registrationApi.createRefund(target.paymentId, {
+      registrationApi.createRefund(paymentId!, {
         amount: String(input.amount),
         method: input.method,
         reason: input.reason.trim(),
@@ -105,7 +108,7 @@ export function RefundDialog({
         <DialogHeader>
           <DialogTitle>Ghi nhận hoàn tiền</DialogTitle>
           <DialogDescription>
-            Biên lai {target.receiptNumber} · {target.studentName}. Khoản hoàn
+            Biên lai {receiptNumber} · {target.studentName}. Khoản hoàn
             chỉ trừ vào doanh thu sau khi Quản lý duyệt.
           </DialogDescription>
         </DialogHeader>
@@ -115,7 +118,7 @@ export function RefundDialog({
             {!target.enrollmentId ? (
               <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
                 Phiếu này không gắn ghi danh nên không có đề xuất. Còn có thể
-                hoàn tối đa {money(target.remaining)}.
+                hoàn tối đa {money(target.remaining ?? 0)}.
               </p>
             ) : quote.isPending ? (
               <Skeleton className="h-40 rounded-xl" />
@@ -261,7 +264,7 @@ export function RefundDialog({
             type="submit"
             form="refund-form"
             isLoading={save.isPending}
-            disabled={max <= 0}
+            disabled={max <= 0 || !paymentId}
           >
             Gửi Quản lý duyệt
           </Button>

@@ -178,6 +178,17 @@ const optionalReason = ({ reason }: { reason?: string }) => {
   const text = reason?.trim();
   return text ? { reason: text } : undefined;
 };
+/** Một lần gia hạn bù của ghi danh; `newEndDate` là ngày kết thúc (không tính) mới. */
+export interface EnrollmentExtension {
+  id: string;
+  enrollmentId: string;
+  source: "MANUAL" | "LEAVE" | "SESSION_CANCELLED";
+  days: number;
+  reason: string;
+  previousEndDate: string;
+  newEndDate: string;
+  createdAt: string;
+}
 export const academicApi = {
   sessions: (
     filters: Record<string, string | number | undefined> = {},
@@ -213,8 +224,38 @@ export const academicApi = {
   ) => readArrayPages<LeaveRecord>("academic/leaves", filters, signal),
   createLeave: (body: unknown) =>
     command<LeaveRecord>("academic/leaves", leaveSchema.parse(body)),
-  decideLeave: (id: string, approve: boolean, reason: string) =>
-    command(`${itemPath("leaves", id)}/decide`, { approve, reason }),
+  decideLeave: (
+    id: string,
+    approve: boolean,
+    reason: string,
+    extendTerm?: boolean,
+  ) =>
+    command(`${itemPath("leaves", id)}/decide`, {
+      approve,
+      reason,
+      ...(extendTerm ? { extendTerm: true } : {}),
+    }),
+  /** Gia hạn bù (miễn phí) 1–90 ngày; phiếu thu không đổi. */
+  extendEnrollment: (id: string, body: { days: number; reason: string }) =>
+    command<{ extension: EnrollmentExtension }>(
+      `${itemPath("enrollments", id)}/extensions`,
+      body,
+    ),
+  enrollmentExtensions: (id: string, signal?: AbortSignal) =>
+    apiRequest<EnrollmentExtension[]>(
+      `${itemPath("enrollments", id)}/extensions`,
+      { signal },
+    ),
+  /** Sửa một kết quả điểm danh đã chốt, chỉ trong ngày học (khóa lúc 24:00). */
+  correctAttendance: (
+    sessionId: string,
+    participantId: string,
+    body: { status: "PRESENT" | "ABSENT"; reason: string },
+  ) =>
+    apiRequest<unknown>(
+      `${itemPath("sessions", sessionId)}/participants/${encodeURIComponent(participantId)}/attendance`,
+      { method: "PATCH", body },
+    ),
   cancelLeave: (id: string) => command(`${itemPath("leaves", id)}/cancel`),
   /** Chuyên cần một học sinh trong một lớp (Giáo viên lớp đó; Quản lý, Nhân viên — BE-8). */
   classAttendance: (classId: string, studentId: string, signal?: AbortSignal) =>

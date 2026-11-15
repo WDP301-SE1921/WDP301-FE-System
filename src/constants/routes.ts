@@ -87,7 +87,7 @@ export const ROUTES = {
     /** Màn Học sinh & phụ huynh mở sẵn panel Xử lý của một học sinh. */
     STUDENT_ACTION: (params: {
       studentId: string;
-      action?: "makeup" | "change" | "leave" | "withdraw";
+      action?: "makeup" | "change" | "leave" | "extend" | "withdraw";
       enrollmentId?: string;
       sessionId?: string;
     }) => {
