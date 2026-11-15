@@ -11,6 +11,12 @@ import type {
   RegistrationProgram,
   RegistrationReceipt,
   RegistrationBill,
+  PaginatedList as Page,
+  PaymentMethod,
+  PaymentRefund,
+  RefundListItem,
+  RefundQuote,
+  ShiftSummary,
   AcademicSubject,
   AcademicTeacher,
 } from "@/types/backend";
@@ -243,7 +249,7 @@ export const registrationApi = {
   confirm: async (
     id: string,
     key: string,
-    body: { receiptNumber?: string },
+    body: { receiptNumber?: string; method?: PaymentMethod },
   ) => {
     try {
       return await apiRequest<RegistrationReceipt>(
@@ -263,4 +269,50 @@ export const registrationApi = {
       throw error;
     }
   },
+  /** Tiền mặt / chuyển khoản thu và hoàn trong ngày của một nhân viên (mặc định: chính mình, hôm nay). */
+  shiftSummary: (
+    filters: { date?: string; staffId?: string } = {},
+    signal?: AbortSignal,
+  ) => {
+    const query = new URLSearchParams(
+      Object.entries(filters).filter((entry): entry is [string, string] => !!entry[1]),
+    );
+    return apiRequest<ShiftSummary>(
+      `payments/shift-summary${query.size ? `?${query}` : ""}`,
+      { signal },
+    );
+  },
+  refundQuote: (enrollmentId: string, signal?: AbortSignal) =>
+    apiRequest<RefundQuote>(
+      `enrollments/${encodeURIComponent(enrollmentId)}/refund-quote`,
+      { signal },
+    ),
+  createRefund: (
+    paymentId: string,
+    body: { amount: string; method: PaymentMethod; reason: string },
+  ) =>
+    apiRequest<PaymentRefund>(
+      `payments/${encodeURIComponent(paymentId)}/refunds`,
+      { method: "POST", body },
+    ),
+  refunds: (
+    filters: {
+      status?: "PENDING" | "APPROVED" | "REJECTED";
+      fromDate?: string;
+      toDate?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+    signal?: AbortSignal,
+  ) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters))
+      if (value !== undefined && value !== "") query.set(key, String(value));
+    return apiRequest<Page<RefundListItem>>(`refunds?${query}`, { signal });
+  },
+  decideRefund: (id: string, body: { approve: boolean; note?: string }) =>
+    apiRequest<PaymentRefund>(`refunds/${encodeURIComponent(id)}/decision`, {
+      method: "POST",
+      body,
+    }),
 };

@@ -27,6 +27,7 @@ export const registrationSchema = z.object({
     .max(12, "Chọn từ 1 đến 12 tháng."),
   hasReceivedPayment: z.boolean(),
   receiptNumber: z.string().trim().max(191, "Số biên lai tối đa 191 ký tự."),
+  paymentMethod: z.enum(["CASH", "BANK_TRANSFER"]).optional(),
 });
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 export const programSchema = z.object({

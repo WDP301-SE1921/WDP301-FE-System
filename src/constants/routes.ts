@@ -12,6 +12,8 @@ export const ROUTES = {
   },
   MANAGER: {
     DASHBOARD: "/manager/dashboard",
+    /** Duyệt hoàn tiền và xem phiếu thu (Quản lý). */
+    PAYMENTS: "/manager/payments",
 
     STUDENTS: "/manager/students",
     STUDENT_DETAIL: (id: string) => `/manager/students/${id}`,

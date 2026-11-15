@@ -56,6 +56,7 @@ import {
   roomHeatmap,
   scoreText,
   sumAmount,
+  sumNetAmount,
   toTenScale,
   toAmount,
   topPayers,
@@ -180,6 +181,9 @@ export function LiveManagerDashboard() {
   const failedEmails = useLiveQuery(["dashboard-failed-emails"], (signal) =>
     academicApi.emailDeliveries(1, 1, signal, "FAILED"),
   );
+  const pendingRefunds = useLiveQuery(["dashboard-pending-refunds"], (signal) =>
+    registrationApi.refunds({ status: "PENDING", page: 1, limit: 1 }, signal),
+  );
   const activity = useLiveQuery(["dashboard-activity"], (signal) =>
     directoryApi.auditLogs({ page: 1, limit: 5 }, signal),
   );
@@ -207,8 +211,9 @@ export function LiveManagerDashboard() {
 
   // ---- Số liệu ----
   const items = payments.data?.items ?? [];
-  const revenue = sumAmount(items);
-  const prevRevenue = prevPayments.data ? sumAmount(prevPayments.data.items) : undefined;
+  const revenue = sumNetAmount(items);
+  const refundedInRange = sumAmount(items) - revenue;
+  const prevRevenue = prevPayments.data ? sumNetAmount(prevPayments.data.items) : undefined;
   const attendanceNow = analytics.data?.summary.attendancePercent ?? null;
   const scoreNow = toTenScale(analytics.data?.summary.averageScore);
   const activeClasses = (classes.data ?? []).filter((item) => item.isActive !== false);
@@ -483,8 +488,8 @@ export function LiveManagerDashboard() {
 
       <KpiRow>
         <KpiCard
-          label="Doanh thu đã thu"
-          tip={`Tổng biên lai đã xác nhận từ ${dm(fromDate)} đến ${dm(endDay)}, so với ${prevLabel}.`}
+          label="Thực thu"
+          tip={`Tổng biên lai đã xác nhận từ ${dm(fromDate)} đến ${dm(endDay)}, đã trừ các khoản hoàn được duyệt${refundedInRange > 0 ? ` (${money(refundedInRange)})` : ""}; so với ${prevLabel}.`}
           value={shortMoney(revenue)}
           delta={prevRevenue === undefined ? undefined : compareCounts(revenue, prevRevenue, { smallBase: 1 })}
           base={prevRevenue === undefined ? undefined : `so ${prevLabel}`}
@@ -546,6 +551,13 @@ export function LiveManagerDashboard() {
           { key: "low-fill", label: "lớp lấp dưới 50%", count: lowFillCount, href: `${ROUTES.MANAGER.DASHBOARD}?rank=fill#xep-hang-lop`, warn: true },
           { key: "low-attendance", label: "lớp chuyên cần dưới 85%", count: lowAttendanceCount, href: `${ROUTES.MANAGER.DASHBOARD}?rank=attendance#xep-hang-lop`, warn: true },
           { key: "teachers", label: "lớp chưa có giáo viên", count: unassigned, href: ROUTES.MANAGER.CLASSES_UNASSIGNED, warn: true },
+          {
+            key: "refunds",
+            label: "khoản hoàn chờ duyệt",
+            count: pendingRefunds.data?.total ?? 0,
+            href: ROUTES.MANAGER.PAYMENTS,
+            warn: true,
+          },
           { key: "emails", label: "email gửi lỗi", count: failedEmails.data?.total ?? 0, href: `${ROUTES.MANAGER.NOTIFICATIONS}?emailStatus=FAILED` },
           { key: "approval", label: "giáo trình chờ bạn duyệt", count: awaitingApproval, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs&programFilter=review` },
           { key: "next-term", label: "khóa chưa có giáo trình kỳ sau", count: units.data ? missingNextTerm : 0, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs` },

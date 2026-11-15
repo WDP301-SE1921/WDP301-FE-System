@@ -16,6 +16,8 @@ import type {
   BackendUser,
   PaginatedList,
   ParentLookup,
+  PaymentMethod,
+  PaymentRefund,
   RegistrationOrder,
   StudentListItem,
   StudentProfile,
@@ -58,6 +60,11 @@ export interface PaymentRecord {
   amount: string | number;
   receiptNumber: string;
   confirmedAt: string;
+  /** BE mới: hình thức thu, các lần hoàn và số thực thu sau hoàn (đã duyệt). */
+  method?: PaymentMethod | null;
+  refunds?: PaymentRefund[];
+  refundedAmount?: string;
+  netAmount?: string;
   confirmedByManager: { id: string; displayName: string | null; email: string };
   registrationOrder: {
     id: string;
@@ -73,6 +80,7 @@ export interface PaymentRecord {
       name: string;
       program?: { id: string; name: string; subject: string; grade: number };
     };
+    enrollment?: { id: string; status: string } | null;
   };
 }
 export type DirectoryFilters = Record<string, string | number | undefined>;
@@ -159,7 +167,13 @@ export const directoryApi = {
       { signal },
     ),
   payments: (filters: DirectoryFilters, signal?: AbortSignal) =>
-    apiRequest<PaginatedList<PaymentRecord> & { totalAmount: string }>(
+    apiRequest<
+      PaginatedList<PaymentRecord> & {
+        totalAmount: string;
+        refundedAmount?: string;
+        netAmount?: string;
+      }
+    >(
       queryPath("payments", filters),
       { signal },
     ),

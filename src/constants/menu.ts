@@ -13,6 +13,7 @@ export const MENU_BADGE_KEYS = {
   PENDING_AI_REVIEW: "pendingAiReview",
   PENDING_REGISTRATIONS: "pendingRegistrations",
   CHAT_UNREAD: "chatUnread",
+  PENDING_REFUNDS: "pendingRefunds",
 } as const;
 
 export type MenuBadgeKey =
@@ -121,6 +122,14 @@ export const MENU_BACK_OFFICE: MenuGroup[] = [
   {
     groupTitle: "HỌC PHÍ",
     items: [
+      {
+        // Quản lý: duyệt hoàn tiền, xem phiếu thu và đối soát (Nhân viên thu ở /staff/payments).
+        title: "Thu tiền & hoàn tiền",
+        href: ROUTES.MANAGER.PAYMENTS,
+        iconName: "Invoice01Icon",
+        area: AREA.REFUNDS,
+        badgeKey: MENU_BADGE_KEYS.PENDING_REFUNDS,
+      },
       {
         title: "Đăng ký học",
         href: ROUTES.STAFF.ENROLLMENT_NEW,

@@ -14,6 +14,8 @@ export const AREA = {
   PARENTS: "parents",
   ENROLLMENTS: "enrollments",
   PAYMENTS: "payments",
+  /** Màn Thu tiền của Quản lý: duyệt hoàn tiền, xem phiếu thu (khác khu thu phí của Nhân viên). */
+  REFUNDS: "refunds",
   ABSENCES: "absences",
   CLASSES: "classes",
   SCHEDULE: "schedule",
@@ -41,6 +43,7 @@ const S = ROUTES.STAFF;
 /** Tiền tố route → area. Khớp tiền tố dài nhất (`/a/b` thắng `/a`). */
 const ROUTE_AREAS: readonly RouteArea[] = [
   { prefix: M.DASHBOARD, area: AREA.DASHBOARD },
+  { prefix: M.PAYMENTS, area: AREA.REFUNDS },
   { prefix: M.STUDENTS, area: AREA.STUDENTS },
   { prefix: M.PARENTS, area: AREA.PARENTS },
   { prefix: S.ENROLLMENT_NEW, area: AREA.ENROLLMENTS },
@@ -77,6 +80,7 @@ const ALL_BACK_OFFICE_AREAS: readonly Area[] = [
   AREA.PARENTS,
   AREA.ENROLLMENTS,
   AREA.PAYMENTS,
+  AREA.REFUNDS,
   AREA.ABSENCES,
   AREA.CLASSES,
   AREA.SCHEDULE,
@@ -95,6 +99,7 @@ export const ROLE_AREAS: Record<WebRole, readonly Area[]> = {
   [ROLES.ADMIN]: ALL_BACK_OFFICE_AREAS.filter((area) => area !== AREA.CHAT),
   [ROLES.CENTER_MANAGER]: [
     AREA.DASHBOARD,
+    AREA.REFUNDS,
     AREA.STUDENTS,
     AREA.PARENTS,
     AREA.CLASSES,

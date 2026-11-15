@@ -103,6 +103,33 @@ const rules: {
   { method: "GET", path: /^registrations$/, roles: staff },
   // Quản lý chỉ đọc lịch sử biên lai cho dashboard (BE đã cho STAFF + MANAGER); thu phí vẫn là Nhân viên.
   { method: "GET", path: /^payments$/, roles: managerOrStaff },
+  // Đối soát ca: Nhân viên xem ca của mình, Quản lý xem ca của bất kỳ Nhân viên nào.
+  { method: "GET", path: /^payments\/shift-summary$/, roles: managerOrStaff },
+  // Hoàn tiền: Nhân viên ghi nhận, Quản lý duyệt; đề xuất số tiền đọc theo ghi danh.
+  {
+    method: "GET",
+    path: /^enrollments\/[^/]+\/refund-quote$|^refunds$/,
+    roles: managerOrStaff,
+  },
+  { method: "POST", path: /^payments\/[^/]+\/refunds$/, roles: staff },
+  { method: "POST", path: /^refunds\/[^/]+\/decision$/, roles: manager },
+  // Gia hạn bù: Nhân viên ghi; Quản lý và Nhân viên xem lịch sử.
+  {
+    method: "POST",
+    path: /^academic\/enrollments\/[^/]+\/extensions$/,
+    roles: staff,
+  },
+  {
+    method: "GET",
+    path: /^academic\/enrollments\/[^/]+\/extensions$/,
+    roles: managerOrStaff,
+  },
+  // Sửa điểm danh đã chốt trong ngày học: Giáo viên của lớp và Quản lý.
+  {
+    method: "PATCH",
+    path: /^academic\/sessions\/[^/]+\/participants\/[^/]+\/attendance$/,
+    roles: ["center_manager", "teacher"],
+  },
   {
     method: "GET",
     path: /^academic\/(enrollments|sessions)$/,

@@ -6,8 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { displayDate, money, scheduleText, termLabel } from "../calendar";
 import type { RegistrationReceipt as ReceiptData } from "@/types/backend";
+import {
+  PaymentMethodAndRefunds,
+  TetDiscountLines,
+  refundState,
+} from "@/features/billing/components/tuition-lines";
 
 export function RegistrationReceipt({ receipt }: { receipt: ReceiptData }) {
+  const state = refundState(receipt.payment.refunds, receipt.payment.amount);
   return (
     <div className="space-y-4">
       <div className="flex justify-end print:hidden">
@@ -30,7 +36,10 @@ export function RegistrationReceipt({ receipt }: { receipt: ReceiptData }) {
               {receipt.payment.receiptNumber}
             </p>
           </div>
-          <Badge variant="success">Đã thu đủ học phí</Badge>
+          <div className="flex flex-wrap items-start gap-2">
+            <Badge variant="success">Đã thu đủ học phí</Badge>
+            {state && <Badge variant={state.variant}>{state.label}</Badge>}
+          </div>
         </div>
         <dl className="grid gap-4 text-sm sm:grid-cols-2">
           {[
@@ -56,12 +65,21 @@ export function RegistrationReceipt({ receipt }: { receipt: ReceiptData }) {
             </div>
           ))}
         </dl>
+        <TetDiscountLines
+          listTotal={receipt.listTotal}
+          tetDiscount={receipt.tetDiscount}
+        />
         <div className="flex justify-between gap-3 rounded-xl bg-muted p-4">
           <span>Tổng học phí đã thu</span>
           <strong className="text-lg text-primary">
             {money(receipt.payment.amount)}
           </strong>
         </div>
+        <PaymentMethodAndRefunds
+          method={receipt.payment.method}
+          refunds={receipt.payment.refunds}
+          paidAmount={receipt.payment.amount}
+        />
         <p className="text-xs text-muted-foreground">
           Thanh toán offline · Xác nhận{" "}
           {new Intl.DateTimeFormat("vi-VN", {

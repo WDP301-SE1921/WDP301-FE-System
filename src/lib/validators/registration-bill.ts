@@ -2,10 +2,28 @@ import { z } from "zod";
 
 // Keep Decimal amounts as strings from BE. Never re-price an issued bill on the client.
 const decimalAmount = z.string().regex(/^\d{1,12}(?:\.\d{1,2})?$/);
+export const paymentMethodSchema = z.enum(["CASH", "BANK_TRANSFER"]);
+export const paymentRefundSchema = z.object({
+  id: z.string().min(1),
+  amount: decimalAmount,
+  method: paymentMethodSchema,
+  reason: z.string(),
+  status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+  requestedAt: z.iso.datetime({ offset: true }),
+  decidedAt: z.iso.datetime({ offset: true }).nullable(),
+});
 const billPayment = z.object({
   receiptNumber: z.string().min(1),
   paidAmount: decimalAmount,
   confirmedAt: z.iso.datetime({ offset: true }),
+  // BE cũ chưa trả hai trường dưới: coi như chưa rõ hình thức, chưa hoàn.
+  method: paymentMethodSchema.nullable().optional(),
+  refunds: z.array(paymentRefundSchema).optional(),
+});
+const tetDiscount = z.object({
+  amount: decimalAmount,
+  fromDate: z.iso.date(),
+  toDate: z.iso.date(),
 });
 export const registrationBillSchema = z
   .object({
@@ -46,6 +64,8 @@ export const registrationBillSchema = z
       packageMonths: z.number().int().min(1).max(12),
       total: decimalAmount,
       currency: z.literal("VND"),
+      listTotal: decimalAmount.optional(),
+      tetDiscount: tetDiscount.nullable().optional(),
     }),
     payment: billPayment.nullable(),
   })
@@ -65,6 +85,9 @@ export const registrationBillSchema = z
   });
 
 export const offlineConfirmationSchema = z.object({
+  method: z.enum(["CASH", "BANK_TRANSFER"], {
+    error: "Chọn hình thức thanh toán.",
+  }),
   receiptNumber: z.string().trim().max(191, "Số biên lai tối đa 191 ký tự."),
   hasReceivedPayment: z
     .boolean()

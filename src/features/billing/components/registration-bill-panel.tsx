@@ -20,8 +20,8 @@ export function RegistrationBillPanel({
 }: {
   registrationId: string;
   onPaid?: (receipt: RegistrationReceipt) => Promise<void>;
-  paymentDraft?: OfflineConfirmationInput;
-  onPaymentDraftChange?: (values: OfflineConfirmationInput) => void;
+  paymentDraft?: Partial<OfflineConfirmationInput>;
+  onPaymentDraftChange?: (values: Partial<OfflineConfirmationInput>) => void;
 }) {
   const user = useCurrentUser();
   const queryClient = useQueryClient();

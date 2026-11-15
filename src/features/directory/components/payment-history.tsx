@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   parseAsBoolean,
   parseAsInteger,
@@ -27,6 +27,12 @@ import { money } from "@/features/registration-flow/calendar";
 import { todayLocalDate } from "@/lib/validators/web-workflows";
 import type { RegistrationOrder } from "@/types/backend";
 import { directoryApi, type PaymentRecord } from "../api";
+import { paymentMethodLabel } from "@/features/billing/payment-method";
+import { refundState } from "@/features/billing/components/tuition-lines";
+import {
+  RefundDialog,
+  type RefundTarget,
+} from "@/features/billing/components/refund-dialog";
 
 const ORDER_ACTION: Record<RegistrationOrder["status"], string> = {
   DRAFT: "Thu phí",
@@ -47,19 +53,32 @@ export function LivePaymentHistory({
   onOpen,
   searchAction,
   recent,
+  canRefund = false,
+  defaultView = "registrations",
+  paymentsOnly = false,
 }: {
-  onOpen: (id: string) => void;
+  onOpen?: (id: string) => void;
   /** Nút phụ cạnh ô tìm kiếm, ví dụ mở đăng ký theo mã vừa gõ. */
   searchAction?: (search: string) => ReactNode;
   recent?: RecentRegistrations;
+  /** Nhân viên: nút "Hoàn tiền" trên từng phiếu thu. */
+  canRefund?: boolean;
+  defaultView?: "registrations" | "payments";
+  /** Chỉ hiện bảng phiếu thu (màn Thu tiền của Quản lý). */
+  paymentsOnly?: boolean;
 }) {
+  const [refundTarget, setRefundTarget] = useState<RefundTarget | null>(null);
   const [
-    { view, listPage, search, fromDate, toDate, status, recentOnly },
+    { view: rawView, listPage, search, fromDate, toDate, status, recentOnly, method, mine },
     setFilters,
   ] = useQueryStates({
     view: parseAsStringLiteral(["registrations", "payments"]).withDefault(
-      "registrations",
+      defaultView,
     ),
+    method: parseAsStringLiteral(["all", "CASH", "BANK_TRANSFER"]).withDefault(
+      "all",
+    ),
+    mine: parseAsBoolean.withDefault(false),
     listPage: parseAsInteger.withDefault(1),
     search: parseAsString.withDefault(""),
     fromDate: parseAsString.withDefault(""),
@@ -72,6 +91,7 @@ export function LivePaymentHistory({
     ]).withDefault("all"),
     recentOnly: parseAsBoolean.withDefault(false),
   });
+  const view = paymentsOnly ? "payments" : rawView;
   const showRecent = view === "registrations" && recentOnly && !!recent;
   const today = todayLocalDate();
   const monthStart = `${today.slice(0, 8)}01`;
@@ -95,9 +115,14 @@ export function LivePaymentHistory({
       ),
     view === "registrations" && !showRecent,
   );
+  const paymentFilters = {
+    ...filters,
+    method: method === "all" ? undefined : method,
+    confirmedBy: mine ? "me" : undefined,
+  };
   const payments = useLiveQuery(
-    ["payment-history", filters],
-    (signal) => directoryApi.payments(filters, signal),
+    ["payment-history", paymentFilters],
+    (signal) => directoryApi.payments(paymentFilters, signal),
     view === "payments",
   );
   const active = view === "registrations" ? orders : payments;
@@ -152,7 +177,7 @@ export function LivePaymentHistory({
           size="sm"
           variant={row.original.status === "DRAFT" ? "default" : "outline"}
           aria-label={`${ORDER_ACTION[row.original.status]} · ${row.original.studentFullName} · ${row.original.class.name}`}
-          onClick={() => onOpen(row.original.id)}
+          onClick={() => onOpen?.(row.original.id)}
         >
           {ORDER_ACTION[row.original.status]}
         </Button>
@@ -181,13 +206,32 @@ export function LivePaymentHistory({
       cell: ({ row }) => row.original.registrationOrder.class.name,
     },
     {
+      id: "method",
+      header: "Hình thức",
+      cell: ({ row }) => (
+        <Badge variant={row.original.method ? "info" : "neutral"}>
+          {paymentMethodLabel(row.original.method)}
+        </Badge>
+      ),
+    },
+    {
       id: "amount",
       header: "Đã nhận",
-      cell: ({ row }) => (
-        <p className="text-right font-medium tabular-nums">
-          {money(row.original.amount)}
-        </p>
-      ),
+      cell: ({ row }) => {
+        const state = refundState(row.original.refunds, row.original.amount);
+        return (
+          <div className="space-y-1 text-right">
+            <p className="font-medium tabular-nums">
+              {money(row.original.amount)}
+            </p>
+            {state && (
+              <Badge variant={state.variant} className="ml-auto">
+                {state.label}
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "confirmed",
@@ -205,16 +249,55 @@ export function LivePaymentHistory({
     {
       id: "actions",
       header: "Thao tác",
-      cell: ({ row }) => (
-        <Button
-          size="sm"
-          variant="outline"
-          aria-label={`Xem biên lai ${row.original.receiptNumber}`}
-          onClick={() => onOpen(row.original.registrationOrder.id)}
-        >
-          Xem biên lai
-        </Button>
-      ),
+      cell: ({ row }) => {
+        const payment = row.original;
+        const refunds = payment.refunds ?? [];
+        const refunded = refunds
+          .filter((refund) => refund.status === "APPROVED")
+          .reduce((sum, refund) => sum + Number(refund.amount), 0);
+        const remaining = Number(payment.amount) - refunded;
+        const pending = refunds.some((refund) => refund.status === "PENDING");
+        return (
+          <div className="flex flex-wrap gap-2">
+            {onOpen && (
+              <Button
+                size="sm"
+                variant="outline"
+                aria-label={`Xem biên lai ${payment.receiptNumber}`}
+                onClick={() => onOpen(payment.registrationOrder.id)}
+              >
+                Xem biên lai
+              </Button>
+            )}
+            {canRefund && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pending || remaining <= 0}
+                title={
+                  pending
+                    ? "Đang có khoản hoàn chờ Quản lý duyệt"
+                    : remaining <= 0
+                      ? "Phiếu đã hoàn hết"
+                      : undefined
+                }
+                aria-label={`Hoàn tiền biên lai ${payment.receiptNumber}`}
+                onClick={() =>
+                  setRefundTarget({
+                    paymentId: payment.id,
+                    receiptNumber: payment.receiptNumber,
+                    studentName: payment.registrationOrder.studentFullName,
+                    enrollmentId: payment.registrationOrder.enrollment?.id,
+                    remaining,
+                  })
+                }
+              >
+                Hoàn tiền
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
   return (
@@ -223,17 +306,19 @@ export function LivePaymentHistory({
         <CardTitle>Đăng ký và thanh toán tại trung tâm</CardTitle>
       </CardHeader>
       <CardContent className="min-w-0 space-y-4">
-        <Tabs
-          value={view}
-          onValueChange={(value) =>
-            void setFilters({ view: value as typeof view, listPage: null })
-          }
-        >
-          <TabsList className="h-auto max-w-full flex-wrap">
-            <TabsTrigger value="registrations">Đăng ký</TabsTrigger>
-            <TabsTrigger value="payments">Thanh toán đã xác nhận</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {!paymentsOnly && (
+          <Tabs
+            value={view}
+            onValueChange={(value) =>
+              void setFilters({ view: value as typeof view, listPage: null })
+            }
+          >
+            <TabsList className="h-auto max-w-full flex-wrap">
+              <TabsTrigger value="registrations">Đăng ký</TabsTrigger>
+              <TabsTrigger value="payments">Thanh toán đã xác nhận</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="history-search">
@@ -268,6 +353,23 @@ export function LivePaymentHistory({
               onChange={(value) =>
                 void setFilters({
                   status: value as typeof status,
+                  listPage: null,
+                })
+              }
+            />
+          )}
+          {view === "payments" && (
+            <LiveSelect
+              label="Hình thức"
+              value={method}
+              options={[
+                { value: "all", label: "Tất cả" },
+                { value: "CASH", label: "Tiền mặt" },
+                { value: "BANK_TRANSFER", label: "Chuyển khoản" },
+              ]}
+              onChange={(value) =>
+                void setFilters({
+                  method: value as typeof method,
                   listPage: null,
                 })
               }
@@ -334,6 +436,18 @@ export function LivePaymentHistory({
               </Button>
             );
           })}
+          {view === "payments" && canRefund && (
+            <Button
+              size="sm"
+              variant={mine ? "secondary" : "outline"}
+              aria-pressed={mine}
+              onClick={() =>
+                void setFilters({ mine: mine ? null : true, listPage: null })
+              }
+            >
+              Do tôi thu
+            </Button>
+          )}
           {view === "registrations" && recent && (
             <Button
               size="sm"
@@ -374,7 +488,7 @@ export function LivePaymentHistory({
                     Chưa tải được trạng thái
                   </p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => onOpen(id)}>
+                <Button size="sm" variant="outline" onClick={() => onOpen?.(id)}>
                   Mở đăng ký
                 </Button>
               </div>
@@ -404,12 +518,32 @@ export function LivePaymentHistory({
           />
         )}
         {view === "payments" && payments.data && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/50 px-4 py-3 text-sm">
-            <p className="text-muted-foreground">Tổng học phí trong bộ lọc</p>
-            <p className="font-semibold tabular-nums">
-              {money(payments.data.totalAmount)}
-            </p>
-          </div>
+          <dl className="grid gap-2 rounded-xl bg-muted/50 px-4 py-3 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-muted-foreground">Đã thu trong bộ lọc</dt>
+              <dd className="font-semibold tabular-nums">
+                {money(payments.data.totalAmount)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Đã hoàn (đã duyệt)</dt>
+              <dd className="font-semibold tabular-nums">
+                {money(payments.data.refundedAmount ?? 0)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Thực thu</dt>
+              <dd className="font-semibold text-primary tabular-nums">
+                {money(payments.data.netAmount ?? payments.data.totalAmount)}
+              </dd>
+            </div>
+          </dl>
+        )}
+        {refundTarget && (
+          <RefundDialog
+            target={refundTarget}
+            onClose={() => setRefundTarget(null)}
+          />
         )}
         {!showRecent && (
           <div className="flex flex-wrap items-center gap-3">

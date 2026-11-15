@@ -230,6 +230,74 @@ export interface RegistrationOrder {
     confirmedAt: string;
   } | null;
 }
+/** Hình thức thu tiền; `null` với phiếu thu trước khi có trường này. */
+export type PaymentMethod = "CASH" | "BANK_TRANSFER";
+export type RefundStatus = "PENDING" | "APPROVED" | "REJECTED";
+/** Một lần hoàn tiền của phiếu thu (chỉ `APPROVED` mới trừ vào số đã thu). */
+export interface PaymentRefund {
+  id: string;
+  amount: string;
+  method: PaymentMethod;
+  reason: string;
+  status: RefundStatus;
+  requestedAt: string;
+  decidedAt: string | null;
+}
+/** Giảm 50% tháng của gói chứa mùng 1 Tết; ngày hiển thị gồm cả hai đầu. */
+export interface TetDiscount {
+  amount: string;
+  fromDate: string;
+  toDate: string;
+}
+/** `GET enrollments/:id/refund-quote`: hoàn các tháng chưa bắt đầu (tháng Tết tính nửa giá). */
+export interface RefundQuote {
+  enrollmentId: string;
+  enrollmentStatus: string;
+  paymentId: string;
+  receiptNumber: string;
+  asOf: string;
+  paidAmount: string;
+  months: {
+    fromDate: string;
+    toDate: string;
+    price: string;
+    tet: boolean;
+    started: boolean;
+  }[];
+  notStartedAmount: string;
+  refundedAmount: string;
+  pendingAmount: string;
+  refundable: string;
+}
+/** Một dòng của `GET refunds` (kèm phiếu thu và người yêu cầu/duyệt). */
+export interface RefundListItem extends PaymentRefund {
+  decisionNote: string | null;
+  payment: {
+    id: string;
+    receiptNumber: string;
+    amount: string;
+    method: PaymentMethod | null;
+    confirmedAt: string;
+    registrationId: string;
+    studentFullName: string;
+    parentEmail: string;
+    className: string;
+  };
+  requestedBy: { id: string; displayName: string | null } | null;
+  decidedBy: { id: string; displayName: string | null } | null;
+}
+interface MoneyBucket {
+  count: number;
+  amount: string;
+}
+/** `GET payments/shift-summary`: tiền một nhân viên thu và hoàn trong một ngày. */
+export interface ShiftSummary {
+  date: string;
+  staffId: string;
+  collected: { CASH: MoneyBucket; BANK_TRANSFER: MoneyBucket; UNKNOWN: MoneyBucket };
+  refunded: { CASH: MoneyBucket; BANK_TRANSFER: MoneyBucket };
+  cashInDrawer: string;
+}
 export interface RegistrationReceipt {
   registrationId: string;
   status: string;
@@ -254,9 +322,13 @@ export interface RegistrationReceipt {
     amount: number;
     currency: string;
     confirmedAt: string;
+    method?: PaymentMethod | null;
+    refunds?: PaymentRefund[];
   };
   enrollment: { id: string; status: string };
   quotedAmount: number;
+  listTotal?: string;
+  tetDiscount?: TetDiscount | null;
   currency: string;
 }
 export interface RegistrationBill {
@@ -283,11 +355,15 @@ export interface RegistrationBill {
     packageMonths: number;
     total: string;
     currency: "VND";
+    listTotal?: string;
+    tetDiscount?: TetDiscount | null;
   };
   payment: {
     receiptNumber: string;
     paidAmount: string;
     confirmedAt: string;
+    method?: PaymentMethod | null;
+    refunds?: PaymentRefund[];
   } | null;
 }
 

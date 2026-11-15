@@ -10,6 +10,7 @@ import { readAssignmentWorkspaces } from "@/features/assignments/workspace-api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { addCalendarDays, todayInVietnam } from "@/lib/calendar-date";
 import { chatApi } from "@/features/chat/api";
+import { registrationApi } from "@/features/registration-flow/api";
 
 /** Buổi đã kết thúc trong khoảng này mà chưa chốt điểm danh thì tính vào badge. */
 const UNMARKED_LOOKBACK_DAYS = 30;
@@ -35,6 +36,13 @@ export function useMenuBadgeCounts(role: WebRole): MenuBadgeCounts {
     queryKey: [...base, "menu-badges", "failed-emails"],
     queryFn: ({ signal }) =>
       academicApi.emailDeliveries(1, 1, signal, "FAILED"),
+  });
+  const pendingRefunds = useQuery({
+    ...options,
+    enabled: options.enabled && actsAsManager(role),
+    queryKey: [...base, "menu-badges", "pending-refunds"],
+    queryFn: ({ signal }) =>
+      registrationApi.refunds({ status: "PENDING", page: 1, limit: 1 }, signal),
   });
   const pendingRegistrations = useQuery({
     ...options,
@@ -92,6 +100,7 @@ export function useMenuBadgeCounts(role: WebRole): MenuBadgeCounts {
     return {
       ...chatCount,
       [MENU_BADGE_KEYS.FAILED_EMAILS]: failedEmails.data?.total,
+      [MENU_BADGE_KEYS.PENDING_REFUNDS]: pendingRefunds.data?.total,
     };
   if (role === "staff")
     return {
