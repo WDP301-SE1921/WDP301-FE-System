@@ -36,6 +36,17 @@ import {
   confirmationSchema,
 } from "@/lib/validators/web-workflows";
 import type { SessionParticipant } from "@/types/academic-workflows";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ReasonSelect } from "@/components/shared/forms/reason-select";
+import { REASON_PRESETS } from "@/constants/reason-presets";
+import { userFacingMessage } from "@/lib/api/error-message";
+import { vietnamDay } from "@/lib/session-preview";
+
+/** Sửa điểm danh đã chốt được đến 24:00 (giờ Việt Nam) của ngày học, khớp BE. */
+function correctionDeadline(startsAt: string) {
+  return Date.parse(`${vietnamDay(startsAt)}T00:00:00+07:00`) + 86_400_000;
+}
 const attendanceFormSchema = z.object({
   items: attendanceSchema.shape.items,
   summary: attendanceSchema.shape.summary,
@@ -139,6 +150,14 @@ export function LiveAttendanceSession({
               </CardHeader>
               <CardContent>
                 {roster.data &&
+                  session.data?.status === "COMPLETED" &&
+                  now < correctionDeadline(session.data.startsAt) ? (
+                    <AttendanceCorrection
+                      key={roster.data.map((row) => `${row.id}:${row.attendance}`).join(",")}
+                      rows={roster.data}
+                      sessionId={sessionId}
+                    />
+                  ) : roster.data &&
                   (editable ? (
                     <AttendanceEditor
                       key={`${sessionId}-${roster.data.map((row) => `${row.id}:${row.attendance}`).join(",")}`}
@@ -185,6 +204,176 @@ export function LiveAttendanceSession({
         </AsyncBoundary>
       )}
     </AttendanceContainer>
+  );
+}
+/**
+ * Buổi đã chốt, còn trong ngày học: sửa từng em Có mặt ↔ Vắng kèm lý do. Dòng có phép (từ đơn
+ * nghỉ) không sửa ở đây; BE giữ dòng đã xếp học bù ở trạng thái vắng.
+ */
+function AttendanceCorrection({
+  rows,
+  sessionId,
+}: {
+  rows: SessionParticipant[];
+  sessionId: string;
+}) {
+  const client = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [next, setNext] = useState<Record<string, "PRESENT" | "ABSENT">>({});
+  const [reason, setReason] = useState<string>(
+    REASON_PRESETS.attendanceCorrection[0],
+  );
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const changed = rows.filter(
+    (row) => next[row.id] && next[row.id] !== row.attendance,
+  );
+  const save = useMutation({
+    mutationFn: async () => {
+      const failures: Record<string, string> = {};
+      for (const row of changed) {
+        try {
+          await academicApi.correctAttendance(sessionId, row.id, {
+            status: next[row.id],
+            reason: reason.trim(),
+          });
+        } catch (error) {
+          failures[row.id] = userFacingMessage(error, "Không sửa được dòng này.");
+        }
+      }
+      setRowErrors(failures);
+      return { saved: changed.length - Object.keys(failures).length, failures };
+    },
+    onSuccess: async ({ failures }) => {
+      await client.invalidateQueries({ queryKey: ["web-api"] });
+      if (!Object.keys(failures).length) {
+        setEditing(false);
+        setNext({});
+      }
+    },
+  });
+  const statusText = (status: string) => STATUS_TEXT[status] ?? status;
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Đã chốt điểm danh. Bạn sửa được đến 24:00 hôm nay.
+        </p>
+        {!editing && (
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            Sửa điểm danh
+          </Button>
+        )}
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Học sinh</TableHead>
+            <TableHead>Kết quả</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => {
+            const locked = row.attendance === "EXCUSED";
+            const value = next[row.id] ?? row.attendance;
+            return (
+              <TableRow key={row.id}>
+                <TableCell className="whitespace-normal">
+                  {row.enrollment.studentProfile?.fullName ?? "Học sinh"}
+                  {row.kind === "MAKEUP" && (
+                    <Badge variant="outline" className="ml-2">
+                      Học bù
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell className="space-y-1">
+                  {editing && !locked ? (
+                    <div
+                      className="flex flex-wrap gap-2"
+                      role="group"
+                      aria-label={`Sửa điểm danh ${row.enrollment.studentProfile?.fullName ?? "học sinh"}`}
+                    >
+                      {(
+                        [
+                          ["PRESENT", "Có mặt"],
+                          ["ABSENT", "Vắng"],
+                        ] as const
+                      ).map(([status, label]) => (
+                        <Button
+                          key={status}
+                          type="button"
+                          size="sm"
+                          variant={value === status ? "default" : "outline"}
+                          aria-pressed={value === status}
+                          disabled={save.isPending}
+                          onClick={() =>
+                            setNext((current) => ({ ...current, [row.id]: status }))
+                          }
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                      {next[row.id] && next[row.id] !== row.attendance && (
+                        <Badge variant="warning">
+                          Đổi từ {statusText(row.attendance)}
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <Badge>{statusText(row.attendance)}</Badge>
+                  )}
+                  {editing && locked && (
+                    <p className="text-xs text-muted-foreground">
+                      Có phép do đơn nghỉ đã duyệt, sửa ở đơn nghỉ.
+                    </p>
+                  )}
+                  {rowErrors[row.id] && (
+                    <p role="alert" className="text-xs text-destructive">
+                      {rowErrors[row.id]}
+                    </p>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      {editing && (
+        <div className="space-y-3 rounded-xl border border-border p-4">
+          <Label htmlFor="attendance-correction-reason">Lý do sửa</Label>
+          <ReasonSelect
+            id="attendance-correction-reason"
+            value={reason}
+            onChange={setReason}
+            presets={REASON_PRESETS.attendanceCorrection}
+            disabled={save.isPending}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={!changed.length || !reason.trim()}
+              isLoading={save.isPending}
+              onClick={() => save.mutate()}
+            >
+              Lưu sửa đổi ({changed.length})
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={save.isPending}
+              onClick={() => {
+                setEditing(false);
+                setNext({});
+                setRowErrors({});
+              }}
+            >
+              Hủy
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Phụ huynh nhận email báo điểm danh đã được sửa.
+          </p>
+          <ApiFeedback error={save.error} />
+        </div>
+      )}
+    </div>
   );
 }
 function AttendanceContainer({

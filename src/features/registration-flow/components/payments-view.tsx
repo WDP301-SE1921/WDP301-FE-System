@@ -24,6 +24,7 @@ import { ApiFeedback } from "./api-feedback";
 import { RegistrationReceipt } from "./registration-receipt";
 import { RegistrationBillPanel } from "@/features/billing/components/registration-bill-panel";
 import { LivePaymentHistory } from "@/features/directory/components/payment-history";
+import { ShiftSummaryCard } from "@/features/billing/components/shift-summary-card";
 import { Badge } from "@/components/ui/badge";
 import { SheetCloseButton } from "@/components/shared/actions/sheet-close-button";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
@@ -98,7 +99,9 @@ export function RegistrationPaymentsView() {
         description="Thu học phí cho đăng ký nháp, mở lại bill hoặc biên lai của đăng ký đã hoàn tất."
       />
       <RegistrationTotals />
+      <ShiftSummaryCard />
       <LivePaymentHistory
+        canRefund
         onOpen={(id) => void setRegistrationId(id)}
         searchAction={(search) =>
           search.length >= MIN_LOOKUP_LENGTH &&

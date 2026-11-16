@@ -4,6 +4,8 @@ WDP301-SE1921 · 3 thg 10, 2026
 
 Cập nhật 2026-11-10: mô hình Khóa học – Giáo trình – Mục tiêu khóa học (xem mục 1.4, 3.1, 3.2, 5.4, 6.2, 7, 8).
 
+Cập nhật 2026-11-15: học phí tháng có Tết, hình thức thanh toán (tiền mặt / chuyển khoản), hoàn tiền có Quản lý duyệt, gia hạn bù (bảo lưu), sửa điểm danh trong ngày (xem mục 1.4, 2.3, 3.1, 3.3, 3.4, 3.6–3.8, 5.5, 5.8, 5.10, 5.14–5.16, 6.10–6.12, 7, 8).
+
 ## **1\. Giới thiệu**
 
 ### **1.1 Mục đích tài liệu**
@@ -38,6 +40,10 @@ Ghi chú: danh sách vai trò gốc ghi "Giáo viên — Web", trong khi mục n
 * **Mục tiêu khóa học (OutcomeSet/LearningOutcome; trước đây gọi là "CLO")**: những điều học sinh cần đạt, viết bằng tên phụ huynh đọc được, kèm mô tả và loại Bắt buộc hoặc Mở rộng; nguồn (sách, chương trình) là tùy chọn  
 * **Ngày nghỉ của trung tâm (CenterClosure)**: khoảng ngày trung tâm không có buổi học (nghỉ lễ, nghỉ Tết...) kèm lý do  
 * **Tạo lịch học**: thao tác của Quản lý trung tâm để tạo các buổi học của lớp từ lịch cố định, có xem trước
+* **Tháng của gói**: gói N tháng chia thành N tháng nối tiếp tính từ ngày bắt đầu (vd. bắt đầu 15/01 thì tháng đầu là 15/01–14/02)  
+* **Tháng có Tết**: tháng của gói chứa ngày mùng 1 Tết âm lịch  
+* **Gia hạn bù**: kéo dài hạn học miễn phí (bảo lưu, buổi trung tâm hủy); phiếu thu không đổi  
+* **Thực thu**: tiền đã thu trừ các khoản hoàn đã được Quản lý duyệt
 
   ## **2\. Mô tả tổng quan**
 
@@ -51,7 +57,7 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 
 ### **2.3 Ràng buộc chung**
 
-* Không tích hợp cổng thanh toán — xác nhận thủ công bởi Nhân viên.  
+* Không tích hợp cổng thanh toán — xác nhận thủ công bởi Nhân viên, ghi rõ hình thức tiền mặt hay chuyển khoản.  
 * Không dùng SMS — toàn bộ thông báo qua email.  
 * Không có tài khoản học sinh — học sinh thao tác qua phiên đăng nhập của phụ huynh.
 
@@ -70,6 +76,9 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 * Quản lý ngày nghỉ của trung tâm (khoảng ngày \+ lý do)  
 * Dashboard: tổng doanh thu học phí, số học sinh, số giáo viên, số nhân viên  
 * Dashboard: thẻ "Lớp cần tạo lịch học" (lớp chưa có buổi học nào, hoặc buổi cuối cách hôm nay dưới 14 ngày) kèm nút Tạo lịch học
+* Duyệt hoặc từ chối khoản hoàn tiền Nhân viên ghi nhận (màn "Thu tiền & hoàn tiền"); dashboard hiện thực thu (đã trừ hoàn)  
+* Khi hủy một buổi mà không đổi được sang ngày khác: chọn gia hạn bù 1 buổi cho học sinh của buổi đó  
+* Sửa điểm danh đã chốt trong ngày học (cùng giới hạn với Giáo viên)
 
   ### **3.2 Thiết kế giáo trình (vai trò mới)**
 
@@ -88,11 +97,15 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 * Đổi lịch học cố định cho học sinh; xếp lịch học bù / đổi 1 buổi cụ thể  
 * Cho học sinh tạm nghỉ, cho học lại, nghỉ 1 môn, nghỉ hẳn  
 * Tạo lịch nghỉ dài hạn cho học sinh
+* Chọn hình thức thanh toán (tiền mặt / chuyển khoản) khi xác nhận; đối soát cuối ca theo hình thức  
+* Ghi nhận hoàn tiền khi học sinh nghỉ (hệ thống đề xuất số tiền, Quản lý duyệt)  
+* Gia hạn bù hạn học: bảo lưu khi nghỉ dài hạn, hoặc gia hạn tay có lý do
 
   ### **3.4 Giáo viên**
 
 * Xem lịch dạy, lớp phụ trách, danh sách học sinh, tỷ lệ đi học  
 * Điểm danh từng buổi — cũng là dữ liệu đầu vào tính công cho giáo viên (xem mục 9\)  
+* Sửa điểm danh đã chốt trong ngày học, đến 24:00 (xem 5.5)  
 * Tạo bài tập/đề kiểm tra, đáp án/tiêu chí chấm  
 * Xem/sửa/duyệt/công bố kết quả AI chấm (xem 3.9)  
 * Yêu cầu tổng hợp kết quả, tải báo cáo Excel/PDF (xem 3.10)  
@@ -113,11 +126,11 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 
   ### **3.6 Thanh toán (Nhân viên thực hiện)**
 
-Xác nhận thanh toán sau khi nhận đủ tiền (không phân biệt tiền mặt/chuyển khoản, không tích hợp cổng thanh toán). Số tháng: 1–12. Sau xác nhận: Payment → Enrollment gắn ngay vào hồ sơ con đã chọn → biên lai (có nút In) → email gồm tên con, môn, lớp, lịch học.
+Xác nhận thanh toán sau khi nhận đủ tiền, chọn hình thức **tiền mặt** hoặc **chuyển khoản** (không tích hợp cổng thanh toán). Số tháng: 1–12. Học phí = học phí tháng × số tháng, riêng **tháng có Tết giảm 50%** (hệ thống tự tính, xem 5.10). Sau xác nhận: Payment → Enrollment gắn ngay vào hồ sơ con đã chọn → biên lai (có nút In) → email gồm tên con, môn, lớp, lịch học. Cuối ca, Nhân viên đối soát: tiền mặt thu trừ tiền mặt đã hoàn = tiền phải có trong két; chuyển khoản để khớp sao kê. Hoàn tiền khi nghỉ: xem 5.16.
 
 ### **3.7 Điểm danh (Giáo viên thực hiện)**
 
-Điểm danh từng học sinh mỗi buổi. Trạng thái: present, absent, made\_up, excused. Sau điểm danh: cập nhật tỷ lệ đi học \+ gửi email phụ huynh.
+Điểm danh từng học sinh mỗi buổi. Trạng thái: present, absent, made\_up, excused. Sau điểm danh: cập nhật tỷ lệ đi học \+ gửi email phụ huynh. Điểm danh đã chốt sửa được đến 24:00 cùng ngày học, có lý do (xem 5.5).
 
 ### **3.8 Nghỉ học / học bù / đổi lịch (Nhân viên thực hiện)**
 
@@ -125,6 +138,7 @@ Xác nhận thanh toán sau khi nhận đủ tiền (không phân biệt tiền 
 * Đổi 1 buổi cụ thể, không đổi lịch cố định — bản chất là một dạng học bù  
 * Đổi lịch học cố định: thay đổi lâu dài, chuyển sang lớp khác cùng khóa học  
 * Nghỉ dài hạn: có ngày bắt đầu/kết thúc, các buổi trong khoảng tự động excused  
+* Bảo lưu: nghỉ dài hạn từ 14 ngày được cộng số ngày nghỉ vào hạn học (xem 5.8, 5.15)  
 * Nghỉ 1 môn / nghỉ hẳn: lưu lịch sử, gửi email xác nhận
 
   ### **3.9 Chấm bài bằng AI (Giáo viên duyệt)**
@@ -215,6 +229,7 @@ Mở rộng theo số lượng học sinh, giáo viên, nhân viên, môn học;
 19. Excused trong thời gian tạm nghỉ không tính là buổi phải học.  
     * Buổi bị hủy không tính vào số buổi phải học.  
 20. Tỷ lệ đi học cập nhật ngay khi điểm danh thay đổi.
+    * Điểm danh đã chốt được sửa đến 24:00 (giờ Việt Nam) của ngày học, sau đó khóa. Người sửa: Giáo viên của lớp hoặc Quản lý trung tâm. Chỉ đổi present ↔ absent, bắt buộc lý do, lưu lịch sử và gửi email phụ huynh. Dòng excused (từ đơn nghỉ) và buổi gốc của một học bù không sửa được ở đây.
 
     ### **5.6 Học bù / đổi buổi**
 
@@ -235,6 +250,7 @@ Mở rộng theo số lượng học sinh, giáo viên, nhân viên, môn học;
 28. Phải có ngày bắt đầu/kết thúc, chỉ Nhân viên xác nhận.  
 29. Các buổi trong khoảng nghỉ tự động excused.  
 30. Hết thời gian, trở lại trạng thái đang học; lưu lịch sử.
+    * Bảo lưu: nghỉ từ 14 ngày, Nhân viên chọn "Bảo lưu" thì hạn học được cộng đúng số ngày nghỉ. Kết thúc nghỉ sớm thì phần cộng giảm theo số ngày nghỉ thật (dưới 14 ngày thì bỏ); hủy đơn nghỉ thì bỏ phần cộng. Chính sách tại quầy: tối đa 2 lần mỗi gói, tổng không quá 60 ngày.
 
     ### **5.9 Nghỉ môn / Nghỉ hẳn**
 
@@ -245,11 +261,13 @@ Mở rộng theo số lượng học sinh, giáo viên, nhân viên, môn học;
     ### **5.10 Thanh toán**
 
 34. Số tháng: tối thiểu 1, tối đa 12\.  
-35. Chỉ 1 hình thức xác nhận: Nhân viên bấm "Xác nhận thanh toán" sau khi nhận đủ tiền.  
+35. Chỉ 1 cách xác nhận: Nhân viên bấm "Xác nhận thanh toán" sau khi nhận đủ tiền và chọn hình thức tiền mặt hoặc chuyển khoản.  
 36. Một giao dịch không được ghi nhận nhiều lần.  
 37. Chỉ thanh toán đã xác nhận mới coi là thành công.  
 38. Sau xác nhận: tạo Enrollment, biên lai, gửi email.  
 39. Biên lai hiển thị màn hình \+ nút In, không tích hợp máy in.
+    * Học phí = học phí tháng × số tháng. Tháng của gói chứa mùng 1 Tết âm lịch được giảm 50% học phí tháng đó (làm tròn xuống đồng). Hệ thống tự tính, Nhân viên không sửa. Bill và biên lai ghi rõ "Giảm 50% tháng có Tết (từ – đến)". Phiếu lập trước 15/11/2026 giữ nguyên giá. Không có giảm giá nào khác trên hệ thống.  
+    * Nghỉ lễ thường và ngày nghỉ của trung tâm đã tính trong học phí, không gia hạn bù.
 
     ### **5.11 Email**
 
@@ -270,7 +288,21 @@ Mở rộng theo số lượng học sinh, giáo viên, nhân viên, môn học;
 
     ### **5.14 Lịch sử thay đổi**
 
-48. Phải lưu lịch sử: đổi giáo viên, giáo viên dạy thay, xếp học bù, đổi 1 buổi, đổi lịch cố định, nghỉ dài hạn, cho học lại, nghỉ 1 môn, nghỉ hẳn, xác nhận thanh toán, sửa kết quả AI.
+48. Phải lưu lịch sử: đổi giáo viên, giáo viên dạy thay, xếp học bù, đổi 1 buổi, đổi lịch cố định, nghỉ dài hạn, cho học lại, nghỉ 1 môn, nghỉ hẳn, xác nhận thanh toán, sửa kết quả AI, ghi nhận và duyệt hoàn tiền, gia hạn bù, sửa điểm danh đã chốt.
+
+    ### **5.15 Gia hạn bù**
+
+49. Gia hạn bù kéo dài hạn học miễn phí; phiếu thu (kỳ đã mua) không đổi. Chỉ áp dụng cho ghi danh đang học.  
+50. Ba nguồn: bảo lưu khi nghỉ dài hạn từ 14 ngày (xem 5.8); trung tâm hủy một buổi mà không đổi sang ngày khác, mỗi học sinh của buổi được kéo hạn tới buổi học kế tiếp (trừ em đang nghỉ dài hạn ngày đó); Nhân viên gia hạn tay 1–90 ngày mỗi lần kèm lý do.  
+51. Vẫn cho gia hạn khi lớp đã đủ chỗ trong khoảng thêm vào (học sinh đã đóng tiền hoặc lỗi do trung tâm). Phụ huynh nhận email hạn học mới.
+
+    ### **5.16 Hoàn tiền**
+
+52. Hoàn các tháng của gói **chưa bắt đầu**; tháng đang học không hoàn; tháng có Tết tính nửa giá. Hệ thống đề xuất số tiền, Nhân viên ghi số tiền thật đã trả và hình thức (tiền mặt / chuyển khoản).  
+53. Mỗi phiếu thu chỉ có một khoản hoàn chờ duyệt cùng lúc; tổng hoàn không vượt số đã thu.  
+54. Chỉ Quản lý trung tâm duyệt hoặc từ chối. Chỉ khoản đã duyệt mới trừ vào doanh thu (thực thu) và gửi email phụ huynh.  
+55. Hoàn tiền không tự kết thúc ghi danh; Nhân viên cho nghỉ môn / nghỉ hẳn riêng (màn nghỉ có nút ghi nhận hoàn tiền ngay sau đó).  
+56. Xác nhận thanh toán nhầm: không hủy phiếu thu; xử lý bằng hoàn 100% rồi kết thúc ghi danh.
 
     ## **6\. Luồng nghiệp vụ (Workflow)**
 
@@ -322,6 +354,18 @@ Nghỉ 1 môn → kết thúc Enrollment môn đó. Nghỉ hẳn → kết thúc
 
 Con nộp bài qua tài khoản phụ huynh → AI chấm → điểm \+ đáp án đúng → Giáo viên kiểm tra/sửa → duyệt → công bố → Phụ huynh/con xem. Báo cáo: Giáo viên chọn lớp/học sinh → khoảng thời gian → lấy điểm \+ chuyên cần → AI tổng hợp → tạo báo cáo → xuất Excel/PDF → giáo viên tải.
 
+### **6.10 Hoàn tiền khi nghỉ**
+
+Nhân viên cho nghỉ môn / nghỉ hẳn (hoặc bấm "Hoàn tiền" trên phiếu thu) → hệ thống đề xuất số tiền các tháng chưa bắt đầu → Nhân viên nhập số tiền, hình thức, lý do → gửi duyệt → Quản lý duyệt hoặc từ chối ở màn "Thu tiền & hoàn tiền" → duyệt thì trừ thực thu, biên lai hiện "Đã hoàn", email phụ huynh.
+
+### **6.11 Gia hạn bù**
+
+Bảo lưu: Nhân viên ghi nghỉ dài hạn từ 14 ngày (hoặc duyệt đơn của phụ huynh) và chọn "Bảo lưu" → hạn học cộng số ngày nghỉ. Hủy buổi: Quản lý chọn "Hủy" kèm "Gia hạn bù 1 buổi" → mỗi học sinh của buổi được kéo hạn tới buổi kế tiếp. Gia hạn tay: panel Xử lý → tab "Gia hạn bù" → số ngày + lý do → xem trước hạn mới → xác nhận → email phụ huynh.
+
+### **6.12 Sửa điểm danh trong ngày**
+
+Giáo viên mở buổi đã chốt (trước 24:00 cùng ngày) → "Sửa điểm danh" → đổi có mặt / vắng từng em → chọn lý do → lưu → tỷ lệ đi học cập nhật, email phụ huynh, lưu lịch sử. Qua ngày hôm sau thì khóa.
+
 ## **7\. Mô hình dữ liệu**
 
 Chuỗi thực thể chính đi từ tài khoản phụ huynh xuống từng buổi điểm danh; Payment và Program là các thực thể phụ gắn vào Enrollment và Class.
@@ -338,7 +382,7 @@ Không còn thực thể ActivationLink trong mô hình — tài khoản và h�
 | StudentProfile | id, parentAccountId, name | 1 phụ huynh có thể có nhiều hồ sơ con |
 | Enrollment | id, studentProfileId, subjectId, classId, months, status | months trong khoảng 1–12 |
 | Class | id, subjectId, gradeLevel, programId, roomId, teacherId, fixedSchedule | tạo bởi Quản lý trung tâm |
-| Payment | id, enrollmentId, confirmedAt, confirmedBy | confirmedBy luôn là Nhân viên |
+| Payment | id, enrollmentId, amount, method, confirmedAt, confirmedBy | method ∈ {CASH, BANK\_TRANSFER} (null với phiếu cũ); confirmedBy luôn là Nhân viên |
 | ClassSession | id, classId, lessonId, programId, date, capacity | tạo khi Quản lý bấm Tạo lịch học (từ fixedSchedule của Class); buổi có thể bị hủy kèm lý do |
 | AttendanceRecord | id, classSessionId, studentProfileId, status | status ∈ {present, absent, made\_up, excused} |
 | Program (Khóa học) | id, subjectId, gradeLevel, sessionsPerWeek | môn \+ khối; lớp thuộc một khóa học |
@@ -346,6 +390,9 @@ Không còn thực thể ActivationLink trong mô hình — tài khoản và h�
 | OutcomeSet | id, programId, level, version, status | Bộ Mục tiêu khóa học của một khóa học |
 | LearningOutcome | id, outcomeSetId, code, title, statement, required, nguồn (tùy chọn) | Một mục tiêu khóa học; gắn cho câu hỏi là tùy chọn |
 | CenterClosure | id, fromDate, toDate, reason, createdById | Ngày nghỉ của trung tâm; do Quản lý tạo |
+| RegistrationOrder (phiếu / bill) | id, quotedAmount, listAmount, tetDiscountAmount, tetPeriodStart, tetPeriodEnd | quotedAmount = số phải thu; listAmount = học phí tháng × số tháng; phần Tết ghi rõ tháng được giảm |
+| PaymentRefund | id, paymentId, enrollmentId, amount, method, reason, status (PENDING, APPROVED, REJECTED), requestedBy, decidedBy | Hoàn tiền; chỉ APPROVED trừ vào thực thu |
+| EnrollmentExtension | id, enrollmentId, source (MANUAL, LEAVE, SESSION\_CANCELLED), days, reason, previousEndDate, newEndDate | Gia hạn bù; Enrollment.endDate là hạn học sau gia hạn |
 
 ## **8\. Ma trận phân quyền**
 
@@ -364,8 +411,12 @@ Không còn thực thể ActivationLink trong mô hình — tài khoản và h�
 | Ngày nghỉ của trung tâm (ghi / xem) | ✓ (ghi, xem) | ✓ (xem) | ✓ (xem) | ✓ (xem) | — |
 | Đăng ký học sinh / tra cứu qua email | — | — | ✓ | — | — |
 | Xác nhận thanh toán | — | — | ✓ | — | — |
+| Ghi nhận hoàn tiền | — | — | ✓ | — | — |
+| Duyệt hoàn tiền | ✓ | — | — | — | — |
+| Gia hạn bù (tay, bảo lưu) | — | — | ✓ | — | — |
 | Đổi lịch / học bù / nghỉ | — | — | ✓ | — | — |
 | Điểm danh | — | — | — | ✓ | — |
+| Sửa điểm danh đã chốt (trong ngày học) | ✓ | — | — | ✓ | — |
 | Bài tập, chấm bài \+ duyệt AI | — | — | — | ✓ | — |
 | Báo cáo Excel/PDF | — | — | — | ✓ | — |
 | Set cứng lịch lớp được phân công | — | — | — | ✓ | — |
@@ -388,5 +439,12 @@ Nhân viên và Quản lý trung tâm không dùng chung quyền truy cập dù 
   * "1 tháng 1 bài kiểm tra" là khuyến nghị, hệ thống chỉ nhắc giáo viên, không chặn (3.2, 3.4).  
   * Mọi Thiết kế giáo trình sửa được bản nháp giáo trình và mục tiêu.  
   * Ngày nghỉ của trung tâm do Quản lý quản lý, thêm ngày nghỉ không tự hủy buổi đã có; hủy nhiều buổi chỉ Quản lý, tối đa 200 buổi (5.4).  
+* **Nghiệp vụ thực tế** — đã chốt ngày 2026-11-15:  
+  * Tháng của gói chứa mùng 1 Tết giảm 50%; ngày Tết để sẵn trong hệ thống (5.10).  
+  * Thanh toán ghi hình thức tiền mặt / chuyển khoản; có đối soát cuối ca (3.6).  
+  * Hoàn các tháng chưa bắt đầu, Quản lý duyệt (5.16).  
+  * Bảo lưu khi nghỉ từ 14 ngày; buổi trung tâm hủy có thể bù 1 buổi; vẫn gia hạn khi lớp đủ chỗ (5.15).  
+  * Sửa điểm danh đến 24:00 ngày học (5.5).  
+  * Không làm trên hệ thống (xử lý tại quầy): giảm giá khác, hủy phiếu thu nhầm, học thử, danh sách chờ, công nợ, tính lương giáo viên (số buổi dạy xem ở dashboard Quản lý), đổi khối khi đang học.
     
   

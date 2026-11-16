@@ -107,6 +107,8 @@ const sessionRevisionSchema = reviewReasonSchema.extend({
 /** `shiftLessons`: true = hủy và dời bài sang buổi sau; bỏ trống = hủy, bỏ bài (hành vi cũ). */
 export const sessionCancelSchema = sessionRevisionSchema.extend({
   shiftLessons: z.boolean().optional(),
+  /** Gia hạn bù 1 buổi cho học sinh của buổi bị hủy. */
+  extendTerm: z.boolean().optional(),
 });
 export const sessionRescheduleSchema = sessionRevisionSchema
   .extend({
@@ -161,6 +163,7 @@ export type CenterClosureFormInput = z.infer<typeof centerClosureFormSchema>;
 export const bulkCancelSchema = z.object({
   sessionIds: z.array(z.string().min(1)).min(1).max(200),
   shiftLessons: z.boolean().optional(),
+  extendTerm: z.boolean().optional(),
   reason: z.string().trim().min(1, "Nhập lý do.").max(2000),
 });
 export type BulkCancelInput = z.infer<typeof bulkCancelSchema>;

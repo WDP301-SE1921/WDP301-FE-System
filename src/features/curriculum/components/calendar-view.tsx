@@ -3,7 +3,7 @@ import { actsAsManager } from "@/constants/roles";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -37,22 +37,18 @@ import { SessionDetailSheet } from "./session-detail-sheet";
 import { ScheduleBoard } from "./schedule-board";
 import type { ScheduleBoardEvent } from "../schedule-board-data";
 import { TeacherAttendanceWeek } from "@/features/attendance/components/teacher-attendance-week";
-
-const CALENDAR_VIEWS = ["day", "week", "board", "list"] as const;
-export type CalendarView = (typeof CALENDAR_VIEWS)[number];
-const VIEW_LABELS: Record<CalendarView, string> = {
-  list: "Danh sách",
-  board: "Kanban",
-  week: "Tuần",
-  day: "Ngày",
-};
-/** Giáo viên: danh sách buổi + điểm danh (mặc định), Kanban, Tuần, Ngày. Quản lý/Nhân viên: Kanban, Tuần, Ngày. */
-const TEACHER_VIEWS: readonly CalendarView[] = ["list", "board", "week", "day"];
-const BACK_OFFICE_VIEWS: readonly CalendarView[] = ["board", "week", "day"];
+import {
+  BACK_OFFICE_VIEWS,
+  CALENDAR_VIEWS,
+  TEACHER_VIEWS,
+  VIEW_LABELS,
+  resolveCalendarView,
+  type CalendarView,
+} from "../calendar-views";
 
 /**
  * Lịch học dùng chung cho Quản lý, Nhân viên và Giáo viên. Mỗi trang chọn cách xem mặc định
- * (Quản lý và Nhân viên mặc định Kanban; Giáo viên mặc định Danh sách để điểm danh).
+ * (Quản lý và Nhân viên mặc định Tuần; Giáo viên mặc định Danh sách để điểm danh).
  */
 export function AcademicCalendarView({
   defaultView = "week",
@@ -72,12 +68,12 @@ export function AcademicCalendarView({
   );
   const [queryView, setView] = useQueryState(
     "view",
-    parseAsStringLiteral(CALENDAR_VIEWS).withDefault(defaultView),
+    parseAsString.withDefault(defaultView),
   );
   // Chọn theo trang chứ không theo role: role chỉ biết sau khi hydrate nên dễ nháy sai cách xem.
   const isTeacherSchedule = defaultView === "list";
   const views = isTeacherSchedule ? TEACHER_VIEWS : BACK_OFFICE_VIEWS;
-  const view = views.includes(queryView) ? queryView : defaultView;
+  const view = resolveCalendarView(queryView, defaultView, views);
   const [selected, setSelected] = useQueryState(
     "session",
     parseAsString.withDefault(""),
@@ -260,7 +256,7 @@ export function AcademicCalendarView({
               selected={selected}
               onSelect={(id) => void setSelected(id)}
             />
-          ) : view === "board" ? (
+          ) : view === "week" ? (
             <ScheduleBoard
               events={events}
               date={day}
@@ -272,7 +268,7 @@ export function AcademicCalendarView({
               events={events}
               date={day}
               onDateChange={(v) => void setDate(v)}
-              view={view === "day" ? "day" : "week"}
+              view="day"
               onViewChange={(v) => void setView(v)}
               groupBy="time"
               showGroupBy={false}

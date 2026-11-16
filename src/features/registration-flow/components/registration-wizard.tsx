@@ -1,5 +1,6 @@
 "use client";
 
+import { previewTuition } from "@/features/registration-flow/tet";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -314,9 +315,12 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
   else if (parentReady && step > 1 && !child) step = 1;
   if (registrationId) step = order.data?.status === "COMPLETED" ? 4 : 3;
   const currentOrder = order.data;
-  const quote =
-    currentOrder?.quotedAmount ??
-    Number(summaryClass?.monthlyFee ?? 0) * (values.packageMonths || 0);
+  const preview = previewTuition(
+    values.startDate,
+    values.packageMonths || 0,
+    Number(summaryClass?.monthlyFee ?? 0),
+  );
+  const quote = currentOrder?.quotedAmount ?? preview.total;
   const startDate = currentOrder
     ? dateOnly(currentOrder.startDate)
     : values.startDate;
@@ -567,6 +571,13 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
                 <p className="text-xl font-semibold text-primary">
                   {money(quote)}
                 </p>
+                {!currentOrder && preview.tet && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Đã giảm {money(preview.tet.amount)} (50% tháng có Tết{" "}
+                    {displayDate(preview.tet.fromDate)} –{" "}
+                    {displayDate(preview.tet.toDate)}).
+                  </p>
+                )}
               </div>
               {currentOrder && (
                 <p className="text-xs text-muted-foreground break-all">
@@ -850,12 +861,17 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
               key={registrationId}
               registrationId={registrationId}
               paymentDraft={{
+                method: values.paymentMethod,
                 receiptNumber: values.receiptNumber,
                 hasReceivedPayment: values.hasReceivedPayment,
               }}
               onPaymentDraftChange={(input) => {
-                form.setValue("receiptNumber", input.receiptNumber);
-                form.setValue("hasReceivedPayment", input.hasReceivedPayment);
+                form.setValue("paymentMethod", input.method);
+                form.setValue("receiptNumber", input.receiptNumber ?? "");
+                form.setValue(
+                  "hasReceivedPayment",
+                  input.hasReceivedPayment ?? false,
+                );
               }}
               onPaid={async () => {
                 await setStep(4);

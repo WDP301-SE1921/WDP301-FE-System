@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { SUBJECT_MAP, FALLBACK_SUBJECT } from "@/constants/subjects";
+import { resolveSubject } from "@/constants/subjects";
 import { Badge } from "@/components/ui/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -17,7 +17,7 @@ export type SessionStatus =
 export interface SessionBlockProps {
   id: string;
   title: string;
-  subject: string; // e.g. "MATH", "PHYS", "CHEM", "BIOL"
+  subject: string; // mã môn ("MATH") hoặc tên môn BE trả ("Hóa học")
   time: string;
   room?: string;
   teacherName?: string;
@@ -55,7 +55,7 @@ function SessionBlock({
   compact = false,
   className,
 }: SessionBlockProps) {
-  const subjectConfig = SUBJECT_MAP[subject] ?? FALLBACK_SUBJECT;
+  const subjectConfig = resolveSubject(subject);
   const statusMeta = STATUS_CONFIG[status];
 
   return (
@@ -74,9 +74,12 @@ function SessionBlock({
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge
             variant={subjectConfig.badgeVariant}
-            className="text-[10px] px-1.5 py-0 h-4 shrink-0 font-medium"
+            className={cn(
+              "text-[10px] px-1.5 py-0 h-4 shrink-0 font-medium",
+              subjectConfig.badgeClassName,
+            )}
           >
-            {SUBJECT_MAP[subject]?.name ?? (subject || FALLBACK_SUBJECT.name)}
+            {subjectConfig.name}
           </Badge>
           <Badge
             variant={statusMeta.variant}

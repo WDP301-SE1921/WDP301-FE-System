@@ -12,6 +12,8 @@ export const ROUTES = {
   },
   MANAGER: {
     DASHBOARD: "/manager/dashboard",
+    /** Duyệt hoàn tiền và xem phiếu thu (Quản lý). */
+    PAYMENTS: "/manager/payments",
 
     STUDENTS: "/manager/students",
     STUDENT_DETAIL: (id: string) => `/manager/students/${id}`,
@@ -85,7 +87,7 @@ export const ROUTES = {
     /** Màn Học sinh & phụ huynh mở sẵn panel Xử lý của một học sinh. */
     STUDENT_ACTION: (params: {
       studentId: string;
-      action?: "makeup" | "change" | "leave" | "withdraw";
+      action?: "makeup" | "change" | "leave" | "extend" | "withdraw";
       enrollmentId?: string;
       sessionId?: string;
     }) => {

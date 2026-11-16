@@ -89,17 +89,49 @@ import type {
   MakeupRecord,
 } from "@/types/academic-workflows";
 import type { RegistrationClass, StudentListItem } from "@/types/backend";
+import { RefundDialog } from "@/features/billing/components/refund-dialog";
+
+/** Nghỉ dài hạn từ chừng này ngày thì được bảo lưu (khớp `MIN_PAUSE_DAYS_FOR_EXTENSION` của BE). */
+const MIN_PAUSE_DAYS_FOR_EXTENSION = 14;
+const DAY_MS = 86_400_000;
+const inclusiveDays = (from: string, to: string) =>
+  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1;
+const addDays = (day: string, days: number) =>
+  new Date(Date.parse(`${dateOnly(day)}T00:00:00Z`) + days * DAY_MS)
+    .toISOString()
+    .slice(0, 10);
+/** Ngày học cuối của kỳ (BE lưu ngày kết thúc không tính). */
+const lastStudyDay = (endDate: string) => displayDate(addDays(endDate, -1));
 
 const pauseFormSchema = z
   .object({
     fromDate: dateSchema,
     toDate: dateSchema,
     reason: reasonSchema.shape.reason,
+    extendTerm: z.boolean().optional(),
   })
   .refine((value) => value.fromDate <= value.toDate, {
     path: ["toDate"],
     message: "Ngày cuối phải từ ngày đầu trở đi.",
-  });
+  })
+  .refine(
+    (value) =>
+      !value.extendTerm ||
+      value.fromDate > value.toDate ||
+      inclusiveDays(value.fromDate, value.toDate) >= MIN_PAUSE_DAYS_FOR_EXTENSION,
+    {
+      path: ["extendTerm"],
+      message: `Chỉ bảo lưu khi nghỉ từ ${MIN_PAUSE_DAYS_FOR_EXTENSION} ngày.`,
+    },
+  );
+const extendFormSchema = z.object({
+  days: z.coerce
+    .number({ error: "Nhập số ngày." })
+    .int("Số ngày là số nguyên.")
+    .min(1, "Ít nhất 1 ngày.")
+    .max(90, "Tối đa 90 ngày mỗi lần."),
+  reason: z.string().trim().min(1, "Chọn lý do.").max(300),
+});
 const transferFormSchema = z.object({
   targetClassId: requiredId,
   effectiveAt: localDateTimeSchema,
@@ -119,6 +151,7 @@ export const STUDENT_ACTIONS = {
   makeup: "Nghỉ & học bù",
   change: "Đổi lớp / lịch cố định",
   leave: "Nghỉ dài hạn",
+  extend: "Gia hạn bù",
   withdraw: "Nghỉ môn / nghỉ hẳn",
 } as const;
 export type StudentAction = keyof typeof STUDENT_ACTIONS;
@@ -320,6 +353,13 @@ function StudentWorkflowBody({
               studentName={student?.fullName ?? "Học sinh"}
             />
           )}
+          {enrollment?.status === "ACTIVE" && action === "extend" && (
+            <ExtendPanel
+              key={`extend-${enrollment.id}`}
+              enrollment={enrollment}
+              studentName={student?.fullName ?? "Học sinh"}
+            />
+          )}
           {enrollment?.status === "ACTIVE" && action === "change" && (
             <TransferPanel
               key={enrollment.id}
@@ -457,11 +497,17 @@ function LeavePanel({
               type: "reason",
               presets: REASON_PRESETS.leave,
             },
+            {
+              name: "extendTerm",
+              label: `Bảo lưu: cộng số ngày nghỉ vào hạn học (chỉ khi nghỉ từ ${MIN_PAUSE_DAYS_FOR_EXTENSION} ngày)`,
+              type: "checkbox",
+            },
           ]}
           submitLabel="Xác nhận nghỉ dài hạn"
           onSubmit={(value) =>
             academicApi.createLeave({
               ...value,
+              extendTerm: value.extendTerm === true ? true : undefined,
               enrollmentId: enrollment.id,
               kind: "PERIOD_PAUSE",
             })
@@ -502,6 +548,20 @@ function LeavePanel({
                 state: result ? "changed" : "same",
               },
             ];
+            const credit =
+              result && values.extendTerm === true && enrollment.endDate
+                ? inclusiveDays(result.from, result.to)
+                : 0;
+            if (enrollment.endDate)
+              rows.push({
+                label: "Hạn học",
+                before: `Học đến ${lastStudyDay(enrollment.endDate)}`,
+                after:
+                  credit >= MIN_PAUSE_DAYS_FOR_EXTENSION
+                    ? `Học đến ${lastStudyDay(addDays(enrollment.endDate, credit))} (bảo lưu +${credit} ngày)`
+                    : "Giữ nguyên",
+                state: credit >= MIN_PAUSE_DAYS_FOR_EXTENSION ? "changed" : "same",
+              });
             return (
               <div className="space-y-4">
                 <CompareTable rows={rows} />
@@ -921,12 +981,46 @@ function WithdrawPanel({
     { label: "Các con khác", before: "Không đổi", after: "Không ảnh hưởng" },
   ];
   const endedCount = isAll ? open.length : 1;
+  const [ended, setEnded] = useState<EnrollmentRecord[]>([]);
+  const [refundFor, setRefundFor] = useState<EnrollmentRecord | null>(null);
   return (
     <Card>
       <CardHeader>
         <CardTitle>Kết thúc môn học hoặc nghỉ hẳn</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
+        {ended.length > 0 && (
+          <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
+            <p className="font-medium">
+              Đã kết thúc. Hoàn học phí các tháng chưa học?
+            </p>
+            <p className="text-muted-foreground">
+              Hệ thống đề xuất số tiền các tháng chưa bắt đầu; tháng đang học
+              không hoàn. Quản lý duyệt xong mới trừ vào doanh thu.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {ended.map((item) => (
+                <Button
+                  key={item.id}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRefundFor(item)}
+                >
+                  Ghi nhận hoàn tiền · {currentClassOf(item).name}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+        {refundFor && (
+          <RefundDialog
+            target={{
+              enrollmentId: refundFor.id,
+              studentName: student.fullName,
+            }}
+            onClose={() => setRefundFor(null)}
+          />
+        )}
         <ChoiceCards
           legend="Kết thúc phần nào"
           value={scope}
@@ -991,12 +1085,17 @@ function WithdrawPanel({
               reason:
                 typeof value.reason === "string" ? value.reason : undefined,
             };
-            return isAll
+            const ending = isAll ? open : [enrollment as EnrollmentRecord];
+            const request = isAll
               ? academicApi.endStudent(student.id, body)
               : academicApi.endEnrollment(
                   (enrollment as EnrollmentRecord).id,
                   body,
                 );
+            return request.then((result) => {
+              setEnded(ending);
+              return result;
+            });
           }}
         />
       </CardContent>
@@ -1010,6 +1109,136 @@ const LEAVE_ACTION_TITLE: Record<LeaveAction, string> = {
   endEarly: "Kết thúc nghỉ sớm",
   cancel: "Hủy đơn nghỉ",
 };
+const EXTENSION_SOURCE: Record<string, string> = {
+  MANUAL: "Gia hạn tay",
+  LEAVE: "Bảo lưu nghỉ dài",
+  SESSION_CANCELLED: "Buổi trung tâm hủy",
+};
+
+/** Gia hạn bù miễn phí: kéo dài hạn học, phiếu thu giữ nguyên. */
+function ExtendPanel({
+  enrollment,
+  studentName,
+}: {
+  enrollment: EnrollmentRecord;
+  studentName: string;
+}) {
+  const current = currentClassOf(enrollment);
+  const history = useLiveQuery(["enrollment-extensions", enrollment.id], (signal) =>
+    academicApi.enrollmentExtensions(enrollment.id, signal),
+  );
+  const endDate = enrollment.endDate;
+  const credited = (history.data ?? []).reduce((sum, item) => sum + item.days, 0);
+  const daysOf = (values: ApiFormValues) => {
+    const days = Number(values.days);
+    return Number.isInteger(days) && days >= 1 && days <= 90 ? days : 0;
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Gia hạn bù</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <p className="text-sm text-muted-foreground">
+          Cộng thêm ngày học miễn phí khi trung tâm cho bảo lưu hoặc hủy buổi
+          không dạy bù được. Phiếu thu không đổi.
+        </p>
+        <ApiForm
+          schema={extendFormSchema}
+          defaults={{ days: 7, reason: REASON_PRESETS.extend[0] }}
+          fields={[
+            { name: "days", label: "Số ngày cộng thêm", type: "number", half: true },
+            {
+              name: "reason",
+              label: "Lý do",
+              type: "reason",
+              presets: REASON_PRESETS.extend,
+            },
+          ]}
+          submitLabel="Gia hạn"
+          successMessage="Đã gia hạn. Phụ huynh nhận email báo hạn học mới."
+          onSubmit={(value) =>
+            academicApi.extendEnrollment(enrollment.id, {
+              days: Number(value.days),
+              reason: String(value.reason),
+            })
+          }
+          preview={(values) => {
+            const days = daysOf(values);
+            const rows: CompareRow[] = [
+              {
+                label: "Hạn học",
+                before: endDate ? `Học đến ${lastStudyDay(endDate)}` : "Chưa có kỳ học",
+                after:
+                  endDate && days
+                    ? `Học đến ${lastStudyDay(addDays(endDate, days))}`
+                    : "Nhập số ngày",
+                state: endDate && days ? "changed" : "same",
+              },
+              { label: "Lớp", before: current.name, after: "Giữ nguyên" },
+              { label: "Phiếu thu", before: "Đã thu", after: "Không đổi" },
+            ];
+            return <CompareTable rows={rows} />;
+          }}
+          summary={(values) => {
+            const days = daysOf(values);
+            return days && endDate
+              ? `${studentName} học ${current.name} đến ${lastStudyDay(addDays(endDate, days))} (+${days} ngày).`
+              : "Nhập số ngày cần cộng thêm.";
+          }}
+        />
+        <section className="space-y-2" aria-label="Lịch sử gia hạn">
+          <h3 className="text-sm font-semibold">
+            Lịch sử gia hạn
+            {credited > 0 && (
+              <span className="ml-2 font-normal text-muted-foreground">
+                {history.data?.length} lần, tổng +{credited} ngày
+              </span>
+            )}
+          </h3>
+          <AsyncBoundary
+            isLoading={history.isPending}
+            isError={history.isError}
+            error={history.error}
+            onRetry={() => void history.refetch()}
+            data={history.data}
+            emptyProps={{ title: "Chưa gia hạn lần nào" }}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ngày</TableHead>
+                  <TableHead>Loại</TableHead>
+                  <TableHead className="text-right">Số ngày</TableHead>
+                  <TableHead>Hạn mới</TableHead>
+                  <TableHead>Lý do</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(history.data ?? []).map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{displayMoment(item.createdAt)}</TableCell>
+                    <TableCell>{EXTENSION_SOURCE[item.source] ?? item.source}</TableCell>
+                    <TableCell className="text-right tabular-nums">+{item.days}</TableCell>
+                    <TableCell>{lastStudyDay(item.newEndDate)}</TableCell>
+                    <TableCell className="max-w-56 whitespace-normal">{item.reason}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </AsyncBoundary>
+          {(history.data?.length ?? 0) >= 2 && (
+            <p className="text-sm text-amber-700">
+              Đã gia hạn {history.data?.length} lần. Chính sách: tối đa 2 lần mỗi
+              gói, tổng không quá 60 ngày.
+            </p>
+          )}
+        </section>
+      </CardContent>
+    </Card>
+  );
+}
+
 function LeaveHistory({ studentId }: { studentId: string }) {
   const leaves = useLiveQuery(["leaves", studentId], (signal) =>
     academicApi.leaves({ studentId }, signal),
@@ -1207,9 +1436,14 @@ function LeaveActionForm({
       />
     );
   const approve = action === "approve";
+  const pauseDays =
+    leave.kind === "PERIOD_PAUSE"
+      ? inclusiveDays(dateOnly(leave.fromDate), dateOnly(leave.toDate))
+      : 0;
+  const canCredit = approve && pauseDays >= MIN_PAUSE_DAYS_FOR_EXTENSION;
   return (
     <ApiForm
-      schema={reasonSchema}
+      schema={reasonSchema.extend({ extendTerm: z.boolean().optional() })}
       fields={[
         {
           name: "reason",
@@ -1217,12 +1451,26 @@ function LeaveActionForm({
           type: "reason",
           presets: approve ? REASON_PRESETS.approve : REASON_PRESETS.reject,
         },
+        ...(canCredit
+          ? [
+              {
+                name: "extendTerm",
+                label: `Bảo lưu: cộng ${pauseDays} ngày nghỉ vào hạn học`,
+                type: "checkbox" as const,
+              },
+            ]
+          : []),
       ]}
       submitLabel={approve ? "Duyệt đơn" : "Từ chối đơn"}
       submitVariant={approve ? "default" : "destructive"}
       successMessage={false}
       onSubmit={(value) =>
-        academicApi.decideLeave(leave.id, approve, String(value.reason))
+        academicApi.decideLeave(
+          leave.id,
+          approve,
+          String(value.reason),
+          canCredit && value.extendTerm === true,
+        )
       }
       onSuccess={onDone}
     />

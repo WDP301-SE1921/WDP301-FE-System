@@ -1,4 +1,4 @@
-import { SUBJECT_MAP } from "@/constants/subjects"
+import type { SubjectTone } from "@/constants/subjects"
 
 /**
  * Nội dung marketing của landing page công khai. Tách riêng khỏi `src/constants/`
@@ -32,33 +32,27 @@ export const LANDING_CONTENT = {
   HERO_SECONDARY_CTA: "Tìm hiểu thêm",
   HERO_NOTE: "Dành cho Quản lý và Giáo viên của trung tâm",
 
+  /** Số "Môn học chính" ghép vào đầu danh sách theo số môn BE trả (`landingStats`). */
+  STAT_SUBJECTS_LABEL: "Môn học chính",
   STATS: [
-    { value: "4", label: "Môn học chính" },
     { value: "6 – 9", label: "Khối lớp giảng dạy" },
     { value: "100%", label: "Buổi học có điểm danh" },
   ],
 
   SUBJECTS_TITLE: "Chương trình giảng dạy",
   SUBJECTS_DESC:
-    "Bốn môn khoa học tự nhiên trọng tâm, bám sát chương trình phổ thông từ lớp 6 đến lớp 9.",
-  SUBJECTS: [
-    {
-      code: SUBJECT_MAP.MATH.code,
-      desc: "Nền tảng đại số và hình học, luyện tư duy giải toán theo từng khối lớp.",
-    },
-    {
-      code: SUBJECT_MAP.PHYS.code,
-      desc: "Gắn lý thuyết với thí nghiệm và hiện tượng đời sống để con dễ hình dung.",
-    },
-    {
-      code: SUBJECT_MAP.CHEM.code,
-      desc: "Phương trình, tính toán hóa học và kỹ năng làm bài tập định lượng.",
-    },
-    {
-      code: SUBJECT_MAP.BIOL.code,
-      desc: "Hệ thống kiến thức sinh học theo sơ đồ tư duy, dễ nhớ và dễ ôn tập.",
-    },
-  ],
+    "Các môn trọng tâm, bám sát chương trình phổ thông từ lớp 6 đến lớp 9.",
+  SUBJECTS_EMPTY: "Danh sách môn học đang được cập nhật.",
+  /** Mô tả cho 4 môn đã biết; môn Quản lý tạo thêm chỉ hiện tên. Danh sách môn lấy từ `GET /center/subjects`. */
+  SUBJECT_BLURBS: {
+    math: "Nền tảng đại số và hình học, luyện tư duy giải toán theo từng khối lớp.",
+    physics:
+      "Gắn lý thuyết với thí nghiệm và hiện tượng đời sống để con dễ hình dung.",
+    chemistry:
+      "Phương trình, tính toán hóa học và kỹ năng làm bài tập định lượng.",
+    biology:
+      "Hệ thống kiến thức sinh học theo sơ đồ tư duy, dễ nhớ và dễ ôn tập.",
+  } satisfies Partial<Record<SubjectTone, string>>,
 
   BENEFITS_TITLE: "Vì sao phụ huynh tin tưởng EduGrade",
   BENEFITS_DESC:
@@ -87,15 +81,13 @@ export const LANDING_CONTENT = {
   CTA_ACTION: "Đăng nhập ngay",
 
   CONTACT_TITLE: "Liên hệ trung tâm",
-  CONTACT_ITEMS: [
-    { iconName: "phone", label: "Hotline", value: "0913 345 678" },
-    { iconName: "mail", label: "Email", value: "lienhe@edugrade.vn" },
-    {
-      iconName: "address",
-      label: "Địa chỉ",
-      value: "Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội",
-    },
-  ],
+  /** Nhãn các mục liên hệ; giá trị lấy từ `GET /center` (Admin tổng sửa ở trang Thông tin trung tâm). */
+  CONTACT_LABELS: {
+    phone: "Hotline",
+    mail: "Email",
+    address: "Địa chỉ",
+    clock: "Giờ mở cửa",
+  },
 
   FOOTER_COPYRIGHT: (year: number) => `© ${year} EduGrade. Bảo lưu mọi quyền.`,
 } as const

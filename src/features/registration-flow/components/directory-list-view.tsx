@@ -12,6 +12,7 @@ import {
   useQueryStates,
 } from "nuqs";
 import { Badge } from "@/components/ui/badge";
+import { GRADE_FILTER_ITEMS } from "@/constants/grades";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,13 +48,7 @@ const STUDENT_STATUS_ITEMS = {
   ACTIVE: "Đang học",
   INACTIVE: "Ngừng học",
 };
-const GRADE_ITEMS = {
-  all: "Tất cả khối",
-  "6": "Khối 6",
-  "7": "Khối 7",
-  "8": "Khối 8",
-  "9": "Khối 9",
-};
+const GRADE_ITEMS = GRADE_FILTER_ITEMS;
 /** Lọc nhanh học sinh (`?quick=`), BE tính trên toàn bộ danh sách. */
 const QUICK_FILTERS = [
   { value: ALL, label: "Tất cả" },

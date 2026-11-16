@@ -43,6 +43,22 @@ export const REASON_PRESETS = {
     "Quốc khánh 2/9",
   ],
   cancelSession: ["Giáo viên bận đột xuất", "Nghỉ lễ", "Trung tâm bảo trì cơ sở"],
+  refund: ["Nghỉ hẳn trước kỳ", "Nghỉ môn", "Thu thừa", "Trung tâm đóng lớp"],
+  refundReject: [
+    "Số tiền chưa đúng",
+    "Tháng này đã bắt đầu học",
+    "Chưa đủ chứng từ",
+  ],
+  extend: [
+    "Bảo lưu nghỉ dài",
+    "Buổi trung tâm hủy, không dạy bù được",
+    "Ốm dài ngày có giấy",
+  ],
+  attendanceCorrection: [
+    "Đánh nhầm",
+    "Học sinh đến muộn sau khi đã chốt",
+    "Nhập nhầm học sinh",
+  ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type ReasonPresetKey = keyof typeof REASON_PRESETS;

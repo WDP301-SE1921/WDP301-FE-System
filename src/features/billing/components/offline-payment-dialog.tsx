@@ -19,6 +19,8 @@ import {
   ApiFeedback,
   FieldError,
 } from "@/components/shared/feedback/api-feedback";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { PAYMENT_METHOD_OPTIONS } from "@/features/billing/payment-method";
 import {
   offlineConfirmationSchema,
   type OfflineConfirmationInput,
@@ -31,7 +33,7 @@ import {
 import { money } from "@/features/registration-flow/calendar";
 import type { RegistrationBill } from "@/types/backend";
 
-// This uses the released receiptNumber contract. Payment method, received time and bank reference are not stored by BE yet.
+// Hình thức (tiền mặt / chuyển khoản) được lưu cùng biên lai để đối soát ca; thời gian thu và mã giao dịch ngân hàng chưa lưu.
 export function OfflinePaymentDialog({
   bill,
   operatorId,
@@ -44,8 +46,8 @@ export function OfflinePaymentDialog({
   operatorId: string;
   onClose: () => void;
   onConfirm: (attempt: PaymentAttempt) => Promise<void>;
-  defaultValues?: OfflineConfirmationInput;
-  onValuesChange?: (values: OfflineConfirmationInput) => void;
+  defaultValues?: Partial<OfflineConfirmationInput>;
+  onValuesChange?: (values: Partial<OfflineConfirmationInput>) => void;
 }) {
   const lock = useRef(false);
   const [restored] = useState(() => {
@@ -63,6 +65,7 @@ export function OfflinePaymentDialog({
   const form = useForm<OfflineConfirmationInput>({
     resolver: zodResolver(offlineConfirmationSchema),
     defaultValues: {
+      method: restored.attempt?.body.method ?? defaultValues?.method,
       receiptNumber: restored.attempt
         ? (restored.attempt.body.receiptNumber ?? "")
         : (defaultValues?.receiptNumber ?? ""),
@@ -89,6 +92,7 @@ export function OfflinePaymentDialog({
         operatorId,
         bill.registrationId,
         input.receiptNumber,
+        input.method,
       );
       setAttempt(saved);
       await onConfirm(saved);
@@ -124,11 +128,38 @@ export function OfflinePaymentDialog({
             Kiểm tra tiền mặt đã nhận hoặc giao dịch chuyển khoản đã vào tài
             khoản trung tâm, đúng số tiền và mã bill.
           </p>
-          <p className="text-sm text-muted-foreground">
-            Bước này xác nhận thu tiền offline và tạo biên lai. Phương thức
-            thanh toán, thời gian thu và mã giao dịch ngân hàng chưa được hỗ trợ
-            lưu.
-          </p>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Hình thức thanh toán</legend>
+            <Controller
+              control={form.control}
+              name="method"
+              render={({ field }) => (
+                <RadioGroup
+                  value={field.value ?? null}
+                  onValueChange={(value) => field.onChange(value)}
+                  disabled={pending || !!attempt || !!restored.error}
+                  className="grid-cols-2 gap-3"
+                  aria-label="Hình thức thanh toán"
+                >
+                  {PAYMENT_METHOD_OPTIONS.map((option) => (
+                    <Label
+                      key={option.value}
+                      className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 has-data-checked:border-primary has-data-checked:bg-primary/5"
+                    >
+                      <RadioGroupItem value={option.value} className="mt-0.5" />
+                      <span className="space-y-0.5">
+                        <span className="block font-medium">{option.label}</span>
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {option.hint}
+                        </span>
+                      </span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              )}
+            />
+            <FieldError message={form.formState.errors.method?.message} />
+          </fieldset>
           <div className="space-y-2">
             <Label htmlFor="registration-receipt-number">
               Số biên lai (không bắt buộc)

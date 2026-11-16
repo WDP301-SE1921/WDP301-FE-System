@@ -1,6 +1,6 @@
 export interface PaymentAttempt {
   key: string;
-  body: { receiptNumber?: string };
+  body: { receiptNumber?: string; method?: "CASH" | "BANK_TRANSFER" };
 }
 export interface RegistrationHistoryEntry {
   id: string;
@@ -96,12 +96,16 @@ export function getPaymentAttempt(
   userId: string,
   id: string,
   receiptNumber: string,
+  method: "CASH" | "BANK_TRANSFER",
 ): PaymentAttempt {
   const existing = readPaymentAttempt(userId, id);
   if (existing) return existing;
   const attempt = {
     key: crypto.randomUUID(),
-    body: receiptNumber.trim() ? { receiptNumber: receiptNumber.trim() } : {},
+    body: {
+      ...(receiptNumber.trim() ? { receiptNumber: receiptNumber.trim() } : {}),
+      method,
+    },
   };
   // Save before sending. If storage is unavailable, refuse the payment rather than lose its retry key.
   sessionStorage.setItem(

@@ -1,6 +1,10 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  PaymentMethodAndRefunds,
+  TetDiscountLines,
+} from "./tuition-lines";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { RegistrationBill } from "@/types/backend";
@@ -90,6 +94,10 @@ export function RegistrationBillCard({
               </div>
             ))}
           </dl>
+          <TetDiscountLines
+            listTotal={bill.pricing.listTotal}
+            tetDiscount={bill.pricing.tetDiscount}
+          />
           <div className="flex items-center justify-between gap-4 rounded-xl bg-muted p-4">
             <span>
               {bill.status === "PAID"
@@ -115,9 +123,11 @@ export function RegistrationBillCard({
                 Đã thu {money(bill.payment.paidAmount)} · Xác nhận lúc{" "}
                 {paymentTime(bill.payment.confirmedAt)}
               </p>
-              <p className="text-muted-foreground">
-                Bill này chưa có thông tin phương thức thanh toán.
-              </p>
+              <PaymentMethodAndRefunds
+                method={bill.payment.method}
+                refunds={bill.payment.refunds}
+                paidAmount={bill.payment.paidAmount}
+              />
             </div>
           )}
           {bill.status === "CANCELLED" && (

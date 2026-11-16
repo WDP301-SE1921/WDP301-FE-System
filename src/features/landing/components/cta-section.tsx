@@ -3,21 +3,25 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowRight01Icon,
   Call02Icon,
+  Clock01Icon,
   Location01Icon,
   Mail01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { ROUTES } from "@/constants/routes"
+import type { ContactItem } from "@/features/landing/center-contact"
 import { LANDING_CONTENT, LANDING_NAV } from "@/features/landing/content"
 
-const CONTACT_ICON: Record<string, typeof Call02Icon> = {
+const CONTACT_ICON: Record<ContactItem["iconName"], typeof Call02Icon> = {
   phone: Call02Icon,
   mail: Mail01Icon,
   address: Location01Icon,
+  clock: Clock01Icon,
 }
 
-function CtaSection() {
+/** `contactItems` rỗng (Admin chưa nhập hoặc BE lỗi) thì ẩn khối liên hệ. */
+function CtaSection({ contactItems }: { contactItems: ContactItem[] }) {
   const sectionId = LANDING_NAV[2].href.replace("#", "")
 
   return (
@@ -41,22 +45,24 @@ function CtaSection() {
             </Button>
           </div>
 
-          <div className="mt-12 grid gap-4 border-t border-primary-foreground/20 pt-10 sm:grid-cols-3">
-            {LANDING_CONTENT.CONTACT_ITEMS.map((item) => (
-              <div key={item.label} className="flex items-start gap-3">
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/15">
-                  <HugeiconsIcon
-                    icon={CONTACT_ICON[item.iconName]}
-                    className="size-5"
-                  />
-                </span>
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-xs text-primary-foreground/70">{item.label}</p>
-                  <p className="text-sm font-semibold">{item.value}</p>
+          {contactItems.length > 0 && (
+            <div className="mt-12 grid gap-4 border-t border-primary-foreground/20 pt-10 sm:grid-cols-2 lg:grid-cols-4">
+              {contactItems.map((item) => (
+                <div key={item.label} className="flex items-start gap-3">
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-white/15">
+                    <HugeiconsIcon
+                      icon={CONTACT_ICON[item.iconName]}
+                      className="size-5"
+                    />
+                  </span>
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-xs text-primary-foreground/70">{item.label}</p>
+                    <p className="text-sm font-semibold">{item.value}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

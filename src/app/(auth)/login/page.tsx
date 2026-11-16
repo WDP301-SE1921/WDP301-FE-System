@@ -7,12 +7,14 @@ import { AUTH_MSG } from "@/constants/messages/events/auth"
 import { ROUTES } from "@/constants/routes"
 import { AuthIllustration } from "@/features/auth/components/auth-illustration"
 import { LoginForm } from "@/features/auth/components/login-form"
+import { getPublicCenter } from "@/lib/api/public-center"
 
 export const metadata: Metadata = {
   title: AUTH_MSG.LOGIN_TITLE,
 }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const center = await getPublicCenter()
   return (
     <AuthLayout
       title={AUTH_MSG.LOGIN_BRAND_TITLE}
@@ -31,7 +33,7 @@ export default function LoginPage() {
         </Link>
       }
     >
-      <LoginForm />
+      <LoginForm supportPhone={center?.phone?.trim() || null} />
     </AuthLayout>
   )
 }

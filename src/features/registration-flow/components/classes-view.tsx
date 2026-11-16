@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { Card, CardContent } from "@/components/ui/card";
+import { GRADE_FILTER_ITEMS } from "@/constants/grades";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -54,13 +55,7 @@ const STATUS_FILTERS = {
 } as const;
 type StatusFilter = keyof typeof STATUS_FILTERS;
 const STATUS_KEYS = Object.keys(STATUS_FILTERS) as StatusFilter[];
-const GRADE_ITEMS = {
-  all: "Tất cả khối",
-  "6": "Khối 6",
-  "7": "Khối 7",
-  "8": "Khối 8",
-  "9": "Khối 9",
-};
+const GRADE_ITEMS = GRADE_FILTER_ITEMS;
 const VIEW_KEYS = ["cards", "table"] as const;
 const classesParsers = {
   search: parseAsString.withDefault(""),

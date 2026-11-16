@@ -81,6 +81,21 @@ const ERROR_TEXT: Record<string, string> = {
   OUTSIDE_ENROLLMENT: "Ngày đã chọn nằm ngoài kỳ học đang có hiệu lực.",
   ENROLLMENT_ENDED: "Ghi danh đã kết thúc. Tải lại trạng thái trước khi xử lý.",
   LEAVE_OVERLAP: "Khoảng nghỉ trùng với một đơn đã duyệt.",
+  LEAVE_TOO_SHORT_TO_EXTEND:
+    "Chỉ bảo lưu (cộng hạn học) khi nghỉ dài hạn từ 14 ngày.",
+  ENROLLMENT_NOT_EXTENDABLE:
+    "Chỉ gia hạn được ghi danh đang học. Tải lại trạng thái ghi danh.",
+  INVALID_EXTENSION_DAYS: "Mỗi lần gia hạn từ 1 đến 90 ngày.",
+  SESSION_NOT_FINALIZED: "Buổi chưa chốt điểm danh nên chưa có gì để sửa.",
+  CORRECTION_WINDOW_CLOSED:
+    "Chỉ sửa được điểm danh trong ngày học (khóa lúc 24:00). Liên hệ Quản lý nếu cần sửa.",
+  PARTICIPANT_NOT_FOUND: "Không tìm thấy học sinh trong buổi này. Tải lại danh sách.",
+  REFUND_PENDING:
+    "Phiếu này đang có khoản hoàn chờ Quản lý duyệt. Chờ duyệt xong rồi ghi tiếp.",
+  REFUND_TOO_LARGE: "Tổng tiền hoàn không được vượt số đã thu.",
+  REFUND_AMOUNT_REQUIRED: "Nhập số tiền hoàn lớn hơn 0.",
+  REFUND_NOT_FOUND: "Không tìm thấy khoản hoàn. Tải lại danh sách.",
+  PAYMENT_NOT_FOUND: "Không tìm thấy phiếu thu của ghi danh này.",
   LEAVE_HAS_ACTIVITY: "Đơn nghỉ đã có hoạt động lịch sử nên chưa thể hủy.",
   INVALID_LEAVE_STATE: "Đơn nghỉ đã được xử lý. Tải lại trạng thái.",
   INVALID_MAKEUP_SOURCE:

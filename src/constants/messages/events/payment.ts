@@ -53,11 +53,6 @@ export const PAYMENT_MSG = {
   RECEIPT_CONFIRMER_ROLE: "Quản lý trung tâm",
   RECEIPT_DOWNLOAD_SUCCESS: "Đã tải biên lai",
 
-  // Thông tin trung tâm trên biên lai
-  CENTER_NAME: "TRUNG TÂM BỒI DƯỠNG TT EDUGRADE",
-  CENTER_ADDRESS: "Tầng 4, Tòa nhà Trí Thức, Cầu Giấy, Hà Nội",
-  CENTER_CONTACT: "Hotline: 1900 8899 · contact@edugrade.vn",
-
   // Ghi chú cuối trang
   NOTE_TITLE: "Quy định xác nhận học phí & Biên lai điện tử",
   NOTE_DESC:

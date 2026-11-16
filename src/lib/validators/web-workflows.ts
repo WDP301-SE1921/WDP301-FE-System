@@ -66,6 +66,8 @@ export const leaveSchema = z
     fromDate: dateSchema,
     toDate: dateSchema,
     reason: requiredText(2000),
+    /** Bảo lưu: nghỉ dài hạn từ 14 ngày thì cộng số ngày nghỉ vào hạn học. */
+    extendTerm: z.boolean().optional(),
   })
   .refine((value) => value.fromDate <= value.toDate, {
     path: ["toDate"],

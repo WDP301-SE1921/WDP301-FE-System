@@ -56,7 +56,7 @@ export function backendError(status: number, code: string, message: string) {
 }
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "[::1]"]);
 let hasLoggedConfigProblem = false;
-function backendBaseUrl() {
+export function backendBaseUrl() {
   return (
     process.env.BACKEND_API_URL ?? "http://localhost:3000/api/v1"
   ).replace(/\/$/, "");

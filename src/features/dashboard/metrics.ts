@@ -14,6 +14,10 @@ export const toAmount = (value: number | string | undefined | null) => {
 export const sumAmount = (items: PaymentRecord[]) =>
   items.reduce((sum, item) => sum + toAmount(item.amount), 0);
 
+/** Thực thu: số đã thu trừ các khoản hoàn đã duyệt (BE cũ không có `netAmount` thì bằng số đã thu). */
+export const sumNetAmount = (items: PaymentRecord[]) =>
+  items.reduce((sum, item) => sum + toAmount(item.netAmount ?? item.amount), 0);
+
 const DAY_MS = 86400000;
 const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / DAY_MS;
 

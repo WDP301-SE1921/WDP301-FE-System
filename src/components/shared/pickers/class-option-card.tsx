@@ -66,7 +66,7 @@ function ClassOptionCard({
 }: ClassOptionCardProps) {
   const code = option?.code ?? propCode ?? ""
   const name = option?.name ?? propName ?? code
-  const subject = option?.subject ?? option?.subjectCode ?? propSubject ?? propSubjectCode ?? "MATH"
+  const subject = option?.subject ?? option?.subjectCode ?? propSubject ?? propSubjectCode ?? ""
   const teacherName = option?.teacherName ?? propTeacherName ?? ""
   const enrolled = option?.enrolled ?? propEnrolled ?? 0
   const capacity = option?.capacity ?? propCapacity ?? 30
