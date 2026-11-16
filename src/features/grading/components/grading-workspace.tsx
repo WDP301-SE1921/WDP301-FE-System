@@ -363,6 +363,21 @@ function GradeWorkspace({
       if (!busy) setLeaving(href);
     }
   };
+  // Số "Tệp N" giữ theo thứ tự cả bài nộp để khớp với nguồn "Tệp N, trang M" của AI đọc bài.
+  const fileIndex = new Map(
+    submission.files.map((file, index) => [file.fileId, index]),
+  );
+  const questionFileIds = (questionId: string) =>
+    (
+      submission.answers.find((item) => item.questionId === questionId)
+        ?.fileIds ?? []
+    ).filter((fileId) => fileIndex.has(fileId));
+  const mappedFileIds = new Set(
+    submission.answers.flatMap((item) => item.fileIds ?? []),
+  );
+  const sharedFiles = submission.files.filter(
+    (file) => !mappedFileIds.has(file.fileId),
+  );
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
@@ -406,6 +421,7 @@ function GradeWorkspace({
             const targetOutcome = assignment.learningTargets?.find(
               (item) => item.id === question.outcomeId,
             );
+            const ownFileIds = questionFileIds(question.id);
             return (
               <Card key={question.id} className="min-w-0">
                 <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
@@ -444,6 +460,20 @@ function GradeWorkspace({
                       <p className="whitespace-pre-wrap break-words">
                         {answer || "Chưa có câu trả lời bằng chữ."}
                       </p>
+                    </div>
+                  )}
+                  {ownFileIds.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        Ảnh bài làm câu này · {ownFileIds.length}
+                      </p>
+                      {ownFileIds.map((fileId) => (
+                        <SubmissionFile
+                          key={fileId}
+                          id={fileId}
+                          index={fileIndex.get(fileId) ?? 0}
+                        />
+                      ))}
                     </div>
                   )}
                   {question.criteria?.map((c) => (
@@ -509,21 +539,25 @@ function GradeWorkspace({
               </Card>
             );
           })}
-          {submission.files.length > 0 && (
+          {sharedFiles.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Tệp bài làm · {submission.files.length}</CardTitle>
+                <CardTitle>
+                  {mappedFileIds.size > 0 ? "Tệp nộp chung" : "Tệp bài làm"} ·{" "}
+                  {sharedFiles.length}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Các tệp thuộc cả bài nộp. Đối chiếu nội dung với câu hỏi trước
-                  khi chấm.
+                  {mappedFileIds.size > 0
+                    ? "Các tệp không gắn vào câu nào. Đối chiếu nội dung với câu hỏi trước khi chấm."
+                    : "Các tệp thuộc cả bài nộp. Đối chiếu nội dung với câu hỏi trước khi chấm."}
                 </p>
-                {submission.files.map((file, index) => (
+                {sharedFiles.map((file) => (
                   <SubmissionFile
                     key={file.fileId}
                     id={file.fileId}
-                    index={index}
+                    index={fileIndex.get(file.fileId) ?? 0}
                   />
                 ))}
               </CardContent>

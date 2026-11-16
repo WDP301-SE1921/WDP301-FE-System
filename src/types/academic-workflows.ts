@@ -201,7 +201,8 @@ export interface SubmissionRecord {
   recipientId: string;
   attemptNo: number;
   submittedAt: string;
-  answers: { questionId: string; answer: string }[];
+  /** `fileIds`: ảnh phụ huynh gắn vào đúng câu này (tập con của `files`); không có thì tệp thuộc cả bài. */
+  answers: { questionId: string; answer: string; fileIds?: string[] }[];
   files: { fileId: string }[];
   grades: GradeReview[];
 }
