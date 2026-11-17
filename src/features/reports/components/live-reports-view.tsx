@@ -24,6 +24,7 @@ import { dateSchema } from "@/lib/validators/web-workflows";
 import { LabeledSelect as LiveSelect } from "@/components/shared/pickers/labeled-select";
 import { displayMoment } from "@/features/academic/components/live-fields";
 import { downloadReport } from "@/lib/api/client";
+import { ReportDetailSheet } from "./report-detail-sheet";
 const ALL_STUDENTS = "all";
 const reportFormSchema = z
   .object({
@@ -46,6 +47,7 @@ export function LiveReportsView() {
     "classId",
     parseAsString.withDefault(""),
   );
+  const [openReport, setOpenReport] = useQueryState("report", parseAsString);
   const context = useLiveQuery(["report-context"], async (signal) => {
     const [classes, enrollments] = await Promise.all([
       registrationApi.classes(),
@@ -146,6 +148,12 @@ export function LiveReportsView() {
                       includeAi: value.includeAi,
                     })
                   }
+                  onSuccess={(result) => {
+                    // Mở ngay báo cáo vừa tạo để giáo viên đọc, không phải tải file.
+                    const id = (result as { id?: unknown } | null)?.id;
+                    void reports.refetch();
+                    if (typeof id === "string") void setOpenReport(id);
+                  }}
                 />
               )}
             </AsyncBoundary>
@@ -171,7 +179,7 @@ export function LiveReportsView() {
                     <TableHead>Phạm vi</TableHead>
                     <TableHead>Khoảng ngày</TableHead>
                     <TableHead>Tạo lúc</TableHead>
-                    <TableHead>Tải báo cáo</TableHead>
+                    <TableHead>Xem và tải</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -196,7 +204,10 @@ export function LiveReportsView() {
                       </TableCell>
                       <TableCell>{displayMoment(report.createdAt)}</TableCell>
                       <TableCell>
-                        <ReportDownloads id={report.id} />
+                        <ReportDownloads
+                          id={report.id}
+                          onView={() => void setOpenReport(report.id)}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -206,6 +217,11 @@ export function LiveReportsView() {
           </CardContent>
         </Card>
       </div>
+      <ReportDetailSheet
+        reportId={openReport || null}
+        onClose={() => void setOpenReport(null)}
+        dayText={reportDay}
+      />
     </PageContainer>
   );
 }
@@ -216,13 +232,14 @@ function reportDay(value: string) {
     : new Date(Date.parse(value) + 7 * 3600000).toISOString().slice(0, 10);
   return day.split("-").reverse().join("/");
 }
-function ReportDownloads({ id }: { id: string }) {
+function ReportDownloads({ id, onView }: { id: string; onView: () => void }) {
   const action = useMutation({
     mutationFn: (format: "xlsx" | "pdf") => downloadReport(id, format),
   });
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-3">
+        <Button onClick={onView}>Xem</Button>
         <Button
           variant="outline"
           disabled={action.isPending}

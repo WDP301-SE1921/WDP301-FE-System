@@ -262,7 +262,7 @@ const rules: {
   },
   {
     method: "GET",
-    path: /^academic\/reports(?:\/[^/]+\/download)?$/,
+    path: /^academic\/reports(?:\/[^/]+(?:\/download)?)?$/,
     roles: teacher,
   },
   { method: "POST", path: /^academic\/reports$/, roles: teacher },

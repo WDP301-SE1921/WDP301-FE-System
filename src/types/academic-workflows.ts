@@ -404,3 +404,25 @@ export interface ClassAttendanceSummary {
     session: { id: string; classId: string; startsAt: string; endsAt: string };
   }[];
 }
+/** `GET academic/reports/:id`: một báo cáo kèm số liệu từng học sinh và nhận xét AI. */
+export interface ReportDetail extends ReportRecord {
+  className: string;
+  generatedAt: string;
+  teachingProgress: {
+    totalSessions: number;
+    completedSessions: number;
+    percent: number | null;
+  };
+  rows: ReportRow[];
+  aiSummary: string | null;
+}
+/** Một học sinh trong báo cáo; `averageScore` là % (tổng điểm / điểm tối đa × 100). */
+export interface ReportRow {
+  studentId: string;
+  name: string;
+  required: number;
+  attended: number;
+  attendancePercent: number | null;
+  publishedGrades: number;
+  averageScore: number | null;
+}

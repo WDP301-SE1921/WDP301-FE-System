@@ -11,6 +11,7 @@ import type { RegistrationBill } from "@/types/backend";
 import {
   displayDate,
   money,
+  packageText,
   scheduleText,
 } from "@/features/registration-flow/calendar";
 import { paymentTime } from "../format";
@@ -82,7 +83,7 @@ export function RegistrationBillCard({
                   ? `${displayDate(bill.term.startDate)} → trước ${displayDate(bill.term.endDate)}`
                   : "Chưa xác định",
               ],
-              ["Gói học", `${bill.term.packageMonths} tháng`],
+              ["Gói học", packageText(bill.term.packageMonths, bill.term.plannedSessions)],
               [
                 "Học phí tháng tại lúc lập bill",
                 money(bill.pricing.monthlyFee),

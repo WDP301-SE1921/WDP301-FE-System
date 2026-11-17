@@ -17,16 +17,16 @@ export const SYSTEM_MSG = {
 
   ACTION_INVITE: "Mời nhân sự",
   ACTION_RESEND_INVITE: "Gửi lại lời mời",
-  ACTION_DEACTIVATE: "Vô hiệu hóa",
+  ACTION_DEACTIVATE: "Khóa tài khoản",
 
   RESEND_INVITE_SUCCESS: (email: string) => `Đã gửi lại lời mời tới ${email}`,
-  DEACTIVATE_SUCCESS: (name: string) => `Đã vô hiệu hóa tài khoản ${name}`,
+  DEACTIVATE_SUCCESS: (name: string) => `Đã khóa tài khoản ${name}`,
 
-  DEACTIVATE_CONFIRM_TITLE: "Vô hiệu hóa tài khoản nhân sự?",
+  DEACTIVATE_CONFIRM_TITLE: "Khóa tài khoản nhân sự?",
   DEACTIVATE_CONFIRM_DESC: (name: string) =>
-    `${name} sẽ không thể đăng nhập vào hệ thống cho đến khi được kích hoạt lại.`,
+    `${name} sẽ không đăng nhập được cho tới khi được mở khóa. Dữ liệu đã làm vẫn được giữ.`,
 
-  CANNOT_DEACTIVATE_SELF: "Không thể tự vô hiệu hóa tài khoản của chính mình",
+  CANNOT_DEACTIVATE_SELF: "Không thể tự khóa tài khoản của chính mình",
   INVITE_EMAIL_EXISTS: (email: string) =>
     `Email ${email} đã tồn tại trong danh sách nhân sự`,
   INVITE_ROLE_FORBIDDEN: "Bạn không có quyền mời tài khoản với vai trò này",

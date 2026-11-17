@@ -1,3 +1,4 @@
+import { addCalendarDays } from "@/lib/calendar-date";
 import type { WeeklySchedule } from "@/types/backend";
 
 export function todayInVietnam(now = new Date()) {
@@ -60,6 +61,50 @@ export function termLabel(
 export function displayDate(value: string) {
   const [year, month, day] = dateOnly(value).split("-");
   return `${day}/${month}/${year}`;
+}
+/**
+ * Số buổi lịch tuần xếp từ `startDate` tới trước `endDate` (cùng cách tính `plannedSessionCount` của BE).
+ * Chưa trừ ngày nghỉ của trung tâm: đây là số buổi học phí tháng được báo giá theo.
+ */
+export function plannedSessionCount(
+  schedules: ReadonlyArray<{ weekday: number }>,
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+) {
+  if (!startDate || !endDate || dateOnly(endDate) <= dateOnly(startDate))
+    return null;
+  let count = 0;
+  for (
+    let day = dateOnly(startDate);
+    day < dateOnly(endDate);
+    day = addCalendarDays(day, 1)
+  ) {
+    const weekday = isoWeekday(day);
+    count += schedules.filter((slot) => slot.weekday === weekday).length;
+  }
+  return count;
+}
+/** "3 tháng · khoảng 26 buổi theo lịch tuần"; không có số buổi thì chỉ số tháng. */
+export function packageText(
+  months: number,
+  plannedSessions: number | null | undefined,
+) {
+  return plannedSessions
+    ? `${months} tháng · khoảng ${plannedSessions} buổi theo lịch tuần`
+    : `${months} tháng`;
+}
+/**
+ * Thời gian học của lớp = từ buổi đầu tới buổi cuối chưa hủy (BE `scheduledFrom`, `scheduledUntil`).
+ * Lớp không có ngày khai giảng riêng: ngày nằm ở lịch học được tạo theo kỳ của giáo trình.
+ */
+export function classPeriodText(classroom: {
+  scheduledFrom?: string | null;
+  scheduledUntil?: string | null;
+}) {
+  const { scheduledFrom, scheduledUntil } = classroom;
+  if (scheduledFrom === undefined || scheduledUntil === undefined) return null;
+  if (!scheduledFrom || !scheduledUntil) return "Chưa có lịch học";
+  return `${displayDate(scheduledFrom)} – ${displayDate(scheduledUntil)}`;
 }
 /**
  * Nhắc Nhân viên khi lớp chưa có buổi học cho kỳ đăng ký: phụ huynh chỉ thấy lịch trên ứng dụng sau

@@ -47,6 +47,7 @@ import { dashboardApi } from "../api";
 import {
   compareCounts,
   comparePoints,
+  compareProgress,
   dailyTotals,
   elapsedEnd,
   expiringEnrollments,
@@ -66,6 +67,7 @@ import { readPayments, vietnamDay } from "../staff-summary";
 import { ColumnChart } from "./column-chart";
 import {
   AttentionStrip,
+  COMPACT_TABLE,
   Initials,
   KpiCard,
   KpiRow,
@@ -328,6 +330,8 @@ export function LiveManagerDashboard() {
     return [...map.values()].sort((a, b) => b.taught - a.taught);
   })();
 
+  // BE trả `period` là ngày đầu kỳ (YYYY-MM-DD); so theo tháng YYYY-MM.
+  const thisMonth = today.slice(0, 7);
   const trend = history.data?.trend ?? [];
   const peak = trend.reduce<(typeof trend)[number] | null>(
     (best, point) => (!best || point.confirmedRevenue > best.confirmedRevenue ? point : best),
@@ -335,7 +339,7 @@ export function LiveManagerDashboard() {
   );
   const low = trend
     // Bỏ tháng đang chạy và tháng chưa có thu (trung tâm chưa hoạt động) để "thấp nhất" có nghĩa.
-    .filter((point) => point.period !== today.slice(0, 7) && point.confirmedRevenue > 0)
+    .filter((point) => point.period.slice(0, 7) !== thisMonth && point.confirmedRevenue > 0)
     .reduce<(typeof trend)[number] | null>(
       (best, point) => (!best || point.confirmedRevenue < best.confirmedRevenue ? point : best),
       null,
@@ -491,7 +495,14 @@ export function LiveManagerDashboard() {
           label="Thực thu"
           tip={`Tổng biên lai đã xác nhận từ ${dm(fromDate)} đến ${dm(endDay)}, đã trừ các khoản hoàn được duyệt${refundedInRange > 0 ? ` (${money(refundedInRange)})` : ""}; so với ${prevLabel}.`}
           value={shortMoney(revenue)}
-          delta={prevRevenue === undefined ? undefined : compareCounts(revenue, prevRevenue, { smallBase: 1 })}
+          delta={
+            prevRevenue === undefined
+              ? undefined
+              : fromDate === today && endDay === today
+                ? // Kỳ "Hôm nay" còn đang thu: không báo ▼ đỏ so với cả ngày hôm qua.
+                  compareProgress(revenue, prevRevenue, { smallBase: 1 })
+                : compareCounts(revenue, prevRevenue, { smallBase: 1 })
+          }
           base={prevRevenue === undefined ? undefined : `so ${prevLabel}`}
           sub={`${items.length} biên lai`}
           isLoading={payments.isPending}
@@ -570,7 +581,8 @@ export function LiveManagerDashboard() {
           tip="Theo tháng: 12 tháng gần nhất, tháng đang chạy vẽ nét đứt. Theo ngày: các ngày trong kỳ đã chọn."
           actions={
             <>
-              {query.view === "month" && peak && low && (
+              {/* Chỉ một tháng đủ số liệu thì cao nhất = thấp nhất: không ghi lặp. */}
+              {query.view === "month" && peak && low && low.period !== peak.period && (
                 <span className="text-xs tabular-nums text-muted-foreground">
                   Cao nhất T{Number(peak.period.slice(5, 7))} {shortMoney(peak.confirmedRevenue)} · Thấp nhất T
                   {Number(low.period.slice(5, 7))} {shortMoney(low.confirmedRevenue)}
@@ -595,11 +607,11 @@ export function LiveManagerDashboard() {
                 ariaLabel="Doanh thu đã thu theo tháng, 12 tháng gần nhất"
                 valueLabel="Doanh thu"
                 format={money}
-                partialKey={today.slice(0, 7)}
+                partialKey={thisMonth}
                 data={trend.map((point) => ({
-                  key: point.period,
+                  key: point.period.slice(0, 7),
                   label: `T${Number(point.period.slice(5, 7))}`,
-                  title: `Tháng ${Number(point.period.slice(5, 7))}/${point.period.slice(0, 4)}${point.period === today.slice(0, 7) ? " (đang chạy)" : ""}`,
+                  title: `Tháng ${Number(point.period.slice(5, 7))}/${point.period.slice(0, 4)}${point.period.slice(0, 7) === thisMonth ? " (đang chạy)" : ""}`,
                   value: point.confirmedRevenue,
                 }))}
               />
@@ -671,46 +683,59 @@ export function LiveManagerDashboard() {
           ) : !items.length ? (
             <p className="text-sm text-muted-foreground">Chưa có biên lai trong kỳ</p>
           ) : (
-            <div className="max-h-96 overflow-auto rounded-xl border border-border">
-              <Table>
+            <div className="max-h-96 overflow-y-auto rounded-2xl">
+              {/* Mỗi cột hai dòng (chính · phụ) để 6 thông tin vừa cột 2/3 mà không cuộn ngang. */}
+              <Table className={COMPACT_TABLE}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Thời gian · biên lai</TableHead>
                     <TableHead>Học sinh · phụ huynh</TableHead>
-                    <TableHead>Lớp</TableHead>
-                    <TableHead className="text-right">Gói</TableHead>
-                    <TableHead className="text-right">Số tiền</TableHead>
-                    <TableHead>Nhân viên thu</TableHead>
+                    <TableHead>Lớp · gói</TableHead>
+                    <TableHead className="text-right">Số tiền · người thu</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.slice(0, 50).map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="whitespace-nowrap">
-                        <span className="block tabular-nums">{displayMoment(item.confirmedAt)}</span>
-                        <span
-                          className="block max-w-36 truncate text-xs tabular-nums text-muted-foreground"
-                          title={item.receiptNumber}
-                        >
-                          {item.receiptNumber}
-                        </span>
-                      </TableCell>
-                      <TableCell className="max-w-56">
-                        <span className="block truncate font-medium">{item.registrationOrder.studentFullName}</span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {item.registrationOrder.parentEmail}
-                        </span>
-                      </TableCell>
-                      <TableCell className="max-w-40 truncate">{item.registrationOrder.class.name}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {item.registrationOrder.packageMonths ? `${item.registrationOrder.packageMonths} th` : "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">{money(item.amount)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {item.confirmedByManager.displayName ?? item.confirmedByManager.email}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {items.slice(0, 50).map((item) => {
+                    const collector = item.confirmedByManager.displayName ?? item.confirmedByManager.email;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <span className="block tabular-nums">{displayMoment(item.confirmedAt)}</span>
+                          <span
+                            className="block max-w-32 truncate text-xs tabular-nums text-muted-foreground"
+                            title={item.receiptNumber}
+                          >
+                            {item.receiptNumber}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="block max-w-44 truncate font-medium" title={item.registrationOrder.studentFullName}>
+                            {item.registrationOrder.studentFullName}
+                          </span>
+                          <span
+                            className="block max-w-44 truncate text-xs text-muted-foreground"
+                            title={item.registrationOrder.parentEmail}
+                          >
+                            {item.registrationOrder.parentEmail}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="block max-w-32 truncate" title={item.registrationOrder.class.name}>
+                            {item.registrationOrder.class.name}
+                          </span>
+                          <span className="block text-xs tabular-nums text-muted-foreground">
+                            {item.registrationOrder.packageMonths ? `${item.registrationOrder.packageMonths} tháng` : "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="block font-medium tabular-nums">{money(item.amount)}</span>
+                          <span className="ml-auto block max-w-32 truncate text-xs text-muted-foreground" title={collector}>
+                            {collector}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
               {items.length > 50 && (
@@ -743,7 +768,15 @@ export function LiveManagerDashboard() {
                       <div className="h-1 rounded-full bg-primary" style={{ width: `${(payer.total / payers[0].total) * 100}%` }} />
                     </div>
                     <p className="text-xs tabular-nums text-muted-foreground">
-                      {payer.students} con · {payer.classes} lớp · {payer.receipts} biên lai · gần nhất {dm(vietnamDay(payer.lastAt))}
+                      {/* Một con, một lớp là mặc định nên không ghi; chỉ ghi khi nhiều hơn. */}
+                      {[
+                        payer.students > 1 && `${payer.students} con`,
+                        payer.classes > 1 && `${payer.classes} lớp`,
+                        `${payer.receipts} biên lai`,
+                        `gần nhất ${dm(vietnamDay(payer.lastAt))}`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
                 </li>
@@ -787,12 +820,11 @@ export function LiveManagerDashboard() {
                   </div>
                 </div>
                 {expiring.length ? (
-                  <div className="max-h-80 overflow-auto rounded-xl border border-border">
-                    <Table>
+                  <div className="max-h-80 overflow-y-auto rounded-2xl">
+                    <Table className={COMPACT_TABLE}>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Học sinh</TableHead>
-                          <TableHead>Lớp</TableHead>
+                          <TableHead>Học sinh · lớp</TableHead>
                           <TableHead>Hết hạn</TableHead>
                           <TableHead className="text-right">Gói</TableHead>
                           <TableHead className="text-right">Gia hạn dự kiến</TableHead>
@@ -802,8 +834,14 @@ export function LiveManagerDashboard() {
                       <TableBody>
                         {expiring.map((row) => (
                           <TableRow key={row.enrollment.id}>
-                            <TableCell className="font-medium">{row.enrollment.studentProfile?.fullName ?? "Học sinh"}</TableCell>
-                            <TableCell>{row.enrollment.class.name}</TableCell>
+                            <TableCell>
+                              <span className="block max-w-44 truncate font-medium">
+                                {row.enrollment.studentProfile?.fullName ?? "Học sinh"}
+                              </span>
+                              <span className="block max-w-44 truncate text-xs text-muted-foreground">
+                                {row.enrollment.class.name}
+                              </span>
+                            </TableCell>
                             <TableCell className="whitespace-nowrap tabular-nums">
                               {dm(row.endDate)}{" "}
                               <Badge variant={row.daysLeft <= 3 ? "warning" : "neutral"}>
@@ -845,7 +883,10 @@ export function LiveManagerDashboard() {
                   label: row.label,
                   value: shortMoney(row.value),
                   pct: (row.value / (collectors[0]?.value || 1)) * 100,
-                  meta: `${row.count} biên lai · hôm nay ${shortMoney(todayCollected.get(row.key) ?? 0)}`,
+                  // "hôm nay 0" là chữ thừa: chỉ hiện khi hôm nay đã thu.
+                  meta: todayCollected.get(row.key)
+                    ? `${row.count} biên lai · hôm nay ${shortMoney(todayCollected.get(row.key) ?? 0)}`
+                    : `${row.count} biên lai`,
                 }))}
               />
               {!!items.length && (
@@ -861,7 +902,7 @@ export function LiveManagerDashboard() {
       <div id="xep-hang-lop" className="min-w-0 scroll-mt-24">
         <Panel
           title="Xếp hạng lớp"
-          tip="Lấp chỗ là số hiện tại; chuyên cần, điểm và doanh thu theo kỳ. Chuyên cần chỉ xét lớp có từ 10 lượt điểm danh."
+          tip="Lấp chỗ là số hiện tại; chuyên cần, điểm và doanh thu theo kỳ. Chuyên cần chỉ xét lớp có từ 10 lượt điểm danh. Số tô cam: lấp dưới 50% hoặc chuyên cần dưới 85%."
           actions={
             <Tabs value={query.rank} onValueChange={(value) => void setQuery({ rank: value as (typeof RANK)[number] })}>
               <TabsList aria-label="Xếp theo">
@@ -878,79 +919,82 @@ export function LiveManagerDashboard() {
           ) : classes.isError ? (
             <PanelError onRetry={() => void classes.refetch()} />
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Lớp</TableHead>
-                    <TableHead>Giáo viên</TableHead>
-                    <TableHead className="w-56">Lấp chỗ</TableHead>
-                    <TableHead className="text-right">Chuyên cần</TableHead>
-                    <TableHead className="text-right">Điểm TB</TableHead>
-                    <TableHead className="text-right">Doanh thu kỳ</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[
-                    { label: bottomClasses.length ? "Cao nhất" : null, rows: topClasses },
-                    { label: bottomClasses.length ? `Thấp nhất · ${hiddenClasses} lớp ở giữa ẩn` : null, rows: bottomClasses },
-                  ].flatMap((group) => [
-                    ...(group.label && group.rows.length
-                      ? [
-                          <TableRow key={group.label} className="hover:bg-transparent">
-                            <TableCell colSpan={7} className="pt-3 text-xs font-medium text-muted-foreground">
-                              {group.label}
-                            </TableCell>
-                          </TableRow>,
-                        ]
-                      : []),
-                    ...group.rows.map((row) => (
-                      <TableRow key={row.item.id}>
-                        <TableCell className="font-medium">
-                          <Link href={ROUTES.MANAGER.CLASS_DETAIL(row.item.id)} className="hover:text-primary">
-                            {row.item.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{row.item.teacher?.displayName ?? "—"}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                              <div
-                                className={cn("h-1.5 rounded-full", row.lowFill ? "bg-amber-500" : "bg-primary")}
-                                style={{ width: `${Math.min(100, row.fill * 100)}%` }}
-                              />
-                            </div>
-                            <span className="w-24 text-right text-xs tabular-nums">
-                              {percentText(row.fill)} · {row.item.rosterCount ?? 0}/{row.item.capacity}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell
-                          className={cn(
-                            "text-right tabular-nums",
-                            row.lowAttendance && "font-semibold text-amber-700 dark:text-amber-400",
-                          )}
+            <Table className={COMPACT_TABLE}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Lớp</TableHead>
+                  <TableHead className="hidden xl:table-cell">Giáo viên</TableHead>
+                  <TableHead>Lấp chỗ</TableHead>
+                  <TableHead className="text-right">Chuyên cần</TableHead>
+                  <TableHead className="text-right">Điểm TB</TableHead>
+                  <TableHead className="text-right">Doanh thu kỳ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[
+                  { label: bottomClasses.length ? "Cao nhất" : null, rows: topClasses },
+                  { label: bottomClasses.length ? `Thấp nhất · ${hiddenClasses} lớp ở giữa ẩn` : null, rows: bottomClasses },
+                ].flatMap((group) => [
+                  ...(group.label && group.rows.length
+                    ? [
+                        <TableRow key={group.label} className="hover:bg-transparent">
+                          <TableCell colSpan={6} className="pt-3 text-xs font-medium text-muted-foreground">
+                            {group.label}
+                          </TableCell>
+                        </TableRow>,
+                      ]
+                    : []),
+                  ...group.rows.map((row) => (
+                    <TableRow key={row.item.id}>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={ROUTES.MANAGER.CLASS_DETAIL(row.item.id)}
+                          className="block max-w-48 truncate hover:text-primary"
+                          title={row.item.name}
                         >
-                          {row.attendance === null ? "—" : percentText(row.attendance / 100, 1)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {scoreText(row.score)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">{row.revenue ? shortMoney(row.revenue) : "—"}</TableCell>
-                        <TableCell>
-                          {(row.lowFill || row.lowAttendance) && (
-                            <Badge variant="warning">
-                              {row.lowFill && row.lowAttendance ? "Lấp + chuyên cần" : row.lowFill ? "Lấp < 50%" : "Chuyên cần < 85%"}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )),
-                  ])}
-                </TableBody>
-              </Table>
-            </div>
+                          {row.item.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground xl:table-cell">
+                        <span className="block max-w-56 truncate" title={row.item.teacher?.displayName ?? undefined}>
+                          {row.item.teacher?.displayName ?? "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-muted xl:block" aria-hidden="true">
+                            <div
+                              className={cn("h-1.5 rounded-full", row.lowFill ? "bg-amber-500" : "bg-primary")}
+                              style={{ width: `${Math.min(100, row.fill * 100)}%` }}
+                            />
+                          </div>
+                          <span
+                            className={cn(
+                              "text-xs tabular-nums",
+                              row.lowFill && "font-semibold text-amber-700 dark:text-amber-400",
+                            )}
+                          >
+                            {percentText(row.fill)} · {row.item.rosterCount ?? 0}/{row.item.capacity}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          "text-right tabular-nums",
+                          row.lowAttendance && "font-semibold text-amber-700 dark:text-amber-400",
+                        )}
+                      >
+                        {row.attendance === null ? "—" : percentText(row.attendance / 100, 1)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {scoreText(row.score)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{row.revenue ? shortMoney(row.revenue) : "—"}</TableCell>
+                    </TableRow>
+                  )),
+                ])}
+              </TableBody>
+            </Table>
           )}
         </Panel>
       </div>
@@ -960,24 +1004,23 @@ export function LiveManagerDashboard() {
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Panel
           title="Giáo viên"
-          tip="Buổi đã dạy = buổi đã chốt điểm danh trong kỳ do giáo viên đó dạy; dạy thay = buổi của lớp người khác. Chuyên cần và điểm theo các lớp đang phụ trách."
+          tip="Buổi dạy = buổi đã chốt điểm danh trong kỳ do giáo viên đó dạy, gồm cả buổi dạy thay lớp người khác. Chuyên cần và điểm theo các lớp đang phụ trách. Chưa công bố = bài đã nộp chưa công bố điểm."
         >
           {classes.isPending || rangeSessions.isPending ? (
             <Skeleton className="h-56 rounded-xl" />
           ) : classes.isError || rangeSessions.isError ? (
             <PanelError onRetry={() => void Promise.all([classes.refetch(), rangeSessions.refetch()])} />
           ) : (
-            <div className="max-h-96 overflow-auto rounded-xl border border-border">
-              <Table>
+            <div className="max-h-96 overflow-y-auto rounded-2xl">
+              <Table className={COMPACT_TABLE}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Giáo viên</TableHead>
                     <TableHead className="text-right">Lớp</TableHead>
-                    <TableHead className="text-right">Buổi đã dạy</TableHead>
-                    <TableHead className="text-right">Dạy thay</TableHead>
-                    <TableHead className="text-right">Chuyên cần lớp</TableHead>
+                    <TableHead className="text-right">Buổi dạy</TableHead>
+                    <TableHead className="text-right">Chuyên cần</TableHead>
                     <TableHead className="text-right">Điểm TB</TableHead>
-                    <TableHead className="text-right">Bài chưa công bố</TableHead>
+                    <TableHead className="text-right">Chưa công bố</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -986,14 +1029,22 @@ export function LiveManagerDashboard() {
                     return (
                       <TableRow key={row.id}>
                         <TableCell>
-                          <Link href={ROUTES.MANAGER.TEACHER_DETAIL(row.id)} className="flex items-center gap-2 font-medium hover:text-primary">
-                            <Initials name={row.name} />
+                          {/* Không ô chữ cái đầu: bảng 6 cột trong cột 2/3, tên cần chỗ hơn. */}
+                          <Link
+                            href={ROUTES.MANAGER.TEACHER_DETAIL(row.id)}
+                            className="block max-w-40 truncate font-medium hover:text-primary"
+                            title={row.name}
+                          >
                             {row.name}
                           </Link>
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{row.classes.size}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.taught}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.substitute}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          <span className="block">{row.taught}</span>
+                          {row.substitute > 0 && (
+                            <span className="block text-xs text-muted-foreground">{row.substitute} dạy thay</span>
+                          )}
+                        </TableCell>
                         <TableCell
                           className={cn(
                             "text-right tabular-nums",

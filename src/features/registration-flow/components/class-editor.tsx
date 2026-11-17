@@ -69,7 +69,7 @@ import { useCurrentTime } from "@/hooks/use-current-time";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { registrationApi } from "../api";
-import { todayInVietnam } from "../calendar";
+import { classPeriodText, todayInVietnam } from "../calendar";
 import {
   openRegistrationBlocker,
   useClassStateMutation,
@@ -392,6 +392,11 @@ function ClassDetailHub({ classId }: { classId: string }) {
             )}
           />
           <Badge variant={status.variant}>{status.label}</Badge>
+          {classPeriodText(classroom) && (
+            <Badge variant="neutral" className="tabular-nums">
+              Thời gian học: {classPeriodText(classroom)}
+            </Badge>
+          )}
           {classroom.scheduleConfirmedAt && (
             <Badge variant="info">Lịch tuần đã xác nhận</Badge>
           )}

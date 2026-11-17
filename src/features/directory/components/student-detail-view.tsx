@@ -61,6 +61,7 @@ import type {
   ClassAttendanceSummary,
   StudentGradeRecord,
 } from "@/types/academic-workflows";
+import { formatScore } from "@/lib/format";
 import { directoryApi } from "../api";
 
 const TABS = {
@@ -88,7 +89,6 @@ const day = new Intl.DateTimeFormat("vi-VN", {
   month: "2-digit",
   timeZone: "Asia/Ho_Chi_Minh",
 });
-const scoreFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const GRADE_OPTIONS = GRADES.map((grade) => ({
   value: String(grade),
   label: gradeLabel(grade),
@@ -106,7 +106,7 @@ function assignmentKind(row: StudentGradeRecord) {
     : "Bài tập";
 }
 function scoreText(row: GradedRecord) {
-  return `${scoreFormat.format(row.grade.totalScore)}/${scoreFormat.format(row.maxScore)}`;
+  return `${formatScore(row.grade.totalScore)}/${formatScore(row.maxScore)}`;
 }
 
 /**
@@ -402,7 +402,7 @@ export function LiveStudentDetailView({ id }: { id: string }) {
                   value={
                     average === null
                       ? "—"
-                      : `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(average)}/10`
+                      : `${formatScore(average)}/10`
                   }
                   note={
                     graded.length

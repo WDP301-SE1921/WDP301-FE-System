@@ -28,7 +28,7 @@ import { useCurrentTime } from "@/hooks/use-current-time";
 import { addCalendarDays, todayInVietnam } from "@/lib/calendar-date";
 import { cn } from "@/lib/utils";
 import {
-  compareCounts,
+  compareProgress,
   dailyTotals,
   expiringEnrollments,
   makeupAge,
@@ -183,11 +183,15 @@ export function LiveStaffDashboard() {
         />
         <KpiCard
           label="Tôi đã thu hôm nay"
-          tip="Biên lai bạn xác nhận hôm nay, so với trung bình các ngày có thu trong 7 ngày trước."
+          tip="Biên lai bạn xác nhận hôm nay, so với trung bình các ngày có thu trong 7 ngày trước: chưa tới thì báo đã đạt bao nhiêu %, vượt thì báo ▲."
           value={shortMoney(myToday)}
-          delta={myAverage === null ? undefined : compareCounts(myToday, myAverage, { smallBase: 1 })}
+          delta={compareProgress(myToday, myAverage, { smallBase: 1 })}
           base={myAverage === null ? undefined : `TB 7 ngày ${shortMoney(myAverage)}`}
-          sub={`${myTodayReceipts.length} biên lai`}
+          sub={
+            myToday <= 0 && myAverage !== null
+              ? `${myTodayReceipts.length} biên lai · TB 7 ngày ${shortMoney(myAverage)}`
+              : `${myTodayReceipts.length} biên lai`
+          }
           isLoading={payments.isPending}
           isError={payments.isError}
           onRetry={() => void payments.refetch()}

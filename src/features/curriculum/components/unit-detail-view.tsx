@@ -435,7 +435,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
             ? [
                 unit.program?.name ?? unit.track.subject,
                 "Khối " + unit.track.grade,
-                calendarDateLabel(unit.fromDate.slice(0, 10)) +
+                "Kỳ học " +
+                  calendarDateLabel(unit.fromDate.slice(0, 10)) +
                   " – " +
                   calendarDateLabel(unit.toDate.slice(0, 10)),
               ].join(" · ")

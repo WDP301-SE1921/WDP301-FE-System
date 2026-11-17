@@ -18,10 +18,10 @@ export const STATUS_MAP: Record<string, Record<string, StatusConfig>> = {
   staffAccount: {
     active: { label: "Đang hoạt động", variant: "success" },
     pending: { label: "Chờ kích hoạt", variant: "warning" },
-    disabled: { label: "Vô hiệu hóa", variant: "danger" },
+    disabled: { label: "Đã khóa", variant: "neutral" },
   },
   parentAccount: {
-    activated: { label: "Đã kích hoạt", variant: "success" },
+    activated: { label: "Đang hoạt động", variant: "success" },
     disabled: { label: "Đã khóa", variant: "neutral" },
   },
   makeup: {

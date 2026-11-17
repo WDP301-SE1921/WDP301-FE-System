@@ -42,7 +42,13 @@ import { useHubTab } from "@/hooks/use-hub-tab";
 import { cn } from "@/lib/utils";
 import type { RegistrationClass } from "@/types/backend";
 import { registrationApi } from "../api";
-import { money, scheduleLines, scheduleText } from "../calendar";
+import {
+  classPeriodText,
+  displayDate,
+  money,
+  scheduleLines,
+  scheduleText,
+} from "../calendar";
 import { canOpenRegistration, useClassStateMutation } from "../class-state";
 import { useTeacherNames } from "../teacher-names";
 
@@ -63,7 +69,8 @@ const classesParsers = {
   grade: parseAsStringLiteral([ALL, "6", "7", "8", "9"]).withDefault(ALL),
   status: parseAsStringLiteral(STATUS_KEYS).withDefault(ALL),
   teacher: parseAsString,
-  view: parseAsStringLiteral(VIEW_KEYS).withDefault("cards"),
+  // Bảng là mặc định: so sánh nhiều lớp theo cột dễ hơn (góp ý RV3).
+  view: parseAsStringLiteral(VIEW_KEYS).withDefault("table"),
 };
 
 type ClassRole = "staff" | "center_manager";
@@ -327,14 +334,16 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
           {query.data ? `${rows.length} lớp học` : ""}
         </span>
         <Tabs
+          // Màn hình hẹp luôn hiện thẻ (bảng nhiều cột phải cuộn ngang), nên ẩn nút chuyển.
+          className="hidden md:flex"
           value={filters.view}
           onValueChange={(value) =>
-            void setFilters({ view: value === "table" ? "table" : null })
+            void setFilters({ view: value === "cards" ? "cards" : null })
           }
         >
           <TabsList aria-label="Kiểu hiển thị">
-            <TabsTrigger value="cards">Thẻ</TabsTrigger>
             <TabsTrigger value="table">Bảng</TabsTrigger>
+            <TabsTrigger value="cards">Thẻ</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -351,19 +360,18 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
           description: "Thử đổi từ khóa hoặc bộ lọc.",
         }}
       >
-        {filters.view === "table" ? (
-          <div className="overflow-x-auto rounded-2xl border border-border">
+        {filters.view === "table" && (
+          <div className="hidden overflow-x-auto rounded-2xl border border-border md:block">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Lớp</TableHead>
-                  <TableHead>Môn · khối</TableHead>
                   <TableHead>Lịch tuần</TableHead>
+                  <TableHead>Thời gian học</TableHead>
                   <TableHead>Giáo viên</TableHead>
                   <TableHead>Phòng</TableHead>
                   <TableHead className="text-right">Sĩ số</TableHead>
                   <TableHead className="text-right">Học phí</TableHead>
-                  <TableHead>Trạng thái</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
@@ -373,7 +381,7 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                   const teacher = teacherName(item, teacherNames);
                   return (
                     <TableRow key={item.id}>
-                      <TableCell className="min-w-44 max-w-64 font-medium whitespace-normal">
+                      <TableCell className="min-w-40 max-w-56 whitespace-normal">
                         <span className="flex items-start gap-2">
                           <span
                             aria-hidden="true"
@@ -382,11 +390,19 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                               subjectDotClass(item.program.subject),
                             )}
                           />
-                          <span className="min-w-0 break-words">{item.name}</span>
+                          <span className="min-w-0">
+                            <span className="block font-medium wrap-break-word">
+                              {item.name}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {item.program.subject} · Khối {item.program.grade}
+                            </span>
+                            {/* Trạng thái nằm dưới tên lớp để bảng vừa màn 1440 mà không phải cuộn ngang. */}
+                            <Badge variant={status.variant} className="mt-1">
+                              {status.label}
+                            </Badge>
+                          </span>
                         </span>
-                      </TableCell>
-                      <TableCell>
-                        {item.program.subject} · Khối {item.program.grade}
                       </TableCell>
                       <TableCell className="min-w-36">
                         {item.weeklySchedules.length ? (
@@ -401,7 +417,21 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                           "Chưa có lịch tuần"
                         )}
                       </TableCell>
-                      <TableCell className="min-w-40 max-w-60 whitespace-normal">
+                      <TableCell className="tabular-nums">
+                        {item.scheduledFrom && item.scheduledUntil ? (
+                          <>
+                            <span className="block whitespace-nowrap">
+                              {displayDate(item.scheduledFrom)}
+                            </span>
+                            <span className="block whitespace-nowrap text-muted-foreground">
+                              đến {displayDate(item.scheduledUntil)}
+                            </span>
+                          </>
+                        ) : (
+                          (classPeriodText(item) ?? "—")
+                        )}
+                      </TableCell>
+                      <TableCell className="min-w-36 max-w-48 whitespace-normal">
                         {teacher ?? (
                           <Badge variant="warning">Chưa phân công</Badge>
                         )}
@@ -416,9 +446,6 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                         {money(item.monthlyFee)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={status.variant}>{status.label}</Badge>
-                      </TableCell>
-                      <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           {primaryAction(item)}
                           <RowActions items={actionsFor(item)} />
@@ -430,96 +457,103 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
               </TableBody>
             </Table>
           </div>
-        ) : (
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
-            {rows.map((item) => {
-              const status = classStatus(item);
-              const teacher = teacherName(item, teacherNames);
-              const seats =
-                item.rosterCount !== undefined && item.capacity > 0
-                  ? Math.min(
-                      100,
-                      Math.round((item.rosterCount / item.capacity) * 100),
-                    )
-                  : null;
-              return (
-                <Card
-                  key={item.id}
-                  size="sm"
-                  className={cn(
-                    "min-w-0",
-                    !item.teacherId && "border-amber-300",
-                  )}
-                >
-                  <CardContent className="flex h-full flex-col gap-2.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="flex min-w-0 items-center gap-2 font-semibold leading-snug">
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "size-2.5 shrink-0 rounded-full",
-                            subjectDotClass(item.program.subject),
-                          )}
-                        />
-                        <span className="min-w-0 break-words">{item.name}</span>
-                      </p>
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {item.program.subject} · Khối {item.program.grade} ·{" "}
-                      {item.room?.name ?? "Chưa gán phòng"}
-                    </p>
-                    <p className="text-sm">
-                      {scheduleText(item.weeklySchedules) ||
-                        "Chưa có lịch tuần"}
-                    </p>
-                    {teacher ? (
-                      <p className="flex items-center gap-2 text-sm">
-                        <span
-                          aria-hidden="true"
-                          className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold"
-                        >
-                          {initials(teacher)}
-                        </span>
-                        {teacher}
-                      </p>
-                    ) : (
-                      <Badge variant="warning">Chưa phân công giáo viên</Badge>
-                    )}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Sĩ số</span>
-                        <span className="font-semibold tabular-nums">
-                          {item.rosterCount !== undefined
-                            ? `${item.rosterCount}/${item.capacity}`
-                            : `Tối đa ${item.capacity}`}
-                        </span>
-                      </div>
-                      {seats !== null && (
-                        <Progress
-                          value={seats}
-                          aria-label={`Sĩ số lớp ${item.name}`}
-                        />
-                      )}
-                    </div>
-                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-border pt-2.5">
-                      <span className="text-sm font-semibold tabular-nums">
-                        {money(item.monthlyFee)}
-                        <span className="font-normal text-muted-foreground">
-                          /tháng
-                        </span>
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {primaryAction(item)}
-                        <RowActions items={actionsFor(item)} />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
         )}
+        <div
+          className={cn(
+            "grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4",
+            filters.view === "table" && "md:hidden",
+          )}
+        >
+          {rows.map((item) => {
+            const status = classStatus(item);
+            const teacher = teacherName(item, teacherNames);
+            const seats =
+              item.rosterCount !== undefined && item.capacity > 0
+                ? Math.min(
+                    100,
+                    Math.round((item.rosterCount / item.capacity) * 100),
+                  )
+                : null;
+            return (
+              <Card
+                key={item.id}
+                size="sm"
+                className={cn("min-w-0", !item.teacherId && "border-amber-300")}
+              >
+                <CardContent className="flex h-full flex-col gap-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="flex min-w-0 items-center gap-2 font-semibold leading-snug">
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "size-2.5 shrink-0 rounded-full",
+                          subjectDotClass(item.program.subject),
+                        )}
+                      />
+                      <span className="min-w-0 wrap-break-word">
+                        {item.name}
+                      </span>
+                    </p>
+                    <Badge variant={status.variant}>{status.label}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {item.program.subject} · Khối {item.program.grade} ·{" "}
+                    {item.room?.name ?? "Chưa gán phòng"}
+                  </p>
+                  <p className="text-sm">
+                    {scheduleText(item.weeklySchedules) || "Chưa có lịch tuần"}
+                  </p>
+                  {classPeriodText(item) && (
+                    <p className="text-sm text-muted-foreground tabular-nums">
+                      Học: {classPeriodText(item)}
+                    </p>
+                  )}
+                  {teacher ? (
+                    <p className="flex items-center gap-2 text-sm">
+                      <span
+                        aria-hidden="true"
+                        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold"
+                      >
+                        {initials(teacher)}
+                      </span>
+                      {teacher}
+                    </p>
+                  ) : (
+                    <Badge variant="warning">Chưa phân công giáo viên</Badge>
+                  )}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Sĩ số</span>
+                      <span className="font-semibold tabular-nums">
+                        {item.rosterCount !== undefined
+                          ? `${item.rosterCount}/${item.capacity}`
+                          : `Tối đa ${item.capacity}`}
+                      </span>
+                    </div>
+                    {seats !== null && (
+                      <Progress
+                        value={seats}
+                        aria-label={`Sĩ số lớp ${item.name}`}
+                      />
+                    )}
+                  </div>
+                  <div className="mt-auto flex items-center justify-between gap-2 border-t border-border pt-2.5">
+                    <span className="text-sm font-semibold tabular-nums">
+                      {money(item.monthlyFee)}
+                      <span className="font-normal text-muted-foreground">
+                        /tháng
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {primaryAction(item)}
+                      <RowActions items={actionsFor(item)} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </AsyncBoundary>
       <ConfirmDialog
         open={!!pending}

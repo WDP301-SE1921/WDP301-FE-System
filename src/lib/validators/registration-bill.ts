@@ -58,6 +58,8 @@ export const registrationBillSchema = z
       packageMonths: z.number().int().min(1).max(12),
       startDate: z.iso.date().nullable(),
       endDate: z.iso.date().nullable(),
+      // Số buổi theo lịch tuần trong kỳ; BE cũ không trả.
+      plannedSessions: z.number().int().min(0).nullable().optional(),
     }),
     pricing: z.object({
       monthlyFee: decimalAmount,
