@@ -20,4 +20,6 @@ Trang public chỉ chứa thông tin case, trạng thái, thời gian và các l
 
 File `.env` thật giữ trên từng máy, không commit và chưa chuyển lên GitHub Actions. CI có profile public không cần secret và bước xuất bản riêng; các profile có đăng nhập chỉ sử dụng khi quản trị viên chủ động cấu hình secret riêng. Phạm vi xác nhận email vẫn là SMTP xác thực và outbox `SENT`; chưa xác nhận thư nằm trong Inbox/Spam của người nhận.
 
+[Lượt public trên GitHub Actions](https://github.com/WDP301-SE1921/WDP301-FE-System/actions/runs/44315786733) đã hoàn tất **success**, gồm cài dependencies/Chromium, chạy test và xuất bản báo cáo. GitHub Pages xác nhận build thành công; bước xuất bản đã chờ đúng run ID mới xuất hiện trên web. Không dùng hoặc chuyển `.env` production lên CI. Workflow cũng đã qua actionlint chính thức sau khi sửa biến đường dẫn tệp cấu hình sang bước khởi tạo trên runner.
+
 Hướng dẫn setup/chạy: [README dành cho team](./README.md). Kết quả nghiệp vụ/provider gốc: [bộ production đầy đủ](./RESULTS-TEAM-2026-11-18.md) và [AI/email thật](./RESULTS-2026-11-18.md).

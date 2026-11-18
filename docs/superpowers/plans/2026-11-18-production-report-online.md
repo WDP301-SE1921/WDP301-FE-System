@@ -8,6 +8,6 @@
 - [x] Test and implement publication to a report-only branch, with profile isolation and conflict-safe pushes.
 - [x] Publish after CLI tests, print the online URL and exit without a local report server; skip publication for CI/UI/list, retain the test exit code.
 - [x] Enable Pages, publish the existing full results and verify the online URL and native report contents.
-- [ ] Update CI/private environment setup and team instructions, review, verify, fetch/merge remote changes, commit/push and integrate the PR.
+- [x] Update CI and team instructions, review, verify, fetch/merge remote changes and commit/push. Public CI and online publication succeeded in run `44315786733`; source integration is tracked by PR #12.
 
 Private `.env`, auth, raw JSON and original evidence stay outside Git/Pages. Do not reset or rerun production business data just to regenerate a report.
