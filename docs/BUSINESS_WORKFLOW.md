@@ -23,7 +23,7 @@ Parent reports an absence → staff marks `absent` → finds a replacement sessi
 Designs each subject's lesson sequence from the textbook, sets the 1-lesson-per-session / 1-test-per-month cadence. Does not touch class scheduling or rooms. Soạn Mục tiêu khóa học (bộ mục tiêu của khóa) trước giáo trình và gắn vào bài; giáo viên "Đồng ý nội dung" duyệt cùng giáo trình và đó là bước duyệt cuối của bộ mục tiêu (BE PR #12); Quản lý "Duyệt áp dụng" chỉ duyệt giáo trình.
 
 ## E. Class creation (Quản lý trung tâm)
-Choose subject + grade + program + room + fixed schedule, assign a teacher to an existing fixed class slot. Then the Manager uses Tạo lịch học to generate sessions, cancels single sessions (đổi ngày / hủy và dời bài / hủy bỏ bài) and sets center closure days (hủy theo lô, phụ huynh nhận thông báo theo lớp); see ACADEMIC_USER_FLOW.md.
+Choose subject + grade + program + room + fixed schedule, assign a teacher to an existing fixed class slot. Then the Manager uses Tạo lịch học to generate sessions (the fixed Tết break, 23 tháng Chạp to mùng 7, is skipped) and moves a session to another day or assigns a substitute teacher; there is no session cancel and no center closure screen since 19/11/2026. See ACADEMIC_USER_FLOW.md.
 
 ## F. AI grading (Giáo viên)
 Child submits (via parent's session) → AI scores it as a suggestion → teacher reviews/edits → approves → only then does the parent/child see it. AI never auto-publishes.
