@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import api from "./api.cjs";
-import files from "../demo/files.cjs";
+import files from "./files.cjs";
 const { config, runtime, call, raw, session, items, day } = api;
 const fixtureFile = `${runtime}/fixture.json`;
 const read = () => JSON.parse(fs.readFileSync(fixtureFile, "utf8"));

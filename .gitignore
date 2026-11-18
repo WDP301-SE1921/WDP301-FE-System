@@ -57,5 +57,6 @@ next-env.d.ts
 /e2e/.production-runtime/
 /e2e/.production-results/
 /e2e/.production-report/
+/e2e/.production-summary/
 /e2e/.system-results/
 /e2e/.system-report/
