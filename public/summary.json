@@ -1,0 +1,23 @@
+{
+  "environment": "production",
+  "profile": "public",
+  "hasResults": true,
+  "outcome": "passed",
+  "startTime": "2026-11-18T06:54:20.575Z",
+  "durationMs": 15774,
+  "counts": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "total": 3
+  },
+  "links": {
+    "web": "https://edugrade.45.77.168.110.sslip.io",
+    "admin": "https://admin.edugrade.45.77.168.110.sslip.io",
+    "api": "https://api.edugrade.45.77.168.110.sslip.io/api/v1",
+    "health": "https://api.edugrade.45.77.168.110.sslip.io/api/v1/health/ready",
+    "docs": "https://api.edugrade.45.77.168.110.sslip.io/api/docs"
+  },
+  "runId": "45137ed46fbb9546d7613dc5"
+}

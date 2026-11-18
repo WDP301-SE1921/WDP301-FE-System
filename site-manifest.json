@@ -2,6 +2,7 @@
   "owner": "edugrade-production-e2e",
   "default": "full",
   "profiles": [
+    "public",
     "services",
     "full"
   ]
