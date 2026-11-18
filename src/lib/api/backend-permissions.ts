@@ -432,28 +432,7 @@ const rules: {
   },
   {
     method: "POST",
-    path: /^academic\/sessions\/(?:[^/]+\/(?:reschedule-preview|reschedule|cancel|cancel-preview)|bulk-cancel|bulk-cancel-preview)$/,
-    roles: manager,
-  },
-  // Ngày nghỉ trung tâm: nhân sự đọc (Thiết kế GT dùng khi ước tính số bài), chỉ Quản lý sửa.
-  {
-    method: "GET",
-    path: /^academic\/center-closures$/,
-    roles: catalogReaders,
-  },
-  {
-    method: "POST",
-    path: /^academic\/center-closures$/,
-    roles: manager,
-  },
-  {
-    method: "PATCH",
-    path: /^academic\/center-closures\/[^/]+$/,
-    roles: manager,
-  },
-  {
-    method: "DELETE",
-    path: /^academic\/center-closures\/[^/]+$/,
+    path: /^academic\/sessions\/[^/]+\/(?:reschedule-preview|reschedule)$/,
     roles: manager,
   },
   // Chuẩn đầu ra (CLO): Thiết kế GT soạn, giáo viên của khóa duyệt để sử dụng; quản lý theo dõi/yêu cầu điều chỉnh.

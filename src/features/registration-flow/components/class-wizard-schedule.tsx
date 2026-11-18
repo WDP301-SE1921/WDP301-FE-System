@@ -289,7 +289,7 @@ function SessionsPreview({
         <span className="font-medium text-foreground">{range.title}</span>, từ{" "}
         {calendarDateLabel(range.fromDate)} đến{" "}
         {calendarDateLabel(range.toDate)}. Mỗi buổi học một bài theo thứ tự;
-        ngày nghỉ trung tâm được bỏ qua.
+        kỳ nghỉ Tết (23 tháng Chạp đến hết mùng 7) được bỏ qua.
       </p>
       {busy === "preview" && (
         <p role="status" className="text-sm">

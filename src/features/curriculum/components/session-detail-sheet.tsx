@@ -36,9 +36,8 @@ import { SubstituteForm } from "@/features/teachers/components/substitute-form";
 import type { ScheduledSessionDetail } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { sessionRange } from "../session-format";
-import { SessionCancelForm } from "./session-cancel-form";
-import { useCenterClosures } from "../hooks/use-center-closures";
-import { isClosedDay } from "../center-closures";
+import { tetBreaks } from "@/lib/lunar-new-year";
+import { isClosedDay } from "../session-slots";
 import {
   sessionActionSchema,
   vietnamLocalInput,
@@ -56,15 +55,15 @@ import {
 const SESSION_TABS = {
   content: "Nội dung",
   reschedule: "Đổi giờ",
-  cancel: "Hủy buổi",
   substitute: "Dạy thay",
 } as const;
 type SessionTab = keyof typeof SESSION_TABS;
 const SESSION_TAB_KEYS = Object.keys(SESSION_TABS) as SessionTab[];
 
 /**
- * Sheet buổi học (`?session=`). Quản lý có thêm 3 tab thao tác (`?sessionTab=`); vai trò khác
- * chỉ xem Nội dung.
+ * Sheet buổi học (`?session=`). Quản lý có thêm 2 tab thao tác (`?sessionTab=`); vai trò khác
+ * chỉ xem Nội dung. Không còn hủy buổi (19/11/2026): buổi không dạy được thì đổi giờ hoặc dạy
+ * thay; `?sessionTab=` lạ (vd. link cũ `cancel`) mở tab Nội dung.
  */
 export function SessionDetailSheet({
   id,
@@ -143,18 +142,14 @@ export function SessionDetailSheet({
                 {activeTab === "content" && (
                   <SessionContent session={detail.data} />
                 )}
-                {isManager &&
-                  user &&
-                  (activeTab === "reschedule" || activeTab === "cancel") && (
-                    <SessionActions
-                      key={`${id}:${activeTab}`}
-                      action={activeTab}
-                      session={detail.data}
-                      userId={user.id}
-                      onDone={() => void setTab(null)}
-                      onSwitchToReschedule={() => void setTab("reschedule")}
-                    />
-                  )}
+                {isManager && user && activeTab === "reschedule" && (
+                  <SessionActions
+                    key={`${id}:${activeTab}`}
+                    session={detail.data}
+                    userId={user.id}
+                    onDone={() => void setTab(null)}
+                  />
+                )}
                 {isManager && activeTab === "substitute" && (
                   <SubstitutePanel
                     session={detail.data}
@@ -238,33 +233,28 @@ function SubstitutePanel({
 }
 
 function SessionActions({
-  action,
   session,
   userId,
   onDone,
-  onSwitchToReschedule,
 }: {
-  action: "reschedule" | "cancel";
   session: ScheduledSessionDetail;
   userId: string;
   onDone: () => void;
-  onSwitchToReschedule: () => void;
 }) {
   const now = useCurrentTime();
   const client = useQueryClient(),
     target = "session:" + session.id;
-  const [restored] = useState(() => {
-    try {
-      return {
-        attempt: readAcademicAttempt(userId, target, sessionActionSchema),
-        error: null,
-      };
-    } catch (error) {
-      return { attempt: null, error };
-    }
-  });
+  // A saved attempt that no longer parses (e.g. an unfinished cancel from before 19/11/2026)
+  // is dropped, so the reschedule form stays usable.
   const [attempt, setAttempt] = useState<AcademicAttempt<SessionAction> | null>(
-    restored.attempt,
+    () => {
+      try {
+        return readAcademicAttempt(userId, target, sessionActionSchema);
+      } catch {
+        clearAcademicAttempt(userId, target);
+        return null;
+      }
+    },
   );
   const allowed =
     session.status === "SCHEDULED" && Date.parse(session.startsAt) > now;
@@ -274,20 +264,14 @@ function SessionActions({
         attempt ??
         saveAcademicAttempt(userId, target, sessionActionSchema, input);
       setAttempt(operation);
-      return operation.body.action === "cancel"
-        ? curriculumApi.cancelSession(
-            session.id,
-            operation.body.body,
-            operation.key,
-          )
-        : curriculumApi.reschedule(
-            session.id,
-            operation.body.body,
-            operation.key,
-          );
+      return curriculumApi.reschedule(
+        session.id,
+        operation.body.body,
+        operation.key,
+      );
     },
     retry: false,
-    onSuccess: (_, input) => {
+    onSuccess: () => {
       clearAcademicAttempt(userId, target);
       setAttempt(null);
       for (const key of [
@@ -297,12 +281,9 @@ function SessionActions({
         ["academic-generations"],
         ["academic-generation"],
         ["registration-class"],
-        ["curriculum", "cancel-preview"],
       ])
         void client.invalidateQueries({ queryKey: key });
-      toast.success(
-        input.action === "cancel" ? "Đã hủy buổi học." : "Đã đổi giờ buổi học.",
-      );
+      toast.success("Đã đổi giờ buổi học.");
       onDone();
     },
     onError: (error) => {
@@ -315,69 +296,43 @@ function SessionActions({
   if (attempt)
     return (
       <div className="space-y-3">
-        <ApiFeedback error={restored.error ?? commit.error} />
+        <ApiFeedback error={commit.error} />
         <p role="status" className="rounded-xl bg-muted p-3 text-sm">
-          Có thao tác{" "}
-          {attempt.body.action === "cancel"
-            ? attempt.body.body.shiftLessons
-              ? "hủy buổi và dời bài"
-              : "hủy buổi"
-            : "đổi giờ"}{" "}
-          cần xác nhận lại. Thử lại dùng nguyên dữ liệu đã gửi (cùng cách xử lý
-          bài).
+          Có thao tác đổi giờ cần xác nhận lại. Thử lại dùng nguyên dữ liệu đã
+          gửi.
         </p>
         <Button
-          disabled={commit.isPending || !!restored.error}
+          disabled={commit.isPending}
           isLoading={commit.isPending}
           onClick={() => commit.mutate(attempt.body)}
         >
-          Thử lại {attempt.body.action === "cancel" ? "hủy buổi" : "đổi giờ"}
+          Thử lại đổi giờ
         </Button>
       </div>
     );
   return (
     <div className="space-y-3">
-      <ApiFeedback error={restored.error ?? commit.error} />
+      <ApiFeedback error={commit.error} />
       {!allowed ? (
-        <NotAllowed>
-          {action === "cancel"
-            ? "Chỉ hủy buổi đã lên lịch và chưa bắt đầu."
-            : "Chỉ đổi giờ buổi đã lên lịch và chưa bắt đầu."}
-        </NotAllowed>
-      ) : action === "cancel" ? (
-        !restored.error && (
-          <SessionCancelForm
-            key={"cancel:" + session.revision}
-            session={session}
-            pending={commit.isPending}
-            onCommit={(input) => commit.mutate(input)}
-            onSwitchToReschedule={onSwitchToReschedule}
-            onClose={onDone}
-          />
-        )
+        <NotAllowed>Chỉ đổi giờ buổi đã lên lịch và chưa bắt đầu.</NotAllowed>
       ) : (
-        !restored.error && (
-          <SessionActionForm
-            key={action + ":" + session.revision}
-            action={action}
-            session={session}
-            pending={commit.isPending}
-            onCommit={(input) => commit.mutate(input)}
-            onClose={onDone}
-          />
-        )
+        <SessionActionForm
+          key={"reschedule:" + session.revision}
+          session={session}
+          pending={commit.isPending}
+          onCommit={(input) => commit.mutate(input)}
+          onClose={onDone}
+        />
       )}
     </div>
   );
 }
 function SessionActionForm({
-  action,
   session,
   pending,
   onCommit,
   onClose,
 }: {
-  action: "reschedule";
   session: ScheduledSessionDetail;
   pending: boolean;
   onCommit: (input: SessionAction) => void;
@@ -398,7 +353,7 @@ function SessionActionForm({
   function input(value: SessionActionFormInput): SessionAction {
     return sessionActionSchema.parse(
       {
-        action,
+        action: "reschedule",
         body: {
           reason: value.reason,
           expectedRevision: session.revision,
@@ -412,7 +367,6 @@ function SessionActionForm({
     try {
       const parsed = input(value);
       return (
-        parsed.action === "reschedule" &&
         !!preview.data &&
         JSON.stringify(parsed.body) === JSON.stringify(preview.variables)
       );
@@ -422,9 +376,7 @@ function SessionActionForm({
   }
   const values = useWatch({ control: form.control }) as SessionActionFormInput;
   const newDay = values.startsAt?.slice(0, 10) ?? "";
-  const { closures } = useCenterClosures(newDay, newDay, action === "reschedule");
-  const inClosure =
-    action === "reschedule" && !!newDay && isClosedDay(newDay, closures);
+  const inTetBreak = !!newDay && isClosedDay(newDay, tetBreaks(newDay, newDay));
   const busy = pending || preview.isPending;
   return (
     <form
@@ -432,7 +384,7 @@ function SessionActionForm({
       onSubmit={form.handleSubmit((value) => {
         try {
           const parsed = input(value);
-          if (parsed.action === "reschedule" && !previewMatches(value)) return;
+          if (!previewMatches(value)) return;
           onCommit(parsed);
         } catch (error) {
           form.setError("startsAt", {
@@ -442,8 +394,6 @@ function SessionActionForm({
       })}
     >
       <p className="font-medium">Xem trước giờ học mới</p>
-      {action === "reschedule" && (
-        <>
           <Label htmlFor="move-start">Bắt đầu (giờ Việt Nam)</Label>
           <Controller
             control={form.control}
@@ -483,8 +433,6 @@ function SessionActionForm({
           <p className="text-sm text-muted-foreground">
             Chọn ngày trong cùng tháng và giữ thứ tự các buổi học.
           </p>
-        </>
-      )}
       <Label htmlFor="session-reason">
         Lý do đổi giờ
       </Label>
@@ -495,42 +443,37 @@ function SessionActionForm({
       />
       <FieldError message={form.formState.errors.reason?.message} />
       <ApiFeedback error={preview.error} />
-      {inClosure && (
+      {inTetBreak && (
         <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
-          Ngày mới nằm trong ngày nghỉ của trung tâm. Vẫn đổi được, nhưng nên chọn
-          ngày khác.
+          Ngày mới nằm trong kỳ nghỉ Tết. Vẫn đổi được, nhưng nên chọn ngày
+          khác.
         </p>
       )}
       {previewMatches(values) && (
         <p role="status">Giờ mới hợp lệ. Có thể xác nhận đổi giờ.</p>
       )}
       <div className="flex flex-wrap gap-2">
-        {action === "reschedule" && (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy}
-            isLoading={preview.isPending}
-            onClick={form.handleSubmit((value) => {
-              try {
-                const parsed = input(value);
-                if (parsed.action === "reschedule") preview.mutate(parsed.body);
-              } catch (error) {
-                form.setError("startsAt", {
-                  message: userFacingMessage(error, "Ngày giờ chưa hợp lệ."),
-                });
-              }
-            })}
-          >
-            Xem trước đổi giờ
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          isLoading={preview.isPending}
+          onClick={form.handleSubmit((value) => {
+            try {
+              preview.mutate(input(value).body);
+            } catch (error) {
+              form.setError("startsAt", {
+                message: userFacingMessage(error, "Ngày giờ chưa hợp lệ."),
+              });
+            }
+          })}
+        >
+          Xem trước đổi giờ
+        </Button>
         <Button
           type="submit"
           variant="default"
-          disabled={
-            busy || (action === "reschedule" && !previewMatches(values))
-          }
+          disabled={busy || !previewMatches(values)}
           isLoading={pending}
         >
           Xác nhận đổi giờ

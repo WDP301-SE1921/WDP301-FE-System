@@ -1,4 +1,4 @@
-import { closedDaysInRange, type ClosureRange } from "./center-closures";
+import { closedDaysInRange, type ClosureRange } from "./session-slots";
 import { actsAsManager, type WebRole } from "@/constants/roles";
 import type { RegistrationClass } from "@/types/backend";
 import type { CurriculumLesson, CurriculumUnit } from "@/types/curriculum";

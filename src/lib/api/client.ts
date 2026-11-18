@@ -180,10 +180,6 @@ const ERROR_TEXT: Record<string, string> = {
   ATTENDANCE_RECORDED: "Buổi đã có điểm danh nên không hủy được.",
   LEAVE_EXISTS:
     "Buổi có đơn xin nghỉ đang chờ hoặc đã duyệt. Xử lý đơn nghỉ trước khi hủy buổi.",
-  CENTER_CLOSURE_OVERLAP:
-    "Khoảng ngày này trùng với một ngày nghỉ đã có. Sửa ngày nghỉ cũ thay vì thêm mới.",
-  CENTER_CLOSURE_NOT_FOUND: "Không còn ngày nghỉ này. Tải lại danh sách.",
-  CLOSURE_TOO_LONG: "Mỗi lần nghỉ tối đa 92 ngày. Chia thành hai lần.",
   MAKEUP_BOOKING_EXISTS:
     "Xử lý các lịch học bù liên quan trước khi đổi hoặc hủy buổi.",
   BILL_NOT_FOUND: "Không tìm thấy bill. Kiểm tra lại mã đăng ký.",
