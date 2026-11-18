@@ -78,7 +78,16 @@ await step("curriculumArchived", async () => {
     !unit.title.startsWith(fixture.prefix)
   )
     throw Error("Refuse cleanup: curriculum ownership mismatch.");
-  await api.call("manager", `academic/curriculum-units/${unit.id}`, "DELETE");
+  const role =
+    unit.status === "APPROVED" || unit.status === "ARCHIVED"
+      ? "manager"
+      : "designer";
+  if (
+    role === "designer" &&
+    unit.designerId !== api.session("designer").user.id
+  )
+    throw Error("Refuse cleanup: draft designer ownership mismatch.");
+  await api.call(role, `academic/curriculum-units/${unit.id}`, "DELETE");
 });
 await step("studentDeleted", () =>
   api.call("admin", `admin/records/student/${fixture.student.id}`, "DELETE", {
@@ -118,5 +127,5 @@ fs.writeFileSync(
   ),
 );
 console.log(
-  "Only this test's student, class and course were soft-deleted; curriculum archived; 0 VND history retained.",
+  "Only this test's student, class and course were soft-deleted; test curriculum removed or archived; 0 VND history retained.",
 );

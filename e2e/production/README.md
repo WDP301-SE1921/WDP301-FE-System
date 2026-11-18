@@ -1,5 +1,7 @@
 # Playwright — production WDP
 
+Kiểm chứng AI/email thật ngày **18/11/2026**: **7/7 đạt**, không skip/retry. Chi tiết, thời điểm gửi thư và giới hạn xác nhận inbox: [RESULTS-2026-11-18.md](./RESULTS-2026-11-18.md).
+
 Target được giới hạn vào hai host production được chủ dự án cung cấp. Suite không tự lấy database, không seed/reset production, và không đổi mật khẩu/cấu hình của tài khoản đang dùng.
 
 Đặt cấu hình riêng tại `e2e/.production-runtime/settings.json` (đã được Git và Docker bỏ qua): `web`, `api`, `password`, `accounts` theo các vai trò `admin/manager/staff/teacher/designer/parent`; thêm `aiUrl`, `aiKey`, `aiModel`, `visionModel`, `smtpUrl`, `mailFrom` nếu kiểm tra dịch vụ thật. Không commit file này hoặc session đăng nhập.
@@ -28,7 +30,7 @@ Provider test gửi bài toán và ảnh tổng hợp qua đúng lớp tích h�
 
 SMTP `verify()` chứng minh kết nối/xác thực. Outbox `SENT` của email biên lai chứng minh ứng dụng đã chuyển thư cho SMTP. Không tuyên bố thư đã vào inbox nếu chưa mở hộp thư nhận.
 
-Sau khi hoàn tất và không cần chạy tiếp trên fixture hiện tại, chạy script cleanup. Script chỉ chấp nhận bộ dữ liệu E2E-PROD đã lưu, đối chiếu tên/ID trước khi kết thúc ghi danh, lưu trữ giáo trình và xóa mềm hồ sơ/lớp/khóa thử. Biên lai 0 đồng, điểm và audit được giữ làm lịch sử.
+Sau khi hoàn tất và không cần chạy tiếp trên fixture hiện tại, chạy script cleanup. Script chỉ chấp nhận bộ dữ liệu E2E-PROD đã lưu, đối chiếu tên/ID trước khi kết thúc ghi danh, lưu trữ giáo trình đã duyệt hoặc xóa bản nháp bằng đúng tài khoản thiết kế sở hữu, và xóa mềm hồ sơ/lớp/khóa thử. Biên lai 0 đồng, điểm và audit được giữ làm lịch sử.
 
 ```powershell
 node e2e/production/cleanup.mjs
