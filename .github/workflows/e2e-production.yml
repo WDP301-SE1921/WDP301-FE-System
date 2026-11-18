@@ -22,14 +22,20 @@ jobs:
   production:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      E2E_PRODUCTION_ENV_FILE: ${{ runner.temp }}/edugrade-production.env
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+      - name: Locate private environment file
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const file = path.join(process.env.RUNNER_TEMP, 'edugrade-production.env');
+          fs.appendFileSync(process.env.GITHUB_ENV, `E2E_PRODUCTION_ENV_FILE=${file}\n`);
+          NODE
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Prepare private environment
@@ -134,4 +140,4 @@ jobs:
           NODE
       - name: Remove private environment
         if: always()
-        run: node -e "require('node:fs').rmSync(process.env.E2E_PRODUCTION_ENV_FILE, { force:true })"
+        run: node -e "const file=process.env.E2E_PRODUCTION_ENV_FILE; if(file) require('node:fs').rmSync(file, { force:true })"
