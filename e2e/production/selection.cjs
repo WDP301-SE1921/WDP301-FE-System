@@ -24,6 +24,8 @@ function selection(args = [], env = process.env) {
     "--providers",
     "--recheck-ai",
     "--keep-fixture",
+    "--no-open",
+    "--no-publish",
   ];
   const files = services
     ? ["03-providers.spec.ts", "04-business.spec.ts"]

@@ -28,7 +28,7 @@ Open http://localhost:3001 (the backend keeps port 3000)
 
 ## Kiểm thử production cùng team
 
-[Web production](https://edugrade.45.77.168.110.sslip.io) · [Admin production](https://admin.edugrade.45.77.168.110.sslip.io) · [API health](https://api.edugrade.45.77.168.110.sslip.io/api/v1/health/ready)
+[Báo cáo test production online](https://wdp301-se1921.github.io/WDP301-FE-System/) · [Web production](https://edugrade.45.77.168.110.sslip.io) · [Admin production](https://admin.edugrade.45.77.168.110.sslip.io) · [API health](https://api.edugrade.45.77.168.110.sslip.io/api/v1/health/ready)
 
 Chỉ cần repo frontend và Node.js 22+, không cần backend/database local:
 
@@ -36,10 +36,10 @@ Chỉ cần repo frontend và Node.js 22+, không cần backend/database local:
 npm ci
 npm run test:e2e:production:setup
 # Nhận/điền cấu hình riêng ở e2e/production/.env một lần.
-npm run test:e2e:production:ui
+npm run test:e2e:production:full
 ```
 
-Trang Playwright Production: `http://127.0.0.1:9326`. Chạy AI/email thật bằng `npm run test:e2e:production:services -- --headed`, toàn bộ bằng `npm run test:e2e:production:full -- --headed`, mở báo cáo riêng bằng `npm run test:e2e:production:report`. File `.env` thật không được commit; `.env.example` có sẵn trong source. [Hướng dẫn đầy đủ và workflow cho team](e2e/production/README.md).
+Chạy xong, lệnh cập nhật báo cáo trên web, in link online rồi kết thúc; không mở báo cáo hoặc máy chủ local, không cần bấm Run trong Playwright. Người có quyền ghi repo xuất bản bằng đăng nhập Git sẵn có. Cả team xem kết quả ở link online phía trên. Chạy riêng AI/email bằng `npm run test:e2e:production:services`; `npm run test:e2e:production:report` in link báo cáo online đã có. File `.env` thật không được commit. [Hướng dẫn đầy đủ](e2e/production/README.md).
 
 ## Scripts
 

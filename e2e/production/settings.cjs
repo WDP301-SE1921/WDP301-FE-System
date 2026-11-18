@@ -55,6 +55,7 @@ function settings(options = {}) {
     smtpUrl: value("SMTP_URL"),
     mailFrom: value("MAIL_FROM"),
     channel: value("E2E_CHANNEL") || undefined,
+    publishReport: value("E2E_REPORT_PUBLISH", "1") !== "0",
   };
   for (const key of Object.keys(urls)) {
     if (config[key] !== urls[key])

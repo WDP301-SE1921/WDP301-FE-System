@@ -2,6 +2,8 @@
 
 Project Playwright riêng tên **`production`**, chạy trực tiếp trên:
 
+- [Báo cáo production online cho cả team](https://wdp301-se1921.github.io/WDP301-FE-System/) — mở là xem kết quả đã chạy.
+- [Báo cáo full](https://wdp301-se1921.github.io/WDP301-FE-System/full/) · [AI/email](https://wdp301-se1921.github.io/WDP301-FE-System/services/) · [Public](https://wdp301-se1921.github.io/WDP301-FE-System/public/)
 - [Web production](https://edugrade.45.77.168.110.sslip.io)
 - [Admin production](https://admin.edugrade.45.77.168.110.sslip.io)
 - [API readiness](https://api.edugrade.45.77.168.110.sslip.io/api/v1/health/ready)
@@ -24,7 +26,15 @@ Lệnh setup cài Chromium và tạo **`e2e/production/.env`** từ [`.env.examp
 - Biến môi trường của máy/CI được ưu tiên hơn file. Có thể đổi vị trí file bằng `E2E_PRODUCTION_ENV_FILE`. Không cần file `settings.json` cũ.
 - Mặc định dùng Chromium đi kèm Playwright, chạy được Windows/Linux/macOS. Chỉ đặt `E2E_CHANNEL=msedge` nếu muốn dùng Edge đã cài trên máy.
 
-## Trang Production trong Playwright
+## Chạy xong xem báo cáo trên web
+
+Sau khi nhận `.env` một lần, chạy `npm run test:e2e:production:full`. Lệnh tự chạy toàn bộ, cleanup hồ sơ thử, cập nhật báo cáo online, in link rồi kết thúc. Không mở trình duyệt hoặc máy chủ báo cáo local. Mở link online là xem kết quả đã chạy, không cần bấm Run. Nếu xuất bản thất bại, lệnh báo rõ và giữ kết quả trên máy để xuất bản lại; mã thoát vẫn phản ánh kết quả test.
+
+Xuất bản dùng đăng nhập Git hiện có và quyền ghi repo này; không cần thêm key GitHub vào `.env`. Chỉ nhánh `gh-pages` chứa báo cáo được cập nhật, không đổi nhánh nguồn/index/code đang sửa. Các profile full/services/public/read-only được giữ riêng; lượt `--grep` vào mục filtered, không ghi đè full. Trang gốc ưu tiên full.
+
+Máy chỉ có quyền đọc vẫn chạy test và xem link báo cáo chung; dùng `--no-publish` hoặc đặt `E2E_REPORT_PUBLISH=0` trong `.env` để bỏ qua xuất bản. `--list`, `--help`, UI mode và CI không tự xuất bản lại kết quả cũ; CI có bước xuất bản riêng. Lệnh `npm run test:e2e:production:report` chỉ in link online; `npm run test:e2e:production:publish` cập nhật báo cáo đã có mà không chạy test.
+
+## Playwright UI để debug khi cần
 
 ```powershell
 npm run test:e2e:production:ui
@@ -49,7 +59,8 @@ Các bài nghiệp vụ trong file `04-business.spec.ts` dùng chung hồ sơ th
 | `npm run test:e2e:production:services -- --headed` | Bảy bài AI text/vision, SMTP, biên lai thật, chấm ảnh/PDF, báo cáo AI và giáo viên sửa bài.             |
 | `npm run test:e2e:production:full -- --headed`     | Toàn bộ production: route/API, AI/email, ghi danh 0 đồng, giáo trình, điểm danh, báo cáo, tệp và Admin. |
 | `npm run test:e2e:production:full -- --list`       | Liệt kê toàn bộ bài; không đăng nhập, gọi mạng hoặc tạo dữ liệu.                                        |
-| `npm run test:e2e:production:report`               | Mở báo cáo production gần nhất tại [localhost:9324](http://127.0.0.1:9324).                             |
+| `npm run test:e2e:production:report`               | In link báo cáo online đã có; không chạy test hoặc mở máy chủ local.                                    |
+| `npm run test:e2e:production:publish`              | Xuất bản kết quả đã có lên web; không chạy lại test.                                                    |
 | `npm run test:e2e:production:cleanup`              | Dọn đúng hồ sơ E2E đang được giữ lại.                                                                   |
 | `npm run test:e2e:production:contracts`            | Kiểm tra cấu hình/runner/provider bằng dữ liệu tổng hợp, không gọi production.                          |
 
@@ -69,14 +80,15 @@ Email biên lai phải khớp đúng registration, dedupe key, người nhận v
 
 Workflow thủ công [Playwright Production](https://github.com/WDP301-SE1921/WDP301-FE-System/actions/workflows/e2e-production.yml) có các profile public/read-only/services/full. Workflow sẽ xuất hiện trong Actions sau khi file được merge vào nhánh mặc định.
 
-Người quản trị repo thêm secret **`PRODUCTION_E2E_ENV`** chứa nguyên nội dung `.env` thật. Profile public không cần secret. Workflow tạo file `.env` tạm, chạy Chromium trên Linux, cleanup hồ sơ thử và xóa file cấu hình tạm. Phần Summary có link production và link tải báo cáo của lần chạy. Các lượt workflow được xếp hàng để tránh cùng sử dụng tài khoản seed.
+Profile public không cần secret và tự cập nhật Pages sau khi chạy. Chưa sao chép `.env` production lên CI; team giữ file này trên từng máy. Nếu chủ dự án cho phép CI dùng thông tin production, người quản trị có thể tự cấu hình secret `PRODUCTION_E2E_ENV` cho các profile có đăng nhập. Không gửi key vào chat/Git. Các lượt workflow được xếp hàng để tránh cùng sử dụng tài khoản seed.
 
-Repo hiện là public nên workflow chỉ chia sẻ bản tổng hợp gồm số lượng pass/fail, trạng thái hoàn tất và link production, giữ bảy ngày. Không upload ảnh, traces, nội dung lỗi, kết quả AI hoặc phiên đăng nhập lên artifact public. Báo cáo Playwright đầy đủ được xem trên máy qua lệnh report; workflow chỉ upload bản đầy đủ khi repo có quyền riêng tư private. Link `localhost:9324/9326` là trang trên máy người đang chạy, không phải link báo cáo online dùng chung.
+Pages dùng giao diện Playwright chuẩn với từng case, trạng thái thật và thời gian chạy. Bản online dựng riêng từ JSON bằng allowlist; không có ảnh, traces, log request, annotation riêng tư, nội dung lỗi/AI hoặc phiên đăng nhập. Bằng chứng đầy đủ được giữ ngoài Git trên máy chạy test. Artifact đầy đủ chỉ được upload khi repo private. Link `wdp301-se1921.github.io` là link báo cáo dùng chung cho team.
 
 CI luôn thử cleanup thêm lần nữa cho services/full, kể cả khi bước chuẩn bị hoặc teardown thất bại. Nếu vẫn chưa dọn được, artifact tổng hợp có `recovery-fixture.json`: chỉ marker E2E, ID/tên tổng hợp của hồ sơ thử và các cờ cleanup; không có thông tin phụ huynh, token, thanh toán hoặc cấu hình. Để khôi phục, dùng một checkout chưa có hồ sơ thử chưa dọn, chép file này thành `e2e/.production-runtime/fixture.json`, đặt `.env` riêng rồi chạy lệnh cleanup. Lệnh này tự chuẩn bị phiên đăng nhập từ `.env`, không tạo fixture mới; các ID/tên vẫn được đối chiếu lại với production trước khi ghi.
 
 ## Kết quả đã ghi nhận
 
+- [Báo cáo online ngày 18/11/2026](./RESULTS-ONLINE-2026-11-18.md): kiểm chứng ba trang báo cáo đã deploy, CLI xuất bản rồi thoát, 58 contract tests và build frontend.
 - [Bộ production dành cho team ngày 18/11/2026](./RESULTS-TEAM-2026-11-18.md): 96/96 production, 7/7 services, 3/3 public và kiểm chứng cấu hình/UI.
 - [AI/email thật ngày 18/11/2026](./RESULTS-2026-11-18.md): 7/7 đạt; có thời điểm gửi thư và giới hạn xác nhận inbox.
 - Kết quả JSON, phiên đăng nhập, manifest, report/traces ở `e2e/.production-*` đều được giữ ngoài Git.

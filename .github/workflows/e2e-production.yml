@@ -11,7 +11,8 @@ on:
         required: true
 
 permissions:
-  contents: read
+  contents: write
+  pages: write
 
 concurrency:
   group: edugrade-production-e2e
@@ -73,6 +74,20 @@ jobs:
         env:
           PROFILE: ${{ inputs.profile }}
         run: node e2e/production/report-summary.cjs
+      - name: Publish online production report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { spawnSync } = require('node:child_process');
+          if (fs.existsSync('e2e/.production-results/results.json')) {
+            const result = spawnSync(process.execPath, ['e2e/production/publish-report.cjs'], { stdio: 'inherit' });
+            process.exit(result.status ?? 1);
+          }
+          console.log('No completed report was written; previous online report retained.');
+          NODE
       - name: Save shareable production summary
         if: always()
         id: summary
@@ -106,6 +121,7 @@ jobs:
             '- [Web production](https://edugrade.45.77.168.110.sslip.io)',
             '- [Admin production](https://admin.edugrade.45.77.168.110.sslip.io)',
             '- [API health](https://api.edugrade.45.77.168.110.sslip.io/api/v1/health/ready)',
+            '- [Online production test reports](https://wdp301-se1921.github.io/WDP301-FE-System/)',
           ];
           if (process.env.REPORT_URL) lines.push(`- [Shareable production summary](${process.env.REPORT_URL})`);
           if (process.env.FULL_REPORT_URL) lines.push(`- [Private full Playwright report](${process.env.FULL_REPORT_URL})`);
