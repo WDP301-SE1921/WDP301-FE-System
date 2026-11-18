@@ -1227,12 +1227,9 @@ function ExtendPanel({
               </TableBody>
             </Table>
           </AsyncBoundary>
-          {(history.data?.length ?? 0) >= 2 && (
-            <p className="text-sm text-amber-700">
-              Đã gia hạn {history.data?.length} lần. Chính sách: tối đa 2 lần mỗi
-              gói, tổng không quá 60 ngày.
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">
+            Mỗi lần gia hạn từ 1 đến 90 ngày, có lý do và được lưu vào lịch sử.
+          </p>
         </section>
       </CardContent>
     </Card>

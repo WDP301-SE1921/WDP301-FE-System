@@ -14,6 +14,7 @@
     "test:e2e:report": "playwright show-report e2e/.system-report --host 127.0.0.1 --port 9323",
     "test:e2e:mobile": "node e2e/demo/run.mjs --system system/04-parent-routes.spec.ts",
     "test:e2e:all": "node e2e/demo/run.mjs --system",
+    "test:e2e:updates": "node e2e/demo/run.mjs --system --grep @updates",
     "test:regressions": "node --test e2e/system/*.test.cjs",
     "test:e2e:typecheck": "tsc --noEmit -p tsconfig.e2e.json",
     "test:e2e:production": "node e2e/production/run.mjs",
