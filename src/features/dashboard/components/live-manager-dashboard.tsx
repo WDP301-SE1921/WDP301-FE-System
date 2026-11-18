@@ -398,7 +398,6 @@ export function LiveManagerDashboard() {
       : [];
   const aging = makeups.data ? makeupAging(makeups.data, today) : [];
   const agingMax = Math.max(1, ...aging.map((bucket) => bucket.count));
-  const cancelled = sessionsInRange.filter((session) => session.status === "CANCELLED").length;
 
   const setPreset = (from: string, to: string) => void setQuery({ fromDate: from, toDate: to });
   const presets = [
@@ -1134,15 +1133,11 @@ export function LiveManagerDashboard() {
             </>
           )}
         </Panel>
-        <Panel title="Nghỉ & hủy buổi" tip="Đơn nghỉ đang chờ duyệt (hiện tại) và buổi bị hủy trong kỳ.">
+        <Panel title="Nghỉ & buổi đã chốt" tip="Đơn nghỉ đang chờ duyệt (hiện tại) và buổi đã chốt trong kỳ.">
           <dl className="space-y-3 text-sm">
             <div className="flex items-baseline justify-between gap-3">
               <dt>Đơn nghỉ chờ duyệt</dt>
               <dd className="font-semibold tabular-nums">{leaves.isPending ? "…" : leaves.isError ? "—" : (leaves.data?.length ?? 0)}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3">
-              <dt>Buổi hủy trong kỳ</dt>
-              <dd className="font-semibold tabular-nums">{rangeSessions.isPending ? "…" : rangeSessions.isError ? "—" : cancelled}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt>Buổi đã chốt trong kỳ</dt>
