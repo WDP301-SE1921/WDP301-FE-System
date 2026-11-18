@@ -156,7 +156,8 @@ export function UnitForm({
   useCurriculumFormState(form.formState.isDirty, save.isPending, onStateChange);
   return (
     <form
-      className="space-y-4"
+      // Ô nhập không kéo quá ~670px khi form nằm ở khung rộng (xếp trên bảng, bước khóa học).
+      className="max-w-2xl space-y-4"
       noValidate
       onSubmit={form.handleSubmit((input) => {
         if (!unit && source === "copy" && (!sourceUnit || input.fromDate <= today || input.fromDate <= sourceUnit.toDate.slice(0, 10))) {
@@ -359,36 +360,44 @@ export function UnitForm({
           <FieldError message={form.formState.errors.title?.message} />
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="unit-from">Từ ngày</Label>
-          <Input
-            id="unit-from"
-            type="date"
-            disabled={save.isPending}
-            aria-invalid={!!form.formState.errors.fromDate}
-            aria-describedby="unit-from-error"
-            {...form.register("fromDate")}
-          />
-          <div id="unit-from-error">
-            <FieldError message={form.formState.errors.fromDate?.message} />
+      <fieldset className="space-y-2" aria-describedby="unit-term-help">
+        <legend className="text-sm font-medium">Kỳ học áp dụng</legend>
+        <p id="unit-term-help" className="text-sm text-muted-foreground">
+          Mỗi giáo trình dùng cho một kỳ học. Các lớp của khóa học trong kỳ này
+          sẽ học theo giáo trình này: lịch học của lớp được tạo trong khoảng
+          ngày dưới đây, mỗi buổi một bài theo thứ tự.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="unit-from">Ngày bắt đầu kỳ</Label>
+            <Input
+              id="unit-from"
+              type="date"
+              disabled={save.isPending}
+              aria-invalid={!!form.formState.errors.fromDate}
+              aria-describedby="unit-from-error"
+              {...form.register("fromDate")}
+            />
+            <div id="unit-from-error">
+              <FieldError message={form.formState.errors.fromDate?.message} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="unit-to">Ngày kết thúc kỳ</Label>
+            <Input
+              id="unit-to"
+              type="date"
+              disabled={save.isPending}
+              aria-invalid={!!form.formState.errors.toDate}
+              aria-describedby="unit-to-error"
+              {...form.register("toDate")}
+            />
+            <div id="unit-to-error">
+              <FieldError message={form.formState.errors.toDate?.message} />
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="unit-to">Đến ngày</Label>
-          <Input
-            id="unit-to"
-            type="date"
-            disabled={save.isPending}
-            aria-invalid={!!form.formState.errors.toDate}
-            aria-describedby="unit-to-error"
-            {...form.register("toDate")}
-          />
-          <div id="unit-to-error">
-            <FieldError message={form.formState.errors.toDate?.message} />
-          </div>
-        </div>
-      </div>
+      </fieldset>
       <ApiFeedback error={save.error} />
       <Button
         type="submit"

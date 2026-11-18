@@ -1,7 +1,7 @@
 import { test, expect, day, unique, select, confirm } from "./world";
 import files from "./files.cjs";
 
-test("03 - Giao bài và chấm điểm", async ({ world, actors }, info) => {
+test("@updates 03 - Giao bài và chấm điểm", async ({ world, actors }, info) => {
   const fixture = await world.fixture("homework");
   const teacher = await actors.open("teacher");
   const title = unique("Bài tập phương trình");
@@ -148,6 +148,36 @@ test("03 - Giao bài và chấm điểm", async ({ world, actors }, info) => {
     await teacher.goto(
       `/teacher/grading/${submissionId}?assignmentId=${assignmentId}`,
     );
+    const stored = await world.db.submission.findUniqueOrThrow({
+      where: { id: submissionId },
+    });
+    const answers = stored.answers as {
+      questionId: string;
+      fileIds?: string[];
+    }[];
+    const work = teacher.getByRole("region", { name: "Bài làm", exact: true });
+    for (let index = 0; index < 2; index++) {
+      const question = work
+        .locator('[data-slot="card"]')
+        .filter({ hasText: `Câu ${index + 1}: Giải phương trình` });
+      await expect(
+        question.getByRole("region", { name: /^Tệp bài làm / }),
+      ).toHaveCount(1);
+      const fileId = answers[index].fileIds?.[0];
+      expect(fileId).toBeTruthy();
+      const preview = teacher.waitForResponse((response) =>
+        response.url().endsWith(`/academic/files/${fileId}/preview`),
+      );
+      await question
+        .getByRole("button", { name: "Xem tệp", exact: true })
+        .click();
+      expect((await preview).ok()).toBe(true);
+    }
+    await expect(
+      work.getByRole("region", { name: /^Tệp bài làm / }),
+    ).toHaveCount(2);
+    await expect(work.getByText(/^Tệp nộp chung ·/)).toHaveCount(0);
+    await actors.shot(teacher, "updates-grading-question-files");
     await teacher
       .getByRole("button", { name: "Gợi ý AI", exact: true })
       .click();

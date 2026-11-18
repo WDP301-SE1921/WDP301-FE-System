@@ -165,6 +165,8 @@ export interface RegistrationClass {
   isOpen: boolean;
   isActive?: boolean;
   scheduleLocked?: boolean;
+  /** Ngày (UTC+7) của buổi đầu không bị hủy; null = chưa có buổi; thiếu = BE cũ. */
+  scheduledFrom?: string | null;
   /** Ngày (UTC+7) của buổi cuối không bị hủy; null = chưa có buổi; thiếu = BE cũ. */
   scheduledUntil?: string | null;
   roomId?: string | null;
@@ -315,6 +317,8 @@ export interface RegistrationReceipt {
     startDate: string;
     endDate: string;
     label: string;
+    /** Số buổi theo lịch tuần trong kỳ (chưa trừ ngày nghỉ); thiếu = BE cũ. */
+    plannedSessions?: number | null;
   };
   payment: {
     id: string;
@@ -349,6 +353,8 @@ export interface RegistrationBill {
     packageMonths: number;
     startDate: string | null;
     endDate: string | null;
+    /** Số buổi theo lịch tuần trong kỳ (chưa trừ ngày nghỉ); thiếu = BE cũ. */
+    plannedSessions?: number | null;
   };
   pricing: {
     monthlyFee: string;

@@ -33,6 +33,7 @@ import {
   isoWeekday,
   money,
   nextStudyDate,
+  plannedSessionCount,
   scheduleText,
   todayInVietnam,
   unscheduledTermNotice,
@@ -331,6 +332,12 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
         values.packageMonths <= 12
       ? addCalendarMonths(values.startDate, values.packageMonths)
       : "";
+  // Học phí thu theo tháng, lớp học theo buổi: cho Nhân viên và phụ huynh thấy gói tương ứng bao nhiêu buổi.
+  const plannedSessions = plannedSessionCount(
+    currentOrder?.class.weeklySchedules ?? summaryClass?.weeklySchedules ?? [],
+    startDate,
+    endDate,
+  );
 
   async function handleLookup(input: { email: string }) {
     if (busy.current) return;
@@ -554,6 +561,12 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
                     startDate && endDate
                       ? `${displayDate(startDate)} → trước ${displayDate(endDate)}`
                       : "Chưa chọn",
+                  ],
+                  [
+                    "Số buổi dự kiến",
+                    plannedSessions
+                      ? `Khoảng ${plannedSessions} buổi theo lịch tuần`
+                      : "—",
                   ],
                 ].map(([label, value]) => (
                   <div key={label}>

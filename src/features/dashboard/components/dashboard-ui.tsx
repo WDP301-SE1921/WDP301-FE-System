@@ -212,6 +212,12 @@ export function Panel({
   );
 }
 
+/**
+ * Bảng đặt trong khối dashboard: ô hẹp hơn mặc định (px-3) để bảng vừa cột 2/3 ở màn 1366
+ * mà không phải cuộn ngang. Chữ dài trong ô thì cắt bằng span `block truncate` có `max-w-*`.
+ */
+export const COMPACT_TABLE = "[&_td]:px-3 [&_th]:px-3";
+
 export interface RankItem {
   key: string;
   label: ReactNode;

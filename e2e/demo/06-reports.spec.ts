@@ -4,7 +4,10 @@ import path from "node:path";
 import { test, expect, day } from "./world";
 import environment from "./environment.cjs";
 
-test("06 - Báo cáo học tập và xuất file", async ({ world, actors }, info) => {
+test("@updates 06 - Báo cáo học tập và xuất file", async ({
+  world,
+  actors,
+}, info) => {
   const f = await world.fixture("report");
   const locked = await world.session(f, -2, "08:00", { status: "COMPLETED" });
   await world.db.sessionParticipant.create({
@@ -132,6 +135,52 @@ test("06 - Báo cáo học tập và xuất file", async ({ world, actors }, inf
     });
     await actors.shot(teacher, "06-report-created");
   });
+  await test.step("Mở chi tiết: số liệu snapshot và điểm thang 10 đồng bộ với bảng điểm", async () => {
+    const detail = await world.call<{
+      rows: {
+        studentId: string;
+        attendancePercent: number;
+        averageScore: number;
+      }[];
+    }>("teacher", `academic/reports/${reportId}`);
+    expect(detail.rows).toMatchObject([
+      { studentId: f.student.id, attendancePercent: 100, averageScore: 80 },
+    ]);
+    const row = teacher.getByRole("row").filter({ hasText: f.classroom.name });
+    await row.getByRole("button", { name: "Xem", exact: true }).click();
+    const sheet = teacher.getByRole("dialog", {
+      name: f.classroom.name,
+      exact: true,
+    });
+    await expect(
+      sheet.getByRole("columnheader", {
+        name: "Điểm TB (thang 10)",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const student = sheet
+      .getByRole("row")
+      .filter({ hasText: f.student.fullName });
+    await expect(
+      student.getByRole("cell", { name: "100%", exact: true }),
+    ).toBeVisible();
+    await expect(
+      student.getByRole("cell", { name: "8", exact: true }),
+    ).toBeVisible();
+    await expect(sheet.getByText(/Tóm tắt kiểm thử:/)).toBeVisible();
+    await actors.shot(teacher, "updates-report-detail");
+    await teacher.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    for (const role of ["parent", "staff", "designer"] as const) {
+      expect(
+        (await world.raw(role, `academic/reports/${reportId}`)).status,
+      ).toBe(403);
+    }
+    expect(
+      (await world.raw("teacher", "academic/reports/nonexistent-e2e-report"))
+        .status,
+    ).toBe(404);
+  });
   await test.step("Tải PDF và Excel, kiểm tra nội dung file thay vì chỉ bấm nút", async () => {
     const row = teacher.getByRole("row").filter({ hasText: f.classroom.name });
     for (const [button, extension, magic] of [
@@ -177,6 +226,10 @@ test("06 - Báo cáo học tập và xuất file", async ({ world, actors }, inf
     const before = await world.db.learningReport.findUniqueOrThrow({
       where: { id: reportId },
     });
+    const detailBefore = await world.call(
+      "teacher",
+      `academic/reports/${reportId}`,
+    );
     await world.db.sessionParticipant.updateMany({
       where: { sessionId: locked.id },
       data: { attendance: "ABSENT" },
@@ -186,6 +239,48 @@ test("06 - Báo cáo học tập và xuất file", async ({ world, actors }, inf
     });
     expect(after.snapshot).toEqual(before.snapshot);
     expect(after.aiSummary).toBe(before.aiSummary);
+    expect(await world.call("teacher", `academic/reports/${reportId}`)).toEqual(
+      detailBefore,
+    );
+    const otherTeacher = await world.db.user.create({
+      data: {
+        email: `report-${reportId}@example.test`,
+        role: "TEACHER",
+        status: "ACTIVE",
+        displayName: "Giáo viên khác của báo cáo",
+        passwordHash: f.users.teacher.passwordHash,
+      },
+    });
+    // Report visibility follows current class assignment, rather than only its original creator.
+    await world.db.learningReport.update({
+      where: { id: reportId },
+      data: { teacherId: otherTeacher.id },
+    });
+    expect(await world.call("teacher", `academic/reports/${reportId}`)).toEqual(
+      detailBefore,
+    );
+    await world.db.class.update({
+      where: { id: f.classroom.id },
+      data: { teacherId: otherTeacher.id },
+    });
+    try {
+      expect(
+        (await world.raw("teacher", `academic/reports/${reportId}`)).status,
+      ).toBe(403);
+      expect(
+        (
+          await world.raw(
+            "teacher",
+            `academic/reports/${reportId}/download?format=pdf`,
+          )
+        ).status,
+      ).toBe(403);
+    } finally {
+      await world.db.class.update({
+        where: { id: f.classroom.id },
+        data: { teacherId: f.users.teacher.id },
+      });
+    }
     const denied = await world.raw(
       "staff",
       `academic/reports/${reportId}/download?format=pdf`,

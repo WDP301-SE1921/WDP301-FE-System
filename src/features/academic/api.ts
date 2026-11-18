@@ -24,6 +24,7 @@ import type {
   MakeupCandidate,
   MakeupRecord,
   MakeupSource,
+  ReportDetail,
   ReportRecord,
   QueuedEmailResult,
   SessionParticipant,
@@ -469,6 +470,8 @@ export const academicApi = {
     command<GradeReview>(`${itemPath("grades", id)}/approve`),
   publishGrade: (id: string) =>
     command<GradeReview>(`${itemPath("grades", id)}/publish`),
+  report: (id: string, signal?: AbortSignal) =>
+    apiRequest<ReportDetail>(itemPath("reports", id), { signal }),
   reports: (signal?: AbortSignal) =>
     readArrayPages<ReportRecord>("academic/reports", {}, signal),
   createReport: (body: unknown) =>

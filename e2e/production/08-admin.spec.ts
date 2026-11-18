@@ -1,17 +1,10 @@
 import fs from "node:fs";
-import path from "node:path";
 import { test, expect } from "@playwright/test";
 import api from "./api.cjs";
-import local from "./settings.cjs";
+import navigation from "./admin-routes.cjs";
 
-const origin = "https://admin.edugrade.45.77.168.110.sslip.io";
-const navigation = fs.readFileSync(
-  path.resolve(local.root, "../WDP301-ADMIN-System/src/app/navigation.js"),
-  "utf8",
-);
-const routes = [...navigation.matchAll(/path: '([^']+)'/g)].map(
-  (match) => match[1],
-);
+const origin = api.config.admin;
+const routes = navigation.routes;
 
 test("production Admin all routes use the real API without mobile overflow", async ({
   page,
@@ -29,7 +22,9 @@ test("production Admin all routes use the real API without mobile overflow", asy
   await page
     .getByLabel("Email", { exact: true })
     .fill(api.config.accounts.admin);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill(api.config.password);
+  await page
+    .getByLabel("Mật khẩu", { exact: true })
+    .fill(api.config.passwords.admin);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/overview`);
   const all = [

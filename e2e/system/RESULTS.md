@@ -1,5 +1,7 @@
 # Kết quả kiểm tra toàn hệ thống WDP
 
+> Kết quả mới nhất: [18/11/2026 — 113/113 E2E đạt](RESULTS-2026-11-18.md). Phần dưới là lịch sử ngày 14/11, được giữ nguyên để đối chiếu.
+
 Lượt chạy ngày **14/11/2026 (giờ Việt Nam)**: **97/97 passed**, 0 failed, 0 skipped, 0 flaky; khoảng 12,0 phút trên Next.js 16.4.6. Microsoft Edge mở trên màn hình; 1 worker, không retry.
 
 | Phạm vi                                                            | Kết quả            |

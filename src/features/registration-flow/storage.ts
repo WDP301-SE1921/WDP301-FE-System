@@ -82,7 +82,12 @@ export function readPaymentAttempt(
     attempt.body &&
     typeof attempt.body === "object" &&
     !Array.isArray(attempt.body) &&
-    Object.keys(attempt.body).every((field) => field === "receiptNumber") &&
+    Object.keys(attempt.body).every(
+      (field) => field === "receiptNumber" || field === "method",
+    ) &&
+    (attempt.body.method === undefined ||
+      attempt.body.method === "CASH" ||
+      attempt.body.method === "BANK_TRANSFER") &&
     (attempt.body.receiptNumber === undefined ||
       (typeof attempt.body.receiptNumber === "string" &&
         attempt.body.receiptNumber.length <= 191))

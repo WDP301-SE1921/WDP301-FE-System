@@ -14,7 +14,10 @@ import { registrationApi } from "@/features/registration-flow/api";
 import { curriculumApi } from "@/features/curriculum/api";
 import { sessionTime } from "@/features/curriculum/session-format";
 import { vietnamLocalInput } from "@/features/curriculum/session-contract";
-import { scheduleText } from "@/features/registration-flow/calendar";
+import {
+  classPeriodText,
+  scheduleText,
+} from "@/features/registration-flow/calendar";
 import { ROUTES } from "@/constants/routes";
 import { ApiForm } from "@/components/shared/forms/api-form";
 import { displayMoment } from "@/features/academic/components/live-fields";
@@ -98,6 +101,11 @@ export function TeacherClassDetailView({ classId }: { classId: string }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <p>{scheduleText(c.weeklySchedules) || "Chưa có lịch tuần"}</p>
+              {classPeriodText(c) && (
+                <p className="tabular-nums">
+                  Thời gian học: {classPeriodText(c)}
+                </p>
+              )}
               <p>
                 Giáo viên:{" "}
                 {c.teacher?.displayName ?? c.teacher?.email ?? "Chưa có tên"}

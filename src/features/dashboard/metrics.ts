@@ -3,6 +3,7 @@ import type { EnrollmentRecord, MakeupSource } from "@/types/academic-workflows"
 import type { RegistrationClass } from "@/types/backend";
 import type { ScheduledSession } from "@/types/curriculum";
 import { addCalendarDays } from "@/lib/calendar-date";
+import { formatScore } from "@/lib/format";
 import { vietnamDay } from "./staff-summary";
 
 /** Số tiền BE trả dạng chuỗi Decimal; giá trị lỗi tính là 0. */
@@ -80,18 +81,36 @@ export function compareCounts(
   };
 }
 
+/**
+ * So số của một ngày chưa hết (hôm nay) với mốc. Vượt mốc thì báo ▲ xanh như `compareCounts`;
+ * chưa tới mốc thì chỉ báo tiến độ màu xám ("đạt 40%"), vì ngày còn đang thu, đầu ngày hiện
+ * "▼ 100%" đỏ là báo động giả. Hôm nay chưa có gì thì không so.
+ */
+export function compareProgress(
+  current: number,
+  reference: number | null | undefined,
+  options: { smallBase?: number } = {},
+): Delta | undefined {
+  if (current <= 0) return undefined;
+  const delta = compareCounts(current, reference, options);
+  if (!delta || delta.tone !== "down" || !reference) return delta;
+  return { text: `đạt ${pct.format((current / reference) * 100)}%`, tone: "neutral" };
+}
+
 /** So sánh tỉ lệ % theo điểm phần trăm; chênh dưới 1 điểm để xám. */
 export function comparePoints(
   current: number | null | undefined,
   previous: number | null | undefined,
   unit = "điểm",
+  // Chênh của điểm số (unit rỗng) theo quy tắc điểm chung; chênh của tỉ lệ % giữ 1 số lẻ.
+  format: (value: number) => string = unit ? one.format : formatScore,
 ): Delta | undefined {
   if (current === null || current === undefined) return undefined;
   if (previous === null || previous === undefined) return undefined;
   const diff = current - previous;
   if (Math.abs(diff) < 0.05) return { text: "không đổi", tone: "neutral" };
   return {
-    text: `${diff > 0 ? "▲" : "▼"} ${one.format(Math.abs(diff))} ${unit}`,
+    text: `${diff > 0 ? "▲" : "▼"} ${format(Math.abs(diff))}${unit ? ` ${unit}` : ""}`,
     tone: Math.abs(diff) < 1 ? "neutral" : diff > 0 ? "up" : "down",
   };
 }
@@ -298,13 +317,9 @@ export function roomHeatmap(
 export const toTenScale = (percent: number | null | undefined) =>
   percent === null || percent === undefined ? null : percent / 10;
 
-const scoreFormat = new Intl.NumberFormat("vi-VN", {
-  maximumFractionDigits: 1,
-  minimumFractionDigits: 1,
-});
-/** Điểm thang 10 dạng "8,0"; không có điểm thì "—". */
+/** Điểm thang 10 theo quy tắc chung `formatScore` ("8.47"); không có điểm thì "—". */
 export const scoreText = (value: number | null | undefined) =>
-  value === null || value === undefined ? "—" : scoreFormat.format(value);
+  value === null || value === undefined ? "—" : formatScore(value);
 
 /** Tháng `YYYY-MM` (giờ Việt Nam) của một thời điểm. */
 export const vietnamMonth = (value: string) => vietnamDay(value).slice(0, 7);

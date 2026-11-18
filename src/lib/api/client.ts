@@ -225,6 +225,8 @@ const ERROR_TEXT: Record<string, string> = {
   IDEMPOTENCY_KEY_CONFLICT:
     "Khóa thao tác đã dùng với yêu cầu khác. Kiểm tra lại bản nháp hoặc biên lai.",
   AUTH_INVALID_CREDENTIALS: "Email hoặc mật khẩu không đúng.",
+  AUTH_ACCOUNT_DISABLED:
+    "Tài khoản đã bị trung tâm khóa. Liên hệ quản lý trung tâm để được mở lại.",
   AUTH_UNAUTHORIZED: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   AUTH_INVALID_REFRESH_TOKEN:
     "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
@@ -317,6 +319,8 @@ const ERROR_TEXT: Record<string, string> = {
     "Chấm đủ từng tiêu chí, trong giới hạn điểm cho phép.",
   INVALID_FILES:
     "Tệp không tồn tại, bị trùng hoặc không thuộc tài khoản của bạn. Tải lại tệp.",
+  AI_UNAVAILABLE:
+    "Trung tâm chưa bật AI chấm bài. Bạn vẫn chấm tay bình thường; Admin bật AI trong cấu hình máy chủ.",
   AI_VISION_UNAVAILABLE:
     "Chưa cấu hình AI đọc ảnh/PDF scan. Liên hệ quản trị hoặc soạn thủ công.",
   AI_JOB_BUSY: "AI đang xử lý bài này. Đợi hoàn tất trước khi gửi bản sửa.",

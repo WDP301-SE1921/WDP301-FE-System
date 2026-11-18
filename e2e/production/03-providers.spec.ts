@@ -1,28 +1,11 @@
-import { createRequire } from "node:module";
-import path from "node:path";
 import { test, expect } from "@playwright/test";
 import local from "./settings.cjs";
+import providers from "./providers.cjs";
 const config = local.settings();
-const requireBackend = createRequire(
-  path.resolve(local.root, "../WDP301-BE-System/package.json"),
-);
-const { ConfigService } = requireBackend("@nestjs/config");
-const { AcademicAiService } = requireBackend(
-  "./dist/integrations/academic-ai.service.js",
-);
-const { createTransport } = requireBackend("nodemailer");
 
-test("live DeepSeek text through the backend AI client", async ({}, info) => {
-  const service = new AcademicAiService(
-    new ConfigService({
-      academic: {
-        aiUrl: config.aiUrl,
-        aiKey: config.aiKey,
-        aiModel: config.aiModel,
-      },
-    }),
-  );
-  const result = await service.json(
+test("live DeepSeek text returns structured answers", async ({}, info) => {
+  const result = await providers.aiJson(
+    { url: config.aiUrl, key: config.aiKey, model: config.aiModel },
     'Evaluate the synthetic math answer. Return JSON {"correct":boolean,"answer":number}.',
     { question: "2x + 3 = 7", studentAnswer: "x = 2" },
   );
@@ -42,16 +25,8 @@ test("live DeepSeek vision reads an actual image", async ({ page }, info) => {
     '<main style="background:white;color:black;padding:40px;width:800px;font:36px Arial"><h1>Question 1</h1><p>2x + 3 = 7</p><p>2x = 4</p><p>x = 2</p><p>Code: 73819</p></main>',
   );
   const image = await page.screenshot();
-  const service = new AcademicAiService(
-    new ConfigService({
-      academic: {
-        visionUrl: config.aiUrl,
-        visionKey: config.aiKey,
-        visionModel: config.visionModel,
-      },
-    }),
-  );
-  const result = await service.json(
+  const result = await providers.aiJson(
+    { url: config.visionUrl, key: config.visionKey, model: config.visionModel },
     'Read the actual image. Return JSON {"answer":number,"code":string}. Do not guess.',
     { task: "Read x and the numeric code" },
     [`data:image/png;base64,${image.toString("base64")}`],
@@ -60,7 +35,7 @@ test("live DeepSeek vision reads an actual image", async ({ page }, info) => {
   await info.attach("vision input", { body: image, contentType: "image/png" });
   await info.attach("real vision provider result", {
     body: JSON.stringify({
-      provider: new URL(config.aiUrl).hostname,
+      provider: new URL(config.visionUrl).hostname,
       model: config.visionModel,
       result,
     }),
@@ -69,23 +44,14 @@ test("live DeepSeek vision reads an actual image", async ({ page }, info) => {
 });
 
 test("real SMTP connects and authenticates", async ({}, info) => {
-  const transporter = createTransport(config.smtpUrl, {
-    connectionTimeout: 20000,
-    greetingTimeout: 20000,
-    socketTimeout: 30000,
+  expect(await providers.verifySmtp(config)).toBe(true);
+  await info.attach("SMTP verification", {
+    body: JSON.stringify({
+      host: new URL(config.smtpUrl).hostname,
+      authenticated: true,
+      delivery:
+        "Authentication only; inbox delivery requires the application outbox test.",
+    }),
+    contentType: "application/json",
   });
-  try {
-    expect(await transporter.verify()).toBe(true);
-    await info.attach("SMTP verification", {
-      body: JSON.stringify({
-        host: new URL(config.smtpUrl).hostname,
-        authenticated: true,
-        delivery:
-          "Authentication only; inbox delivery requires the application outbox test.",
-      }),
-      contentType: "application/json",
-    });
-  } finally {
-    transporter.close();
-  }
 });

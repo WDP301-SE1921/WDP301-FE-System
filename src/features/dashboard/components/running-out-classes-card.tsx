@@ -3,18 +3,12 @@
 import Link from "next/link";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 import { classesRunningOut } from "@/features/registration-flow/program-setup";
 import { calendarDateLabel } from "@/lib/calendar-date";
 import type { CurriculumUnit } from "@/types/curriculum";
 import type { RegistrationClass } from "@/types/backend";
+import { Panel } from "./dashboard-ui";
 
 interface QueryState<T> {
   data: T | undefined;
@@ -44,16 +38,11 @@ export function RunningOutClassesCard({
     classes.data.length > 0 &&
     classes.data.every((item) => item.scheduledUntil === undefined);
   return (
-    <Card className="min-w-0">
-      <CardHeader>
-        <CardTitle>Lớp cần tạo lịch học</CardTitle>
-        <CardDescription>
-          Lớp chưa có buổi học nào, hoặc buổi cuối cách hôm nay dưới 14 ngày, và
-          đã có giáo trình được duyệt. Phụ huynh chỉ thấy buổi học trên ứng dụng
-          sau khi lịch được tạo.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    // Giải thích nằm trong ⓘ như mọi khối khác của dashboard, không câu mô tả dưới tiêu đề.
+    <Panel
+      title="Lớp cần tạo lịch học"
+      tip="Lớp chưa có buổi học nào, hoặc buổi cuối cách hôm nay dưới 14 ngày, và đã có giáo trình được duyệt. Phụ huynh chỉ thấy buổi học trên ứng dụng sau khi lịch được tạo."
+    >
         <AsyncBoundary
           isLoading={classes.isPending || units.isPending}
           isError={!!failed}
@@ -105,7 +94,6 @@ export function RunningOutClassesCard({
             </ul>
           )}
         </AsyncBoundary>
-      </CardContent>
-    </Card>
+    </Panel>
   );
 }

@@ -1,9 +1,14 @@
 const fs = require("node:fs");
 const { randomUUID } = require("node:crypto");
 const { runtime, settings } = require("./settings.cjs");
+const { maskSession } = require("./secrets.cjs");
 const config = settings();
 function session(role) {
-  return JSON.parse(fs.readFileSync(`${runtime}/auth.json`, "utf8"))[role];
+  const auth = JSON.parse(fs.readFileSync(`${runtime}/auth.json`, "utf8"))[
+    role
+  ];
+  maskSession(auth);
+  return auth;
 }
 async function ensure(role) {
   const auth = session(role);
@@ -22,6 +27,7 @@ async function ensure(role) {
       `Production ${role} session expired; run prepare.mjs. HTTP ${response.status}`,
     );
   const updated = (await response.json()).data;
+  maskSession(updated);
   const sessions = JSON.parse(fs.readFileSync(`${runtime}/auth.json`, "utf8"));
   sessions[role] = updated;
   fs.writeFileSync(`${runtime}/auth.json`, JSON.stringify(sessions));

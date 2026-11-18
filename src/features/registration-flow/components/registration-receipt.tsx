@@ -4,7 +4,13 @@ import { printRegistrationDocument } from "../print";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { displayDate, money, scheduleText, termLabel } from "../calendar";
+import {
+  displayDate,
+  money,
+  packageText,
+  scheduleText,
+  termLabel,
+} from "../calendar";
 import type { RegistrationReceipt as ReceiptData } from "@/types/backend";
 import {
   PaymentMethodAndRefunds,
@@ -56,7 +62,7 @@ export function RegistrationReceipt({ receipt }: { receipt: ReceiptData }) {
             ],
             [
               "Gói học",
-              `${receipt.term.packageMonths} tháng · ${termLabel(receipt.term.startDate, receipt.term.endDate)}`,
+              `${packageText(receipt.term.packageMonths, receipt.term.plannedSessions)} · ${termLabel(receipt.term.startDate, receipt.term.endDate)}`,
             ],
           ].map(([label, value]) => (
             <div key={label}>

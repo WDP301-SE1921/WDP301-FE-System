@@ -33,6 +33,9 @@ import {
 import { money } from "@/features/registration-flow/calendar";
 import type { RegistrationBill } from "@/types/backend";
 
+type ConfirmationValues = Omit<OfflineConfirmationInput, "method"> &
+  Partial<Pick<OfflineConfirmationInput, "method">>;
+
 // Hình thức (tiền mặt / chuyển khoản) được lưu cùng biên lai để đối soát ca; thời gian thu và mã giao dịch ngân hàng chưa lưu.
 export function OfflinePaymentDialog({
   bill,
@@ -62,8 +65,17 @@ export function OfflinePaymentDialog({
   });
   const [attempt, setAttempt] = useState(restored.attempt);
   const [error, setError] = useState<unknown>(restored.error);
-  const form = useForm<OfflineConfirmationInput>({
-    resolver: zodResolver(offlineConfirmationSchema),
+  const isLegacyAttempt = !!restored.attempt && !restored.attempt.body.method;
+  const schema = offlineConfirmationSchema
+    .extend({
+      method: offlineConfirmationSchema.shape.method.optional(),
+    })
+    .refine((input) => isLegacyAttempt || !!input.method, {
+      path: ["method"],
+      message: "Chọn hình thức thanh toán.",
+    });
+  const form = useForm<ConfirmationValues>({
+    resolver: zodResolver(schema),
     defaultValues: {
       method: restored.attempt?.body.method ?? defaultValues?.method,
       receiptNumber: restored.attempt
@@ -76,6 +88,7 @@ export function OfflinePaymentDialog({
     control: form.control,
     name: "hasReceivedPayment",
   });
+  const method = useWatch({ control: form.control, name: "method" });
   const pending = form.formState.isSubmitting;
   useEffect(() => {
     return form.subscribe({
@@ -83,17 +96,21 @@ export function OfflinePaymentDialog({
       callback: ({ values }) => onValuesChange?.(values),
     });
   }, [form, onValuesChange]);
-  async function confirm(input: OfflineConfirmationInput) {
+  async function confirm(input: ConfirmationValues) {
     if (lock.current || restored.error || bill.status !== "UNPAID") return;
     lock.current = true;
     setError(null);
     try {
-      const saved = getPaymentAttempt(
-        operatorId,
-        bill.registrationId,
-        input.receiptNumber,
-        input.method,
-      );
+      let saved = attempt;
+      if (!saved) {
+        if (!input.method) return;
+        saved = getPaymentAttempt(
+          operatorId,
+          bill.registrationId,
+          input.receiptNumber,
+          input.method,
+        );
+      }
       setAttempt(saved);
       await onConfirm(saved);
       onClose();
@@ -129,35 +146,49 @@ export function OfflinePaymentDialog({
             khoản trung tâm, đúng số tiền và mã bill.
           </p>
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Hình thức thanh toán</legend>
-            <Controller
-              control={form.control}
-              name="method"
-              render={({ field }) => (
-                <RadioGroup
-                  value={field.value ?? null}
-                  onValueChange={(value) => field.onChange(value)}
-                  disabled={pending || !!attempt || !!restored.error}
-                  className="grid-cols-2 gap-3"
-                  aria-label="Hình thức thanh toán"
-                >
-                  {PAYMENT_METHOD_OPTIONS.map((option) => (
-                    <Label
-                      key={option.value}
-                      className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 has-data-checked:border-primary has-data-checked:bg-primary/5"
-                    >
-                      <RadioGroupItem value={option.value} className="mt-0.5" />
-                      <span className="space-y-0.5">
-                        <span className="block font-medium">{option.label}</span>
-                        <span className="block text-xs font-normal text-muted-foreground">
-                          {option.hint}
+            <legend className="text-sm font-medium">
+              Hình thức thanh toán
+            </legend>
+            {isLegacyAttempt ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                Lần xác nhận cũ chưa ghi hình thức. Thử lại giữ nguyên dữ liệu
+                đã gửi; biên lai hiển thị hình thức chưa ghi nhận.
+              </p>
+            ) : (
+              <Controller
+                control={form.control}
+                name="method"
+                render={({ field }) => (
+                  <RadioGroup
+                    value={field.value ?? null}
+                    onValueChange={(value) => field.onChange(value)}
+                    disabled={pending || !!attempt || !!restored.error}
+                    className="grid-cols-2 gap-3"
+                    aria-label="Hình thức thanh toán"
+                  >
+                    {PAYMENT_METHOD_OPTIONS.map((option) => (
+                      <Label
+                        key={option.value}
+                        className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 has-data-checked:border-primary has-data-checked:bg-primary/5"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          className="mt-0.5"
+                        />
+                        <span className="space-y-0.5">
+                          <span className="block font-medium">
+                            {option.label}
+                          </span>
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            {option.hint}
+                          </span>
                         </span>
-                      </span>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              )}
-            />
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                )}
+              />
+            )}
             <FieldError message={form.formState.errors.method?.message} />
           </fieldset>
           <div className="space-y-2">
@@ -215,6 +246,7 @@ export function OfflinePaymentDialog({
               disabled={
                 pending ||
                 !verified ||
+                (!isLegacyAttempt && !method) ||
                 !!restored.error ||
                 bill.status !== "UNPAID"
               }

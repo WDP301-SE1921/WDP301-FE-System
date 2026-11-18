@@ -176,11 +176,13 @@ export function CurriculumUnitsBody({
     <div
       className={cn(
         "grid items-start gap-5",
-        isCreating && "xl:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]",
+        // Form cạnh bảng chỉ khi màn đủ rộng; hẹp hơn thì xếp dọc để bảng không bị ép cột.
+        isCreating && "2xl:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]",
       )}
     >
       {isCreating && role === "curriculum_designer" && (
-        <Card className="min-w-0">
+        // Xếp dọc (dưới 2xl) thì thẻ form ôm theo form, không kéo hết bề ngang.
+        <Card className="w-full min-w-0 max-w-2xl 2xl:max-w-none">
           <CardHeader>
             <CardTitle>Giáo trình cho kỳ mới</CardTitle>
           </CardHeader>
@@ -268,7 +270,7 @@ export function CurriculumUnitsBody({
               <TableHeader>
                 <TableRow>
                   <TableHead>Giáo trình · kỳ</TableHead>
-                  <TableHead>Hiệu lực</TableHead>
+                  <TableHead>Kỳ học áp dụng</TableHead>
                   <TableHead>Số bài</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Bước tiếp theo</TableHead>
@@ -317,7 +319,11 @@ export function CurriculumUnitsBody({
                           category="curriculum"
                           status={curriculumStage(unit)}
                         />
-                        {curriculumEffectiveLabel(unit, today) && <p className="mt-1 text-xs text-muted-foreground">{curriculumEffectiveLabel(unit, today)}</p>}
+                        {curriculumEffectiveLabel(unit, today) && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {curriculumEffectiveLabel(unit, today)}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="max-w-64 whitespace-normal text-sm">
                         {curriculumNextStep(unit)}
@@ -352,8 +358,8 @@ export function CurriculumUnitsBody({
         </AsyncBoundary>
         {units.data && (
           <p className="text-xs text-muted-foreground">
-            {rows.length} bản giáo trình · {groupCurricula(rows).length} khóa học ·
-            dòng tô màu là việc cần bạn xử lý.
+            {rows.length} bản giáo trình · {groupCurricula(rows).length} khóa
+            học · dòng tô màu là việc cần bạn xử lý.
           </p>
         )}
       </div>

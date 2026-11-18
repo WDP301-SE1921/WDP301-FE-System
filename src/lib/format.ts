@@ -8,6 +8,15 @@ export function formatMoney(amount: number): string {
   }).format(amount)
 }
 
+/**
+ * Điểm hiển thị giống BE và app phụ huynh: tối đa 2 chữ số thập phân, dấu chấm, bỏ số 0 thừa
+ * (`8.47`, `8.5`, `9`). Mọi điểm (bài, trung bình, chênh lệch) dùng hàm này để web và app khớp nhau.
+ */
+export function formatScore(score: number): string {
+  // `Number()` bỏ số 0 thừa của `toFixed` và đổi `-0` thành `0`.
+  return String(Number(score.toFixed(2)))
+}
+
 export function formatDate(date: Date | string | number, formatStr = "dd/MM/yyyy"): string {
   const d = new Date(date)
   if (isNaN(d.getTime())) return ""
