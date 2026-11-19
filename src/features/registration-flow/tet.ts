@@ -1,22 +1,6 @@
+// Mùng 1 Tết comes from the same table as the Tết break of the schedule.
+import { LUNAR_NEW_YEAR } from "@/lib/lunar-new-year";
 import { addCalendarMonths } from "./calendar";
-
-/**
- * Mùng 1 Tết by year (local dates). Must match `LUNAR_NEW_YEAR` in the BE
- * (`registration-flow/tuition-pricing.ts`), which is the source of the real price.
- */
-const LUNAR_NEW_YEAR = [
-  "2025-01-29",
-  "2026-02-17",
-  "2027-02-06",
-  "2028-01-26",
-  "2029-02-13",
-  "2030-02-03",
-  "2031-01-23",
-  "2032-02-11",
-  "2033-01-31",
-  "2034-02-19",
-  "2035-02-08",
-];
 
 const lastDayBefore = (day: string) =>
   new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000)

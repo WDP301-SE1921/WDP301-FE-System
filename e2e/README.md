@@ -17,7 +17,7 @@ E2E_PASSWORD='<mật khẩu seed>' E2E_WORKERS=1 npx playwright test --project=a
 E2E_PASSWORD='<mật khẩu seed>' E2E_WORKERS=1 npx playwright test --project=academic e2e/web/academic-setup.spec.ts
 ```
 
-- `academic`: 4 luồng nhiều vai trò (`academic-setup`, `curriculum-csv`, `session-cancel-shift`, `center-closure`), mỗi spec tự đổi vai bằng `inRole` (`helpers.ts`). Chạy tuần tự.
+- `academic`: 2 luồng nhiều vai trò (`academic-setup`, `curriculum-csv`), mỗi spec tự đổi vai bằng `inRole` (`helpers.ts`). Chạy tuần tự.
 - `guest`, theo role (`center_manager`, `staff`, ...): `login.spec.ts`, `role-pages.spec.ts`.
 - Video mặc định tắt (cần `npx playwright install ffmpeg`); bật bằng `E2E_VIDEO=1`.
 
@@ -33,8 +33,7 @@ và chờ theo `Retry-After` khi gặp 429.
   Muốn sạch thì reseed database thử.
 - `academic-setup` dùng giáo viên `teacher@edugrade.local` và chọn một tuần ngẫu nhiên khác mỗi lần để buổi học không trùng lịch giáo viên của lần chạy trước.
 - Ngày tính theo giờ Việt Nam (`vnDate` trong `helpers.ts`), không dùng `toISOString()` cho ngày.
-- `session-cancel-shift` dùng lớp seed `Toán 9A` (hủy khoảng 4 buổi mỗi lần; đơn nghỉ thử trên `Vật lý 8A`, không hủy buổi nào), `center-closure` dùng `Toán 8B` (hủy buổi trong 1 khoảng 2 buổi, từ hôm nay + 35 ngày). Seed không tự bù buổi: chạy nhiều lần thì hết buổi và spec báo "dựng database thử MỚI (migrate + seed)". Không reseed lên database cũ; dựng database mới cần người dùng đồng ý.
-- Ngày nghỉ tạo ra có lý do `e2e-...`; spec xóa ngày nghỉ `e2e-` còn sót trước và sau khi chạy.
+- Hủy buổi và Ngày nghỉ trung tâm đã gỡ ngày 19/11/2026 (spec `session-cancel-shift`, `center-closure` đã xóa). `academic-setup` kiểm tra link cũ `?sessionTab=cancel` mở tab Nội dung và BFF trả 403 cho các route đó.
 - Phiên đăng nhập: access token BE sống 15 phút; spec ghi lại phiên đã làm mới vào `e2e/.auth` khi đóng context (`closeSessions`). Đã chạy lâu hơn 15 phút thì chạy lại để `auth.setup.ts` đăng nhập mới.
 
 ## Giới hạn của kiểm tra

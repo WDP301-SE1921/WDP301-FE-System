@@ -17,11 +17,11 @@ Mọi API cũ giữ nguyên request và response; chỉ có thêm field mới. A
 | Phần | Đã thêm |
 |---|---|
 | BE | `src/modules/registration-flow/tuition-pricing.ts`: bảng `LUNAR_NEW_YEAR` (2025–2035), `priceTuition`. Phiếu lưu thêm `listAmount`, `tetDiscountAmount`, `tetPeriodStart`, `tetPeriodEnd`. Bill và biên lai trả thêm `pricing.listTotal`, `pricing.tetDiscount` (hoặc `listTotal`, `tetDiscount` ở cấp ngoài cùng của biên lai). `pricing.total` vẫn là số phải thu |
-| FE | Bước "Lớp & kỳ học" hiện "Đã giảm X (50% tháng có Tết …)". Phiếu và biên lai có thêm dòng "Học phí theo số tháng" và "Giảm 50% tháng có Tết". Bảng ngày Tết ở FE (`features/registration-flow/tet.ts`) chỉ dùng để xem trước và phải giống bảng của BE |
+| FE | Bước "Lớp & kỳ học" hiện "Đã giảm X (50% tháng có Tết …)". Phiếu và biên lai có thêm dòng "Học phí theo số tháng" và "Giảm 50% tháng có Tết". Bảng ngày Tết ở FE (`src/lib/lunar-new-year.ts`, từ 19/11/2026 dùng chung cho xem trước giá và kỳ nghỉ Tết của lịch) chỉ dùng để xem trước và phải giống bảng của BE (`src/common/lunar-new-year.ts`) |
 
 **Test:** đăng ký một lớp, chọn ngày bắt đầu khoảng 15/01/2027, gói 3 tháng. Tháng 15/01–14/02 chứa 06/02/2027 nên giảm nửa tháng. Ví dụ đã chạy trên máy: học phí 750.000đ × 3 = 2.250.000đ, giảm 375.000đ, phải thu 1.875.000đ.
 
-**Lưu ý:** trước năm 2035 phải thêm ngày Tết các năm sau vào **cả hai** bảng (BE và FE).
+**Lưu ý:** trước năm 2035 phải thêm ngày Tết các năm sau (cả mùng 1 lẫn kỳ nghỉ 23 tháng Chạp → mùng 7) vào **cả hai** bảng (BE và FE).
 
 ## 2. Tiền mặt / chuyển khoản và đối soát cuối ca
 
@@ -51,7 +51,7 @@ Mọi API cũ giữ nguyên request và response; chỉ có thêm field mới. A
 |---|---|---|
 | Gia hạn tay | `POST academic/enrollments/:id/extensions` `{ days: 1–90, reason }`, `GET …/extensions` | Panel "Xử lý" của học sinh có tab mới **Gia hạn bù**: số ngày, lý do, xem trước hạn cũ → hạn mới, lịch sử gia hạn |
 | Bảo lưu khi nghỉ dài hạn | Nghỉ dài hạn từ **14 ngày** kèm `extendTerm: true`: cộng đúng số ngày nghỉ. "Kết thúc nghỉ sớm" giảm phần cộng (dưới 14 ngày thì bỏ hẳn). Hủy đơn nghỉ thì bỏ phần cộng | Ô "Bảo lưu" trong form Nghỉ dài hạn và lúc duyệt đơn nghỉ của phụ huynh; phần xem trước hiện hạn mới |
-| Trung tâm hủy buổi | `sessions/:id/cancel` và `bulk-cancel` nhận `extendTerm: true`: mỗi học sinh của buổi được kéo hạn tới buổi học kế tiếp (trừ em đang nghỉ dài hạn) | Ô "Gia hạn bù 1 buổi cho học sinh của buổi này" trong hộp hủy **một** buổi, mặc định bật. Hủy nhiều buổi (ngày nghỉ lễ, Tết) không có ô này, vì nghỉ lễ đã tính trong học phí |
+| ~~Trung tâm hủy buổi~~ **Đã gỡ 19/11/2026** (bỏ hủy buổi; gia hạn cũ nguồn `SESSION_CANCELLED` vẫn hiện) | `sessions/:id/cancel` và `bulk-cancel` nhận `extendTerm: true`: mỗi học sinh của buổi được kéo hạn tới buổi học kế tiếp (trừ em đang nghỉ dài hạn) | Ô "Gia hạn bù 1 buổi cho học sinh của buổi này" trong hộp hủy **một** buổi, mặc định bật. Hủy nhiều buổi (ngày nghỉ lễ, Tết) không có ô này, vì nghỉ lễ đã tính trong học phí |
 
 Thông báo mới: `ENROLLMENT_EXTENDED`.
 

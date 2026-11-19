@@ -30,7 +30,7 @@ import { useCurriculumMutation } from "../hooks/use-curriculum";
 import { useCurriculumUnits } from "../hooks/use-curriculum";
 import { canCopyCurriculum, estimateLessons } from "../workspace-selectors";
 import { sessionsInRange } from "../readiness";
-import { useCenterClosures } from "../hooks/use-center-closures";
+import { tetBreaks } from "@/lib/lunar-new-year";
 import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import { useCurrentRole } from "@/hooks/use-current-role";
 import {
@@ -114,7 +114,7 @@ export function UnitForm({
         (item) => item.programId === selectedProgram,
       );
   const frequency = programDetail.data?.sessionsPerWeek;
-  const { closures } = useCenterClosures(fromDate, toDate, !!selectedProgram);
+  const closures = tetBreaks(fromDate, toDate);
   const estimate = estimateLessons(fromDate, toDate, programClasses, frequency, closures);
   const exactNeeds =
     estimate && detailHasSchedules

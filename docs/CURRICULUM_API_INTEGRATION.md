@@ -47,6 +47,8 @@ Không tạo tài khoản/hồ sơ học sinh bằng nhân viên. Chỉ xác nh�
 
 ## Ngày nghỉ, hủy buổi và CSV (đợt 10/11/2026)
 
+> **Đã gỡ 19/11/2026:** hủy buổi (`sessions/:id/cancel`, `cancel-preview`, `bulk-cancel`, `bulk-cancel-preview`) và `academic/center-closures` đã xóa ở BE (404) và BFF (403). Tạo lịch học tự bỏ qua kỳ nghỉ Tết 23 tháng Chạp → mùng 7 (bảng `TET_BREAKS`). Các dòng dưới chỉ còn là lịch sử.
+
 - `academic/center-closures` (GET mọi vai trò web, POST/PATCH/DELETE chỉ Quản lý): không tự hủy buổi, không phát thông báo; BFF có luật proxy riêng.
 - Hủy buổi lẻ: `POST academic/sessions/:id/cancel-preview` rồi `POST .../cancel` (`shiftLessons` true = hủy và dời bài, bỏ trống = hủy, bỏ bài; cần `Idempotency-Key`). Chặn bằng `LESSON_SHIFT_BLOCKED`, `LEAVE_EXISTS`; role khác Quản lý nhận 403 `FORBIDDEN`.
 - Hủy theo lô: `POST academic/sessions/bulk-cancel-preview` và `bulk-cancel`, chia theo lớp (tối đa 200 buổi mỗi lô, key mỗi lô, timeout BFF 65 giây); `BULK_CANCEL_BLOCKED` thì không buổi nào của lô bị hủy. Thông báo: một cho mỗi buổi khi hủy lẻ, một cho mỗi lớp khi hủy theo lô.

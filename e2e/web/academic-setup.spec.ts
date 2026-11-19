@@ -274,9 +274,10 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     expect(blocked?.status()).toBe(403);
   });
 
-  test("Hủy và dời bài buổi đầu của lớp mới: bài cuối bị đẩy ra khỏi lịch, buổi còn lại mang bài 1", async ({
+  test("Link cũ ?sessionTab=cancel mở tab Nội dung; BFF chặn hủy buổi và Ngày nghỉ, lịch giữ nguyên bài", async ({
     browser,
   }) => {
+    // Session cancel and center closures were removed on 19/11/2026.
     const page = await open(browser, ROLES.CENTER_MANAGER);
     const query = new URLSearchParams({ classId: state.classId, fromDate: fromDate(), toDate: toDate(), page: "1", limit: "100" });
     const listed = async () => {
@@ -286,29 +287,28 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
       );
       return result.body.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     };
-    const [first, second] = await listed();
-    expect(first.lesson?.title).toBe(LESSONS[0]);
-    expect(second.lesson?.title).toBe(LESSONS[1]);
-
+    const [first] = await listed();
     const date = new Date(Date.parse(first.startsAt) + 7 * 3_600_000).toISOString().slice(0, 10);
     await page.goto(
       `/manager/schedule?classId=${state.classId}&view=list&date=${date}&session=${first.id}&sessionTab=cancel`,
     );
-    await chooseCard(page, "Hủy và dời bài sang buổi sau");
-    // Giáo trình chỉ có 2 bài cho 2 buổi: bài 2 không còn buổi nào để nhận, phải được báo trước khi xác nhận.
-    await expect(
-      page.getByText(
-        new RegExp(`Bài "${LESSONS[1]}" (bị đẩy ra khỏi lịch hiện tại và sẽ vào lần tạo lịch sau|chưa có buổi trong kỳ này)\\.\\s+Lớp chậm một bài\\.`),
-      ),
-    ).toBeVisible();
-    await pickSelect(page, page.locator("#cancel-reason"), "Giáo viên bận đột xuất");
-    await page.getByRole("button", { name: "Xác nhận hủy buổi" }).click();
-
-    await expect
-      .poll(async () => (await listed()).filter((item) => item.status === "SCHEDULED").map((item) => item.lesson?.title))
-      .toEqual([LESSONS[0]]);
-    const after = await listed();
-    expect(after.find((item) => item.id === first.id)?.status).toBe("CANCELLED");
+    const tabs = page.getByRole("tablist", { name: "Phần của buổi học" });
+    await expect(tabs.getByRole("tab")).toHaveText(["Nội dung", "Đổi giờ", "Dạy thay"]);
+    await expect(tabs.getByRole("tab", { name: "Nội dung" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("button", { name: "Ngày nghỉ trung tâm" })).toHaveCount(0);
+    for (const path of [
+      `academic/sessions/${first.id}/cancel`,
+      `academic/sessions/${first.id}/cancel-preview`,
+      "academic/sessions/bulk-cancel",
+      "academic/sessions/bulk-cancel-preview",
+      "academic/center-closures",
+    ])
+      expect((await bff(page.context(), path, { method: "POST", data: { reason: "x" } })).status, path).toBe(403);
+    expect((await bff(page.context(), "academic/center-closures")).status).toBe(403);
+    expect((await listed()).map((item) => [item.status, item.lesson?.title])).toEqual([
+      ["SCHEDULED", LESSONS[0]],
+      ["SCHEDULED", LESSONS[1]],
+    ]);
   });
 });
 

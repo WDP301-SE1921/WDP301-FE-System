@@ -61,7 +61,7 @@ Mỗi lần chạy đầy đủ sinh lại báo cáo. Muốn giữ một lần c
 | 08   | Từ chối khác khóa; chuyển cùng khóa/học phí; đóng placement cũ và mở placement mới đúng ngày hiệu lực; giữ lịch sử, đổi ghế tương lai.                                                   |
 | 09   | Kết thúc môn có xác nhận; giữ buổi đã học và hủy ghế tương lai; học lại phải có đăng ký, khoản thu và enrollment mới.                                                                    |
 | 10   | Gợi ý dạy thay loại giáo viên bận; API chống trùng; dạy thay một buổi; đổi dài hạn chỉ chuyển từ ngày hiệu lực; audit và quyền manager.                                                  |
-| 11   | Dời buổi giữ bài/roster; hủy và dời bài; ngày nghỉ và hủy theo lô; giữ buổi ngoài lô; parent có thông báo.                                                                               |
+| 11   | Dời buổi giữ bài/roster; không còn tab Hủy buổi và nút Ngày nghỉ; API hủy buổi và Ngày nghỉ trả 404.                                                                               |
 | 12   | Manager soạn thông báo; parent nhận realtime không refresh; gửi SMTP cục bộ và chống trùng; nhắc kỳ sắp hết và lưu thông báo.                                                            |
 | 13   | Chat quản lý/nhân viên realtime hai chiều; teacher/designer cũng dùng được; người ngoài cuộc trò chuyện và parent bị chặn.                                                               |
 

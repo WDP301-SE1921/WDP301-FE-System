@@ -108,7 +108,7 @@ export const CLASS_MSG = {
   PREVIEW_TITLE: (count: number) => `Sẽ sinh ${count} buổi học`,
   PREVIEW_AUTO: "Tự động",
   PREVIEW_RANGE: (from: string, to: string) => `Dự kiến: ${from} – ${to}`,
-  PREVIEW_HOLIDAY_NOTE: "Đã tự động bỏ qua các ngày nghỉ lễ theo lịch Bộ GD",
+  PREVIEW_HOLIDAY_NOTE: "Đã tự động bỏ qua kỳ nghỉ Tết (23 tháng Chạp đến hết mùng 7)",
   PREVIEW_TEST_NOTE: `Mỗi buổi học một bài; buổi cuối mỗi tháng là buổi kiểm tra tháng (chỉ chèn khi tháng đó đã học đủ ${BUSINESS_RULES.MONTHLY_TEST_MIN_LESSONS} bài).`,
   PREVIEW_TOTAL_HOURS: "Tổng thời lượng",
   PREVIEW_HOURS_UNIT: (hours: number) => `${hours} giờ học`,

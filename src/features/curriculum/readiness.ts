@@ -1,12 +1,12 @@
 import type { RegistrationProgram, WeeklySchedule } from "@/types/backend";
 import type { CurriculumReviewer } from "@/types/curriculum";
-import { countSlots, type ClosureRange } from "./center-closures";
+import { countSlots, type ClosureRange } from "./session-slots";
 import { estimateLessons } from "./workspace-selectors";
 
 /**
  * Số buổi một lớp có trong khoảng ngày (gồm cả hai đầu), giống `slotsForRange` của BE:
  * sinh lịch gán buổi thứ n = bài thứ n, nên đây cũng là số bài lớp đó cần.
- * `weekday` theo BE: 1 = Thứ 2 … 7 = Chủ nhật. Ngày nghỉ trung tâm (`closures`) không có buổi.
+ * `weekday` theo BE: 1 = Thứ 2 … 7 = Chủ nhật. Kỳ nghỉ Tết (`closures`, từ `tetBreaks`) không có buổi.
  */
 export function sessionsInRange(
   schedules: readonly Pick<WeeklySchedule, "weekday">[],

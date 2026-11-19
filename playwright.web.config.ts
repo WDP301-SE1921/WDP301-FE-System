@@ -43,7 +43,7 @@ export default defineConfig({
     {
       name: "academic",
       testMatch:
-        /(academic-setup|curriculum-csv|session-cancel-shift|center-closure)\.spec\.ts/,
+        /(academic-setup|curriculum-csv)\.spec\.ts/,
       dependencies: ["setup"],
       fullyParallel: false,
       timeout: 120_000,

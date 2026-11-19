@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DAY_PATTERN, closureRangeError } from "@/features/curriculum/center-closures";
 
 const date = z.iso.date("Ngày không hợp lệ.");
 const title = z
@@ -104,12 +103,6 @@ export type ImportCommitInput = z.infer<typeof importCommitSchema>;
 const sessionRevisionSchema = reviewReasonSchema.extend({
   expectedRevision: z.number().int().min(1),
 });
-/** `shiftLessons`: true = hủy và dời bài sang buổi sau; bỏ trống = hủy, bỏ bài (hành vi cũ). */
-export const sessionCancelSchema = sessionRevisionSchema.extend({
-  shiftLessons: z.boolean().optional(),
-  /** Gia hạn bù 1 buổi cho học sinh của buổi bị hủy. */
-  extendTerm: z.boolean().optional(),
-});
 export const sessionRescheduleSchema = sessionRevisionSchema
   .extend({
     startsAt: z.iso.datetime(),
@@ -120,7 +113,6 @@ export const sessionRescheduleSchema = sessionRevisionSchema
     path: ["endsAt"],
   });
 export type SessionRescheduleInput = z.infer<typeof sessionRescheduleSchema>;
-export type SessionCancelInput = z.infer<typeof sessionCancelSchema>;
 
 export const sessionActionFormSchema = reviewReasonSchema.extend({
   startsAt: z.string(),
@@ -148,22 +140,3 @@ export const curriculumImportFileSchema = z.object({
 export type CurriculumImportFileInput = z.infer<
   typeof curriculumImportFileSchema
 >;
-
-export const centerClosureFormSchema = z
-  .object({
-    fromDate: z.string().regex(DAY_PATTERN, "Chọn ngày bắt đầu."),
-    toDate: z.string().regex(DAY_PATTERN, "Chọn ngày kết thúc."),
-    reason: z.string().trim().min(1, "Chọn hoặc nhập lý do.").max(255, "Lý do tối đa 255 ký tự."),
-  })
-  .superRefine((value, context) => {
-    const message = closureRangeError(value.fromDate, value.toDate);
-    if (message) context.addIssue({ code: "custom", path: ["toDate"], message });
-  });
-export type CenterClosureFormInput = z.infer<typeof centerClosureFormSchema>;
-export const bulkCancelSchema = z.object({
-  sessionIds: z.array(z.string().min(1)).min(1).max(200),
-  shiftLessons: z.boolean().optional(),
-  extendTerm: z.boolean().optional(),
-  reason: z.string().trim().min(1, "Nhập lý do.").max(2000),
-});
-export type BulkCancelInput = z.infer<typeof bulkCancelSchema>;

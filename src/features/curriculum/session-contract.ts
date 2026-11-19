@@ -1,12 +1,10 @@
 import { z } from "zod";
-import {
-  sessionCancelSchema,
-  sessionRescheduleSchema,
-} from "@/lib/validators/curriculum";
-export const sessionActionSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("reschedule"), body: sessionRescheduleSchema }),
-  z.object({ action: z.literal("cancel"), body: sessionCancelSchema }),
-]);
+import { sessionRescheduleSchema } from "@/lib/validators/curriculum";
+/** Session cancel was removed on 19/11/2026: reschedule is the only saved session action. */
+export const sessionActionSchema = z.object({
+  action: z.literal("reschedule"),
+  body: sessionRescheduleSchema,
+});
 export type SessionAction = z.infer<typeof sessionActionSchema>;
 export function vietnamLocalInput(value: string) {
   return new Date(Date.parse(value) + 7 * 3600000).toISOString().slice(0, 16);
