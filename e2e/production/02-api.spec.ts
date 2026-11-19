@@ -69,14 +69,16 @@ test("all static GET APIs respond with authorized roles", async ({
       ? "admin"
       : route.startsWith("/api/v1/me/")
         ? "parent"
-        : route === "/api/v1/parents/search"
-          ? "staff"
-          : [
-                "/api/v1/academic/assignments",
-                "/api/v1/academic/reports",
-              ].includes(route)
-            ? "teacher"
-            : "manager";
+        : route === "/api/v1/academic/outcome-sets/import-template"
+          ? "designer"
+          : route === "/api/v1/parents/search"
+            ? "staff"
+            : [
+                  "/api/v1/academic/assignments",
+                  "/api/v1/academic/reports",
+                ].includes(route)
+              ? "teacher"
+              : "manager";
     const url = new URL(origin + route);
     if (route.includes("/analytics"))
       for (const [key, value] of Object.entries({

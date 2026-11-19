@@ -28,6 +28,19 @@ async function cleanupFixture(
         field,
       );
   }
+  if (fixture.room && !states.roomDeleted) {
+    const rooms = api.items(
+      await api.call(
+        "manager",
+        `rooms?search=${encodeURIComponent(fixture.room.name)}&limit=100`,
+      ),
+    );
+    owned(
+      rooms.find((room) => room.id === fixture.room.id),
+      fixture.room,
+      "name",
+    );
+  }
   let registration;
   if (fixture.registration && !states.registrationChecked) {
     if (!fixture.student || !fixture.classroom)
@@ -121,6 +134,7 @@ async function cleanupFixture(
   for (const [key, state, kind] of [
     ["student", "studentDeleted", "student"],
     ["classroom", "classDeleted", "class"],
+    ["room", "roomDeleted", "room"],
     ["program", "programDeleted", "program"],
   ]) {
     if (fixture[key])

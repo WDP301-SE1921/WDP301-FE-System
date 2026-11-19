@@ -207,11 +207,15 @@ export class World {
         sessionsPerWeek: 2,
       },
     });
+    const room = await this.db.room.create({
+      data: { name: unique(`phòng ${label}`), capacity: options.capacity ?? 8 },
+    });
     const classroom = await this.db.class.create({
       data: {
         programId: program.id,
         name: unique(`lớp ${label}`),
         teacherId: users.teacher.id,
+        roomId: room.id,
         monthlyFee: 500000,
         capacity: options.capacity ?? 8,
         scheduleConfirmedAt: new Date(),
@@ -232,6 +236,24 @@ export class World {
         content: "Giải phương trình 2x + 3 = 7; x = 2.",
         status: "APPROVED",
         sequence: 1,
+      },
+    });
+    // A course now needs CLOs before a curriculum can be drafted. Keep them unreviewed
+    // until the particular scenario performs the real teacher-review workflow.
+    const outcomeSet = await this.db.outcomeSet.create({
+      data: {
+        programId: program.id,
+        level: `Lớp ${program.grade}`,
+        designerId: users.designer.id,
+      },
+    });
+    const outcome = await this.db.learningOutcome.create({
+      data: {
+        outcomeSetId: outcomeSet.id,
+        code: `MATH-${program.grade}-01`,
+        title: unique("Giải phương trình một ẩn"),
+        statement: "Giải và kiểm tra nghiệm phương trình bậc nhất một ẩn.",
+        lessonLinks: { create: { lessonId: lesson.id } },
       },
     });
     const parent = await this.db.parentProfile.findUniqueOrThrow({
@@ -281,7 +303,17 @@ export class World {
         },
       });
     }
-    return { users, program, classroom, lesson, student, enrollment };
+    return {
+      users,
+      program,
+      room,
+      classroom,
+      lesson,
+      outcomeSet,
+      outcome,
+      student,
+      enrollment,
+    };
   }
   async session(
     fixture: Awaited<ReturnType<World["fixture"]>>,
