@@ -42,6 +42,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           duration={TOAST_DURATION.SUCCESS}
           richColors
           position="top-right"
+          // Topbar cao 64px (h-16, sticky): toast nằm ngay dưới nó, không che ô tìm kiếm/chuông.
+          offset={{ top: 76 }}
+          mobileOffset={{ top: 72 }}
         />
       </NuqsAdapter>
     </QueryClientProvider>
