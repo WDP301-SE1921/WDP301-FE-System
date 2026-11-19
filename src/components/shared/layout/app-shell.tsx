@@ -124,7 +124,7 @@ function AppShell({ role, badgeCounts, children }: AppShellProps) {
         <main
           id="main-content"
           tabIndex={-1}
-          className="min-w-0 flex-1 scroll-mt-20 overflow-y-auto"
+          className="min-w-0 flex-1 scroll-mt-20 overflow-x-clip"
         >
           {children}
         </main>
