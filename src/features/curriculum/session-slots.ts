@@ -56,3 +56,16 @@ export function closedDaysInRange(
     if (isClosedDay(new Date(t).toISOString().slice(0, 10), closures)) count++;
   return count;
 }
+
+/**
+ * Giáo trình `lessonCount` bài học xong trong khoảng bao nhiêu tuần nếu mỗi tuần có `sessionsPerWeek` buổi
+ * (mỗi buổi một bài). Làm tròn lên; `null` khi chưa biết số buổi/tuần.
+ */
+export function estimateWeeks(
+  lessonCount: number,
+  sessionsPerWeek: number | null | undefined,
+): number | null {
+  if (!sessionsPerWeek || sessionsPerWeek <= 0 || !Number.isFinite(sessionsPerWeek)) return null;
+  if (!Number.isFinite(lessonCount) || lessonCount <= 0) return 0;
+  return Math.ceil(lessonCount / sessionsPerWeek);
+}

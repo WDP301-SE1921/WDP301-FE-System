@@ -271,7 +271,7 @@ export function CurriculumUnitsBody({
               <TableHeader>
                 <TableRow>
                   <TableHead>Giáo trình · kỳ</TableHead>
-                  <TableHead>Kỳ học áp dụng</TableHead>
+                  <TableHead>Áp dụng cho lớp khai giảng từ … đến …</TableHead>
                   <TableHead>Số bài</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Bước tiếp theo</TableHead>

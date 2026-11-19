@@ -40,7 +40,7 @@ import { useCurrentUser } from "@/hooks/use-current-role";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { ROUTES } from "@/constants/routes";
 import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
-import { groupClassesByStart, scheduleStartDate } from "@/features/registration-flow/program-setup";
+import { firstClassDay, groupClassesByStart, scheduleStartDate } from "@/features/registration-flow/program-setup";
 import {
   scheduleRangeSchema,
   type ScheduleRangeInput,
@@ -233,17 +233,28 @@ function GenerationWorkspace({
     resolver: zodResolver(scheduleRangeSchema),
     defaultValues: {
       curriculumUnitId: "",
+      // Ngày học đầu tiên sau hôm nay (hoặc sau buổi cuối đã có); sửa được.
       fromDate: first
-        ? requested
-          ? (startGroups[0]?.startDate ??
-            scheduleStartDate(first.fromDate, todayInVietnam()))
-          : first.fromDate.slice(0, 10)
+        ? firstClassDay(
+            startGroups[0]?.startDate ??
+              scheduleStartDate(
+                first.fromDate,
+                todayInVietnam(),
+                selectedAtStart
+                  .map((item) => item.scheduledUntil ?? "")
+                  .filter(Boolean)
+                  .sort()
+                  .at(-1),
+              ),
+            selectedAtStart.flatMap((item) =>
+              item.weeklySchedules.map((slot) => slot.weekday),
+            ),
+          )
         : "",
-      toDate: first?.toDate.slice(0, 10) ?? "",
     },
   });
   const values = useWatch({ control: form.control }) as ScheduleRangeInput;
-  const covering = applicableUnits(units, values.fromDate, values.toDate);
+  const covering = applicableUnits(units, values.fromDate);
   const unitId = covering.length === 1 ? covering[0].id : "";
   const input = { ...values, curriculumUnitId: unitId };
   const selected = classes.filter((item) => selectedIds.includes(item.id));
@@ -263,9 +274,26 @@ function GenerationWorkspace({
   const lock = useRef(false);
   const client = useQueryClient();
   const now = useCurrentTime();
+  // Ngày kết thúc do BE tự tính cho từng lớp; hiện ngày muộn nhất của các bản xem trước còn khớp.
+  const endDates = selected
+    .map((item) => {
+      const row = results[item.id];
+      return row && sameInput(row.input, input) && row.preview
+        ? (row.preview.endDate ?? row.preview.toDate).slice(0, 10)
+        : "";
+    })
+    .filter(Boolean)
+    .sort();
   const counts = new Set(classes.map((item) => item.weeklySchedules.length));
   const contextVersion = JSON.stringify([sessionsPerWeek, units.map((unit) => [unit.id, unit.revision, unit.status, unit.fromDate, unit.toDate]), classes.map((item) => [item.id, item.weeklySchedules])]);
-  const selectionValid = covering.length === 1 && sessionsPerWeek != null && selected.every((item) => item.weeklySchedules.length === sessionsPerWeek);
+  // Lớp đã có buổi chỉ học tiếp giáo trình chứa buổi đầu tiên của nó, không chuyển sang bản khác.
+  const startedUnitId = (item: RegistrationClass) =>
+    applicableUnits(approved, (item.scheduledFrom ?? "").slice(0, 10))[0]?.id ?? "";
+  const hasSessions = (item: RegistrationClass) =>
+    !!item.scheduledFrom || !!item.scheduledUntil;
+  const otherUnit = (item: RegistrationClass) =>
+    hasSessions(item) && startedUnitId(item) !== unitId;
+  const selectionValid = covering.length === 1 && !selected.some(otherUnit) && sessionsPerWeek != null && selected.every((item) => item.weeklySchedules.length === sessionsPerWeek);
   const ready = (result: ClassResult | undefined) =>
     generationReady(result, input, now) && (!!result?.attempt || (selectionValid && result?.contextVersion === contextVersion));
   async function previewAll(value: ScheduleRangeInput) {
@@ -369,32 +397,33 @@ function GenerationWorkspace({
             <fieldset disabled={!!busy} className="space-y-4">
               {selector}
               <div className="grid gap-3 sm:grid-cols-2">
-                {(
-                  [
-                    ["fromDate", "Từ ngày"],
-                    ["toDate", "Đến ngày"],
-                  ] as const
-                ).map(([name, label]) => (
-                  <div key={name} className="space-y-2">
-                    <Label htmlFor={`generate-${name}`}>{label}</Label>
-                    <Input
-                      id={`generate-${name}`}
-                      type="date"
-                      {...form.register(name, {
-                        onChange: () => form.setValue("curriculumUnitId", ""),
-                      })}
-                    />
-                    <FieldError
-                      message={form.formState.errors[name]?.message}
-                    />
-                  </div>
-                ))}
+                <div className="space-y-2">
+                  <Label htmlFor="generate-fromDate">Ngày bắt đầu</Label>
+                  <Input
+                    id="generate-fromDate"
+                    type="date"
+                    {...form.register("fromDate", {
+                      onChange: () => form.setValue("curriculumUnitId", ""),
+                    })}
+                  />
+                  <FieldError message={form.formState.errors.fromDate?.message} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="generate-toDate">Ngày kết thúc (tự tính)</Label>
+                  <Input
+                    id="generate-toDate"
+                    type="date"
+                    readOnly
+                    disabled
+                    value={endDates.at(-1) ?? ""}
+                  />
+                </div>
               </div>
               {covering.length === 1 ? (
                 <div className="space-y-1 rounded-xl bg-primary/5 p-3 text-sm">
                   <p className="font-medium">{covering[0].title}</p>
                   <p className="text-muted-foreground">
-                    Tự chọn giáo trình đã duyệt, hiệu lực phủ khoảng ngày.
+                    Tự chọn giáo trình đã duyệt có kỳ áp dụng chứa ngày bắt đầu. Số buổi tự tính theo số bài của giáo trình.
                   </p>
                 </div>
               ) : (
@@ -403,7 +432,7 @@ function GenerationWorkspace({
                   <p className="text-xs text-muted-foreground">
                     {covering.length > 1
                       ? "Có nhiều giáo trình cùng hiệu lực. Tải lại dữ liệu và báo Quản lý xử lý xung đột trước khi tạo lịch học."
-                      : "Không có giáo trình đã duyệt phủ trọn khoảng ngày. Nếu khoảng đi qua hai kỳ, chia thành từng khoảng thuộc một giáo trình."}
+                      : "Ngày bắt đầu chưa nằm trong kỳ áp dụng của giáo trình đã duyệt nào. Chọn ngày khác."}
                   </p>
                   <Button type="button" size="sm" variant="outline" onClick={() => void client.invalidateQueries({ queryKey: ["curriculum"] })}>Tải lại giáo trình</Button>
                 </div>
@@ -431,6 +460,10 @@ function GenerationWorkspace({
                     <Checkbox
                       id={`generate-class-${classroom.id}`}
                       checked={selectedIds.includes(classroom.id)}
+                      disabled={
+                        otherUnit(classroom) &&
+                        !selectedIds.includes(classroom.id)
+                      }
                       onCheckedChange={(checked) =>
                         onSelection(
                           checked
@@ -447,6 +480,7 @@ function GenerationWorkspace({
                       <span className="block text-xs font-normal text-muted-foreground">
                         {classroom.weeklySchedules.length} buổi/tuần
                         {sessionsPerWeek != null && classroom.weeklySchedules.length !== sessionsPerWeek && ` · Chưa đủ chuẩn ${sessionsPerWeek} buổi`}
+                        {otherUnit(classroom) && " · Lớp đã học theo giáo trình khác, không tạo thêm ở đây"}
                       </span>
                     </Label>
                   </div>
@@ -459,8 +493,8 @@ function GenerationWorkspace({
               </fieldset>
               {counts.size > 1 && (
                 <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-                  Các lớp có số buổi/tuần khác nhau. Kiểm tra số bài dự kiến của
-                  từng lớp trước khi tạo lịch học.
+                  Các lớp có số buổi/tuần khác nhau nên ngày kết thúc của từng
+                  lớp khác nhau.
                 </p>
               )}
               <Button
@@ -500,15 +534,13 @@ function GenerationWorkspace({
               <CardContent className="min-w-0 space-y-3">
                 {row?.generated !== undefined ? (
                   <p role="status" className="text-sm text-primary">
-                    Đã tạo {row.generated} buổi ·{" "}
-                    {calendarDateLabel(row.input.fromDate)} –{" "}
-                    {calendarDateLabel(row.input.toDate)}
+                    Đã tạo {row.generated} buổi, bắt đầu{" "}
+                    {calendarDateLabel(row.input.fromDate)}
                   </p>
                 ) : row?.attempt ? (
                   <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-                    Lịch chưa xác nhận:{" "}
-                    {calendarDateLabel(row.attempt.body.fromDate)} –{" "}
-                    {calendarDateLabel(row.attempt.body.toDate)}. Thử lại giữ
+                    Lịch chưa xác nhận: bắt đầu{" "}
+                    {calendarDateLabel(row.attempt.body.fromDate)}. Thử lại giữ
                     nguyên dữ liệu của thao tác này.
                   </p>
                 ) : !matching || !preview ? (
@@ -518,8 +550,21 @@ function GenerationWorkspace({
                   </p>
                 ) : (
                   <>
+                    <p className="text-sm">
+                      {slots.length} buổi, từ{" "}
+                      {calendarDateLabel(
+                        slots[0]
+                          ? todayInVietnam(new Date(slots[0].startsAt))
+                          : preview.fromDate.slice(0, 10),
+                      )}{" "}
+                      đến{" "}
+                      {calendarDateLabel(
+                        (preview.endDate ?? preview.toDate).slice(0, 10),
+                      )}{" "}
+                      (tự tính theo {preview.lessonCount ?? slots.length} bài của
+                      giáo trình)
+                    </p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">{slots.length} buổi</Badge>
                       <Badge variant={conflicts.length ? "danger" : "success"}>
                         {conflicts.length} buổi có xung đột
                       </Badge>

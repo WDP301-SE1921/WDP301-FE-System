@@ -1,5 +1,4 @@
 "use client";
-import { actsAsManager } from "@/constants/roles";
 
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -28,11 +27,8 @@ import type { CurriculumUnit } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { useCurriculumMutation } from "../hooks/use-curriculum";
 import { useCurriculumUnits } from "../hooks/use-curriculum";
-import { canCopyCurriculum, estimateLessons } from "../workspace-selectors";
-import { sessionsInRange } from "../readiness";
-import { tetBreaks } from "@/lib/lunar-new-year";
+import { canCopyCurriculum } from "../workspace-selectors";
 import { useVietnamDate } from "@/hooks/use-vietnam-date";
-import { useCurrentRole } from "@/hooks/use-current-role";
 import {
   useCurriculumFormState,
   type CurriculumFormState,
@@ -49,7 +45,6 @@ export function UnitForm({
   onSaved: (id: string, source?: "csv") => void;
   onStateChange?: (state: CurriculumFormState) => void;
 }) {
-  const role = useCurrentRole();
   const programs = useQuery({
     queryKey: ["registration-programs"],
     queryFn: registrationApi.programs,
@@ -76,14 +71,6 @@ export function UnitForm({
   const fromDate = useWatch({ control: form.control, name: "fromDate" });
   const toDate = useWatch({ control: form.control, name: "toDate" });
   const sources = useCurriculumUnits(selectedProgram || undefined);
-  const canReadClasses =
-    actsAsManager(role) || role === "teacher" || role === "staff";
-  const classes = useQuery({
-    queryKey: ["registration-classes", "all"],
-    queryFn: () => registrationApi.classes(),
-    enabled: canReadClasses,
-    retry: false,
-  });
   const today = useVietnamDate();
   const copyCandidates = (sources.data ?? [])
     .filter((item) => item.programId === selectedProgram && canCopyCurriculum(item))
@@ -99,36 +86,7 @@ export function UnitForm({
     enabled: !!selectedProgram,
     retry: false,
   });
-  const detailClasses = (programDetail.data?.classes ?? []).filter(
-    (item) => item.isActive,
-  );
-  const detailHasSchedules =
-    !!programDetail.data?.classes &&
-    detailClasses.every((item) => item.weeklySchedules !== undefined);
-  const programClasses = detailHasSchedules
-    ? detailClasses.map((item) => ({
-        isActive: item.isActive,
-        weeklySchedules: item.weeklySchedules ?? [],
-      }))
-    : (canReadClasses ? (classes.data ?? []) : []).filter(
-        (item) => item.programId === selectedProgram,
-      );
   const frequency = programDetail.data?.sessionsPerWeek;
-  const closures = tetBreaks(fromDate, toDate);
-  const estimate = estimateLessons(fromDate, toDate, programClasses, frequency, closures);
-  const exactNeeds =
-    estimate && detailHasSchedules
-      ? detailClasses
-          .filter((item) => item.weeklySchedules?.length)
-          .map((item) =>
-            sessionsInRange(item.weeklySchedules ?? [], fromDate, toDate, closures),
-          )
-      : [];
-  // Giáo viên duyệt chọn theo khóa → môn → bất kỳ (B4): lớp hay giáo viên của lớp không chặn gửi duyệt.
-  const readinessNote =
-    programDetail.data && !detailClasses.length
-      ? `Khóa ${programDetail.data.name} chưa có lớp nên chưa tính được số bài. Vẫn gửi duyệt được.`
-      : "";
   const overlapping = (sources.data ?? []).filter(
     (item) =>
       item.id !== unit?.id &&
@@ -200,14 +158,6 @@ export function UnitForm({
           error={programs.error}
           retry={() => void programs.refetch()}
         />
-        {readinessNote && (
-          <p
-            role="status"
-            className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/60 dark:text-amber-200"
-          >
-            {readinessNote}
-          </p>
-        )}
       </div>
       {!unit && (
         <div className="space-y-2">
@@ -261,7 +211,7 @@ export function UnitForm({
       )}
       <section
         className="space-y-2 rounded-xl bg-muted p-4 text-sm"
-        aria-label="Kiểm tra số bài cần"
+        aria-label="Kiểm tra trước khi lưu"
       >
         <p className="font-medium">Kiểm tra trước khi {unit ? "lưu" : "tạo"}</p>
         <div className="space-y-1">
@@ -276,55 +226,6 @@ export function UnitForm({
             {frequency == null ? "Quản lý cần cấu hình số buổi/tuần tại khóa học." : "Chuẩn của khóa học; Quản lý thay đổi tại thông tin khóa."}
           </p>
         </div>
-        {estimate ? (
-          <>
-            <p>
-              {estimate.weeks} tuần học (làm tròn lên theo khoảng hiệu lực).
-            </p>
-            {exactNeeds.length ? (
-              <p>
-                Cần{" "}
-                <b>
-                  {Math.min(...exactNeeds) === Math.max(...exactNeeds)
-                    ? Math.max(...exactNeeds)
-                    : `${Math.min(...exactNeeds)}–${Math.max(...exactNeeds)}`}{" "}
-                  bài
-                </b>{" "}
-                (mỗi buổi một bài) theo lịch tuần của {exactNeeds.length} lớp
-                đang hoạt động · {estimate.minWeekly === estimate.maxWeekly
-                  ? estimate.minWeekly
-                  : `${estimate.minWeekly}–${estimate.maxWeekly}`}{" "}
-                buổi/tuần.
-              </p>
-            ) : estimate.min !== null ? (
-              <p>
-                Ước tính{" "}
-                {estimate.min === estimate.max
-                  ? estimate.min
-                  : `${estimate.min}–${estimate.max}`}{" "}
-                bài ·{" "}
-                {estimate.minWeekly === estimate.maxWeekly
-                  ? estimate.minWeekly
-                  : `${estimate.minWeekly}–${estimate.maxWeekly}`}{" "}
-                buổi/tuần {estimate.source === "course" ? "theo chuẩn khóa, số tuần làm tròn." : "theo lịch các lớp đang hoạt động."}
-              </p>
-            ) : (
-              <p>Chưa có lịch tuần của lớp để ước tính số bài cần.</p>
-            )}
-            {estimate.min !== estimate.max && (
-              <p>
-                Các lớp có số buổi/tuần khác nhau. Kiểm tra từng lớp khi sinh
-                lịch.
-              </p>
-            )}
-          </>
-        ) : (
-          <p>Chọn khoảng ngày hợp lệ để ước tính số bài cần.</p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          Ước tính tham khảo; lịch nghỉ và ngày học thực tế được kiểm tra khi
-          tạo lịch học.
-        </p>
         {!!overlapping.length && (
           <p className="text-amber-700 dark:text-amber-300">
             Khoảng ngày chồng với bản đã duyệt:{" "}
@@ -333,18 +234,12 @@ export function UnitForm({
         )}
         {source === "copy" &&
           sourceUnit &&
-          estimate?.min !== null &&
-          estimate?.min !== undefined &&
           sourceUnit._count?.lessons !== undefined && (
             <p>
               Bản nguồn có {sourceUnit._count.lessons} bài. Sau khi sao chép,
-              kiểm tra và điều chỉnh số bài theo lịch lớp.
+              kiểm tra và điều chỉnh nội dung các bài.
             </p>
           )}
-        {canReadClasses && <ApiFeedback
-          error={classes.error}
-          retry={() => void classes.refetch()}
-        />}
       </section>
       <div className="space-y-2">
         <Label htmlFor="unit-title">Tên giáo trình / học kỳ</Label>
@@ -361,11 +256,13 @@ export function UnitForm({
         </div>
       </div>
       <fieldset className="space-y-2" aria-describedby="unit-term-help">
-        <legend className="text-sm font-medium">Kỳ học áp dụng</legend>
+        <legend className="text-sm font-medium">
+          Áp dụng cho lớp khai giảng từ … đến …
+        </legend>
         <p id="unit-term-help" className="text-sm text-muted-foreground">
-          Mỗi giáo trình dùng cho một kỳ học. Các lớp của khóa học trong kỳ này
-          sẽ học theo giáo trình này: lịch học của lớp được tạo trong khoảng
-          ngày dưới đây, mỗi buổi một bài theo thứ tự.
+          Giáo trình này dùng cho các lớp của khóa học khai giảng trong khoảng ngày
+          dưới đây. Lớp học hết mọi bài, mỗi buổi một bài theo thứ tự; buổi học
+          có thể kéo dài quá ngày kết thúc.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

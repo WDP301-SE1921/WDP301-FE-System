@@ -9,7 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { curriculumCsv, curriculumCsvTemplate } from "../../csv-export";
+import {
+  curriculumCsv,
+  curriculumCsvTemplate,
+  outcomeCodeMap,
+  outcomeCodesReady,
+} from "../../csv-export";
 import type { UnitWorkspace } from "../../hooks/use-unit-workspace";
 
 export function UnitActionsMenu({
@@ -33,6 +38,8 @@ export function UnitActionsMenu({
     setDeleting,
   } = ws;
   if (!unit || !hasMenu) return null;
+  const codeById = outcomeCodeMap(ws.outcomeSets.data ?? []);
+  const codesReady = outcomeCodesReady(unit.lessons, codeById);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -66,14 +73,26 @@ export function UnitActionsMenu({
             >
               Tải file mẫu
             </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={formState.dirty || !regular.length}
-              onClick={() =>
-                download(() => curriculumCsv(unit.lessons), unit.title)
-              }
-            >
-              Xuất bài ra file
-            </DropdownMenuItem>
+            {ws.outcomeSets.isError && !codesReady ? (
+              <DropdownMenuItem
+                closeOnClick={false}
+                onClick={() => void ws.outcomeSets.refetch()}
+              >
+                Chưa tải được mã mục tiêu. Tải lại để xuất bài kèm mã. Bấm để tải lại.
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                disabled={formState.dirty || !regular.length || !codesReady}
+                onClick={() =>
+                  download(
+                    () => curriculumCsv(unit.lessons, codeById),
+                    unit.title,
+                  )
+                }
+              >
+                {codesReady ? "Xuất bài ra file" : "Đang tải mã mục tiêu…"}
+              </DropdownMenuItem>
+            )}
           </>
         )}
         {canEdit && (

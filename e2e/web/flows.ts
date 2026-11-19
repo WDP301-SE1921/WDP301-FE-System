@@ -19,6 +19,27 @@ export async function createCourse(page: Page, input: { subject: string; grade: 
   return new URL(page.url()).searchParams.get("program") ?? "";
 }
 
+/**
+ * Thiết kế giáo trình tạo bộ Mục tiêu khóa học (nháp) có 1 mục tiêu cho khóa. BE chỉ cho tạo giáo trình khi khóa
+ * đã có bộ mục tiêu với ít nhất 1 mục tiêu (OUTCOMES_REQUIRED), nên mọi luồng dựng giáo trình gọi hàm này trước.
+ */
+export async function createOutcomeSet(page: Page, input: { course: string; outcome: string }) {
+  await page.goto("/manager/curriculum?tab=outcomes");
+  await pickSelect(page, page.getByRole("combobox", { name: "Khóa học" }), new RegExp(input.course));
+  await page.getByRole("button", { name: "Tạo bộ mục tiêu" }).first().click();
+  const create = page.getByRole("dialog", { name: "Tạo bộ mục tiêu" });
+  await expect(create).toBeVisible();
+  await create.getByRole("button", { name: "Tạo bộ mục tiêu" }).click();
+  await expect(create).toBeHidden();
+  await page.getByRole("button", { name: "Thêm mục tiêu" }).first().click();
+  const add = page.getByRole("dialog", { name: /mục tiêu/i });
+  await expect(add).toBeVisible();
+  await add.getByLabel("Mục tiêu (phụ huynh sẽ đọc)").fill(input.outcome);
+  await add.getByRole("button", { name: "Thêm mục tiêu" }).click();
+  await expect(add).toBeHidden();
+  await expect(page.getByText(input.outcome).first()).toBeVisible();
+}
+
 /** Thiết kế giáo trình tạo giáo trình nháp cho một khóa; trả về id giáo trình. */
 export async function createDraftUnit(
   page: Page,
@@ -71,4 +92,11 @@ export async function bff<T>(
   const body =
     parsed && typeof parsed === "object" && "data" in (parsed as object) ? (parsed as { data: T }).data : parsed;
   return { status: response.status(), body: body as T };
+}
+
+/** Chọn một dòng trong ô chọn có tìm (`SearchableSelect`): mở ô, gõ tìm, bấm dòng khớp. */
+export async function pickSearchable(page: Page, name: string, search: string, option: string | RegExp) {
+  await page.getByRole("combobox", { name, exact: true }).click();
+  await page.getByRole("combobox", { name: new RegExp(`^${name}: `) }).fill(search);
+  await page.getByRole("option", { name: option }).first().click();
 }

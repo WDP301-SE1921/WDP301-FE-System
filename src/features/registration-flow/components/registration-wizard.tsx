@@ -38,6 +38,8 @@ import {
   todayInVietnam,
   unscheduledTermNotice,
 } from "../calendar";
+import { addCalendarDays } from "@/lib/calendar-date";
+import { isCurriculumFinished, termEndWarning } from "../class-end";
 import { registrationSchema, type RegistrationInput } from "../schemas";
 import {
   rememberRegistration,
@@ -195,14 +197,35 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
   const selectedClass = classes.data?.find(
     (item) => item.id === values.classId,
   );
-  // Lớp vừa chọn nhưng không đăng ký được (vd. con đã học lớp này trong kỳ): không đưa vào tóm tắt / học phí.
+  // Lớp vừa chọn nhưng không đăng ký được (vd. con đã học lớp này trong kỳ), hoặc đã học xong giáo trình
+  // (nháp cũ khôi phục): không đưa vào tóm tắt / học phí.
+  const selectedFinished =
+    !!selectedClass && isCurriculumFinished(selectedClass.scheduledUntil);
   const summaryClass =
-    selectedClass?.isEligible === false ? undefined : selectedClass;
-  const scheduleNotice = summaryClass
-    ? unscheduledTermNotice(summaryClass.scheduledUntil, values.startDate)
+    selectedClass?.isEligible === false || selectedFinished
+      ? undefined
+      : selectedClass;
+  // Chỉ lớp chưa có buổi nào mới nhắc "tạo lịch học"; lớp đã có ngày kết thúc dùng lời nhắc ngày kết thúc.
+  const scheduleNotice =
+    summaryClass && summaryClass.scheduledUntil === null
+      ? unscheduledTermNotice(null, values.startDate)
+      : null;
+  const endWarning = summaryClass
+    ? termEndWarning(
+        summaryClass.scheduledUntil,
+        values.startDate,
+        values.packageMonths,
+        summaryClass.weeklySchedules,
+      )
     : null;
-  const gradeClasses =
+  const allGradeClasses =
     classes.data?.filter((item) => item.program.grade === child?.grade) ?? [];
+  const gradeClasses = allGradeClasses.filter(
+    (item) => !isCurriculumFinished(item.scheduledUntil),
+  );
+  useEffect(() => {
+    if (selectedFinished) form.setValue("classId", "");
+  }, [selectedFinished, form]);
   const order = useQuery({
     queryKey: ["registration", registrationId],
     queryFn: () => registrationApi.get(registrationId!),
@@ -333,10 +356,19 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
       ? addCalendarMonths(values.startDate, values.packageMonths)
       : "";
   // Học phí thu theo tháng, lớp học theo buổi: cho Nhân viên và phụ huynh thấy gói tương ứng bao nhiêu buổi.
+  const lastDayExclusive =
+    summaryClass?.scheduledUntil && !currentOrder
+      ? addCalendarDays(dateOnly(summaryClass.scheduledUntil), 1)
+      : "";
+  const classLastDayCap =
+    lastDayExclusive && endDate && lastDayExclusive < endDate
+      ? lastDayExclusive
+      : endDate;
   const plannedSessions = plannedSessionCount(
     currentOrder?.class.weeklySchedules ?? summaryClass?.weeklySchedules ?? [],
     startDate,
-    endDate,
+    // Lớp hết giáo trình trước khi hết kỳ thì chỉ đếm tới buổi cuối (endDate là ngày loại trừ).
+    classLastDayCap,
   );
 
   async function handleLookup(input: { email: string }) {
@@ -817,8 +849,9 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
               )}
               {classes.isSuccess && !gradeClasses.length && (
                 <p className="text-sm text-muted-foreground">
-                  Chưa có lớp cho khối {child?.grade}. Quản lý cần tạo lớp và
-                  lịch học trước.
+                  {allGradeClasses.length
+                    ? `Các lớp của khối ${child?.grade} đã học xong giáo trình.`
+                    : `Chưa có lớp cho khối ${child?.grade}. Quản lý cần tạo lớp và lịch học trước.`}
                 </p>
               )}
               <FieldError message={form.formState.errors.classId?.message} />
@@ -851,6 +884,11 @@ function RegistrationWizardForm({ user }: { user: AuthUser }) {
                   />
                 </div>
               </div>
+              {endWarning && (
+                <Alert variant="warning" role="status">
+                  {endWarning}
+                </Alert>
+              )}
               {scheduleNotice && (
                 <Alert variant="warning" role="status">
                   {scheduleNotice}

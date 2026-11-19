@@ -3,10 +3,12 @@
 // giáo trình và mục tiêu nào (gắn theo khóa), rồi tự xem trước cả kỳ và tạo buổi bằng một nút (D1 a).
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -25,17 +27,24 @@ import {
 import {
   generateSelectedClasses,
   generationReady,
+  sameGenerationInput,
   type ClassGenerationResult,
 } from "@/features/curriculum/generation-plan";
 import { sessionRange } from "@/features/curriculum/session-format";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { useCurrentTime } from "@/hooks/use-current-time";
-import { calendarDateLabel } from "@/lib/calendar-date";
+import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
 import { cn } from "@/lib/utils";
 import type { ScheduleRangeInput } from "@/lib/validators/curriculum";
 import type { CurriculumUnit } from "@/types/curriculum";
 import type { OutcomeSet } from "@/types/outcomes";
-import type { ScheduleRangePlan } from "../program-setup";
+import { registrationApi } from "../api";
+import {
+  defaultStartDate,
+  firstClassDay,
+  unitForStartDate,
+  type ScheduleRangePlan,
+} from "../program-setup";
 import { ApiFeedback } from "./api-feedback";
 
 const OUTCOME_STATUS_TEXT = {
@@ -79,7 +88,7 @@ export function WizardCurriculumSummary({
           <p className="text-sm text-muted-foreground">
             {unit.title} · áp dụng{" "}
             {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
-            {calendarDateLabel(range.toDate)}
+            {calendarDateLabel(range.unitToDate)}
             {unit._count?.lessons != null && ` · ${unit._count.lessons} bài`}
           </p>
         ) : (
@@ -122,7 +131,7 @@ export function WizardCurriculumSummary({
 
 type SessionsState = "no-range" | "no-teacher" | "ready";
 
-/** Bước 5: tự xem trước các buổi của cả kỳ, mỗi buổi một bài theo thứ tự; một nút để tạo. */
+/** Bước 5: chọn ngày bắt đầu, tự xem trước các buổi (mỗi buổi một bài, từ bài 1 đến hết giáo trình); một nút để tạo. */
 export function WizardSessionsStep({
   classId,
   hasTeacher,
@@ -175,7 +184,7 @@ export function WizardSessionsStep({
       </div>
     );
   return (
-    <SessionsPreview
+    <SessionsLoader
       classId={classId}
       range={range}
       onBack={onBack}
@@ -184,24 +193,60 @@ export function WizardSessionsStep({
   );
 }
 
+/** Lấy khung giờ tuần của lớp vừa tạo để gợi ý đúng ngày học đầu tiên. */
+function SessionsLoader(props: {
+  classId: string;
+  range: ScheduleRangePlan;
+  onBack: () => void;
+  onFinish: (generated: number | null) => void;
+}) {
+  const detail = useQuery({
+    queryKey: ["registration-class", props.classId, 1],
+    queryFn: ({ signal }) => registrationApi.class(props.classId, 1, signal),
+    retry: false,
+  });
+  if (detail.isPending)
+    return (
+      <p role="status" className="text-sm">
+        Đang chuẩn bị ngày bắt đầu…
+      </p>
+    );
+  // Không đọc được lớp thì vẫn gợi ý ngày mai; Quản lý sửa tay được.
+  const weekdays = (detail.data?.weeklySchedules ?? []).map(
+    (slot) => slot.weekday,
+  );
+  return (
+    <SessionsPreview {...props} weekdays={weekdays} />
+  );
+}
+
 function SessionsPreview({
   classId,
   range,
+  weekdays,
   onBack,
   onFinish,
 }: {
   classId: string;
   range: ScheduleRangePlan;
+  weekdays: number[];
   onBack: () => void;
   onFinish: (generated: number | null) => void;
 }) {
   const user = useCurrentUser();
   const client = useQueryClient();
   const now = useCurrentTime();
+  // Ngày bắt đầu gợi ý: ngày học đầu tiên sau hôm nay; sửa được. Giáo trình theo kỳ chứa ngày đó.
+  const [fromDate, setFromDate] = useState(() => {
+    const suggested = defaultStartDate(todayInVietnam(), null, weekdays);
+    return unitForStartDate(range.candidates, suggested)
+      ? suggested
+      : firstClassDay(range.fromDate, weekdays);
+  });
+  const unit = unitForStartDate(range.candidates, fromDate);
   const input: ScheduleRangeInput = {
-    curriculumUnitId: range.unitId,
-    fromDate: range.fromDate,
-    toDate: range.toDate,
+    curriculumUnitId: unit?.unitId ?? "",
+    fromDate,
   };
   const [result, setResult] = useState<ClassGenerationResult | undefined>(
     undefined,
@@ -211,12 +256,13 @@ function SessionsPreview({
   const started = useRef(false);
 
   async function preview() {
-    if (lock.current || !user) return;
+    if (lock.current || !user || !unit) return;
     lock.current = true;
     setBusy("preview");
     try {
       // Lần tạo trước chưa rõ kết quả (mất mạng): giữ đúng nội dung và khóa cũ để thử lại.
       const attempt = readGenerationAttempt(user.id, classId);
+      if (attempt) setFromDate(attempt.body.fromDate);
       setResult(
         attempt
           ? { input: attempt.body, attempt }
@@ -247,7 +293,7 @@ function SessionsPreview({
       await generateSelectedClasses(
         [classId],
         { [classId]: result },
-        result.input,
+        input,
         {
           getAttempt: (id, body) => getGenerationAttempt(user.id, id, body),
           clearAttempt: (id) => clearGenerationAttempt(user.id, id),
@@ -275,33 +321,65 @@ function SessionsPreview({
     if (created !== undefined) onFinish(created);
   }
 
-  const slots = result?.preview?.slots ?? [];
+  const fresh = !!result?.preview && sameGenerationInput(result.input, input);
+  const slots = fresh ? (result?.preview?.slots ?? []) : [];
   const conflicts = slots.filter((slot) => slot.conflicts.length);
   const expired =
     !!result?.preview && Date.parse(result.preview.expiresAt) <= now;
   const canGenerate =
-    !busy && generationReady(result, result?.input ?? input, now);
+    !busy && generationReady(result, input, now);
+  const endDate = (result?.preview?.endDate ?? result?.preview?.toDate)?.slice(
+    0,
+    10,
+  );
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Giáo trình{" "}
-        <span className="font-medium text-foreground">{range.title}</span>, từ{" "}
-        {calendarDateLabel(range.fromDate)} đến{" "}
-        {calendarDateLabel(range.toDate)}. Mỗi buổi học một bài theo thứ tự;
+        {unit ? (
+          <>
+            Giáo trình{" "}
+            <span className="font-medium text-foreground">{unit.title}</span>.
+          </>
+        ) : (
+          "Ngày bắt đầu chưa nằm trong kỳ áp dụng của giáo trình đã duyệt nào. Chọn ngày khác."
+        )}{" "}
+        Lớp học mỗi buổi một bài theo thứ tự cho tới hết giáo trình;
         kỳ nghỉ Tết (23 tháng Chạp đến hết mùng 7) được bỏ qua.
       </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="wizard-from-date">Ngày bắt đầu</Label>
+          <Input
+            id="wizard-from-date"
+            type="date"
+            value={fromDate}
+            disabled={!!busy || !!result?.attempt}
+            onChange={(event) => setFromDate(event.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="wizard-to-date">Ngày kết thúc (tự tính)</Label>
+          <Input
+            id="wizard-to-date"
+            type="date"
+            readOnly
+            disabled
+            value={fresh && endDate ? endDate : ""}
+          />
+        </div>
+      </div>
+      {!fresh && !busy && !result?.attempt && unit && (
+        <Button type="button" variant="outline" onClick={() => void preview()}>
+          Xem trước lịch
+        </Button>
+      )}
       {busy === "preview" && (
         <p role="status" className="text-sm">
           Đang xếp buổi học theo giáo trình…
         </p>
       )}
       <ApiFeedback error={result?.error} />
-      {result?.error !== undefined && !busy && (
-        <Button type="button" variant="outline" onClick={() => void preview()}>
-          Xem trước lại
-        </Button>
-      )}
       {result?.attempt && !result.preview && (
         <Alert variant="warning">
           <AlertTitle>Lần tạo trước chưa rõ kết quả</AlertTitle>
@@ -313,8 +391,20 @@ function SessionsPreview({
       )}
       {slots.length > 0 && (
         <>
+          {fresh && result?.preview && endDate && (
+            <p className="text-sm">
+              {slots.length} buổi, từ{" "}
+              {calendarDateLabel(
+                slots[0]
+                  ? todayInVietnam(new Date(slots[0].startsAt))
+                  : result.preview.fromDate.slice(0, 10),
+              )}{" "}
+              đến{" "}
+              {calendarDateLabel(endDate)} (tự tính theo{" "}
+              {result.preview.lessonCount ?? slots.length} bài của giáo trình)
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{slots.length} buổi</Badge>
             <Badge variant={conflicts.length ? "danger" : "success"}>
               {conflicts.length
                 ? `${conflicts.length} buổi trùng lịch`

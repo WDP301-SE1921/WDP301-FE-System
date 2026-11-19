@@ -79,9 +79,15 @@ export function OutcomeLessonMatrix({
       retry: false,
     })),
   });
-  const draftSets = (sets.data ?? []).filter((set) => set.status === "DRAFT");
+  // Bộ đã duyệt vẫn cho gắn bài: khóa chỉ có bộ đã duyệt vẫn phải gắn mục tiêu cho bài nháp (BE cho phép mọi bộ của khóa).
+  const draftSets = (sets.data ?? [])
+    .filter((set) => set.status === "DRAFT" || set.status === "APPROVED")
+    .sort((a, b) => Number(a.status === "APPROVED") - Number(b.status === "APPROVED"));
   const activeSet = draftSets.find((set) => set.id === setId) ?? draftSets[0];
 
+  // Bộ đã duyệt chỉ gắn được cho bài của giáo trình chưa duyệt (BE từ chối/giữ nguyên bài đã duyệt).
+  const cellLocked = (unitStatus: string) =>
+    activeSet?.status === "APPROVED" && unitStatus === "APPROVED";
   const groups = usableUnits.flatMap((unit, index) => {
     // Bài kiểm tra tháng có dãy số riêng: giữ hàng, ghi nhãn theo tháng, xếp sau bài học.
     const lessons = details[index]?.data?.lessons;
@@ -371,7 +377,12 @@ export function OutcomeLessonMatrix({
                             <Checkbox
                               checked={!!selection.get(lesson.id)?.has(outcome.id)}
                               onCheckedChange={() => toggle(lesson.id, outcome.id)}
-                              disabled={saving}
+                              disabled={saving || cellLocked(unit.status)}
+                              title={
+                                cellLocked(unit.status)
+                                  ? "Giáo trình đã duyệt: không gắn thêm mục tiêu ở bộ đã duyệt."
+                                  : undefined
+                              }
                               aria-label={`Gắn ${outcome.code} cho ${lessonLabel(lesson)}`}
                             />
                           </td>

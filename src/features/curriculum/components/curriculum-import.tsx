@@ -44,7 +44,14 @@ import { importIsDirty } from "../import-state";
 import { ApiError } from "@/lib/api/client";
 import { csvRowErrorLines } from "@/lib/api/csv-error-message";
 import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
-import { curriculumCsv, curriculumCsvTemplate } from "../csv-export";
+import {
+  curriculumCsv,
+  curriculumCsvTemplate,
+  outcomeCodeMap,
+  outcomeCodesReady,
+} from "../csv-export";
+import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
+import { academicApi } from "@/features/academic/api";
 import {
   readAcademicAttempt,
   saveAcademicAttempt,
@@ -78,6 +85,13 @@ export function CurriculumImport({
       return { attempt: null, error };
     }
   });
+  // Cùng khóa cache với bảng điều khiển giáo trình: không gọi thêm API mới.
+  const outcomeSets = useLiveQuery(
+    ["outcome-sets", unit.programId, "all"],
+    (signal) => academicApi.outcomeSets(unit.programId, {}, signal),
+  );
+  const codeById = outcomeCodeMap(outcomeSets.data ?? []);
+  const codesReady = outcomeCodesReady(unit.lessons, codeById);
   const [attempt, setAttempt] =
     useState<AcademicAttempt<ImportCommitInput> | null>(restored.attempt);
   const [confirm, setConfirm] = useState(false);
@@ -163,20 +177,41 @@ export function CurriculumImport({
             />
             <CsvDownloadButton
               label="Xuất bài ra file"
-              createCsv={() => curriculumCsv(unit.lessons)}
+              createCsv={() => curriculumCsv(unit.lessons, codeById)}
               filename={unit.title}
               disabled={
                 locked ||
+                !codesReady ||
                 !unit.lessons.some((lesson) => lesson.kind === "LESSON")
               }
             />
           </div>
+          {outcomeSets.isError && !codesReady && (
+            <div
+              role="alert"
+              className="space-y-2 rounded-xl bg-muted p-3 text-sm"
+            >
+              <p>Chưa tải được mã mục tiêu. Tải lại để xuất bài kèm mã.</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void outcomeSets.refetch()}
+              >
+                Tải lại
+              </Button>
+            </div>
+          )}
           <ol className="list-inside list-decimal space-y-1 text-sm">
             <li>Tải file mẫu hoặc xuất bài hiện có.</li>
             <li>Mở bằng Excel, mỗi dòng một bài, không xóa dòng đầu.</li>
             <li>
-              Lưu dạng &quot;CSV UTF-8 (Comma delimited)&quot; rồi chọn file ở
-              đây.
+              Cột &quot;outcomeCodes&quot; (Mã mục tiêu, không bắt buộc): ghi mã
+              mục tiêu của khóa mà bài này dạy; nhiều mã thì cách nhau bằng dấu
+              phẩy.
+            </li>
+            <li>
+              Chọn file Excel (.xlsx) ở đây, hoặc lưu dạng &quot;CSV UTF-8
+              (Comma delimited)&quot; rồi chọn.
             </li>
           </ol>
           <details className="rounded-xl border border-border p-3 text-xs text-muted-foreground">
@@ -185,15 +220,17 @@ export function CurriculumImport({
             </summary>
             <div className="mt-2 space-y-2">
               <p>
-                Các cột nội dung: kind, sequence, title, content, monthKey. Cột
+                Các cột nội dung: kind, sequence, title, content, outcomeCodes
+                (hoặc &quot;Mã mục tiêu&quot;), monthKey. Cột outcomeCodes có thể bỏ hẳn;
+                file không có cột này vẫn nhập bình thường. Cột
                 kind ghi LESSON; để trống monthKey. Cột csvVersion có thể để
                 trống (hiểu là 1); giữ nguyên cột này trong file tải từ hệ thống
                 để nhập lại đúng ký tự đặc biệt. File CSV cũ vẫn được hỗ trợ.
               </p>
               <p>
-                Chỉ nhận CSV UTF-8, dấu phẩy hoặc dấu chấm phẩy; chưa hỗ trợ
-                XLSX. Tối đa 5 MiB và 1.000 dòng; giới hạn lưu nội dung là 1
-                MiB. CSV chỉ nhập bài học, giáo viên tạo bài kiểm tra riêng theo
+                Nhận file Excel (.xlsx; dùng trang đầu tiên) hoặc CSV UTF-8,
+                dấu phẩy hoặc dấu chấm phẩy. Tối đa 5 MiB và 1.000 dòng; giới
+                hạn lưu nội dung là 1 MiB. File chỉ nhập bài học, giáo viên tạo bài kiểm tra riêng theo
                 buổi học.
               </p>
             </div>
@@ -204,13 +241,13 @@ export function CurriculumImport({
             onSubmit={form.handleSubmit((input) => preview.mutate(input))}
           >
             <Label htmlFor="curriculum-csv">
-              Chọn file CSV đã lưu từ Excel
+              Chọn file Excel (.xlsx) hoặc CSV
             </Label>
             <Input
               key={fileKey}
               id="curriculum-csv"
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               disabled={locked}
               aria-invalid={!!form.formState.errors.file}
               aria-describedby="curriculum-csv-help"
@@ -307,6 +344,7 @@ export function CurriculumImport({
                       <TableHead>Dòng</TableHead>
                       <TableHead>STT</TableHead>
                       <TableHead>Nội dung</TableHead>
+                      <TableHead>Mục tiêu</TableHead>
                       <TableHead>Kết quả</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -326,10 +364,15 @@ export function CurriculumImport({
                               : "Loại nội dung không được hỗ trợ"}
                           </p>
                         </TableCell>
+                        <TableCell className="max-w-48 whitespace-normal">
+                          {row.outcomeCodes?.length
+                            ? row.outcomeCodes.join(", ")
+                            : "—"}
+                        </TableCell>
                         <TableCell className="max-w-72 whitespace-normal">
                           {row.errors.length
                             ? row.errors.map((e) => (
-                                <p className="text-destructive" key={e.code}>
+                                <p className="text-destructive" key={e.code + e.field}>
                                   {curriculumImportDiagnosticText(e)}
                                 </p>
                               ))

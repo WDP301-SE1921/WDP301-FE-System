@@ -17,21 +17,17 @@ export function sameGenerationInput(
 ) {
   return (
     a.curriculumUnitId === b.curriculumUnitId &&
-    a.fromDate === b.fromDate &&
-    a.toDate === b.toDate
+    a.fromDate === b.fromDate
   );
 }
-export function applicableUnits(
-  units: CurriculumUnit[],
-  fromDate: string,
-  toDate: string,
-) {
-  if (!fromDate || !toDate || fromDate > toDate) return [];
+/** Giáo trình đã duyệt có kỳ áp dụng chứa ngày bắt đầu. */
+export function applicableUnits(units: CurriculumUnit[], fromDate: string) {
+  if (!fromDate) return [];
   return units.filter(
     (unit) =>
       unit.status === "APPROVED" &&
       unit.fromDate.slice(0, 10) <= fromDate &&
-      unit.toDate.slice(0, 10) >= toDate,
+      unit.toDate.slice(0, 10) >= fromDate,
   );
 }
 export function generationReady(

@@ -30,6 +30,12 @@ export interface ContentOutcomeSet {
   status: string;
   outcomes: { lessonLinks?: unknown[] }[];
 }
+/** Bài của giáo trình, đủ để biết bài đã gắn mục tiêu chưa (`outcomeLinks` do BE trả trong chi tiết giáo trình). */
+export interface ContentLesson {
+  id: string;
+  kind: string;
+  outcomeLinks?: unknown[];
+}
 export interface ContentStep extends FlowStep {
   key: ContentStepKey;
   owner: ContentOwner;
@@ -40,6 +46,12 @@ const OWNER_LABEL: Record<ContentOwner, string> = {
   TEACHER: "giáo viên",
   MANAGER: "Quản lý",
 };
+/** Các bài thường (không tính bài kiểm tra tháng) chưa gắn mục tiêu nào; BE chặn gửi duyệt khi còn bài này. */
+export function lessonsMissingOutcome<T extends ContentLesson>(lessons: T[]): T[] {
+  return lessons.filter(
+    (lesson) => lesson.kind === "LESSON" && !lesson.outcomeLinks?.length,
+  );
+}
 const day = (value: string) => value.slice(0, 10);
 const latestVersion = <T extends { version: number }>(items: T[]) =>
   [...items].sort((a, b) => b.version - a.version)[0];
@@ -102,27 +114,33 @@ interface RawStep {
 
 /**
  * Trạng thái 6 bước theo dữ liệu BE. Bước đầu tiên còn việc là "Đang làm" nếu đúng vai trò đang
- * xem, không thì "Chờ <vai trò>". Mục tiêu không bắt buộc (Q2): đã có bài mà chưa có mục tiêu thì
- * bước mục tiêu chỉ còn "Làm được", không chặn các bước sau.
+ * xem, không thì "Chờ <vai trò>". Mục tiêu BẮT BUỘC (W12, đảo Q2): chưa có mục tiêu thì chưa tạo được
+ * giáo trình mới; mỗi bài phải gắn ≥1 mục tiêu thì mới tới bước gửi duyệt. Giáo trình cũ đã gửi duyệt
+ * trước quy định này không bị đòi lại.
  */
 export function contentSetupSteps(input: {
   working: ContentUnit | null;
   /** Số bài của giáo trình đang chuẩn bị (đọc từ chi tiết giáo trình). */
   lessonCount: number;
+  /** Bài của giáo trình đang chuẩn bị, kèm liên kết mục tiêu; thiếu thì coi như chưa biết bài nào thiếu. */
+  lessonRows?: ContentLesson[];
   outcomeSets: ContentOutcomeSet[];
   viewer: ContentOwner | null;
 }): ContentStep[] {
   const { working: w, lessonCount: lessons, viewer } = input;
-  const latest = latestVersion(input.outcomeSets);
-  const hasOutcomes = !!latest && latest.outcomes.length > 0;
-  const unlinked = hasOutcomes
-    ? latest.outcomes.filter((o) => !o.lessonLinks?.length).length
-    : 0;
+  // BE chỉ cần một bộ (nháp hoặc đã duyệt) có ≥1 mục tiêu (OUTCOMES_REQUIRED).
+  const latest = latestVersion(
+    input.outcomeSets.filter((set) => set.outcomes.length > 0),
+  );
+  const hasOutcomes = !!latest;
+  const missing = lessonsMissingOutcome(input.lessonRows ?? []).length;
   const submitted =
     !!w &&
     (w.status === "PENDING_REVIEW" ||
       w.status === "APPROVED" ||
       w.status === "ARCHIVED");
+  // Bản đã duyệt hoặc lưu trữ từ trước quy định mục tiêu bắt buộc: không đòi lại.
+  const legacy = w?.status === "APPROVED" || w?.status === "ARCHIVED";
   const reviewer = w?.reviewerTeacher?.displayName;
 
   const outcomes: RawStep = {
@@ -134,18 +152,19 @@ export function contentSetupSteps(input: {
           state: "done",
           summary: `Bản ${latest.version} · ${latest.outcomes.length} mục tiêu`,
         }
-      : submitted
-        ? { state: "done", summary: "Không dùng mục tiêu" }
-        : lessons > 0
-          ? { state: "available", summary: "Chưa có (không bắt buộc)" }
-          : { state: "needs", summary: "Chưa có (không bắt buộc)" }),
+      : legacy
+        ? { state: "done", summary: "Giáo trình cũ chưa có mục tiêu" }
+        : { state: "needs", summary: "Chưa có mục tiêu (bắt buộc)" }),
   };
   const lessonsStep: RawStep = {
     key: "lessons",
     title: "Bài học",
     owner: "DESIGNER",
     ...(!w
-      ? { state: "needs", summary: "Chưa có giáo trình" }
+      ? hasOutcomes
+        ? { state: "needs", summary: "Chưa có giáo trình" }
+        : // Mở được để thấy lý do, nhưng nút tạo giáo trình bị khóa tới khi có mục tiêu.
+          { state: "available", summary: "Tạo mục tiêu trước" }
       : lessons === 0 && !submitted
         ? { state: "needs", summary: "Giáo trình chưa có bài" }
         : { state: "done", summary: `${lessons} bài` }),
@@ -161,23 +180,19 @@ export function contentSetupSteps(input: {
   else if (!hasOutcomes)
     mapping = {
       ...mappingBase,
-      state: submitted || lessons > 0 ? "done" : "todo",
-      summary:
-        submitted || lessons > 0 ? "Không có mục tiêu để gắn" : undefined,
-    };
-  else if (latest.status === "APPROVED")
-    mapping = {
-      ...mappingBase,
-      state: "done",
-      summary: "Bộ mục tiêu đã duyệt",
+      state: legacy ? "done" : "todo",
+      summary: legacy ? "Giáo trình cũ chưa có mục tiêu" : "Tạo mục tiêu trước",
     };
   else if (lessons === 0) mapping = { ...mappingBase, state: "todo" };
-  else if (unlinked)
+  else if (missing)
     mapping = {
       ...mappingBase,
-      // Đã gửi duyệt: mục tiêu chưa gắn không chặn giáo trình (C28), chỉ nhắc.
-      state: submitted ? "available" : "needs",
-      summary: `Còn ${unlinked} mục tiêu chưa gắn bài`,
+      // Đã duyệt (bản cũ): chỉ nhắc. Chờ duyệt: BE chặn giáo viên và Quản lý duyệt tới khi mọi bài đã gắn.
+      state: legacy ? "available" : "needs",
+      summary:
+        w?.status === "PENDING_REVIEW"
+          ? `Còn ${missing} bài chưa gắn mục tiêu: chưa duyệt được`
+          : `Còn ${missing} bài chưa gắn mục tiêu`,
     };
   else mapping = { ...mappingBase, state: "done", summary: "Đã gắn đủ" };
 
@@ -190,9 +205,16 @@ export function contentSetupSteps(input: {
           state: "done",
           summary: reviewer ? `Đã gửi ${reviewer}` : "Đã gửi duyệt",
         }
-      : w && lessons > 0
+      : w && lessons > 0 && hasOutcomes && !missing
         ? { state: "needs", summary: "Sẵn sàng gửi duyệt" }
-        : { state: "todo" }),
+        : w && lessons > 0
+          ? {
+              state: "todo",
+              summary: hasOutcomes
+                ? "Gắn mục tiêu vào mọi bài trước"
+                : "Tạo mục tiêu trước",
+            }
+          : { state: "todo" }),
   };
   const teacher: RawStep = {
     key: "teacher",

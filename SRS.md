@@ -83,7 +83,7 @@ Ban đầu hệ thống chỉ có 3 vai trò: Quản lý, Giáo viên, Phụ huy
 
   ### **3.2 Thiết kế giáo trình (vai trò mới)**
 
-* Soạn Giáo trình theo kỳ cho từng khóa học (Toán, Lý, Hóa, Sinh), dựa theo sách giáo khoa, và soạn Mục tiêu khóa học (bản nhẹ: tên phụ huynh đọc được, mô tả, Bắt buộc hoặc Mở rộng; nguồn tùy chọn). Gắn mục tiêu cho câu hỏi là tùy chọn; mỗi mục tiêu cần ít nhất 1 bài trước khi được duyệt  
+* Soạn Giáo trình theo kỳ cho từng khóa học (Toán, Lý, Hóa, Sinh), dựa theo sách giáo khoa, và soạn Mục tiêu khóa học (bản nhẹ: tên phụ huynh đọc được, mô tả, Bắt buộc hoặc Mở rộng; nguồn tùy chọn). Thứ tự bắt buộc: tạo bộ Mục tiêu khóa học (có ít nhất 1 mục tiêu) trước, rồi mới tạo Giáo trình; mỗi bài học phải gắn ít nhất 1 mục tiêu mới gửi duyệt được. Mỗi bài tập và bài kiểm tra gắn mục tiêu ở mức cả bài (không gắn theo từng câu hỏi); mỗi mục tiêu cần ít nhất 1 bài trước khi được duyệt  
 * Mọi người dùng vai trò Thiết kế giáo trình đều sửa được bản nháp giáo trình và mục tiêu  
 * Gửi duyệt một lần: giáo viên duyệt nội dung, Quản lý duyệt áp dụng (xem 3.4 và 3.1)  
 * Thiết lập nhịp độ: 1 buổi học 1 bài; 1 tháng 1 bài kiểm tra là khuyến nghị — hệ thống chỉ nhắc giáo viên, không chặn  
@@ -216,7 +216,7 @@ Mở rộng theo số lượng học sinh, giáo viên, nhân viên, môn học;
 13. Mỗi lớp thuộc một khóa học, có một lịch cố định.  
 14. Hai lớp hỗ trợ học bù cho nhau phải cùng khóa học.  
 15. Buổi học không tự sinh. Quản lý trung tâm bấm "Tạo lịch học" cho lớp: xem trước các buổi rồi mới tạo. Chỉ tạo lịch học được khi giáo trình đã được duyệt áp dụng.  
-    * Gắn bài học theo ngày, theo thứ tự giáo trình: lần tạo lịch đầu của lớp gán bài theo vị trí buổi tính từ đầu kỳ, bỏ qua kỳ nghỉ Tết. Lần tạo lịch tiếp theo nối từ bài sau bài của buổi cuối chưa hủy (buổi đã hủy chỉ còn ở dữ liệu cũ). Hết buổi mà còn bài thì bài đó chưa xếp buổi, và vào buổi đầu của lần tạo lịch sau.  
+    * Gắn bài học theo ngày, theo thứ tự giáo trình: lớp mới luôn bắt đầu từ bài 1, mỗi buổi một bài theo thứ tự 1..N, bài tập về nhà như hiện tại; lớp kết thúc khi dạy hết giáo trình. Lần tạo lịch đầu của lớp gán bài theo vị trí buổi tính từ đầu kỳ, bỏ qua kỳ nghỉ Tết. Lần tạo lịch tiếp theo nối từ bài sau bài của buổi cuối chưa hủy (buổi đã hủy chỉ còn ở dữ liệu cũ). Hết buổi mà còn bài thì bài đó chưa xếp buổi, và vào buổi đầu của lần tạo lịch sau.  
     * Kỳ nghỉ Tết cố định từ 23 tháng Chạp (đưa ông Táo về trời) đến hết mùng 7: sinh lịch không tạo buổi trong kỳ này, bài kế tiếp rơi vào buổi đầu sau Tết. Không có ngày nghỉ khác; học sinh vẫn xin nghỉ từng buổi hoặc dài hạn. Đổi giờ vào ngày Tết vẫn được, web chỉ cảnh báo.  
     * Buổi không dạy được: đổi sang ngày khác (giữ bài, cùng tháng, giữ thứ tự buổi) hoặc đổi giáo viên (dạy thay). Không còn hủy buổi; buổi "Đã hủy" trước 19/11/2026 vẫn hiện kèm lý do (chỉ đọc).  
 16. Chỉ Quản lý trung tâm được xếp/đổi giáo viên phụ trách và xếp giáo viên dạy thay.
@@ -319,7 +319,7 @@ Không còn link/mã kích hoạt trong bất kỳ trường hợp nào — tài
 
 ### **6.2 Tạo lịch học cho lớp**
 
-Quản lý trung tâm tạo khóa học (môn \+ khối) và lớp (chọn lịch cố định, giáo viên, phòng; lớp chưa có buổi học) → Thiết kế giáo trình soạn Giáo trình và Mục tiêu khóa học → gửi duyệt một lần → giáo viên Duyệt nội dung → Quản lý Duyệt áp dụng → Quản lý bấm Tạo lịch học (xem trước rồi tạo) → hệ thống tạo ClassSession và gắn bài học theo thứ tự giáo trình.
+Quản lý trung tâm tạo khóa học (môn \+ khối) và lớp (chọn lịch cố định, giáo viên, phòng; lớp chưa có buổi học) → Thiết kế giáo trình soạn Mục tiêu khóa học trước, rồi Giáo trình (mỗi bài gắn ít nhất 1 mục tiêu) → gửi duyệt một lần → giáo viên Duyệt nội dung → Quản lý Duyệt áp dụng → Quản lý bấm Tạo lịch học (xem trước rồi tạo) → hệ thống tạo ClassSession và gắn bài học theo thứ tự giáo trình.
 
 Buổi không dạy được: Quản lý đổi buổi sang ngày khác hoặc xếp giáo viên dạy thay → phụ huynh của lớp nhận thông báo đổi lịch. Không còn hủy buổi (từ 19/11/2026).
 
@@ -387,7 +387,7 @@ Không còn thực thể ActivationLink trong mô hình — tài khoản và h�
 | Program (Khóa học) | id, subjectId, gradeLevel, sessionsPerWeek | môn \+ khối; lớp thuộc một khóa học |
 | CurriculumUnit | id, programId, title, fromDate, toDate, version, status (DRAFT, PENDING\_REVIEW, APPROVED, ARCHIVED), lessons (có thứ tự) | Giáo trình theo kỳ (khoảng ngày) do Thiết kế giáo trình soạn, theo sách giáo khoa; duyệt hai cấp |
 | OutcomeSet | id, programId, level, version, status | Bộ Mục tiêu khóa học của một khóa học |
-| LearningOutcome | id, outcomeSetId, code, title, statement, required, nguồn (tùy chọn) | Một mục tiêu khóa học; gắn cho câu hỏi là tùy chọn |
+| LearningOutcome | id, outcomeSetId, code, title, statement, required, nguồn (tùy chọn) | Một mục tiêu khóa học; gắn cho bài học và cho bài tập, bài kiểm tra (không theo câu hỏi) |
 | CenterClosure | id, fromDate, toDate, reason, createdById | Dữ liệu cũ: ngày nghỉ trước 19/11/2026, không còn tạo hay đọc |
 | RegistrationOrder (phiếu / bill) | id, quotedAmount, listAmount, tetDiscountAmount, tetPeriodStart, tetPeriodEnd | quotedAmount = số phải thu; listAmount = học phí tháng × số tháng; phần Tết ghi rõ tháng được giảm |
 | PaymentRefund | id, paymentId, enrollmentId, amount, method, reason, status (PENDING, APPROVED, REJECTED), requestedBy, decidedBy | Hoàn tiền; chỉ APPROVED trừ vào thực thu |
@@ -431,7 +431,7 @@ Nhân viên và Quản lý trung tâm không dùng chung quyền truy cập dù 
 * **Luồng A3 (mới cập nhật)**: đã bỏ bước link/mã — Nhân viên nhập email phụ huynh, hệ thống hiện sẵn danh sách con, Nhân viên chọn trực tiếp. Đã xác nhận: không cần thêm bước xác thực, vì đây là quy trình trực tiếp tại quầy — phụ huynh có mặt khi Nhân viên thao tác. Ô nhập email có gợi ý tự động (debounce, 1–2 ký tự). Nếu phụ huynh chưa có tài khoản (trường hợp A1), Nhân viên hướng dẫn tải app để phụ huynh tự tạo tài khoản \+ hồ sơ con ngay tại chỗ.  
 * **Mô hình Khóa học – Giáo trình – Mục tiêu khóa học** — đã chốt ngày 2026-11-09/10:  
   * Bài gắn theo ngày; buổi không dạy được thì đổi sang ngày khác hoặc đổi giáo viên (5.4).  
-  * Mục tiêu khóa học bản nhẹ; gắn cho câu hỏi là tùy chọn; mỗi mục tiêu cần ít nhất 1 bài trước khi duyệt (3.2).  
+  * Mục tiêu khóa học bản nhẹ; mục tiêu có trước giáo trình; mỗi bài học gắn ít nhất 1 mục tiêu; bài tập và bài kiểm tra gắn mục tiêu ở mức cả bài, không theo câu hỏi; mỗi mục tiêu cần ít nhất 1 bài trước khi duyệt (3.2).  
   * Duyệt hai cấp, một lần gửi: giáo viên duyệt nội dung, Quản lý duyệt áp dụng (3.1, 3.4).  
   * Tạo lịch học bấm tay, không tự tạo; dashboard nhắc "Lớp cần tạo lịch học".  
   * "1 tháng 1 bài kiểm tra" là khuyến nghị, hệ thống chỉ nhắc giáo viên, không chặn (3.2, 3.4).  

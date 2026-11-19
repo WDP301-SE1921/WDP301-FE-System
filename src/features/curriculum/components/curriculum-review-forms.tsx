@@ -443,7 +443,7 @@ export function CurriculumRevisionForm({
           </div>
         </div>
         <section className="space-y-2 rounded-xl bg-muted p-4 text-sm">
-          <p className="font-medium">Kiểm tra số bài cần</p>
+          <p className="font-medium">Số buổi/tuần của khóa</p>
           <p>
             {estimate
               ? `${estimate.weeks} tuần theo khoảng hiệu lực (làm tròn lên).`
@@ -457,7 +457,7 @@ export function CurriculumRevisionForm({
             placeholder="Chưa cấu hình"
           />
           <p className="text-xs text-muted-foreground">
-            {estimate?.max == null ? "Quản lý cần đặt số buổi/tuần cho khóa học." : `Dự kiến ${estimate.max} bài theo số tuần làm tròn. Số buổi thực tế được kiểm tra theo lịch lớp khi tạo lịch học.`} Bản nguồn có{" "}
+            {frequency == null ? "Quản lý cần đặt số buổi/tuần cho khóa học. " : "Lớp học hết giáo trình, mỗi buổi một bài. "}Bản nguồn có{" "}
             {unit.lessons.filter((lesson) => lesson.kind === "LESSON").length}{" "}
             bài.
           </p>

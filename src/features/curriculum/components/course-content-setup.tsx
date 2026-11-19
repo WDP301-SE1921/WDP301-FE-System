@@ -3,7 +3,7 @@
 // ngày 2026-11-19, PLAN_CURRICULUM_ONE_PAGE.md). Mỗi bước nhúng màn đang có (bộ mục tiêu, bảng bài,
 // form gửi duyệt, ma trận gắn bài, duyệt áp dụng); trạng thái bước tính từ BE nên đổi máy hay đổi
 // người làm vẫn đúng.
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
@@ -256,6 +256,7 @@ function StepsBody({
   const steps = contentSetupSteps({
     working: viewed,
     lessonCount: lessons.length,
+    lessonRows: detail?.lessons,
     outcomeSets: sets,
     viewer,
   });
@@ -265,6 +266,7 @@ function StepsBody({
   const active =
     steps.find((item) => item.key === chosen && item.status !== "todo")?.key ??
     fallback;
+  const [pickedSetId, setPickedSetId] = useState<string | null>(null);
   const go = (key: ContentStepKey | null) => void setQuery({ step: key });
   // Mở một bản giáo trình (null = về bản đang soạn); tạo bằng CSV thì mở luôn hộp nhập file.
   const openUnit = (id: string | null, source?: "csv") =>
@@ -282,7 +284,10 @@ function StepsBody({
   const step = steps.find((item) => item.key === active)!;
   const nextKey = CONTENT_STEP_KEYS[CONTENT_STEP_KEYS.indexOf(active) + 1];
   const next = steps.find((item) => item.key === nextKey);
-  const latest = [...sets].sort((a, b) => b.version - a.version)[0];
+  // Bộ dùng để gắn bài: bộ mới nhất đã có mục tiêu (nháp hoặc đã duyệt).
+  const latest = [...sets]
+    .filter((set) => set.outcomes.length > 0)
+    .sort((a, b) => b.version - a.version)[0];
   const isDesigner = viewer === "DESIGNER";
   const showUnitContent =
     !!viewed &&
@@ -339,8 +344,8 @@ function StepsBody({
             <>
               <p className="text-sm text-muted-foreground">
                 Mục tiêu là điều học sinh đạt được sau khóa, phụ huynh đọc được
-                trên ứng dụng. Không bắt buộc: khóa không dùng mục tiêu thì bấm
-                “Tiếp”.
+                trên ứng dụng. Bắt buộc: khóa phải có ít nhất 1 mục tiêu mới tạo
+                được giáo trình, và mỗi bài học phải gắn với mục tiêu.
               </p>
               <OutcomeSetsPanel
                 programId={programId}
@@ -351,7 +356,16 @@ function StepsBody({
           )}
           {active === "lessons" &&
             !viewed &&
-            (isDesigner ? (
+            (!latest ? (
+              <div className="space-y-3">
+                <p role="status" className="text-sm text-muted-foreground">
+                  Khóa chưa có mục tiêu nên chưa tạo được giáo trình.
+                </p>
+                <Button type="button" onClick={() => go("outcomes")}>
+                  Tạo mục tiêu trước
+                </Button>
+              </div>
+            ) : isDesigner ? (
               <>
                 <p className="text-sm text-muted-foreground">
                   Tạo giáo trình cho khóa: đặt tên và khoảng ngày áp dụng. Có
@@ -366,16 +380,13 @@ function StepsBody({
               <p className="text-sm">Khóa chưa có giáo trình.</p>
             ))}
           {active === "mapping" &&
-            (latest &&
-            latest.status === "DRAFT" &&
-            latest.outcomes.length &&
-            lessons.length ? (
+            (latest && lessons.length ? (
               isDesigner ? (
                 <OutcomeLessonMatrix
                   programId={programId}
                   programName={programName}
-                  setId={latest.id}
-                  onSelectSet={() => undefined}
+                  setId={pickedSetId ?? latest.id}
+                  onSelectSet={setPickedSetId}
                   onBack={() => go("outcomes")}
                 />
               ) : (

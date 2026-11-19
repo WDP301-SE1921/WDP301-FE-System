@@ -74,7 +74,7 @@ export function LiveDesignerDashboard() {
       [],
       unit.program?.sessionsPerWeek,
     );
-    return { unit, lessons: unit._count?.lessons ?? 0, weeks: estimate?.weeks, needed: estimate?.max ?? null };
+    return { unit, lessons: unit._count?.lessons ?? 0, weeks: estimate?.weeks };
   });
   const stat = (value: number) => (units.isPending ? "…" : value);
 
@@ -129,8 +129,8 @@ export function LiveDesignerDashboard() {
           <CardHeader>
             <CardTitle>Sẵn sàng cho kỳ sau theo khóa</CardTitle>
             <CardDescription>
-              Bài đã soạn và số bài dự kiến theo chuẩn số buổi/tuần của khóa.
-              Số buổi thực tế phụ thuộc lịch lớp và khoảng ngày.
+              Số bài đã soạn của giáo trình kỳ sau. Lớp học hết giáo trình nên
+              không cần soạn theo số tuần của kỳ.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -146,7 +146,7 @@ export function LiveDesignerDashboard() {
               }}
             >
               <ul className="space-y-4">
-                {readiness.map(({ unit, lessons, weeks, needed }) => {
+                {readiness.map(({ unit, lessons, weeks }) => {
                   return (
                     <li key={unit.id} className="space-y-1.5 text-sm">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -157,7 +157,7 @@ export function LiveDesignerDashboard() {
                           {unit.program?.name ?? unit.title} · {unit.title}
                         </Link>
                         <span className="tabular-nums text-muted-foreground">
-                          {lessons} bài{needed !== null ? ` / dự kiến ${needed}` : " · Khóa chưa cấu hình số buổi/tuần"}
+                          {lessons} bài
                           {weeks ? ` · ${weeks} tuần hiệu lực` : ""}
                         </span>
                       </div>

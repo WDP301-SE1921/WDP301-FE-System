@@ -54,7 +54,10 @@ const ERROR_TEXT: Record<string, string> = {
   ATTENDANCE_TOO_LARGE: "Khoảng ngày quá dài. Hãy thu hẹp khoảng chuyên cần.",
   ROOM_NOT_FOUND: "Không tìm thấy phòng học.",
   INVALID_ROOM: "Phòng phải đang hoạt động.",
-  ROOM_CAPACITY_TOO_SMALL: "Sức chứa phòng nhỏ hơn sĩ số lớp.",
+  ROOM_CAPACITY_TOO_SMALL:
+    "Sức chứa phòng nhỏ hơn số chỗ đã giữ của lớp. Chọn phòng lớn hơn hoặc giảm số học sinh trước.",
+  ROOM_REQUIRED:
+    "Chọn phòng học cho lớp. Sĩ số lớp lấy theo sức chứa của phòng.",
   ROOM_IN_USE: "Phòng còn buổi học sắp tới nên chưa thể ngừng sử dụng.",
   TEACHER_SCHEDULE_CONFLICT:
     "Giáo viên đã có buổi khác trùng giờ. Chọn giáo viên khác.",
@@ -208,7 +211,19 @@ const ERROR_TEXT: Record<string, string> = {
   NO_SCHEDULED_CLASS:
     "Chưa có lớp cùng môn và khối với lịch tuần để duyệt giáo trình.",
   CURRICULUM_MISMATCH: "Giáo trình phải thuộc đúng khóa học của lớp.",
-  RANGE_OUTSIDE_UNIT: "Khoảng ngày tạo lịch học phải nằm trong kỳ áp dụng của giáo trình.",
+  RANGE_OUTSIDE_UNIT:
+    "Ngày bắt đầu phải nằm trong khoảng áp dụng của giáo trình (lớp mới). Chọn ngày khác.",
+  OUTCOMES_REQUIRED:
+    "Khóa học chưa có mục tiêu. Tạo mục tiêu khóa học trước khi soạn giáo trình.",
+  LESSON_OUTCOME_MISSING:
+    "Còn bài học chưa gắn mục tiêu. Thiết kế giáo trình cần gắn mỗi bài với ít nhất 1 mục tiêu (người duyệt có thể trả lại để sửa).",
+  ASSIGNMENT_OUTCOME_REQUIRED:
+    "Bài tập cần gắn ít nhất 1 mục tiêu khóa học trước khi giao.",
+  CURRICULUM_COMPLETED: "Lớp đã xếp đủ giáo trình.",
+  CLASS_CURRICULUM_LOCKED:
+    "Lớp đã học theo giáo trình khác. Mỗi lớp chỉ học một giáo trình; hãy mở lớp mới.",
+  SCHEDULE_TOO_LONG:
+    "Lịch học kéo dài quá 24 tháng kể từ ngày bắt đầu. Chọn ngày bắt đầu sớm hơn hoặc kiểm tra lịch tuần của lớp.",
   NO_SESSIONS: "Không có buổi học theo lịch tuần trong khoảng ngày đã chọn.",
   SCHEDULE_CONFLICT:
     "Lịch lớp hoặc giáo viên bị trùng. Kiểm tra các xung đột ở lịch xem trước.",
@@ -365,6 +380,10 @@ const ERROR_TEXT: Record<string, string> = {
     "Có câu gắn mục tiêu không thuộc bộ đã chọn. Chọn lại mục tiêu cho các câu đó.",
   OUTCOME_SET_LOCKED:
     "Bộ mục tiêu này đã gửi duyệt hoặc đã duyệt nên không đổi được. Tải lại trang để xem dữ liệu mới; cần thay đổi thì tạo bản mới của bộ mục tiêu.",
+  OUTCOME_IMPORT_FILE_INVALID:
+    "File không đọc được. Dùng file mẫu (.xlsx hoặc .csv), tối đa 5 MB và 200 dòng.",
+  OUTCOME_IMPORT_PREVIEW_STALE:
+    "Kết quả kiểm tra file đã hết hạn hoặc bộ mục tiêu đã đổi. Chọn lại file để kiểm tra lại.",
   OUTCOME_SET_INCOMPLETE:
     "Mỗi mục tiêu cần có ít nhất một bài học trước khi duyệt nội dung. Gắn bài cho các mục tiêu còn thiếu.",
   OUTCOME_SET_NOT_FOUND: "Không tìm thấy bộ mục tiêu. Tải lại danh sách.",
@@ -378,6 +397,27 @@ const ERROR_TEXT: Record<string, string> = {
   LESSON_LOCKED:
     "Bài thuộc giáo trình đã lưu trữ nên không gắn mục tiêu được. Hãy gắn vào bài của giáo trình đang dùng hoặc của kỳ tiếp theo.",
 };
+/** Lý do file nhập mục tiêu bị từ chối, theo `details.code` của BE. */
+function outcomeImportFileReason(code: unknown): string | undefined {
+  switch (code) {
+    case "SPREADSHEET_TOO_LARGE":
+      return "File lớn hơn 5 MB.";
+    case "SPREADSHEET_UNSUPPORTED":
+      return "Chỉ nhận file .xlsx hoặc .csv.";
+    case "XLSX_INVALID":
+      return "File Excel bị lỗi hoặc không mở được.";
+    case "FILE_REQUIRED":
+      return "Chưa chọn file.";
+    case "CSV_EMPTY":
+      return "File không có dòng nào.";
+    case "CSV_TOO_MANY_ROWS":
+      return "File có quá 200 dòng.";
+    case "CSV_INVALID_COLUMNS":
+      return "Các cột đầu file không đúng mẫu.";
+    default:
+      return undefined;
+  }
+}
 /** Câu lỗi cần dữ liệu trong `details`; trả undefined thì dùng `ERROR_TEXT`. */
 function detailedMessage(code: string, details: unknown): string | undefined {
   const info =
@@ -404,6 +444,31 @@ function detailedMessage(code: string, details: unknown): string | undefined {
     const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(last);
     return match
       ? `Lớp đã có lịch học đến ngày ${match[3]}/${match[2]}/${match[1]}. Chọn ngày bắt đầu sau ngày đó.`
+      : undefined;
+  }
+  if (code === "ROOM_CAPACITY_TOO_SMALL") {
+    const room = Number(info.roomCapacity);
+    const roomText = Number.isInteger(room) ? ` (${room} chỗ)` : "";
+    if (Array.isArray(info.classes)) {
+      const parts = info.classes.flatMap((item) => {
+        const row = (item ?? {}) as Record<string, unknown>;
+        return typeof row.name === "string"
+          ? [`${row.name}: ${Number(row.reservedSeats) || 0} chỗ đã giữ`]
+          : [];
+      });
+      return parts.length
+        ? `Phòng${roomText} nhỏ hơn số chỗ các lớp đang giữ: ${parts.join("; ")}. Chọn sức chứa lớn hơn hoặc giảm số học sinh của các lớp đó trước.`
+        : undefined;
+    }
+    const reserved = Number(info.reservedSeats);
+    return Number.isInteger(reserved) && reserved > 0
+      ? `Lớp đang giữ ${reserved} chỗ nhưng phòng${roomText} nhỏ hơn. Chọn phòng lớn hơn hoặc giảm số học sinh trước.`
+      : undefined;
+  }
+  if (code === "OUTCOME_IMPORT_FILE_INVALID") {
+    const reason = outcomeImportFileReason(info.code);
+    return reason
+      ? `${reason} Dùng file mẫu (.xlsx hoặc .csv), tối đa 5 MB và 200 dòng.`
       : undefined;
   }
   if (code === "OUTCOME_SET_INCOMPLETE") {
@@ -496,12 +561,14 @@ export async function apiRequest<T>(
 export function apiErrorMessage(error: unknown) {
   return userFacingMessage(error);
 }
-export async function downloadReport(id: string, format: "xlsx" | "pdf") {
+/** Tải một file nhị phân qua BFF (vd file mẫu .xlsx). */
+export async function downloadBackendFile(
+  path: string,
+  filename: string,
+  noun = "file",
+) {
   try {
-    const response = await client.get<Blob>(
-      `academic/reports/${encodeURIComponent(id)}/download?format=${format}`,
-      { responseType: "blob" },
-    );
+    const response = await client.get<Blob>(path, { responseType: "blob" });
     if (
       String(response.headers["content-type"] ?? "").includes(
         "application/json",
@@ -509,16 +576,17 @@ export async function downloadReport(id: string, format: "xlsx" | "pdf") {
     )
       throw new ApiError(
         "INVALID_API_RESPONSE",
-        "Máy chủ không trả file báo cáo.",
+        `Máy chủ không trả ${noun}.`,
         502,
       );
     const url = URL.createObjectURL(response.data);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `report-${id}.${format}`;
+    link.download = filename;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch (error) {
+    if (error instanceof ApiError) throw error;
     if (axios.isAxiosError<Blob>(error)) {
       const envelope =
         error.response?.data instanceof Blob
@@ -532,7 +600,7 @@ export async function downloadReport(id: string, format: "xlsx" | "pdf") {
           : undefined;
       const failure = new ApiError(
         envelope?.error?.code ?? "DOWNLOAD_FAILED",
-        envelope?.error?.message ?? "Không tải được báo cáo. Vui lòng thử lại.",
+        envelope?.error?.message ?? `Không tải được ${noun}. Vui lòng thử lại.`,
         error.response?.status ?? 0,
         envelope?.error?.requestId,
       );
@@ -541,4 +609,11 @@ export async function downloadReport(id: string, format: "xlsx" | "pdf") {
     }
     throw error;
   }
+}
+export function downloadReport(id: string, format: "xlsx" | "pdf") {
+  return downloadBackendFile(
+    `academic/reports/${encodeURIComponent(id)}/download?format=${format}`,
+    `report-${id}.${format}`,
+    "báo cáo",
+  );
 }

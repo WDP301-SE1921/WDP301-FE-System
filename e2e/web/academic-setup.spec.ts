@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ROLES, type WebRole } from "../../src/constants/roles";
-import { bff, createCourse, createDraftUnit, openUnitSetup, unitIdFromUrl } from "./flows";
+import { bff, createCourse, createDraftUnit, openUnitSetup, pickSearchable, unitIdFromUrl } from "./flows";
 import { persistSessions, chooseCard, expectNoLegacyTerms, inRole, pickSelect, pickTime, suffix, vnDate, closeSessions, nextWeekOffset, type RoleSession } from "./helpers";
 
 /**
@@ -19,6 +19,8 @@ const OUTCOME = `Nhận biết tế bào E2E ${sfx}`;
 // Gọi lười: lấy tuần lúc test chạy, không phải lúc nạp tệp.
 const fromDate = () => vnDate(3 + nextWeekOffset());
 const toDate = () => vnDate(9 + nextWeekOffset());
+// Lịch học nay chạy tới hết giáo trình (không còn ngày kết thúc): cửa sổ đọc buổi rộng hơn kỳ của giáo trình.
+const listTo = () => vnDate(30 + nextWeekOffset());
 const LESSONS = [`Bài 1 E2E ${sfx}`, `Bài 2 E2E ${sfx}`];
 
 const state: { programId: string; classId: string; unitId: string } = {
@@ -90,8 +92,18 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
       await pickTime(page, `wizard-end-${index}`, "06:30");
     }
     await page.getByRole("button", { name: "Tiếp: giáo viên và phòng" }).click();
+    // Phòng bắt buộc; sĩ số lớp lấy theo phòng nên không còn ô nhập sĩ số.
+    await pickSearchable(page, "Phòng học", "", /chứa \d+ người/);
+    await expect(page.getByText(/Sĩ số tối đa: \d+ học sinh \(theo /)).toBeVisible();
     // teacher@ (Nguyễn Minh Đức) là tài khoản giáo viên có phiên web; lớp ở giờ sớm nên không trùng lớp Toán của thầy.
-    await chooseCard(page, /Nguyễn Minh Đức/);
+    await pickSearchable(page, "Giáo viên phụ trách", "minh duc", /Nguyễn Minh Đức/);
+    await expect(page.getByRole("combobox", { name: "Giáo viên phụ trách", exact: true })).toContainText("Nguyễn Minh Đức");
+    // Luật N4: bấm chip bước đã qua để quay lại, dữ liệu vẫn còn.
+    await page.getByRole("button", { name: /^Quay lại bước 1/ }).click();
+    await expect(page.getByLabel("Tên lớp")).toHaveValue(CLASS_NAME);
+    await page.getByRole("button", { name: "Tiếp: lịch mỗi tuần" }).click();
+    await page.getByRole("button", { name: "Tiếp: giáo viên và phòng" }).click();
+    await expect(page.getByRole("combobox", { name: "Giáo viên phụ trách", exact: true })).toContainText("Nguyễn Minh Đức");
     await page.getByRole("button", { name: "Tạo lớp", exact: true }).click();
     // Bước 4: lớp theo khóa nên tự dùng giáo trình và mục tiêu của khóa; khóa chưa có giáo trình duyệt.
     await expect(page.getByText(/Giáo trình và mục tiêu của lớp/)).toBeVisible();
@@ -158,15 +170,16 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     }
     await expect(page.getByRole("heading", { name: "Bài học (2)" })).toBeVisible();
 
-    // Gắn mục tiêu cho bài 1 (ma trận), rồi mở lại để thấy liên kết còn đó.
+    // Gắn mục tiêu cho CẢ 2 bài (ma trận): BE chặn gửi duyệt khi còn bài chưa gắn. Mở lại để thấy liên kết còn đó.
     await page.getByText("Gắn mục tiêu", { exact: true }).first().click();
     await page.waitForURL(/[?&]step=mapping/);
-    const box = page.getByRole("checkbox", { name: /^Gắn .* cho / }).first();
-    await box.check();
-    await page.getByRole("button", { name: "Lưu 1 bài" }).click();
+    const boxes = page.getByRole("checkbox", { name: /^Gắn .* cho / });
+    await expect(boxes).toHaveCount(LESSONS.length);
+    for (const index of LESSONS.keys()) await boxes.nth(index).check();
+    await page.getByRole("button", { name: `Lưu ${LESSONS.length} bài` }).click();
     await expect(page.getByRole("button", { name: "Chưa có thay đổi" })).toBeVisible();
     await page.reload();
-    await expect(page.getByRole("checkbox", { name: /^Gắn .* cho / }).first()).toBeChecked();
+    for (const index of LESSONS.keys()) await expect(page.getByRole("checkbox", { name: /^Gắn .* cho / }).nth(index)).toBeChecked();
 
     // Bước 4 nằm ngay trong trang: form gửi duyệt hiện trong thẻ bước, không có hộp thoại.
     await openUnitSetup(page, state.unitId, "?editor=submit");
@@ -234,7 +247,7 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await expect(page.getByText(/Đã tạo 2 buổi/)).toBeVisible();
 
     // Dữ liệu đã lưu ở BE: đúng 2 buổi trong kỳ, buổi 1 là bài 1, buổi 2 là bài 2.
-    const query = new URLSearchParams({ classId: state.classId, fromDate: fromDate(), toDate: toDate(), page: "1", limit: "100" });
+    const query = new URLSearchParams({ classId: state.classId, fromDate: fromDate(), toDate: listTo(), page: "1", limit: "100" });
     const saved = await bff<{ startsAt: string; status: string; lesson: { title: string } | null }[]>(
       page.context(),
       `academic/scheduled-sessions?${query}`,
@@ -245,7 +258,7 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
 
     await page.goto(`/manager/curriculum?program=${state.programId}`);
     const checklist = page.getByRole("group", { name: "Chuẩn bị khóa" });
-    await expect(checklist.getByText("Mọi lớp đã có buổi học tới hết kỳ")).toBeVisible();
+    await expect(checklist.getByText("Mọi lớp đã có lịch học")).toBeVisible();
     await expect(checklist.getByRole("button", { name: /Tạo lịch học cho/ })).toHaveCount(0);
     await expectNoLegacyTerms(page);
   });
@@ -255,8 +268,9 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await page.goto(
       `/manager/sessions?programId=${state.programId}&classIds=${state.classId}&unitId=${state.unitId}`,
     );
-    await page.getByLabel("Từ ngày").fill(fromDate());
-    await page.getByLabel("Đến ngày").fill(toDate());
+    // Chỉ còn một ô "Ngày bắt đầu"; ngày kết thúc do hệ thống tự tính nên chỉ đọc.
+    await page.getByLabel("Ngày bắt đầu").fill(fromDate());
+    await expect(page.getByLabel("Ngày kết thúc (tự tính)")).toBeDisabled();
     await page.getByRole("button", { name: /^Xem trước 1 lớp$/ }).click();
     await expect(
       page.getByText(/Lớp đã có lịch học đến ngày \d{2}\/\d{2}\/\d{4}\. Chọn ngày bắt đầu sau ngày đó\./),
@@ -279,7 +293,7 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
   }) => {
     // Session cancel and center closures were removed on 19/11/2026.
     const page = await open(browser, ROLES.CENTER_MANAGER);
-    const query = new URLSearchParams({ classId: state.classId, fromDate: fromDate(), toDate: toDate(), page: "1", limit: "100" });
+    const query = new URLSearchParams({ classId: state.classId, fromDate: fromDate(), toDate: listTo(), page: "1", limit: "100" });
     const listed = async () => {
       const result = await bff<{ id: string; startsAt: string; status: string; lesson: { title: string } | null }[]>(
         page.context(),
@@ -303,8 +317,9 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
       "academic/sessions/bulk-cancel-preview",
       "academic/center-closures",
     ])
-      expect((await bff(page.context(), path, { method: "POST", data: { reason: "x" } })).status, path).toBe(403);
-    expect((await bff(page.context(), "academic/center-closures")).status).toBe(403);
+      // Route đã gỡ: BFF trả 404, chặn theo quyền trả 403; cả hai đều là bị chặn.
+      expect([403, 404], path).toContain((await bff(page.context(), path, { method: "POST", data: { reason: "x" } })).status);
+    expect([403, 404]).toContain((await bff(page.context(), "academic/center-closures")).status);
     expect((await listed()).map((item) => [item.status, item.lesson?.title])).toEqual([
       ["SCHEDULED", LESSONS[0]],
       ["SCHEDULED", LESSONS[1]],
@@ -313,10 +328,11 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
 });
 
 /**
- * Ca biên C28: giáo trình có mục tiêu chưa gắn bài vẫn gửi và duyệt nội dung được, nhưng bộ mục tiêu
+ * Ca biên: bài học chưa gắn mục tiêu nào thì không gửi duyệt được (L1; BE trả LESSON_OUTCOME_MISSING).
+ * Sau khi gắn bài, giáo trình có mục tiêu chưa gắn bài vẫn gửi và duyệt nội dung được, nhưng bộ mục tiêu
  * giữ bản nháp. Dùng khóa Toán khối 6 riêng (giáo viên dạy cùng môn gồm teacher@ nên chọn được người duyệt).
  */
-test.describe.serial("Mục tiêu chưa gắn bài không chặn duyệt giáo trình", () => {
+test.describe.serial("Bài chưa gắn mục tiêu chặn gửi duyệt; mục tiêu chưa gắn bài thì không", () => {
   const course = `E2E Toán 6 ${sfx}`;
   const unit = `Giáo trình biên ${sfx}`;
   const linked = `Mục tiêu đã gắn ${sfx}`;
@@ -331,7 +347,7 @@ test.describe.serial("Mục tiêu chưa gắn bài không chặn duyệt giáo t
     await closeSessions(opened);
   });
 
-  test("Soạn bộ mục tiêu 1 mục tiêu, giáo trình 1 bài, không gắn; vẫn gửi duyệt được", async ({ browser }) => {
+  test("Bài chưa gắn mục tiêu bị chặn gửi duyệt; gắn xong thì gửi được, mục tiêu thứ hai để trống", async ({ browser }) => {
     const manager = await open(browser, ROLES.CENTER_MANAGER);
     await createCourse(manager, { subject: "Toán", grade: 6, name: course });
 
@@ -361,7 +377,18 @@ test.describe.serial("Mục tiêu chưa gắn bài không chặn duyệt giáo t
     await sheet.getByLabel("Nội dung bài học").fill("Nội dung bài duy nhất");
     await sheet.getByRole("button", { name: "Lưu bài học" }).click();
     await expect(sheet).toBeHidden();
+    // Chưa gắn gì: nút/biểu mẫu gửi duyệt bị chặn và báo đúng bài còn thiếu.
+    await openUnitSetup(page, ids.unitId, "?editor=submit");
+    await expect(page.getByText(/Còn 1 bài chưa gắn mục tiêu/).first()).toBeVisible();
+    await expect(page.locator("form").filter({ has: page.getByLabel("Giáo viên duyệt nội dung") })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Gửi duyệt" }).and(page.locator(":enabled")),
+    ).toHaveCount(0);
+
     // Chỉ gắn mục tiêu đầu cho bài; mục tiêu thứ hai để trống. Bộ chỉ "đi cùng" giáo trình khi có mục tiêu gắn vào bài của nó.
+    // Nút "Gắn mục tiêu" nằm ở bước Bài học: quay lại bước đó (đang ở bước gửi duyệt).
+    await openUnitSetup(page, ids.unitId);
+    await expect(page.getByRole("heading", { name: "Bài học (1)" })).toBeVisible();
     await page.getByText("Gắn mục tiêu", { exact: true }).first().click();
     await page.waitForURL(/[?&]step=mapping/);
     await page.getByRole("checkbox", { name: /^Gắn .* cho / }).first().check();
@@ -369,7 +396,8 @@ test.describe.serial("Mục tiêu chưa gắn bài không chặn duyệt giáo t
     await expect(page.getByRole("button", { name: "Chưa có thay đổi" })).toBeVisible();
     await openUnitSetup(page, ids.unitId, "?editor=submit");
 
-    // Cảnh báo báo trước, không chặn nút gửi.
+    // Bài đã gắn nên không còn chặn; mục tiêu chưa gắn bài chỉ là cảnh báo.
+    await expect(page.getByText(/Còn 1 bài chưa gắn mục tiêu/)).toHaveCount(0);
     await expect(page.getByText(/Còn 1 mục tiêu chưa gắn bài/).first()).toBeVisible();
     const submit = page.locator("form").filter({ has: page.getByLabel("Giáo viên duyệt nội dung") });
     await pickSelect(page, submit.getByLabel("Giáo viên duyệt nội dung"), /teacher@edugrade\.local/);

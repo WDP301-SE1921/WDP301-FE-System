@@ -451,6 +451,17 @@ const rules: {
     path: /^academic\/(outcome-sets\/[^/]+\/outcomes\/[^/]+|lessons\/[^/]+\/outcomes)$/,
     roles: designer,
   },
+  // Nhập mục tiêu từ Excel: file mẫu (phải đứng trước GET outcome-sets/[^/]+), xem trước, nhập.
+  {
+    method: "GET",
+    path: /^academic\/outcome-sets\/import-template$/,
+    roles: designer,
+  },
+  {
+    method: "POST",
+    path: /^academic\/outcome-sets\/[^/]+\/(import-preview|import-commit)$/,
+    roles: designer,
+  },
   // BE getSet: Quản lý, Nhân viên, Giáo viên, Thiết kế GT (form "Dán nhiều mục tiêu" đọc bộ).
   {
     method: "GET",

@@ -28,6 +28,7 @@ import {
 import type { LearningOutcome, OutcomeSet } from "@/types/outcomes";
 import { outcomeApi } from "../api";
 import { nextOutcomeCode } from "../outcome-code";
+import { ImportOutcomesDialog } from "./import-outcomes-dialog";
 import { PasteOutcomesForm } from "./paste-outcomes-form";
 import {
   OUTCOME_SET_STATUS_TEXT,
@@ -39,6 +40,7 @@ type OutcomeDialog =
   | { kind: "create" }
   | { kind: "copy"; set: OutcomeSet }
   | { kind: "paste"; set: OutcomeSet }
+  | { kind: "import"; set: OutcomeSet }
   | { kind: "delete-set"; set: OutcomeSet }
   | { kind: "outcome"; set: OutcomeSet; outcome?: LearningOutcome }
   | { kind: "delete-outcome"; set: OutcomeSet; outcome: LearningOutcome }
@@ -325,6 +327,12 @@ function OutcomeSetCard({
               >
                 Dán nhiều mục tiêu
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => onAction({ kind: "import", set })}
+              >
+                Nhập từ Excel
+              </Button>
             </>
           )}
           {actions.canTechnicallyApprove && (
@@ -396,6 +404,15 @@ function OutcomeDialogBody({
   if (dialog.kind === "paste") {
     return (
       <PasteOutcomesForm
+        set={dialog.set}
+        programId={programId}
+        onClose={onDone}
+      />
+    );
+  }
+  if (dialog.kind === "import") {
+    return (
+      <ImportOutcomesDialog
         set={dialog.set}
         programId={programId}
         onClose={onDone}

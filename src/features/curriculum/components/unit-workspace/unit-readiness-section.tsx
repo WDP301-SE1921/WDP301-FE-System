@@ -7,7 +7,7 @@ export function UnitReadinessSection({ ws }: { ws: UnitWorkspace }) {
   const { unit, canEdit, readiness, regular, checks, renumber, reorder } = ws;
   if (!unit || !canEdit) return null;
   return (
-    <div id="curriculum-submit-checklist">
+    <div id="curriculum-submit-checklist" className="space-y-4">
       <CurriculumReadinessCards
         unit={unit}
         readiness={readiness}

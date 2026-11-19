@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { apiRequest } from "@/lib/api/client";
+import { apiRequest, downloadBackendFile } from "@/lib/api/client";
 import { academicApi } from "@/features/academic/api";
 import {
   learningOutcomeSchema,
@@ -10,12 +10,33 @@ import {
 } from "@/lib/validators/outcomes";
 import type { LearningOutcome, OutcomeSet } from "@/types/outcomes";
 
+export interface OutcomeImportRow {
+  rowNumber: number;
+  code: string;
+  title: string;
+  statement: string;
+  required: boolean;
+  errors: { field: string; code: string }[];
+}
+export interface OutcomeImportPreview {
+  previewId: string;
+  outcomeSetId: string;
+  expiresAt: string;
+  summary: { rows: number; validRows: number; invalidRows: number };
+  rows: OutcomeImportRow[];
+}
+
 const setPath = (id: string) =>
   `academic/outcome-sets/${encodeURIComponent(id)}`;
 const post = <T>(path: string, body?: unknown) =>
   apiRequest<T>(path, { method: "POST", body });
 
-const SOURCE_KEYS = ["sourceTitle", "sourceUrl", "sourceLocator", "sourceNote"] as const;
+const SOURCE_KEYS = [
+  "sourceTitle",
+  "sourceUrl",
+  "sourceLocator",
+  "sourceNote",
+] as const;
 
 /**
  * Chuẩn hóa body mục tiêu cho BE (C16): `statement` trống thì lấy tên; ô nguồn trống khi sửa gửi
@@ -25,7 +46,10 @@ export function outcomeBody(
   input: z.infer<typeof learningOutcomeSchema>,
   isEdit: boolean,
 ): Record<string, unknown> {
-  const body: Record<string, unknown> = { ...input, statement: input.statement || input.title };
+  const body: Record<string, unknown> = {
+    ...input,
+    statement: input.statement || input.title,
+  };
   for (const key of SOURCE_KEYS) {
     if (!input[key]) {
       if (isEdit) body[key] = null;
@@ -45,7 +69,10 @@ export const outcomeApi = {
   getSet: (setId: string, signal?: AbortSignal) =>
     apiRequest<OutcomeSet>(setPath(setId), { signal }),
   createSet: (body: unknown) =>
-    post<OutcomeSet>("academic/outcome-sets", outcomeSetCreateSchema.parse(body)),
+    post<OutcomeSet>(
+      "academic/outcome-sets",
+      outcomeSetCreateSchema.parse(body),
+    ),
   deleteSet: (setId: string) =>
     apiRequest<{ id: string; deleted: boolean }>(setPath(setId), {
       method: "DELETE",
@@ -74,6 +101,32 @@ export const outcomeApi = {
     post<LearningOutcome>(
       `academic/outcomes/${encodeURIComponent(outcomeId)}/verify-source`,
       sourceReviewSchema.parse(body),
+    ),
+  importPreview: (setId: string, file: File) => {
+    const body = new FormData();
+    body.set("file", file);
+    return apiRequest<OutcomeImportPreview>(
+      `${setPath(setId)}/import-preview`,
+      {
+        method: "POST",
+        body,
+      },
+    );
+  },
+  importCommit: (setId: string, previewId: string, key: string) =>
+    apiRequest<{
+      outcomeSetId: string;
+      createdCount: number;
+      outcomeIds: string[];
+    }>(`${setPath(setId)}/import-commit`, {
+      method: "POST",
+      body: { previewId },
+      idempotencyKey: key,
+    }),
+  downloadTemplate: () =>
+    downloadBackendFile(
+      "academic/outcome-sets/import-template",
+      "muc-tieu-mau.xlsx",
     ),
   technicalApprove: (setId: string) =>
     post<OutcomeSet>(`${setPath(setId)}/technical-approve`),

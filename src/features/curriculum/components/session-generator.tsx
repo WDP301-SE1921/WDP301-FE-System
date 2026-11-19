@@ -1,19 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   ApiFeedback,
   FieldError,
@@ -34,7 +27,9 @@ import {
   type GenerationAttempt,
 } from "../generation-storage";
 import { sessionTime } from "../session-format";
-import { calendarDateLabel } from "@/lib/calendar-date";
+import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
+import { defaultStartDate } from "@/features/registration-flow/program-setup";
+import { applicableUnits } from "../generation-plan";
 
 export function SessionGenerator({
   classroom,
@@ -66,8 +61,12 @@ export function SessionGenerator({
     resolver: zodResolver(scheduleRangeSchema),
     defaultValues: attempt?.body ?? {
       curriculumUnitId: "",
-      fromDate: "",
-      toDate: "",
+      // Ngày học đầu tiên sau hôm nay, hoặc sau buổi cuối đã có; sửa được.
+      fromDate: defaultStartDate(
+        todayInVietnam(),
+        classroom.scheduledUntil,
+        (classroom.weeklySchedules ?? []).map((item) => item.weekday),
+      ),
     },
   });
   const values = useWatch({ control: form.control });
@@ -120,16 +119,23 @@ export function SessionGenerator({
     !!preview.data &&
     values.curriculumUnitId === preview.variables?.curriculumUnitId &&
     values.fromDate === preview.variables?.fromDate &&
-    values.toDate === preview.variables?.toDate &&
     Date.parse(preview.data.expiresAt) > now;
   const conflicts =
     preview.data?.slots.some((slot) => slot.conflicts.length) ?? false;
   const busy = preview.isPending || generate.isPending;
   const approved =
     units.data?.filter((unit) => unit.status === "APPROVED") ?? [];
-  const selectedUnit = units.data?.find(
-    (unit) => unit.id === values.curriculumUnitId,
-  );
+  // Lớp chưa có buổi: giáo trình là bản đã duyệt có kỳ chứa ngày bắt đầu. Lớp đã khai giảng chỉ
+  // học tiếp giáo trình chứa buổi đầu tiên của nó, không bao giờ chuyển sang bản mới hơn.
+  const started = !!classroom.scheduledFrom || !!classroom.scheduledUntil;
+  const selectedUnit = started
+    ? applicableUnits(approved, (classroom.scheduledFrom ?? "").slice(0, 10))[0]
+    : applicableUnits(approved, values.fromDate ?? "")[0];
+  const lockedMissing = started && units.isSuccess && !selectedUnit;
+  useEffect(() => {
+    if (attempt) return;
+    form.setValue("curriculumUnitId", selectedUnit?.id ?? "");
+  }, [attempt, form, selectedUnit?.id]);
   async function submit(input: ScheduleRangeInput) {
     if (lock.current || busy || restored.error) return;
     if (
@@ -155,108 +161,88 @@ export function SessionGenerator({
       {attempt && (
         <p className="rounded-xl bg-muted p-3 text-sm">
           Có lần tạo lịch học cần xác nhận lại. Thử lại sẽ dùng đúng giáo trình
-          và khoảng ngày đã chọn.
+          và ngày bắt đầu đã chọn.
         </p>
       )}
       <form
         className="space-y-4"
         onSubmit={(event) => void form.handleSubmit(submit)(event)}
       >
-        <div className="space-y-2">
-          <Label htmlFor="schedule-unit">Giáo trình đã duyệt áp dụng</Label>
-          <Controller
-            control={form.control}
-            name="curriculumUnitId"
-            render={({ field }) => (
-              <Select
-                value={field.value || null}
-                items={approved.map((unit) => ({
-                  value: unit.id,
-                  label: `${unit.title} · ${calendarDateLabel(unit.fromDate.slice(0, 10))} – ${calendarDateLabel(unit.toDate.slice(0, 10))}`,
-                }))}
-                disabled={busy || !!attempt || !!restored.error}
-                onValueChange={(value) => {
-                  field.onChange(value ?? "");
-                  const unit = approved.find((item) => item.id === value);
-                  form.setValue("fromDate", unit?.fromDate.slice(0, 10) ?? "");
-                  form.setValue("toDate", unit?.toDate.slice(0, 10) ?? "");
-                  preview.reset();
-                  generate.reset();
-                }}
-              >
-                <SelectTrigger id="schedule-unit">
-                  <SelectValue placeholder="Chọn giáo trình" />
-                </SelectTrigger>
-                <SelectContent>
-                  {approved.map((unit) => (
-                    <SelectItem key={unit.id} value={unit.id}>
-                      {unit.title} ·{" "}
-                      {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
-                      {calendarDateLabel(unit.toDate.slice(0, 10))}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError
-            message={form.formState.errors.curriculumUnitId?.message}
-          />
-          {units.isSuccess && !approved.length && (
-            <p className="text-sm text-muted-foreground">
-              Chưa có giáo trình đã duyệt áp dụng cho khóa học của lớp này.
-            </p>
-          )}
-        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="schedule-from">Từ ngày</Label>
+            <Label htmlFor="schedule-from">Ngày bắt đầu</Label>
             <Input
               id="schedule-from"
               type="date"
-              min={selectedUnit?.fromDate.slice(0, 10)}
-              max={selectedUnit?.toDate.slice(0, 10)}
               disabled={busy || !!attempt}
               {...form.register("fromDate")}
             />
             <FieldError message={form.formState.errors.fromDate?.message} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="schedule-to">Đến ngày</Label>
+            <Label htmlFor="schedule-to">Ngày kết thúc (tự tính)</Label>
             <Input
               id="schedule-to"
               type="date"
-              min={selectedUnit?.fromDate.slice(0, 10)}
-              max={selectedUnit?.toDate.slice(0, 10)}
-              disabled={busy || !!attempt}
-              {...form.register("toDate")}
+              readOnly
+              disabled
+              value={
+                matchingPreview
+                  ? (preview.data!.endDate ?? preview.data!.toDate).slice(0, 10)
+                  : ""
+              }
             />
-            <FieldError message={form.formState.errors.toDate?.message} />
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy || !!attempt || !!restored.error}
-            isLoading={preview.isPending}
-            onClick={form.handleSubmit((input) => preview.mutate(input))}
-          >
-            Xem trước lịch
-          </Button>
-          <Button
-            type="submit"
-            disabled={
-              busy ||
-              !!restored.error ||
-              (!attempt &&
-                (!matchingPreview || conflicts || !preview.data?.slots.length))
-            }
-            isLoading={generate.isPending}
-          >
-            {attempt ? "Thử tạo lịch học lại" : "Tạo lịch học"}
-          </Button>
-        </div>
+        {lockedMissing ? (
+          <p className="text-sm text-muted-foreground">
+            Lớp đã khai giảng nhưng không tìm thấy giáo trình đã duyệt mà lớp
+            đang học. Mỗi lớp chỉ học một giáo trình nên chưa thể tạo thêm lịch
+            học ở đây.
+          </p>
+        ) : selectedUnit ? (
+          <p className="text-sm text-muted-foreground">
+            Giáo trình: {selectedUnit.title}
+            {started ? " (giáo trình lớp đã khai giảng)" : ""} (áp dụng{" "}
+            {calendarDateLabel(selectedUnit.fromDate.slice(0, 10))} –{" "}
+            {calendarDateLabel(selectedUnit.toDate.slice(0, 10))}). Số buổi tự
+            tính theo số bài của giáo trình, mỗi buổi một bài.
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {units.isSuccess && !approved.length
+              ? "Chưa có giáo trình đã duyệt áp dụng cho khóa học của lớp này."
+              : "Ngày bắt đầu chưa nằm trong kỳ áp dụng của giáo trình đã duyệt nào. Chọn ngày khác."}
+          </p>
+        )}
+        <FieldError message={form.formState.errors.curriculumUnitId?.message} />
+        {!lockedMissing && (
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy || !!attempt || !!restored.error}
+              isLoading={preview.isPending}
+              onClick={form.handleSubmit((input) => preview.mutate(input))}
+            >
+              Xem trước lịch
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                busy ||
+                !!restored.error ||
+                (!attempt &&
+                  (!matchingPreview ||
+                    conflicts ||
+                    !preview.data?.slots.length))
+              }
+              isLoading={generate.isPending}
+            >
+              {attempt ? "Thử tạo lịch học lại" : "Tạo lịch học"}
+            </Button>
+          </div>
+        )}
       </form>
       <ApiFeedback error={preview.error ?? generate.error} />
       {generate.isSuccess && (
@@ -267,8 +253,22 @@ export function SessionGenerator({
       {matchingPreview && (
         <div className="space-y-3">
           <p className="font-medium">
-            {preview.data!.slots.length} buổi dự kiến
-            {conflicts ? " · Có xung đột, cần xử lý trước khi tạo lịch học" : ""}
+            {preview.data!.slots.length} buổi, từ{" "}
+            {calendarDateLabel(
+              preview.data!.slots[0]
+                ? todayInVietnam(new Date(preview.data!.slots[0].startsAt))
+                : preview.data!.fromDate.slice(0, 10),
+            )}{" "}
+            đến{" "}
+            {calendarDateLabel(
+              (preview.data!.endDate ?? preview.data!.toDate).slice(0, 10),
+            )}{" "}
+            (tự tính theo{" "}
+            {preview.data!.lessonCount ?? preview.data!.slots.length} bài của
+            giáo trình)
+            {conflicts
+              ? " · Có xung đột, cần xử lý trước khi tạo lịch học"
+              : ""}
           </p>
           {preview.data!.slots.map((slot, index) => (
             <div

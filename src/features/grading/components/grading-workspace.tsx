@@ -380,6 +380,20 @@ function GradeWorkspace({
   );
   return (
     <>
+      {!!assignment.outcomes?.length && (
+        <div
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label="Mục tiêu của bài"
+        >
+          <span className="text-sm text-muted-foreground">Mục tiêu của bài</span>
+          {assignment.outcomes.map((outcome) => (
+            <Badge key={outcome.id} variant="info" title={outcome.title}>
+              {outcome.code} · {outcome.title}
+            </Badge>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-3">
         <Badge>{current ? STATUS_TEXT[current.status] : "Chưa chấm"}</Badge>
         <span className="text-sm text-muted-foreground">
@@ -418,9 +432,6 @@ function GradeWorkspace({
             const answer = submission.answers.find(
               (item) => item.questionId === question.id,
             )?.answer;
-            const targetOutcome = assignment.learningTargets?.find(
-              (item) => item.id === question.outcomeId,
-            );
             const ownFileIds = questionFileIds(question.id);
             return (
               <Card key={question.id} className="min-w-0">
@@ -430,11 +441,6 @@ function GradeWorkspace({
                     {question.kind === "ESSAY" ? "Tự luận" : "Trắc nghiệm"} ·{" "}
                     {question.maxScore} điểm
                   </CardTitle>
-                  {targetOutcome && (
-                    <Badge variant="info" title={targetOutcome.statement}>
-                      {targetOutcome.code} · {targetOutcome.title}
-                    </Badge>
-                  )}
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="whitespace-pre-wrap break-words">
@@ -845,43 +851,6 @@ function GradeWorkspace({
                       )}
                     </div>
                   ))}
-                  {!!assignment.learningTargets?.length && (
-                    <section
-                      className="space-y-2 rounded-xl bg-muted p-3"
-                      aria-label="Điểm theo mục tiêu"
-                    >
-                      <p className="font-medium">
-                        Tỷ lệ điểm theo mục tiêu · bản đang chấm
-                      </p>
-                      {assignment.learningTargets.map((target) => {
-                        const related = assignment.questions.filter(
-                          (q) => q.outcomeId === target.id,
-                        );
-                        const max = related.reduce(
-                          (sum, q) => sum + q.maxScore,
-                          0,
-                        );
-                        if (!max) return null;
-                        const actual = related.reduce(
-                          (sum, q) =>
-                            sum +
-                            (scores?.find((s) => s.questionId === q.id)
-                              ?.score ?? 0),
-                          0,
-                        );
-                        return (
-                          <p key={target.id} className="text-sm">
-                            {target.code}: {Math.round(actual * 100) / 100}/
-                            {max} điểm ({Math.round((actual / max) * 100)}%)
-                          </p>
-                        );
-                      })}
-                      <p className="text-xs text-muted-foreground">
-                        Cộng điểm các câu cùng mục tiêu rồi chia tổng điểm tối đa;
-                        đây là kết quả của bài này.
-                      </p>
-                    </section>
-                  )}
                   <Label htmlFor="grade-feedback">Nhận xét chung</Label>
                   <Textarea
                     id="grade-feedback"

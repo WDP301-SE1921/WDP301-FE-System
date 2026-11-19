@@ -54,13 +54,12 @@ export const curriculumTechnicalReviewSchema = z
 export const curriculumRevisionSchema = z
   .object({ title, ...range })
   .refine(validRange, rangeError);
-export const scheduleRangeSchema = z
-  .object({
-    curriculumUnitId: z.string().min(1, "Chọn giáo trình đã duyệt áp dụng."),
-    previewId: z.string().min(1).optional(),
-    ...range,
-  })
-  .refine(validRange, rangeError);
+/** Tạo lịch học: chỉ cần ngày bắt đầu; ngày kết thúc do BE tự tính theo số bài của giáo trình. */
+export const scheduleRangeSchema = z.object({
+  curriculumUnitId: z.string().min(1, "Chọn giáo trình đã duyệt áp dụng."),
+  previewId: z.string().min(1).optional(),
+  fromDate: date,
+});
 
 export type CurriculumUnitInput = z.infer<typeof curriculumUnitSchema>;
 export type CurriculumLessonInput = z.infer<typeof curriculumLessonSchema>;
@@ -94,6 +93,8 @@ export const importCommitSchema = z.object({
           .string()
           .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
           .nullable(),
+        // Mã mục tiêu của bài (cột "Mã mục tiêu"); file cũ không có cột này thì để rỗng.
+        outcomeCodes: z.array(z.string().min(1).max(64)).max(50).default([]),
       }),
     )
     .min(1)
@@ -129,7 +130,7 @@ export const curriculumImportFileSchema = z.object({
         typeof value === "object" &&
         "length" in value &&
         value.length === 1,
-      "Chọn một file CSV.",
+      "Chọn một file CSV hoặc Excel (.xlsx).",
     )
     .refine(
       (value) =>

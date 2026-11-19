@@ -7,7 +7,6 @@ import {
   Cancel01Icon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,13 +17,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { calendarDateLabel } from "@/lib/calendar-date";
 import { cn } from "@/lib/utils";
 import { registrationApi } from "@/features/registration-flow/api";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { curriculumApi } from "../api";
-import { tetBreaks } from "@/lib/lunar-new-year";
-import { curriculumReadiness, type CurriculumReadiness } from "../readiness";
+import {
+  curriculumReadiness,
+  estimateWeeks,
+  type CurriculumReadiness,
+} from "../readiness";
 import type { SubmitCheck, SubmitCheckState } from "../submit-checklist";
 
 /** Dữ liệu cho danh sách kiểm tra gửi duyệt: khóa học (số buổi cần) và giáo viên duyệt. */
@@ -51,7 +52,6 @@ export function useCurriculumReadiness(
     enabled: active,
     retry: false,
   });
-  const closures = tetBreaks(unit?.fromDate ?? "", unit?.toDate ?? "");
   const reviewerCount = active ? reviewers.data?.length : undefined;
   if (!active || !program.data)
     return {
@@ -63,9 +63,6 @@ export function useCurriculumReadiness(
     readiness: curriculumReadiness({
       program: program.data,
       reviewers: reviewers.data,
-      fromDate: unit.fromDate,
-      toDate: unit.toDate,
-      closures,
     }),
     reviewerCount,
     isLoading: false,
@@ -101,7 +98,6 @@ const CHECK_ICON: Record<
 };
 
 export function CurriculumReadinessCards({
-  unit,
   readiness,
   lessonCount,
   checks,
@@ -116,8 +112,7 @@ export function CurriculumReadinessCards({
   onRenumber?: () => void;
   renumbering?: boolean;
 }) {
-  const shortage = readiness ? readiness.maxNeeded - lessonCount : 0;
-  const range = `${calendarDateLabel(unit.fromDate.slice(0, 10))} – ${calendarDateLabel(unit.toDate.slice(0, 10))}`;
+  const weeks = readiness ? estimateWeeks(lessonCount, readiness.sessionsPerWeek) : null;
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
@@ -182,88 +177,58 @@ export function CurriculumReadinessCards({
 
       {readiness && (
         <Card>
-          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle>Số bài cần cho kỳ này</CardTitle>
-            {readiness.needs?.length ? (
-              <Badge variant={shortage > 0 ? "warning" : "success"}>
-                {shortage > 0 ? `Thiếu ${shortage} bài` : "Đủ bài"}
-              </Badge>
-            ) : null}
+          <CardHeader>
+            <CardTitle>Giáo trình học trong bao lâu</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Chuẩn khóa:{" "}
-              {readiness.sessionsPerWeek == null
-                ? "chưa cấu hình"
-                : `${readiness.sessionsPerWeek} buổi/tuần`}
-              .
-              {readiness.plannedNeed !== null &&
-                ` Dự kiến ${readiness.plannedNeed} bài theo số tuần làm tròn; số thực tế từng lớp ở dưới.`}
+              {readiness.sessionsPerWeek == null || weeks === null
+                ? `Giáo trình ${lessonCount} bài. Khóa chưa cấu hình số buổi/tuần nên chưa ước tính được số tuần.`
+                : `Giáo trình ${lessonCount} bài ≈ ${weeks} tuần với ${readiness.sessionsPerWeek} buổi/tuần.`}
             </p>
             <p className="text-sm text-muted-foreground">
-              Mỗi buổi một bài, tính theo lịch tuần của từng lớp trong {range}.
+              Lớp học hết mọi bài, mỗi buổi một bài theo thứ tự; buổi học có thể
+              kéo dài quá ngày kết thúc kỳ.
             </p>
             {readiness.needs === null ? (
               <p className="text-sm text-muted-foreground">
-                Máy chủ chưa trả lịch tuần của lớp nên chưa tính được số bài.
+                Máy chủ chưa trả lịch tuần của lớp nên chưa ước tính theo từng lớp.
               </p>
             ) : !readiness.needs.length ? (
               <p className="text-sm text-muted-foreground">
                 {readiness.activeClasses
-                  ? "Các lớp của khóa chưa có lịch tuần nên chưa tính được số bài."
-                  : "Khóa chưa có lớp nên chưa tính được số bài. Vẫn gửi duyệt được."}
+                  ? "Các lớp của khóa chưa có lịch tuần nên chưa ước tính theo từng lớp."
+                  : "Khóa chưa có lớp. Vẫn gửi duyệt được."}
               </p>
             ) : (
-              <>
-                <div className="overflow-x-auto rounded-xl border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Lớp</TableHead>
-                        <TableHead className="text-right">Buổi/tuần</TableHead>
-                        <TableHead className="text-right">Cần</TableHead>
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Lớp</TableHead>
+                      <TableHead className="text-right">Buổi/tuần</TableHead>
+                      <TableHead className="text-right">≈ Số tuần</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {readiness.needs.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.perWeek}
+                        </TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          {estimateWeeks(lessonCount, row.perWeek)}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {readiness.needs.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell>{row.name}</TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {row.perWeek}
-                          </TableCell>
-                          <TableCell
-                            className={cn(
-                              "text-right font-medium tabular-nums",
-                              row.needed > lessonCount &&
-                                "text-amber-800 dark:text-amber-300",
-                            )}
-                          >
-                            {row.needed}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Hiện có <b>{lessonCount} bài</b>. Lớp nào cần nhiều bài hơn số
-                  đang có thì Quản lý không tạo được lịch học cho lớp đó; lớp
-                  học nhanh hơn thì thêm bài ôn tập / dự phòng.
-                </p>
-              </>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
       )}
     </div>
   );
-}
-
-/** Số buổi cần nhiều nhất: theo lịch từng lớp, không có thì theo chuẩn của khóa. */
-export function neededLessons(
-  readiness: CurriculumReadiness | null,
-): number | null {
-  if (!readiness) return null;
-  if (readiness.needs?.length) return readiness.maxNeeded;
-  return readiness.plannedNeed;
 }

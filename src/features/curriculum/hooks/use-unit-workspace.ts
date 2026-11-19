@@ -38,10 +38,8 @@ import { useCurriculumUnit, useCurriculumMutation } from "./use-curriculum";
 import type { CurriculumFormState } from "./use-curriculum-form";
 import { useCurriculumComparison } from "../components/curriculum-comparison";
 import { canCopyCurriculum } from "../workspace-selectors";
-import {
-  neededLessons,
-  useCurriculumReadiness,
-} from "../components/curriculum-readiness";
+import { useCurriculumReadiness } from "../components/curriculum-readiness";
+import { lessonsMissingOutcome } from "../content-setup";
 import { hasBlockingCheck, submitChecklist } from "../submit-checklist";
 import { moveLessonBy } from "../lesson-order";
 import { curriculumSetupHref } from "../setup-href";
@@ -212,7 +210,8 @@ export function useUnitWorkspace(
   const outcomeSets = useLiveQuery(
     ["outcome-sets", unit?.programId, "all"],
     (signal) => academicApi.outcomeSets(unit!.programId, {}, signal),
-    showOutcomes,
+    // Người thiết kế cần mã mục tiêu để xuất bài ra file, kể cả giáo trình đã lưu trữ.
+    showOutcomes || role === "curriculum_designer",
   );
   // Chưa biết bộ mục tiêu thì chưa cho duyệt: tránh duyệt im lặng bỏ sót bộ (W11).
   const outcomesUnready =
@@ -304,7 +303,7 @@ export function useUnitWorkspace(
   const checks = submitChecklist({
     sequences: regular.map((lesson) => lesson.sequence),
     reviewerCount,
-    neededLessons: neededLessons(readiness),
+    lessonsMissingOutcome: lessonsMissingOutcome(regular),
     unlinkedOutcomes: outcomeSets.data ? countUnlinked(unlinkedGroups) : undefined,
   });
   const blocked = hasBlockingCheck(checks);
@@ -384,8 +383,8 @@ export function useUnitWorkspace(
           programId: unit.programId,
           unitId: unit.id,
         });
-        // Chỉ lớp chưa có buổi tới hết kỳ (và lớp chưa biết do BE cũ) mới cần tạo lịch.
-        const { needs, unknown } = classesNeedingSchedule(eligible, unit.toDate);
+        // Chỉ lớp chưa có buổi nào (và lớp chưa biết do BE cũ) mới cần tạo lịch.
+        const { needs, unknown } = classesNeedingSchedule(eligible);
         const targets = [...needs, ...unknown];
         if (targets.length)
           params.set("classIds", targets.map((c) => c.id).join(","));
