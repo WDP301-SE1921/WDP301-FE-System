@@ -1,9 +1,9 @@
 "use client";
-// Trang "Soạn khóa học từng bước" (Luồng 1, PLAN_GUIDED_WORKFLOWS.md, L1-a). Mỗi bước nhúng màn đang có
-// (bộ mục tiêu, form giáo trình, ma trận gắn bài) hoặc mở đúng chỗ trên trang giáo trình; trạng thái
-// bước tính từ BE nên đổi máy hay đổi người làm vẫn đúng.
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+// Trang "Soạn khóa học từng bước" (Luồng 1, PLAN_GUIDED_WORKFLOWS.md, L1-a; gộp trang giáo trình
+// ngày 2026-11-19, PLAN_CURRICULUM_ONE_PAGE.md). Mỗi bước nhúng màn đang có (bộ mục tiêu, bảng bài,
+// form gửi duyệt, ma trận gắn bài, duyệt áp dụng); trạng thái bước tính từ BE nên đổi máy hay đổi
+// người làm vẫn đúng.
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
@@ -11,7 +11,6 @@ import { EmptyState } from "@/components/shared/feedback/empty-state";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { FlowSteps } from "@/components/shared/workflows/flow-steps";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -30,42 +29,46 @@ import { OutcomeSetsPanel } from "@/features/outcomes/components/outcome-sets-pa
 import { outcomeApi } from "@/features/outcomes/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { useCurrentRole } from "@/hooks/use-current-role";
-import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
+import { todayInVietnam } from "@/lib/calendar-date";
 import type { CurriculumUnit, CurriculumUnitDetail } from "@/types/curriculum";
 import type { OutcomeSet } from "@/types/outcomes";
 import { curriculumApi } from "../api";
 import {
   CONTENT_STEP_KEYS,
   contentSetupSteps,
-  pickWorkingUnit,
+  pickViewedUnit,
   type ContentOwner,
   type ContentStep,
   type ContentStepKey,
 } from "../content-setup";
 import { curriculumKeys } from "../hooks/use-curriculum";
 import { UnitForm } from "./unit-form";
-
-/** Đường dẫn trang từng bước của một khóa (dùng ở checklist, trang giáo trình, tổng quan). */
-export function contentSetupHref(programId: string, step?: ContentStepKey) {
-  const params = new URLSearchParams({ programId });
-  if (step) params.set("step", step);
-  return `${ROUTES.MANAGER.CURRICULUM_SETUP}?${params.toString()}`;
-}
-
-/** Thêm `from=setup` để trang giáo trình hiện nút quay về trang từng bước. */
-function unitHref(unitId: string, editor?: "lesson" | "import" | "submit") {
-  const params = new URLSearchParams({ from: "setup" });
-  if (editor) params.set("editor", editor);
-  return `${ROUTES.MANAGER.CURRICULUM_UNIT(unitId)}?${params.toString()}`;
-}
+import { UnitStepContent } from "./unit-workspace/unit-step-content";
+import {
+  UnitVersionSelect,
+  unitStatusLabel,
+} from "./unit-workspace/unit-version-select";
 
 const parsers = {
   programId: parseAsString.withDefault(""),
+  unitId: parseAsString,
   step: parseAsStringLiteral(CONTENT_STEP_KEYS),
+  editor: parseAsString,
+};
+// Các tham số của giáo trình cũ: đổi khóa hay bản thì bỏ đi.
+const UNIT_PARAMS_CLEARED = {
+  unitId: null,
+  editor: null,
+  lesson: null,
+  lessonChanges: null,
 };
 
 export function CourseContentSetup() {
-  const [{ programId }, setQuery] = useQueryStates(parsers);
+  const [{ programId, unitId }, setQuery] = useQueryStates({
+    ...parsers,
+    lesson: parseAsString,
+    lessonChanges: parseAsString,
+  });
   const programs = useQuery({
     queryKey: ["registration-programs"],
     queryFn: registrationApi.programs,
@@ -75,6 +78,16 @@ export function CourseContentSetup() {
     (item) => item.isActive !== false,
   );
   const program = active.find((item) => item.id === programId);
+  // Cùng khóa cache với ProgramContentSteps nên không tải thêm lần nữa.
+  const units = useQuery({
+    queryKey: curriculumKeys.units(programId),
+    queryFn: ({ signal }) => curriculumApi.units(programId, signal),
+    enabled: !!program,
+    retry: false,
+  });
+  const viewedId = units.data
+    ? (pickViewedUnit(units.data, unitId, todayInVietnam()).viewed?.id ?? "")
+    : "";
   return (
     <PageContainer>
       <PageHeader
@@ -89,29 +102,48 @@ export function CourseContentSetup() {
         onRetry={() => void programs.refetch()}
       >
         <div className="min-w-0 space-y-6">
-          <div className="max-w-xl space-y-2">
-            <Label htmlFor="content-setup-program">Khóa học</Label>
-            <Select
-              value={programId || null}
-              items={active.map((item) => ({
-                value: item.id,
-                label: item.name,
-              }))}
-              onValueChange={(value) =>
-                void setQuery({ programId: String(value ?? ""), step: null })
-              }
-            >
-              <SelectTrigger id="content-setup-program">
-                <SelectValue placeholder="Chọn khóa học cần soạn" />
-              </SelectTrigger>
-              <SelectContent>
-                {active.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.name} · {item.subject} · Khối {item.grade}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap gap-4">
+            <div className="w-full max-w-xl space-y-2">
+              <Label htmlFor="content-setup-program">Khóa học</Label>
+              <Select
+                value={programId || null}
+                items={active.map((item) => ({
+                  value: item.id,
+                  label: item.name,
+                }))}
+                onValueChange={(value) =>
+                  void setQuery({
+                    programId: String(value ?? ""),
+                    step: null,
+                    ...UNIT_PARAMS_CLEARED,
+                  })
+                }
+              >
+                <SelectTrigger id="content-setup-program">
+                  <SelectValue placeholder="Chọn khóa học cần soạn" />
+                </SelectTrigger>
+                <SelectContent>
+                  {active.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name} · {item.subject} · Khối {item.grade}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {program && units.data && (
+              <UnitVersionSelect
+                units={units.data}
+                value={viewedId}
+                onChange={(id) =>
+                  void setQuery({
+                    ...UNIT_PARAMS_CLEARED,
+                    unitId: id,
+                    step: null,
+                  })
+                }
+              />
+            )}
           </div>
           {program ? (
             <ProgramContentSteps
@@ -143,6 +175,7 @@ function ProgramContentSteps({
   programName: string;
 }) {
   const role = useCurrentRole();
+  const [{ unitId }] = useQueryStates(parsers);
   const viewer: ContentOwner | null =
     role === "curriculum_designer"
       ? "DESIGNER"
@@ -158,20 +191,20 @@ function ProgramContentSteps({
   const sets = useLiveQuery(["outcome-sets", programId, "all"], (signal) =>
     outcomeApi.sets(programId, signal),
   );
-  const working = units.data
-    ? pickWorkingUnit(units.data, todayInVietnam())
-    : null;
+  const { viewed, working } = units.data
+    ? pickViewedUnit(units.data, unitId, todayInVietnam())
+    : { viewed: null, working: null };
   const detail = useQuery({
-    queryKey: curriculumKeys.unit(working?.id ?? ""),
-    queryFn: ({ signal }) => curriculumApi.unit(working!.id, signal),
-    enabled: !!working,
+    queryKey: curriculumKeys.unit(viewed?.id ?? ""),
+    queryFn: ({ signal }) => curriculumApi.unit(viewed!.id, signal),
+    enabled: !!viewed,
     retry: false,
   });
   const failed = units.isError ? units : sets.isError ? sets : null;
   return (
     <AsyncBoundary
       isLoading={
-        units.isPending || sets.isPending || (!!working && detail.isPending)
+        units.isPending || sets.isPending || (!!viewed && detail.isPending)
       }
       isError={!!failed}
       error={failed?.error}
@@ -185,8 +218,9 @@ function ProgramContentSteps({
           programId={programId}
           programName={programName}
           viewer={viewer}
+          viewed={viewed}
           working={working}
-          detail={working ? detail.data : undefined}
+          detail={viewed ? detail.data : undefined}
           sets={sets.data}
         />
       )}
@@ -198,6 +232,7 @@ function StepsBody({
   programId,
   programName,
   viewer,
+  viewed,
   working,
   detail,
   sets,
@@ -205,17 +240,21 @@ function StepsBody({
   programId: string;
   programName: string;
   viewer: ContentOwner | null;
+  viewed: CurriculumUnit | null;
   working: CurriculumUnit | null;
   detail?: CurriculumUnitDetail;
   sets: OutcomeSet[];
 }) {
-  const router = useRouter();
-  const [{ step: chosen }, setQuery] = useQueryStates(parsers);
+  const [{ step: chosen, editor }, setQuery] = useQueryStates({
+    ...parsers,
+    lesson: parseAsString,
+    lessonChanges: parseAsString,
+  });
   const lessons = (detail?.lessons ?? []).filter(
     (lesson) => lesson.kind === "LESSON",
   );
   const steps = contentSetupSteps({
-    working,
+    working: viewed,
     lessonCount: lessons.length,
     outcomeSets: sets,
     viewer,
@@ -227,12 +266,31 @@ function StepsBody({
     steps.find((item) => item.key === chosen && item.status !== "todo")?.key ??
     fallback;
   const go = (key: ContentStepKey | null) => void setQuery({ step: key });
+  // Mở một bản giáo trình (null = về bản đang soạn); tạo bằng CSV thì mở luôn hộp nhập file.
+  const openUnit = (id: string | null, source?: "csv") =>
+    void setQuery({
+      ...UNIT_PARAMS_CLEARED,
+      unitId: id,
+      step: id ? "lessons" : null,
+      editor: id && source === "csv" ? "import" : null,
+    });
+  // Link cũ `?editor=submit` mở hộp gửi duyệt; trang này gửi duyệt ngay trong bước 4 nên chuyển sang đó.
+  const redirectSubmit = editor === "submit";
+  useEffect(() => {
+    if (redirectSubmit) void setQuery({ step: "submit", editor: null });
+  }, [redirectSubmit, setQuery]);
   const step = steps.find((item) => item.key === active)!;
   const nextKey = CONTENT_STEP_KEYS[CONTENT_STEP_KEYS.indexOf(active) + 1];
   const next = steps.find((item) => item.key === nextKey);
   const latest = [...sets].sort((a, b) => b.version - a.version)[0];
   const isDesigner = viewer === "DESIGNER";
-  const isDraft = working?.status === "DRAFT";
+  const showUnitContent =
+    !!viewed &&
+    !redirectSubmit &&
+    (active === "lessons" ||
+      active === "submit" ||
+      active === "teacher" ||
+      active === "manager");
 
   const goNext = next && next.status !== "todo" && (
     <Button type="button" onClick={() => go(next.key)}>
@@ -242,6 +300,27 @@ function StepsBody({
 
   return (
     <div className="min-w-0 space-y-6">
+      {viewed && viewed.id !== working?.id && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+        >
+          <p>
+            Đang xem bản {viewed.version} (
+            {unitStatusLabel(viewed.status).toLowerCase()})
+          </p>
+          {working && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => openUnit(null)}
+            >
+              Về bản đang soạn
+            </Button>
+          )}
+        </div>
+      )}
       <FlowSteps
         steps={steps}
         activeKey={active}
@@ -271,12 +350,8 @@ function StepsBody({
             </>
           )}
           {active === "lessons" &&
-            (working ? (
-              <UnitSummary
-                unit={working}
-                lessons={lessons.map((item) => item.title)}
-              />
-            ) : isDesigner ? (
+            !viewed &&
+            (isDesigner ? (
               <>
                 <p className="text-sm text-muted-foreground">
                   Tạo giáo trình cho khóa: đặt tên và khoảng ngày áp dụng. Có
@@ -284,35 +359,12 @@ function StepsBody({
                 </p>
                 <UnitForm
                   programId={programId}
-                  onSaved={(id, source) =>
-                    source === "csv"
-                      ? router.push(unitHref(id, "import"))
-                      : go("lessons")
-                  }
+                  onSaved={(id, source) => openUnit(id, source)}
                 />
               </>
             ) : (
               <p className="text-sm">Khóa chưa có giáo trình.</p>
             ))}
-          {active === "lessons" && working && isDesigner && isDraft && (
-            <div className="flex flex-wrap gap-2">
-              <Button render={<Link href={unitHref(working.id, "lesson")} />}>
-                Thêm bài
-              </Button>
-              <Button
-                variant="outline"
-                render={<Link href={unitHref(working.id, "import")} />}
-              >
-                Nhập từ Excel (CSV)
-              </Button>
-              <Button
-                variant="outline"
-                render={<Link href={unitHref(working.id)} />}
-              >
-                Sửa, sắp xếp bài
-              </Button>
-            </div>
-          )}
           {active === "mapping" &&
             (latest &&
             latest.status === "DRAFT" &&
@@ -334,29 +386,16 @@ function StepsBody({
                 {step.summary ?? "Chưa có mục tiêu hoặc bài để gắn."}
               </p>
             ))}
-          {active === "submit" && working && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                {isDraft
-                  ? "Hệ thống kiểm tra thứ tự và nội dung bài, rồi bạn chọn giáo viên duyệt nội dung. Gửi xong, giáo trình bị khóa sửa cho tới khi được duyệt hoặc trả lại."
-                  : `Đã gửi duyệt${working.reviewerTeacher?.displayName ? ` cho ${working.reviewerTeacher.displayName}` : ""}.`}
-              </p>
-              {isDesigner && isDraft && (
-                <Button render={<Link href={unitHref(working.id, "submit")} />}>
-                  Kiểm tra và gửi duyệt
-                </Button>
-              )}
-            </>
-          )}
-          {active === "teacher" && working && (
-            <p className="text-sm text-muted-foreground">
-              Giáo viên được chọn mở mục Giáo trình trên trang của mình, đọc
-              từng bài rồi đồng ý hoặc trả lại kèm nhận xét. Giáo viên đồng ý
-              thì bộ mục tiêu đủ điều kiện được duyệt cùng.
-            </p>
-          )}
-          {active === "manager" && working && (
-            <ManagerStep unit={working} isManager={viewer === "MANAGER"} />
+          {showUnitContent && (
+            <UnitStepContent
+              key={viewed.id}
+              unitId={viewed.id}
+              programId={programId}
+              step={active}
+              viewer={viewer}
+              go={go}
+              openUnit={openUnit}
+            />
           )}
           <div className="flex flex-wrap justify-end gap-2">{goNext}</div>
         </CardContent>
@@ -376,88 +415,5 @@ function WaitingNote({ step }: { step: ContentStep }) {
       {step.summary ? ` (${step.summary})` : ""}. Bạn chưa phải làm gì ở bước
       này.
     </p>
-  );
-}
-
-function UnitSummary({
-  unit,
-  lessons,
-}: {
-  unit: CurriculumUnit;
-  lessons: string[];
-}) {
-  return (
-    <div className="space-y-2 rounded-2xl border border-border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-medium">
-          {unit.title} · bản {unit.version}
-        </p>
-        <Badge variant={unit.status === "APPROVED" ? "success" : "neutral"}>
-          {lessons.length} bài
-        </Badge>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Áp dụng {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
-        {calendarDateLabel(unit.toDate.slice(0, 10))}. Mỗi buổi học một bài theo
-        thứ tự.
-      </p>
-      {lessons.length > 0 && (
-        <ol className="list-decimal space-y-0.5 pl-5 text-sm">
-          {lessons.slice(0, 5).map((title, index) => (
-            <li key={index}>{title}</li>
-          ))}
-          {lessons.length > 5 && (
-            <li className="list-none text-muted-foreground">
-              … và {lessons.length - 5} bài nữa
-            </li>
-          )}
-        </ol>
-      )}
-    </div>
-  );
-}
-
-function ManagerStep({
-  unit,
-  isManager,
-}: {
-  unit: CurriculumUnit;
-  isManager: boolean;
-}) {
-  if (unit.status === "APPROVED")
-    return (
-      <div className="space-y-3">
-        <p className="text-sm">
-          Giáo trình đã được duyệt áp dụng. Lớp của khóa dùng giáo trình này khi
-          tạo lịch học.
-        </p>
-        {isManager && (
-          <Button
-            variant="outline"
-            render={
-              <Link
-                href={`${ROUTES.MANAGER.SESSIONS}?${new URLSearchParams({ programId: unit.programId, unitId: unit.id }).toString()}`}
-              />
-            }
-          >
-            Tạo lịch học cho lớp của khóa
-          </Button>
-        )}
-      </div>
-    );
-  return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Quản lý đọc lại giáo trình đã được giáo viên đồng ý, rồi duyệt áp dụng.
-        Duyệt xong hệ thống mở màn tạo lịch học cho các lớp của khóa.
-      </p>
-      {isManager &&
-        unit.status === "PENDING_REVIEW" &&
-        unit.technicalReviewedAt && (
-          <Button render={<Link href={unitHref(unit.id)} />}>
-            Mở giáo trình để duyệt áp dụng
-          </Button>
-        )}
-    </div>
   );
 }

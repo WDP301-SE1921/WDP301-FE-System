@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ROLES, type WebRole } from "../../src/constants/roles";
-import { bff, createCourse, createDraftUnit } from "./flows";
+import { bff, createCourse, createDraftUnit, openUnitSetup, unitIdFromUrl } from "./flows";
 import { persistSessions, chooseCard, expectNoLegacyTerms, inRole, pickSelect, pickTime, suffix, vnDate, closeSessions, nextWeekOffset, type RoleSession } from "./helpers";
 
 /**
@@ -142,12 +142,13 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await page.locator("#unit-from").fill(fromDate());
     await page.locator("#unit-to").fill(toDate());
     await page.getByRole("button", { name: "Tạo giáo trình nháp" }).click();
-    await page.waitForURL(/\/manager\/curriculum\/[^/?]+/);
-    state.unitId = new URL(page.url()).pathname.split("/").pop() ?? "";
-    await expect(page.getByRole("heading", { name: UNIT_TITLE })).toBeVisible();
+    await page.waitForURL((url) => unitIdFromUrl(url) !== "");
+    state.unitId = unitIdFromUrl(new URL(page.url()));
+    // Giáo trình mở ngay trong trang một trang (bước Bài học), không còn trang riêng.
+    await expect(page.getByText(UNIT_TITLE).first()).toBeVisible();
 
     for (const title of LESSONS) {
-      await page.getByRole("button", { name: "Thêm bài học" }).click();
+      await page.getByRole("button", { name: "Thêm bài học" }).first().click();
       const sheet = await dialogOf(page, /bài học/i);
       await sheet.getByLabel("Tên bài học").fill(title);
       await sheet.getByLabel("Nội dung bài học").fill(`Nội dung ${title}`);
@@ -159,7 +160,7 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
 
     // Gắn mục tiêu cho bài 1 (ma trận), rồi mở lại để thấy liên kết còn đó.
     await page.getByText("Gắn mục tiêu", { exact: true }).first().click();
-    await page.waitForURL(/outcomeMatrix=/);
+    await page.waitForURL(/[?&]step=mapping/);
     const box = page.getByRole("checkbox", { name: /^Gắn .* cho / }).first();
     await box.check();
     await page.getByRole("button", { name: "Lưu 1 bài" }).click();
@@ -167,13 +168,14 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await page.reload();
     await expect(page.getByRole("checkbox", { name: /^Gắn .* cho / }).first()).toBeChecked();
 
-    await page.goto(`/manager/curriculum/${state.unitId}`);
-    await page.getByRole("button", { name: "Gửi duyệt" }).first().click();
-    const submit = await dialogOf(page, /gửi duyệt|duyệt/i);
+    // Bước 4 nằm ngay trong trang: form gửi duyệt hiện trong thẻ bước, không có hộp thoại.
+    await openUnitSetup(page, state.unitId, "?editor=submit");
+    const submit = page.locator("form").filter({ has: page.getByLabel("Giáo viên duyệt nội dung") });
     await pickSelect(page, submit.getByLabel("Giáo viên duyệt nội dung"), /teacher@edugrade\.local/);
     await submit.getByRole("button", { name: "Gửi duyệt" }).click();
     await expect(submit).toBeHidden();
-    await expect(page.getByText(/Chờ giáo viên duyệt/i).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bước 5: Giáo viên duyệt nội dung" })).toBeVisible();
+    await expect(page.getByText(/Đang chờ giáo viên/).first()).toBeVisible();
     await expectNoLegacyTerms(page);
   });
 
@@ -192,7 +194,7 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
 
   test("Quản lý Duyệt áp dụng giáo trình, bộ mục tiêu đã do giáo viên duyệt", async ({ browser }) => {
     const page = await open(browser, ROLES.CENTER_MANAGER);
-    await page.goto(`/manager/curriculum/${state.unitId}`);
+    await openUnitSetup(page, state.unitId);
     await page.getByRole("button", { name: "Duyệt áp dụng", exact: true }).click();
     const confirm = page.getByRole("dialog").filter({ hasText: "Duyệt áp dụng giáo trình?" });
     // Quản lý không duyệt bộ mục tiêu nữa: hộp xác nhận không nhắc tới bộ đã duyệt.
@@ -353,7 +355,7 @@ test.describe.serial("Mục tiêu chưa gắn bài không chặn duyệt giáo t
     await expect(page.getByText(lone).first()).toBeVisible();
 
     ids.unitId = await createDraftUnit(page, { course, title: unit, from: fromDate(), to: toDate() });
-    await page.getByRole("button", { name: "Thêm bài học" }).click();
+    await page.getByRole("button", { name: "Thêm bài học" }).first().click();
     const sheet = await dialogOf(page, /bài học/i);
     await sheet.getByLabel("Tên bài học").fill(`Bài duy nhất ${sfx}`);
     await sheet.getByLabel("Nội dung bài học").fill("Nội dung bài duy nhất");
@@ -361,16 +363,15 @@ test.describe.serial("Mục tiêu chưa gắn bài không chặn duyệt giáo t
     await expect(sheet).toBeHidden();
     // Chỉ gắn mục tiêu đầu cho bài; mục tiêu thứ hai để trống. Bộ chỉ "đi cùng" giáo trình khi có mục tiêu gắn vào bài của nó.
     await page.getByText("Gắn mục tiêu", { exact: true }).first().click();
-    await page.waitForURL(/outcomeMatrix=/);
+    await page.waitForURL(/[?&]step=mapping/);
     await page.getByRole("checkbox", { name: /^Gắn .* cho / }).first().check();
     await page.getByRole("button", { name: "Lưu 1 bài" }).click();
     await expect(page.getByRole("button", { name: "Chưa có thay đổi" })).toBeVisible();
-    await page.goto(`/manager/curriculum/${ids.unitId}`);
+    await openUnitSetup(page, ids.unitId, "?editor=submit");
 
     // Cảnh báo báo trước, không chặn nút gửi.
     await expect(page.getByText(/Còn 1 mục tiêu chưa gắn bài/).first()).toBeVisible();
-    await page.getByRole("button", { name: "Gửi duyệt" }).first().click();
-    const submit = await dialogOf(page, /gửi duyệt|duyệt/i);
+    const submit = page.locator("form").filter({ has: page.getByLabel("Giáo viên duyệt nội dung") });
     await pickSelect(page, submit.getByLabel("Giáo viên duyệt nội dung"), /teacher@edugrade\.local/);
     await submit.getByRole("button", { name: "Gửi duyệt" }).click();
     await expect(submit).toBeHidden();

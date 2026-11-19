@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 import { ROLES, type WebRole } from "../../src/constants/roles";
-import { createCourse, createDraftUnit } from "./flows";
+import { createCourse, createDraftUnit, openUnitSetup } from "./flows";
 import { persistSessions, inRole, suffix, vnDate, closeSessions, nextWeekOffset, type RoleSession } from "./helpers";
 
 /** Xuất giáo trình ra CSV, sửa, nhập lại thay toàn bộ (giáo trình nháp của một khóa tạo mới). */
@@ -29,7 +29,7 @@ const row = (sequence: number, title: string, version = "") =>
   `LESSON,${sequence},${title},Nội dung ${title},,${version}`;
 
 async function openImport(page: Page) {
-  await page.goto(`/manager/curriculum/${state.unitId}`);
+  await openUnitSetup(page, state.unitId);
   await page.getByRole("button", { name: "Thêm thao tác với giáo trình" }).click();
   await page.getByRole("menuitem", { name: "Nhập bài từ file" }).click();
   const dialog = page.getByRole("dialog", { name: /Nhập bài từ file/ });
@@ -123,7 +123,7 @@ test.describe.serial("Giáo trình: xuất, sửa và nhập lại bằng CSV", 
     await expect(dialog.getByText(/1 dòng lỗi/)).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Nhập vào bản nháp" })).toBeDisabled();
     // Tải lại trang: dữ liệu trong BE phải còn nguyên 3 bài, không bài nào bị ghi nửa chừng.
-    await page.goto(`/manager/curriculum/${state.unitId}`);
+    await openUnitSetup(page, state.unitId);
     await expect(page.getByRole("heading", { name: "Bài học (3)" })).toBeVisible();
   });
 });

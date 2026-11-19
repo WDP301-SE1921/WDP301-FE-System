@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { StatusBadge } from "@/components/shared/feedback/status-badge";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { OutcomeSetsPanel } from "@/features/outcomes/components/outcome-sets-panel";
@@ -189,7 +190,7 @@ function ProgramSheetContent({ programId }: { programId: string }) {
                   <Button
                     size="sm"
                     variant="outline"
-                    render={<Link href={ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)} />}
+                    render={<Link href={curriculumSetupHref({ programId: unit.programId, unitId: unit.id })} />}
                   >
                     Xem giáo trình
                   </Button>

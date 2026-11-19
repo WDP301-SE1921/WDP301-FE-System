@@ -60,6 +60,7 @@ import { TimeInput } from "@/components/shared/pickers/time-input";
 import { toast } from "@/components/ui/toast";
 import { canAccessPath } from "@/constants/role-access";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { subjectDotClass } from "@/constants/subjects";
 import { apiRequest } from "@/lib/api/client";
 import { calendarDateLabel } from "@/lib/calendar-date";
@@ -1474,7 +1475,7 @@ function CurriculumProgress({
               variant="link"
               size="sm"
               render={
-                <Link href={ROUTES.MANAGER.CURRICULUM_UNIT(current.id)} />
+                <Link href={curriculumSetupHref({ programId: current.programId, unitId: current.id })} />
               }
             >
               Xem

@@ -31,8 +31,22 @@ export async function createDraftUnit(
   await page.locator("#unit-from").fill(input.from);
   await page.locator("#unit-to").fill(input.to);
   await page.getByRole("button", { name: "Tạo giáo trình nháp" }).click();
-  await page.waitForURL(/\/manager\/curriculum\/[^/?]+/);
-  return new URL(page.url()).pathname.split("/").pop() ?? "";
+  await page.waitForURL((url) => unitIdFromUrl(url) !== "");
+  return unitIdFromUrl(new URL(page.url()));
+}
+
+/** Id giáo trình từ `/manager/curriculum/<id>` (đường cũ) hoặc `/manager/curriculum/setup?unitId=<id>`. */
+export function unitIdFromUrl(url: URL) {
+  const fromQuery = url.searchParams.get("unitId");
+  if (fromQuery) return fromQuery;
+  const match = /^\/manager\/curriculum\/([^/?]+)$/.exec(url.pathname);
+  return match && !["setup", "overview", "feedback"].includes(match[1]) ? match[1] : "";
+}
+
+/** Mở giáo trình bằng đường cũ `/manager/curriculum/<id>` và chờ chuyển sang trang giáo trình một trang. */
+export async function openUnitSetup(page: Page, unitId: string, query = "") {
+  await page.goto(`/manager/curriculum/${unitId}${query}`);
+  await page.waitForURL(/\/manager\/curriculum\/setup\?/);
 }
 
 /** Gọi BFF (`/api/backend/...`) bằng phiên của context; bỏ vỏ `{ success, data }` nếu có. */

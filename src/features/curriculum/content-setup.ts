@@ -68,6 +68,30 @@ export function pickWorkingUnit<T extends ContentUnit>(
   return current ?? next ?? latestVersion(approved) ?? null;
 }
 
+/**
+ * Giáo trình đang hiển thị trên trang một trang: bản có id `unitId` (mọi trạng thái, kể cả lưu trữ),
+ * không có hoặc id lạ thì rơi về bản đang soạn (`working`).
+ */
+export function pickViewedUnit<T extends ContentUnit>(
+  units: T[],
+  unitId: string | null | undefined,
+  today: string,
+): { viewed: T | null; working: T | null } {
+  const working = pickWorkingUnit(units, today);
+  const chosen = unitId ? units.find((u) => u.id === unitId) : undefined;
+  return { viewed: chosen ?? working, working };
+}
+
+/** Bước mở sẵn khi vào một giáo trình theo trạng thái của nó. */
+export function unitStepKey(
+  unit: Pick<ContentUnit, "status" | "technicalReviewedAt">,
+): ContentStepKey {
+  if (unit.status === "PENDING_REVIEW")
+    return unit.technicalReviewedAt ? "manager" : "teacher";
+  if (unit.status === "APPROVED") return "manager";
+  return "lessons";
+}
+
 interface RawStep {
   key: ContentStepKey;
   title: string;
@@ -95,7 +119,10 @@ export function contentSetupSteps(input: {
     ? latest.outcomes.filter((o) => !o.lessonLinks?.length).length
     : 0;
   const submitted =
-    !!w && (w.status === "PENDING_REVIEW" || w.status === "APPROVED");
+    !!w &&
+    (w.status === "PENDING_REVIEW" ||
+      w.status === "APPROVED" ||
+      w.status === "ARCHIVED");
   const reviewer = w?.reviewerTeacher?.displayName;
 
   const outcomes: RawStep = {
@@ -129,7 +156,9 @@ export function contentSetupSteps(input: {
     title: "Gắn mục tiêu vào bài",
     owner: "DESIGNER",
   } as const;
-  if (!hasOutcomes)
+  if (w?.status === "ARCHIVED")
+    mapping = { ...mappingBase, state: "done", summary: "Bản đã lưu trữ" };
+  else if (!hasOutcomes)
     mapping = {
       ...mappingBase,
       state: submitted || lessons > 0 ? "done" : "todo",
@@ -173,6 +202,7 @@ export function contentSetupSteps(input: {
       ? { state: "needs", summary: reviewer ?? undefined }
       : w &&
           (w.status === "APPROVED" ||
+            w.status === "ARCHIVED" ||
             (w.status === "PENDING_REVIEW" && w.technicalReviewedAt))
         ? {
             state: "done",
@@ -188,7 +218,9 @@ export function contentSetupSteps(input: {
       ? { state: "needs" }
       : w?.status === "APPROVED"
         ? { state: "done", summary: "Đã áp dụng" }
-        : { state: "todo" }),
+        : w?.status === "ARCHIVED"
+          ? { state: "done", summary: "Đã lưu trữ" }
+          : { state: "todo" }),
   };
 
   let seen = false;

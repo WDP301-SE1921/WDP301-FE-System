@@ -65,6 +65,7 @@ import { ChoiceCards } from "@/components/shared/forms/choice-cards";
 import { Badge } from "@/components/ui/badge";
 import type { CurriculumHubTab } from "@/constants/curriculum-hub";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { academicApi } from "@/features/academic/api";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { curriculumApi } from "@/features/curriculum/api";
@@ -565,7 +566,7 @@ function ProgramsCatalog() {
                                 aria-label={`${stage === "PENDING_MANAGER_CONFIRMATION" ? "Duyệt áp dụng" : "Xem"} giáo trình ${unit.title}`}
                                 render={
                                   <Link
-                                    href={ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)}
+                                    href={curriculumSetupHref({ programId: unit.programId, unitId: unit.id })}
                                   />
                                 }
                               >

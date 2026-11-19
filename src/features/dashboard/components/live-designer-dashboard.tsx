@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { academicApi } from "@/features/academic/api";
 import {
@@ -150,7 +151,7 @@ export function LiveDesignerDashboard() {
                     <li key={unit.id} className="space-y-1.5 text-sm">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <Link
-                          href={ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)}
+                          href={curriculumSetupHref({ programId: unit.programId, unitId: unit.id })}
                           className="min-w-0 font-medium hover:text-primary"
                         >
                           {unit.program?.name ?? unit.title} · {unit.title}

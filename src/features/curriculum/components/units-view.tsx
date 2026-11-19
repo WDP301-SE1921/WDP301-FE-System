@@ -21,6 +21,7 @@ import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { StatusBadge } from "@/components/shared/feedback/status-badge";
 import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { useCurriculumUnits } from "../hooks/use-curriculum";
 import { UnitForm } from "./unit-form";
 import { calendarDateLabel } from "@/lib/calendar-date";
@@ -337,7 +338,7 @@ export function CurriculumUnitsBody({
                               href={
                                 role === "teacher"
                                   ? ROUTES.TEACHER.CURRICULUM_UNIT(unit.id)
-                                  : ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)
+                                  : curriculumSetupHref({ programId: unit.programId, unitId: unit.id })
                               }
                             />
                           }
