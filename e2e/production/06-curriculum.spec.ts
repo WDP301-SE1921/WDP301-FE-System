@@ -24,6 +24,18 @@ test("production curriculum teacher review and manager approval", async ({
           sequence: 1,
         },
       );
+    unit = await api.call("designer", `academic/curriculum-units/${f.unit.id}`);
+    for (const lesson of unit.lessons.filter(
+      (item: { kind: string }) => item.kind === "LESSON",
+    ))
+      await api.call(
+        "designer",
+        `academic/lessons/${lesson.id}/outcomes`,
+        "PATCH",
+        {
+          outcomeIds: [f.outcome.id],
+        },
+      );
     await api.call(
       "designer",
       `academic/curriculum-units/${f.unit.id}/submit`,
@@ -44,6 +56,16 @@ test("production curriculum teacher review and manager approval", async ({
       },
     );
   }
+  const companion = await api.call(
+    "teacher",
+    `academic/outcome-sets/${f.outcomeSet.id}`,
+  );
+  if (companion.status === "DRAFT")
+    await api.call(
+      "teacher",
+      `academic/outcome-sets/${f.outcomeSet.id}/technical-approve`,
+      "POST",
+    );
   unit = await api.call("manager", `academic/curriculum-units/${f.unit.id}`);
   if (unit.status !== "APPROVED")
     await api.call(
@@ -53,6 +75,13 @@ test("production curriculum teacher review and manager approval", async ({
     );
   unit = await api.call("manager", `academic/curriculum-units/${f.unit.id}`);
   expect(unit.status).toBe("APPROVED");
+  expect(unit.technicalReviewedAt).toBeTruthy();
+  expect(unit.toDate.slice(0, 10)).toBe("2099-12-31");
+  const outcomes = await api.call(
+    "teacher",
+    `academic/outcome-sets/${f.outcomeSet.id}`,
+  );
+  expect(outcomes.status).toBe("APPROVED");
   f.unit = unit;
   save();
   const auth = await api.ensure("manager");

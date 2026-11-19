@@ -1,5 +1,7 @@
 # Playwright Production — dành cho team
 
+Code E2E đã [đồng bộ nghiệp vụ ngày 19/11/2026](../UPDATES-2026-11-19.md), **chưa chạy lại test**. Kết quả và báo cáo online ngày 18/11 là lịch sử của bộ cũ.
+
 Project Playwright riêng tên **`production`**, chạy trực tiếp trên:
 
 - [Báo cáo production online cho cả team](https://wdp301-se1921.github.io/WDP301-FE-System/) — mở là xem kết quả đã chạy.
@@ -70,7 +72,7 @@ Các cờ cũ `--write --providers --recheck-ai` vẫn được hỗ trợ. Dùn
 
 Chế độ `services`/`full` tạo hoặc tiếp tục một manifest riêng ở `e2e/.production-runtime/fixture.json`, tên bắt đầu bằng `E2E-PROD` và mã ngẫu nhiên. Học phí **0 VND**; chỉ thao tác các ID trong manifest. Không reset/seed database production, không đổi mật khẩu người dùng, không hủy/chuyển/đổi lịch hồ sơ đang sử dụng.
 
-CLI tự cleanup khi kết thúc test, kể cả khi có bài fail: kết thúc ghi danh, xóa giáo trình nháp bằng đúng designer sở hữu hoặc lưu trữ giáo trình đã duyệt bằng manager, và xóa mềm đúng học sinh/lớp/khóa thử. Biên lai 0 đồng, điểm, tệp, snapshot và audit được giữ làm lịch sử. Nếu bước chuẩn bị dừng giữa chừng, manifest được giữ để chẩn đoán/tiếp tục; không tự xóa dữ liệu chưa xác minh quyền sở hữu.
+CLI tự cleanup khi kết thúc test, kể cả khi có bài fail: kết thúc ghi danh, xóa giáo trình nháp bằng đúng designer sở hữu hoặc lưu trữ giáo trình đã duyệt bằng manager, và xóa mềm đúng học sinh/lớp/phòng/khóa thử. Biên lai 0 đồng, điểm, tệp, snapshot và audit được giữ làm lịch sử. Nếu bước chuẩn bị dừng giữa chừng, manifest được giữ để chẩn đoán/tiếp tục; không tự xóa dữ liệu chưa xác minh quyền sở hữu.
 
 Ảnh/PDF gửi AI là bài toán tổng hợp. Bảy bài dịch vụ gọi provider thật và pipeline của API production; không cần bản build backend trên máy. Các bài backend luôn tạo tác vụ AI mới trong profile services/full. AI chỉ đề xuất; test vẫn kiểm tra bước giáo viên duyệt/công bố.
 

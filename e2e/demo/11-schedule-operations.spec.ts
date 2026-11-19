@@ -78,9 +78,18 @@ test("11 - Dời buổi", async ({ world, actors }) => {
       `/manager/schedule?classId=${f.classroom.id}&view=list&date=${day(anchor + 1)}&session=${moved.id}&sessionTab=cancel`,
     );
     const tabs = manager.getByRole("tablist", { name: "Phần của buổi học" });
-    await expect(tabs.getByRole("tab")).toHaveText(["Nội dung", "Đổi giờ", "Dạy thay"]);
-    await expect(tabs.getByRole("tab", { name: "Nội dung" })).toHaveAttribute("aria-selected", "true");
-    await expect(manager.getByRole("button", { name: "Ngày nghỉ trung tâm" })).toHaveCount(0);
+    await expect(tabs.getByRole("tab")).toHaveText([
+      "Nội dung",
+      "Đổi giờ",
+      "Dạy thay",
+    ]);
+    await expect(tabs.getByRole("tab", { name: "Nội dung" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      manager.getByRole("button", { name: "Ngày nghỉ trung tâm" }),
+    ).toHaveCount(0);
     await actors.shot(manager, "11-session-tabs");
     for (const route of [
       `academic/sessions/${moved.id}/cancel`,
@@ -89,9 +98,23 @@ test("11 - Dời buổi", async ({ world, actors }) => {
       "academic/sessions/bulk-cancel-preview",
       "academic/center-closures",
     ])
-      await world.call("manager", route, "POST", { reason: "x", sessionIds: [moved.id] }, 404);
-    await world.call("manager", "academic/center-closures", "GET", undefined, 404);
-    const saved = await world.db.classSession.findUniqueOrThrow({ where: { id: moved.id } });
+      await world.call(
+        "manager",
+        route,
+        "POST",
+        { reason: "x", sessionIds: [moved.id] },
+        404,
+      );
+    await world.call(
+      "manager",
+      "academic/center-closures",
+      "GET",
+      undefined,
+      404,
+    );
+    const saved = await world.db.classSession.findUniqueOrThrow({
+      where: { id: moved.id },
+    });
     expect(saved.status).toBe("SCHEDULED");
   });
 });

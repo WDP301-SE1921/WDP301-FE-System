@@ -1,4 +1,4 @@
-import { test, expect, day, type Role } from "../demo/world";
+import { test, expect, type Role } from "../demo/world";
 import inventory from "../production/route-inventory.cjs";
 interface Entry {
   route: string;
@@ -16,8 +16,6 @@ test.beforeAll(async ({ world }) => {
     {
       programId: f.program.id,
       title: "E2E route unit",
-      fromDate: day(-7),
-      toDate: day(14),
     },
   );
   await world.db.curriculumUnit.update({

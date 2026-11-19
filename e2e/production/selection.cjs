@@ -40,6 +40,7 @@ function selection(args = [], env = process.env) {
               "06-curriculum.spec.ts",
               "07-attachments.spec.ts",
               "08-admin.spec.ts",
+              "09-contract-updates.spec.ts",
             ]
           : []),
       ];

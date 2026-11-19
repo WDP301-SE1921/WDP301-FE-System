@@ -5,14 +5,13 @@ test("01 - Giáo trình và lịch học", async ({ world, actors }) => {
   const count = await world.db.program.count({
     where: { name: { startsWith: "E2E curriculum" } },
   });
-  const from = day(3 + count * 7),
-    to = day(9 + count * 7);
+  const from = day(3 + count * 7);
   const title = unique("Giáo trình demo");
   const unit = await world.call<{ id: string }>(
     "designer",
     "academic/curriculum-units",
     "POST",
-    { programId: fixture.program.id, title, fromDate: from, toDate: to },
+    { programId: fixture.program.id, title },
   );
   const designer = await actors.open("designer");
   const lessons = [unique("Bài 1"), unique("Bài 2")];
@@ -54,6 +53,20 @@ test("01 - Giáo trình và lịch học", async ({ world, actors }) => {
     ).toEqual(lessons);
     await actors.shot(designer, "01-imported");
   });
+  await test.step("Gắn CLO cho mọi bài trước khi gửi duyệt", async () => {
+    const rows = await world.db.lesson.findMany({
+      where: { unitId: unit.id, kind: "LESSON" },
+    });
+    for (const lesson of rows)
+      await world.call(
+        "designer",
+        `academic/lessons/${lesson.id}/outcomes`,
+        "PATCH",
+        {
+          outcomeIds: [fixture.outcome.id],
+        },
+      );
+  });
   await test.step("Gửi duyệt; cả giao diện và API đều khóa sửa nháp", async () => {
     // Bước 4 nằm ngay trong trang: form gửi duyệt hiện trong thẻ bước, không có hộp thoại.
     await designer.goto(`/manager/curriculum/${unit.id}?editor=submit`);
@@ -68,7 +81,9 @@ test("01 - Giáo trình và lịch học", async ({ world, actors }) => {
     );
     await form.getByRole("button", { name: "Gửi duyệt" }).click();
     await expect(
-      designer.getByRole("heading", { name: "Bước 5: Giáo viên duyệt nội dung" }),
+      designer.getByRole("heading", {
+        name: "Bước 5: Giáo viên duyệt nội dung",
+      }),
     ).toBeVisible();
     await expect(
       designer.getByRole("button", { name: "Thêm bài học", exact: true }),
@@ -115,6 +130,9 @@ test("01 - Giáo trình và lịch học", async ({ world, actors }) => {
     await manager.goto(
       `/manager/sessions?programId=${fixture.program.id}&classIds=${fixture.classroom.id}&unitId=${unit.id}`,
     );
+    await manager.getByLabel("Ngày bắt đầu", { exact: true }).fill(from);
+    await expect(manager.getByLabel("Ngày kết thúc (tự tính)")).toBeDisabled();
+    await manager.getByRole("button", { name: /^Xem trước 1 lớp$/ }).click();
     const table = manager
       .getByRole("region", { name: "Xem trước theo lớp" })
       .getByRole("table");

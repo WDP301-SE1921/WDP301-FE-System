@@ -65,7 +65,7 @@ test("@updates Danh mục môn học và liên hệ công khai dùng dữ liệu
   }
 });
 
-test("@updates Giáo trình kỳ mới: nhãn kỳ học rõ ràng, form vừa màn hình và lưu đúng ngày", async ({
+test("@updates Giáo trình không nhập kỳ ngày: form gọn và mở đúng workspace của bản nháp", async ({
   world,
   actors,
 }) => {
@@ -78,21 +78,14 @@ test("@updates Giáo trình kỳ mới: nhãn kỳ học rõ ràng, form vừa m
   await designer
     .getByRole("button", { name: "Tạo giáo trình", exact: true })
     .click();
+  await expect(designer.locator("#unit-from, #unit-to")).toHaveCount(0);
   await expect(
-    designer.getByRole("group", { name: "Kỳ học áp dụng", exact: true }),
-  ).toBeVisible();
-  await expect(
-    designer.getByLabel("Ngày bắt đầu kỳ", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    designer.getByLabel("Ngày kết thúc kỳ", { exact: true }),
+    designer.getByText("Không cần nhập ngày.", { exact: false }),
   ).toBeVisible();
   await select(designer, "Khóa học", new RegExp(f.program.name));
   await select(designer, "Nguồn bài học", "Soạn từ đầu");
   const title = unique("Giáo trình kỳ mới");
   await designer.locator("#unit-title").fill(title);
-  await designer.getByLabel("Ngày bắt đầu kỳ", { exact: true }).fill(day(45));
-  await designer.getByLabel("Ngày kết thúc kỳ", { exact: true }).fill(day(75));
   const form = designer
     .locator("form")
     .filter({ has: designer.locator("#unit-title") });
@@ -113,19 +106,27 @@ test("@updates Giáo trình kỳ mới: nhãn kỳ học rõ ràng, form vừa m
     .click();
   const response = await created;
   expect(response.ok()).toBe(true);
+  const sent = response.request().postDataJSON() as Record<string, unknown>;
+  expect(sent).not.toHaveProperty("fromDate");
+  expect(sent).not.toHaveProperty("toDate");
   const unitId = (await response.json()).data.id as string;
   const unit = await world.db.curriculumUnit.findUniqueOrThrow({
     where: { id: unitId },
   });
-  expect(unit.fromDate.toISOString().slice(0, 10)).toBe(day(45));
-  expect(unit.toDate.toISOString().slice(0, 10)).toBe(day(75));
+  expect(unit.fromDate.toISOString().slice(0, 10)).toBe(day());
+  expect(unit.toDate.toISOString().slice(0, 10)).toBe("2099-12-31");
   expect(unit.programId).toBe(f.program.id);
   expect(unit.status).toBe("DRAFT");
+  await designer.waitForURL(/\/manager\/curriculum\/setup\?/);
+  expect(new URL(designer.url()).searchParams.get("unitId")).toBe(unitId);
+  await expect(
+    designer.getByRole("heading", { name: "Bài học (0)" }),
+  ).toBeVisible();
   await designer.goto(
     `/manager/curriculum?tab=curriculum&programId=${f.program.id}`,
   );
   await expect(
-    designer.getByRole("columnheader", { name: "Kỳ học áp dụng", exact: true }),
+    designer.getByRole("columnheader", { name: "Bản · áp dụng", exact: true }),
   ).toBeVisible();
   await expect(
     designer.getByRole("row").filter({ hasText: title }),

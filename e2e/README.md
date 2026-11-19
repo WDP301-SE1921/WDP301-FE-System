@@ -1,5 +1,8 @@
 # E2E web (Playwright)
 
+Đồng bộ nghiệp vụ mới nhất: [Cập nhật 19/11/2026 — chưa chạy test](./UPDATES-2026-11-19.md).
+Bộ production và báo cáo online: [hướng dẫn cho team](./production/README.md).
+
 Chạy trên bản build production của web và BE thật. Không tự bật server (`next dev` lỗi EPERM trên Windows).
 
 ## Chuẩn bị (mỗi bước chạy lần lượt, máy yếu dễ đứng nếu chạy song song)
@@ -38,5 +41,4 @@ và chờ theo `Retry-After` khi gặp 429.
 
 ## Giới hạn của kiểm tra
 
-- Kiểm "không có thông báo khi thêm ngày nghỉ" chờ 3 giây rồi đếm: đây là kiểm yếu (thông báo đi qua outbox, trễ hơn 3 giây thì không bắt được).
 - Đổi sang database thử khác thì xóa `e2e/.auth/week-counter.json` và `e2e/.auth/*.json`.

@@ -112,6 +112,45 @@ test("cleanup returns its own pending curriculum to draft before deleting it as 
   );
 });
 
+test("cleanup removes an owned room left by partial preparation, after its class", async () => {
+  const { cleanupFixture } = require("./cleanup-fixture.cjs");
+  const fixture = {
+    ...base(),
+    room: { id: "room", name: `${prefix} room` },
+    classroom: { id: "c", name: `${prefix} class` },
+  };
+  const api = client({
+    "programs/p": fixture.program,
+    "admin/classes/c": fixture.classroom,
+    [`rooms?search=${encodeURIComponent(fixture.room.name)}&limit=100`]: [
+      fixture.room,
+    ],
+  });
+  await cleanupFixture(api, fixture);
+  assert.deepEqual(
+    api.writes.map((x) => x.route),
+    [
+      "admin/records/class/c",
+      "admin/records/room/room",
+      "admin/records/program/p",
+    ],
+  );
+  assert.equal(fixture.cleanup.roomDeleted, true);
+});
+
+test("cleanup refuses an unrelated room before deleting any test resource", async () => {
+  const { cleanupFixture } = require("./cleanup-fixture.cjs");
+  const fixture = { ...base(), room: { id: "room", name: `${prefix} room` } };
+  const api = client({
+    "programs/p": fixture.program,
+    [`rooms?search=${encodeURIComponent(fixture.room.name)}&limit=100`]: [
+      { id: "room", name: "A real room" },
+    ],
+  });
+  await assert.rejects(cleanupFixture(api, fixture), /ownership mismatch/);
+  assert.equal(api.writes.length, 0);
+});
+
 test("cleanup retries do not require already removed students/classes to remain readable", async () => {
   const { cleanupFixture } = require("./cleanup-fixture.cjs");
   const fixture = {

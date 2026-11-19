@@ -63,6 +63,7 @@ function recoveryManifest(fixture) {
   for (const [key, name] of [
     ["program", "name"],
     ["classroom", "name"],
+    ["room", "name"],
     ["student", "fullName"],
     ["unit", "title"],
     ["registration"],
@@ -91,6 +92,7 @@ function recoveryManifest(fixture) {
     "curriculumArchived",
     "studentDeleted",
     "classDeleted",
+    "roomDeleted",
     "programDeleted",
   ];
   safe.cleanup = Object.fromEntries(
