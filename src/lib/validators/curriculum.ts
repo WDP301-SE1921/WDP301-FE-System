@@ -11,25 +11,14 @@ const content = z
   .trim()
   .min(1, "Nhập nội dung.")
   .max(50000, "Nội dung tối đa 50.000 ký tự.");
-const range = { fromDate: date, toDate: date };
-
-function validRange(value: { fromDate: string; toDate: string }) {
-  const days =
-    (Date.parse(value.toDate) - Date.parse(value.fromDate)) / 86400000;
-  return days >= 0 && days <= 365;
-}
-const rangeError = {
-  message: "Ngày kết thúc phải từ ngày bắt đầu, trong khoảng tối đa 366 ngày.",
-  path: ["toDate"],
-};
-
-export const curriculumUnitSchema = z
-  .object({
-    programId: z.string().min(1, "Chọn khóa học."),
-    title,
-    ...range,
-  })
-  .refine(validRange, rangeError);
+/**
+ * Giáo trình không có kỳ (đợt F, 2026-11-19): bản được duyệt áp dụng từ ngày duyệt tới khi
+ * có bản mới. Ngày bắt đầu học chỉ nhập một lần, ở bước tạo lịch của lớp.
+ */
+export const curriculumUnitSchema = z.object({
+  programId: z.string().min(1, "Chọn khóa học."),
+  title,
+});
 export const curriculumLessonSchema = z.object({
   sequence: z
     .number()
@@ -51,12 +40,13 @@ export const curriculumTechnicalReviewSchema = z
     path: ["note"],
     message: "Nhập nội dung cần sửa trước khi trả lại giáo trình.",
   });
-export const curriculumRevisionSchema = z
-  .object({ title, ...range })
-  .refine(validRange, rangeError);
-/** Tạo lịch học: chỉ cần ngày bắt đầu; ngày kết thúc do BE tự tính theo số bài của giáo trình. */
+export const curriculumRevisionSchema = z.object({ title });
+/**
+ * Tạo lịch học: chỉ cần ngày bắt đầu; ngày kết thúc do BE tự tính theo số bài của giáo trình.
+ * Bỏ trống giáo trình thì BE lấy bản lớp đang học, lớp chưa có buổi thì bản đang áp dụng (đợt F).
+ */
 export const scheduleRangeSchema = z.object({
-  curriculumUnitId: z.string().min(1, "Chọn giáo trình đã duyệt áp dụng."),
+  curriculumUnitId: z.string().min(1, "Chọn giáo trình đã duyệt áp dụng.").optional(),
   previewId: z.string().min(1).optional(),
   fromDate: date,
 });

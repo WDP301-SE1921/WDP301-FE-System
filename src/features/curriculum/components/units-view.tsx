@@ -24,7 +24,6 @@ import { ROUTES } from "@/constants/routes";
 import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { useCurriculumUnits } from "../hooks/use-curriculum";
 import { UnitForm } from "./unit-form";
-import { calendarDateLabel } from "@/lib/calendar-date";
 import { curriculumStage } from "../presentation";
 import { cn } from "@/lib/utils";
 import {
@@ -38,6 +37,7 @@ import {
 import {
   curriculumLabel,
   curriculumEffectiveLabel,
+  curriculumPeriodLabel,
   curriculumNeedsAction,
   curriculumNextStep,
   groupCurricula,
@@ -185,7 +185,7 @@ export function CurriculumUnitsBody({
         // Xếp dọc (dưới 2xl) thì thẻ form ôm theo form, không kéo hết bề ngang.
         <Card className="w-full min-w-0 max-w-2xl 2xl:max-w-none">
           <CardHeader>
-            <CardTitle>Giáo trình cho kỳ mới</CardTitle>
+            <CardTitle>Tạo giáo trình</CardTitle>
           </CardHeader>
           <CardContent>
             <UnitForm
@@ -204,7 +204,7 @@ export function CurriculumUnitsBody({
           <Input
             className="min-w-48 flex-1"
             aria-label="Tìm giáo trình"
-            placeholder="Tìm khóa học, tên kỳ…"
+            placeholder="Tìm khóa học, tên giáo trình…"
             value={search}
             onChange={(event) => void setSearch(event.target.value)}
           />
@@ -271,7 +271,7 @@ export function CurriculumUnitsBody({
               <TableHeader>
                 <TableRow>
                   <TableHead>Giáo trình · kỳ</TableHead>
-                  <TableHead>Áp dụng cho lớp khai giảng từ … đến …</TableHead>
+                  <TableHead>Bản · áp dụng</TableHead>
                   <TableHead>Số bài</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Bước tiếp theo</TableHead>
@@ -311,8 +311,10 @@ export function CurriculumUnitsBody({
                         )}
                       </TableCell>
                       <TableCell>
-                        {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
-                        {calendarDateLabel(unit.toDate.slice(0, 10))}
+                        Bản {unit.version}
+                        <p className="text-xs text-muted-foreground">
+                          {curriculumPeriodLabel(unit)}
+                        </p>
                       </TableCell>
                       <TableCell>{unit._count?.lessons ?? "—"}</TableCell>
                       <TableCell>

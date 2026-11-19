@@ -18,7 +18,6 @@ import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumKeys } from "@/features/curriculum/hooks/use-curriculum";
 import { userFacingMessage } from "@/lib/api/error-message";
-import { formatDate } from "@/lib/format";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { outcomeApi } from "../api";
 import {
@@ -352,7 +351,7 @@ export function OutcomeLessonMatrix({
                         scope="colgroup"
                         className="border-b border-border bg-muted/40 px-3 py-2 text-left text-xs font-medium text-muted-foreground"
                       >
-                        {unit.title} · {formatDate(unit.fromDate)} – {formatDate(unit.toDate)} ·{" "}
+                        {unit.title} · Bản {unit.version} ·{" "}
                         {UNIT_STATUS_TEXT[unit.status]}
                       </th>
                     </tr>

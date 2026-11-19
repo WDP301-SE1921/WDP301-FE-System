@@ -29,7 +29,6 @@ import { OutcomeSetsPanel } from "@/features/outcomes/components/outcome-sets-pa
 import { outcomeApi } from "@/features/outcomes/api";
 import { registrationApi } from "@/features/registration-flow/api";
 import { useCurrentRole } from "@/hooks/use-current-role";
-import { todayInVietnam } from "@/lib/calendar-date";
 import type { CurriculumUnit, CurriculumUnitDetail } from "@/types/curriculum";
 import type { OutcomeSet } from "@/types/outcomes";
 import { curriculumApi } from "../api";
@@ -86,7 +85,7 @@ export function CourseContentSetup() {
     retry: false,
   });
   const viewedId = units.data
-    ? (pickViewedUnit(units.data, unitId, todayInVietnam()).viewed?.id ?? "")
+    ? (pickViewedUnit(units.data, unitId).viewed?.id ?? "")
     : "";
   return (
     <PageContainer>
@@ -192,7 +191,7 @@ function ProgramContentSteps({
     outcomeApi.sets(programId, signal),
   );
   const { viewed, working } = units.data
-    ? pickViewedUnit(units.data, unitId, todayInVietnam())
+    ? pickViewedUnit(units.data, unitId)
     : { viewed: null, working: null };
   const detail = useQuery({
     queryKey: curriculumKeys.unit(viewed?.id ?? ""),

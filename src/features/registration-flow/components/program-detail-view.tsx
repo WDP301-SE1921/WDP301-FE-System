@@ -20,7 +20,7 @@ import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { OutcomeSetsPanel } from "@/features/outcomes/components/outcome-sets-panel";
-import { calendarDateLabel } from "@/lib/calendar-date";
+import { curriculumPeriodLabel } from "@/features/curriculum/workspace-selectors";
 import { useCurrentRole } from "@/hooks/use-current-role";
 import { registrationApi } from "../api";
 import { ProgramSetupChecklist } from "./program-setup-checklist";
@@ -182,8 +182,7 @@ function ProgramSheetContent({ programId }: { programId: string }) {
                       {unit.title} · bản {unit.version}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {calendarDateLabel(unit.fromDate.slice(0, 10))} →{" "}
-                      {calendarDateLabel(unit.toDate.slice(0, 10))}
+                      {curriculumPeriodLabel(unit)}
                     </p>
                     <StatusBadge category="curriculum" status={curriculumStage(unit)} />
                   </div>

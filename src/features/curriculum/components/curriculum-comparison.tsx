@@ -120,7 +120,14 @@ export function ApprovalSteps({ unit }: { unit: CurriculumUnit }) {
             undefined,
         },
         { label: "Quản lý duyệt áp dụng" },
-        { label: "Áp dụng", description: calendarDateLabel(unit.fromDate.slice(0, 10)) },
+        {
+          label: "Áp dụng",
+          // Ngày áp dụng là ngày Quản lý duyệt (đợt F); bản chưa duyệt chưa có ngày.
+          description:
+            unit.status === "APPROVED" || unit.status === "ARCHIVED"
+              ? calendarDateLabel(unit.fromDate.slice(0, 10))
+              : undefined,
+        },
       ]}
       allowNavBack={false}
     />

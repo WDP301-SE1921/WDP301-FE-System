@@ -43,14 +43,13 @@ export async function createOutcomeSet(page: Page, input: { course: string; outc
 /** Thiết kế giáo trình tạo giáo trình nháp cho một khóa; trả về id giáo trình. */
 export async function createDraftUnit(
   page: Page,
-  input: { course: string; title: string; from: string; to: string },
+  // `from`/`to` không còn dùng: giáo trình không còn kỳ (đợt F, 2026-11-19).
+  input: { course: string; title: string; from?: string; to?: string },
 ) {
   await page.goto("/manager/curriculum?tab=curriculum");
   await page.getByRole("button", { name: "Tạo giáo trình" }).first().click();
   await pickSelect(page, page.locator("#unit-program"), new RegExp(input.course));
   await page.locator("#unit-title").fill(input.title);
-  await page.locator("#unit-from").fill(input.from);
-  await page.locator("#unit-to").fill(input.to);
   await page.getByRole("button", { name: "Tạo giáo trình nháp" }).click();
   await page.waitForURL((url) => unitIdFromUrl(url) !== "");
   return unitIdFromUrl(new URL(page.url()));

@@ -39,12 +39,7 @@ import type { ScheduleRangeInput } from "@/lib/validators/curriculum";
 import type { CurriculumUnit } from "@/types/curriculum";
 import type { OutcomeSet } from "@/types/outcomes";
 import { registrationApi } from "../api";
-import {
-  defaultStartDate,
-  firstClassDay,
-  unitForStartDate,
-  type ScheduleRangePlan,
-} from "../program-setup";
+import { defaultStartDate, type ScheduleRangePlan } from "../program-setup";
 import { ApiFeedback } from "./api-feedback";
 
 const OUTCOME_STATUS_TEXT = {
@@ -81,15 +76,14 @@ export function WizardCurriculumSummary({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-medium">Giáo trình</p>
           <Badge variant={unit ? "success" : "warning"}>
-            {unit ? "Đã duyệt áp dụng" : "Chưa có bản duyệt"}
+            {unit ? "Đang áp dụng" : "Chưa có bản duyệt"}
           </Badge>
         </div>
         {unit && range ? (
           <p className="text-sm text-muted-foreground">
-            {unit.title} · áp dụng{" "}
-            {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
-            {calendarDateLabel(range.unitToDate)}
-            {unit._count?.lessons != null && ` · ${unit._count.lessons} bài`}
+            {unit.title} · bản {unit.version}
+            {unit._count?.lessons != null && ` · ${unit._count.lessons} bài`}.
+            Ngày bắt đầu học chọn ở bước sau; ngày kết thúc tự tính theo số bài.
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -236,16 +230,14 @@ function SessionsPreview({
   const user = useCurrentUser();
   const client = useQueryClient();
   const now = useCurrentTime();
-  // Ngày bắt đầu gợi ý: ngày học đầu tiên sau hôm nay; sửa được. Giáo trình theo kỳ chứa ngày đó.
-  const [fromDate, setFromDate] = useState(() => {
-    const suggested = defaultStartDate(todayInVietnam(), null, weekdays);
-    return unitForStartDate(range.candidates, suggested)
-      ? suggested
-      : firstClassDay(range.fromDate, weekdays);
-  });
-  const unit = unitForStartDate(range.candidates, fromDate);
+  // Ngày bắt đầu nhập một lần ở đây (đợt F): gợi ý ngày học đầu tiên sau hôm nay, sửa được.
+  // Giáo trình là bản đang áp dụng của khóa, không phụ thuộc ngày.
+  const [fromDate, setFromDate] = useState(() =>
+    defaultStartDate(todayInVietnam(), null, weekdays),
+  );
+  const unit = range;
   const input: ScheduleRangeInput = {
-    curriculumUnitId: unit?.unitId ?? "",
+    curriculumUnitId: unit.unitId,
     fromDate,
   };
   const [result, setResult] = useState<ClassGenerationResult | undefined>(
@@ -336,15 +328,9 @@ function SessionsPreview({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        {unit ? (
-          <>
-            Giáo trình{" "}
-            <span className="font-medium text-foreground">{unit.title}</span>.
-          </>
-        ) : (
-          "Ngày bắt đầu chưa nằm trong kỳ áp dụng của giáo trình đã duyệt nào. Chọn ngày khác."
-        )}{" "}
-        Lớp học mỗi buổi một bài theo thứ tự cho tới hết giáo trình;
+        Giáo trình{" "}
+        <span className="font-medium text-foreground">{unit.title}</span>.
+        Chọn ngày bắt đầu; ngày kết thúc tự tính. Lớp học mỗi buổi một bài theo thứ tự cho tới hết giáo trình;
         kỳ nghỉ Tết (23 tháng Chạp đến hết mùng 7) được bỏ qua.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">

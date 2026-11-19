@@ -49,6 +49,7 @@ export interface SetupUnit {
   status: string;
   fromDate: string;
   toDate: string;
+  version: number;
   technicalReviewedAt?: string | null;
 }
 export interface SetupOutcomeSet {
@@ -134,22 +135,6 @@ export function lastSlotDate(
   return null;
 }
 
-/** Ngày bắt đầu tạo lịch: không lùi về quá khứ, không trùng buổi đã có. */
-export function scheduleStartDate(
-  unitFromDate: string,
-  today: string,
-  scheduledUntil?: string | null,
-): string {
-  let start = day(unitFromDate);
-  const tomorrow = shift(today, 1);
-  if (tomorrow > start) start = tomorrow;
-  if (scheduledUntil) {
-    const after = shift(day(scheduledUntil), 1);
-    if (after > start) start = after;
-  }
-  return start;
-}
-
 /** Ngày học đầu tiên từ `date` trở đi theo thứ trong tuần của lớp; không có khung giờ thì giữ `date`. */
 export function firstClassDay(date: string, weekdays: number[] = []): string {
   if (!weekdays.length) return date;
@@ -174,42 +159,33 @@ export function defaultStartDate(
   return firstClassDay(start, weekdays);
 }
 
-export interface ScheduleUnitOption {
-  unitId: string;
-  title: string;
-  fromDate: string;
-  toDate: string;
+/** Bản lớp mới dùng: bản đã duyệt mới nhất của khóa (đợt F; BE chọn theo cùng thứ tự). */
+export function currentCurriculum<
+  T extends { status: string; fromDate: string; version: number; id: string },
+>(units: T[]): T | null {
+  return (
+    units
+      .filter((unit) => unit.status === "APPROVED")
+      .sort(
+        (a, b) =>
+          b.fromDate.localeCompare(a.fromDate) ||
+          b.version - a.version ||
+          b.id.localeCompare(a.id),
+      )[0] ?? null
+  );
 }
 
 export interface ScheduleRangePlan {
   unitId: string;
   title: string;
-  /** Ngày bắt đầu gợi ý (sửa được). Ngày kết thúc do BE tự tính theo số bài. */
+  /** Ngày bắt đầu gợi ý (sửa được ở lần tạo lịch đầu). Ngày kết thúc do BE tự tính theo số bài. */
   fromDate: string;
-  /** Kỳ áp dụng của giáo trình đã chọn. */
-  unitFromDate: string;
-  unitToDate: string;
-  /** Mọi giáo trình đã duyệt của khóa: giáo trình được chọn theo kỳ chứa ngày bắt đầu. */
-  candidates: ScheduleUnitOption[];
-}
-
-/** Giáo trình đã duyệt có kỳ áp dụng chứa `date`; null nếu ngày nằm ngoài mọi kỳ. */
-export function unitForStartDate(
-  candidates: ScheduleUnitOption[],
-  date: string,
-): ScheduleUnitOption | null {
-  return (
-    candidates.find(
-      (unit) => day(unit.fromDate) <= date && date <= day(unit.toDate),
-    ) ?? null
-  );
 }
 
 /**
- * Giáo trình và ngày bắt đầu để tạo lịch cho một lớp (wizard tạo lớp, Luồng 2): ngày học đầu tiên
- * sau hôm nay (hoặc sau buổi cuối đã có), giáo trình là bản đã duyệt có kỳ chứa ngày đó. Ngày nằm
- * trước mọi kỳ thì lấy ngày học đầu tiên của kỳ sớm nhất còn lại. null khi khóa chưa có giáo
- * trình đã duyệt còn hiệu lực.
+ * Giáo trình và ngày bắt đầu để tạo lịch cho một lớp (wizard tạo lớp, Luồng 2). Giáo trình không
+ * còn kỳ (đợt F): lớp mới dùng bản đang áp dụng của khóa. Ngày bắt đầu là ngày học đầu tiên sau
+ * hôm nay (hoặc sau buổi cuối đã có). null khi khóa chưa có giáo trình đã duyệt.
  */
 export function nextScheduleRange(
   units: {
@@ -217,38 +193,19 @@ export function nextScheduleRange(
     title: string;
     status: string;
     fromDate: string;
-    toDate: string;
+    version: number;
   }[],
   today: string,
   scheduledUntil?: string | null,
   weekdays: number[] = [],
 ): ScheduleRangePlan | null {
-  const candidates: ScheduleUnitOption[] = units
-    .filter((unit) => unit.status === "APPROVED")
-    .map((unit) => ({
-      unitId: unit.id,
-      title: unit.title,
-      fromDate: day(unit.fromDate),
-      toDate: day(unit.toDate),
-    }))
-    .sort((a, b) => a.fromDate.localeCompare(b.fromDate));
-  const start = defaultStartDate(today, scheduledUntil, weekdays);
-  const pick = (unit: ScheduleUnitOption, fromDate: string) => ({
-    unitId: unit.unitId,
+  const unit = currentCurriculum(units);
+  if (!unit) return null;
+  return {
+    unitId: unit.id,
     title: unit.title,
-    fromDate,
-    unitFromDate: unit.fromDate,
-    unitToDate: unit.toDate,
-    candidates,
-  });
-  const inside = unitForStartDate(candidates, start);
-  if (inside) return pick(inside, start);
-  for (const unit of candidates) {
-    if (unit.fromDate <= start) continue;
-    const fromDate = firstClassDay(unit.fromDate, weekdays);
-    if (fromDate <= unit.toDate) return pick(unit, fromDate);
-  }
-  return null;
+    fromDate: defaultStartDate(today, scheduledUntil, weekdays),
+  };
 }
 
 /**
@@ -269,14 +226,10 @@ export function classesNeedingSchedule(eligible: SetupClass[]) {
 /** Gom lớp theo ngày bắt đầu tạo lịch; nhóm có ngày sớm nhất đứng đầu. */
 export function groupClassesByStart<
   T extends { id: string; name: string; scheduledUntil?: string | null },
->(
-  classes: T[],
-  unitFromDate: string,
-  today: string,
-): { startDate: string; classes: T[] }[] {
+>(classes: T[], today: string): { startDate: string; classes: T[] }[] {
   const groups = new Map<string, T[]>();
   for (const item of classes) {
-    const start = scheduleStartDate(unitFromDate, today, item.scheduledUntil);
+    const start = defaultStartDate(today, item.scheduledUntil);
     groups.set(start, [...(groups.get(start) ?? []), item]);
   }
   return [...groups.entries()]
@@ -299,16 +252,10 @@ function pluralClasses(n: number, what: string) {
 }
 
 export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
-  const { sessionsPerWeek, classes, units, outcomeSets, today } = input;
+  const { sessionsPerWeek, classes, units, outcomeSets } = input;
   const active = (classes ?? []).filter((c) => c.isActive !== false);
-  const approved = units.filter((u) => u.status === "APPROVED");
-  const current = approved.find(
-    (u) => day(u.fromDate) <= today && day(u.toDate) >= today,
-  );
-  const next = approved
-    .filter((u) => day(u.fromDate) > today)
-    .sort((a, b) => day(a.fromDate).localeCompare(day(b.fromDate)))[0];
-  const appliedUnit = current ?? next;
+  // Giáo trình không còn kỳ (đợt F): bản đã duyệt mới nhất là bản đang áp dụng.
+  const appliedUnit = currentCurriculum(units);
 
   const info: SetupStep =
     sessionsPerWeek != null
@@ -436,25 +383,14 @@ export function programSetupSteps(input: ProgramSetupInput): SetupStep[] {
 
   let curriculum: SetupStep;
   if (appliedUnit) {
-    const left = current ? daysBetween(today, day(current.toDate)) : null;
-    const warning =
-      current && !next && left !== null && left < 14
-        ? `Kỳ hiện tại còn ${left} ngày, chưa có giáo trình cho kỳ tới`
-        : undefined;
     curriculum = {
       key: "curriculum",
       status: "done",
       owner: "MANAGER",
       title: "Giáo trình",
-      summary: current
-        ? "Giáo trình kỳ hiện tại đã áp dụng"
-        : "Giáo trình kỳ tới đã áp dụng",
-      warning: warning ?? outcomeNote,
-      cta: warning
-        ? { kind: "curriculum", label: "Soạn giáo trình kỳ tới" }
-        : undefined,
+      summary: `Bản ${appliedUnit.version} đang áp dụng`,
+      warning: outcomeNote,
     };
-    if (warning) curriculum.owner = "DESIGNER";
   } else {
     const waiting = units.find((u) => u.status === "PENDING_REVIEW");
     if (waiting && !waiting.technicalReviewedAt) {
@@ -583,7 +519,7 @@ export interface RunningOutClass {
   /** null: lớp chưa có buổi học nào (lớp mới tạo sau khi giáo trình đã được duyệt áp dụng). */
   scheduledUntil: string | null;
   daysLeft: number;
-  /** Giáo trình đã duyệt sớm nhất còn phủ phần sau buổi cuối: màn tạo lịch chọn sẵn bản này. */
+  /** Bản giáo trình đang áp dụng của khóa: màn tạo lịch chọn sẵn bản này. */
   unitId: string;
 }
 
@@ -607,7 +543,7 @@ export function classesRunningOut(input: {
     programId: string;
     status: string;
     fromDate: string;
-    toDate: string;
+    version: number;
   }[];
   today: string;
   days?: number;
@@ -622,16 +558,10 @@ export function classesRunningOut(input: {
       item.scheduledUntil === null ? null : day(item.scheduledUntil);
     const daysLeft = until === null ? 0 : daysBetween(input.today, until);
     if (daysLeft >= limit) continue;
-    // Chưa có buổi nào thì giáo trình chỉ cần còn kỳ sau hôm nay.
-    const after = until ?? input.today;
-    const covering = input.units
-      .filter(
-        (u) =>
-          u.programId === item.programId &&
-          u.status === "APPROVED" &&
-          day(u.toDate) > after,
-      )
-      .sort((a, b) => day(a.fromDate).localeCompare(day(b.fromDate)))[0];
+    // Giáo trình không còn kỳ (đợt F): khóa chỉ cần có bản đang áp dụng.
+    const covering = currentCurriculum(
+      input.units.filter((u) => u.programId === item.programId),
+    );
     if (covering)
       out.push({
         id: item.id,

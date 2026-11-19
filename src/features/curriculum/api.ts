@@ -74,13 +74,11 @@ export const curriculumApi = {
     input: CurriculumUnitInput,
     expectedRevision?: number,
   ) => {
-    const { title, fromDate, toDate } = curriculumUnitSchema.parse(input);
+    const { title } = curriculumUnitSchema.parse(input);
     return apiRequest<CurriculumUnitDetail>(unitPath(id), {
       method: "PATCH",
       body: {
         title,
-        fromDate,
-        toDate,
         ...(expectedRevision === undefined ? {} : { expectedRevision }),
       },
     });

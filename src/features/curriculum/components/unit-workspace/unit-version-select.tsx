@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { calendarDateLabel } from "@/lib/calendar-date";
+import { curriculumPeriodLabel } from "../../workspace-selectors";
 import type { CurriculumUnit } from "@/types/curriculum";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -23,7 +23,7 @@ export function unitStatusLabel(status: string) {
 }
 
 function versionLabel(unit: CurriculumUnit) {
-  return `Bản ${unit.version} · ${calendarDateLabel(unit.fromDate.slice(0, 10))} – ${calendarDateLabel(unit.toDate.slice(0, 10))} · ${unitStatusLabel(unit.status)}`;
+  return `Bản ${unit.version} · ${unitStatusLabel(unit.status)} · ${curriculumPeriodLabel(unit)}`;
 }
 
 /** Chọn bản giáo trình của khóa để xem; chỉ hiện khi khóa có nhiều hơn một bản. */

@@ -5,7 +5,7 @@ import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
-import { calendarDateLabel } from "@/lib/calendar-date";
+import { curriculumPeriodLabel } from "../../workspace-selectors";
 import { unlinkedOutcomeSubmitNote } from "@/lib/outcome-links";
 import type { ContentOwner, ContentStepKey } from "../../content-setup";
 import { useUnitWorkspace } from "../../hooks/use-unit-workspace";
@@ -115,8 +115,7 @@ function LessonsStep({
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Áp dụng {calendarDateLabel(unit.fromDate.slice(0, 10))} –{" "}
-          {calendarDateLabel(unit.toDate.slice(0, 10))}. Mỗi buổi học một bài
+          Bản {unit.version} · {curriculumPeriodLabel(unit)}. Mỗi buổi học một bài
           theo thứ tự.
         </p>
       </div>
@@ -221,7 +220,7 @@ function ManagerStep({
               disabled={busy}
               onClick={() => openEditor({ kind: "revision" })}
             >
-              Chuẩn bị giáo trình kỳ tiếp theo
+              Làm bản mới
             </Button>
           )}
         </div>

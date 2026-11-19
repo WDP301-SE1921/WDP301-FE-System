@@ -18,7 +18,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { calendarDateLabel } from "@/lib/calendar-date";
 import { unlinkedOutcomeSubmitNote } from "@/lib/outcome-links";
 import { LessonOutcomeDialog } from "@/features/outcomes/components/lesson-outcome-dialog";
 import { UnitForm } from "../unit-form";
@@ -40,7 +39,7 @@ const editorTitles: Record<Editor["kind"], string> = {
   import: "Nhập bài từ file",
   submit: "Gửi duyệt",
   "technical-review": "Duyệt nội dung",
-  revision: "Chuẩn bị giáo trình cho kỳ tiếp theo",
+  revision: "Làm bản mới của giáo trình",
   "request-changes": "Trả lại giáo trình để sửa",
 };
 
@@ -236,7 +235,7 @@ export function UnitEditors({ ws }: { ws: UnitWorkspace }) {
         open={confirmApply}
         onOpenChange={setConfirmApply}
         title="Duyệt áp dụng giáo trình?"
-        description={`Giáo trình áp dụng từ ${calendarDateLabel(unit.fromDate.slice(0, 10))} đến ${calendarDateLabel(unit.toDate.slice(0, 10))}. Bản cho kỳ sau chờ tới ngày bắt đầu; bản cũ tự lưu trữ khi sang kỳ mới. Các buổi học đã tạo được giữ nguyên. Duyệt xong, hệ thống mở màn tạo lịch học cho các lớp của khóa (đã xem trước, bạn bấm một lần để tạo).${managerWarning ? " " + managerWarning : ""}`}
+        description={`Bản ${unit.version} áp dụng từ hôm nay cho các lớp tạo lịch sau đó. Bản đang áp dụng (nếu có) được lưu trữ ngay; lớp đang học bản đó học tiếp tới hết bài, các buổi học đã tạo được giữ nguyên. Duyệt xong, hệ thống mở màn tạo lịch học cho các lớp của khóa (đã xem trước, bạn bấm một lần để tạo).${managerWarning ? " " + managerWarning : ""}`}
         confirmText="Duyệt áp dụng"
         isLoading={approve.isPending}
         onConfirm={confirmApproval}

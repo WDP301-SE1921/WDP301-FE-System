@@ -40,7 +40,12 @@ import { useCurrentUser } from "@/hooks/use-current-role";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { ROUTES } from "@/constants/routes";
 import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
-import { firstClassDay, groupClassesByStart, scheduleStartDate } from "@/features/registration-flow/program-setup";
+import {
+  currentCurriculum,
+  defaultStartDate,
+  firstClassDay,
+  groupClassesByStart,
+} from "@/features/registration-flow/program-setup";
 import {
   scheduleRangeSchema,
   type ScheduleRangeInput,
@@ -56,7 +61,6 @@ import {
 import { sessionRange } from "../session-format";
 import { SessionDetailSheet } from "./session-detail-sheet";
 import {
-  applicableUnits,
   generationReady,
   generateSelectedClasses,
   sameGenerationInput as sameInput,
@@ -218,13 +222,14 @@ function GenerationWorkspace({
   selector: React.ReactNode;
   sessionsPerWeek?: number | null;
 }) {
-  const approved = units.filter((unit) => unit.status === "APPROVED");
-  const requested = approved.find((unit) => unit.id === initialUnitId);
-  const first = requested ?? approved[0];
+  // Giáo trình không còn kỳ (đợt F): lớp mới dùng bản đang áp dụng của khóa.
+  const current = currentCurriculum(units);
+  const requested = current && current.id === initialUnitId ? current : undefined;
+  const first = current;
   const selectedAtStart = classes.filter((item) => selectedIds.includes(item.id));
   // Các lớp có ngày bắt đầu khác nhau thì chỉ chọn sẵn nhóm bắt đầu sớm nhất, nhóm còn lại tạo sau.
   const startGroups = requested
-    ? groupClassesByStart(selectedAtStart, first.fromDate, todayInVietnam())
+    ? groupClassesByStart(selectedAtStart, todayInVietnam())
     : [];
   const [deferred] = useState(() =>
     startGroups.slice(1).flatMap((group) => group.classes.map((item) => item.name)),
@@ -237,8 +242,7 @@ function GenerationWorkspace({
       fromDate: first
         ? firstClassDay(
             startGroups[0]?.startDate ??
-              scheduleStartDate(
-                first.fromDate,
+              defaultStartDate(
                 todayInVietnam(),
                 selectedAtStart
                   .map((item) => item.scheduledUntil ?? "")
@@ -254,8 +258,8 @@ function GenerationWorkspace({
     },
   });
   const values = useWatch({ control: form.control }) as ScheduleRangeInput;
-  const covering = applicableUnits(units, values.fromDate);
-  const unitId = covering.length === 1 ? covering[0].id : "";
+  const covering = current ? [current] : [];
+  const unitId = current?.id ?? "";
   const input = { ...values, curriculumUnitId: unitId };
   const selected = classes.filter((item) => selectedIds.includes(item.id));
   const [results, setResults] = useState<Record<string, ClassResult>>(() => {
@@ -286,13 +290,11 @@ function GenerationWorkspace({
     .sort();
   const counts = new Set(classes.map((item) => item.weeklySchedules.length));
   const contextVersion = JSON.stringify([sessionsPerWeek, units.map((unit) => [unit.id, unit.revision, unit.status, unit.fromDate, unit.toDate]), classes.map((item) => [item.id, item.weeklySchedules])]);
-  // Lớp đã có buổi chỉ học tiếp giáo trình chứa buổi đầu tiên của nó, không chuyển sang bản khác.
-  const startedUnitId = (item: RegistrationClass) =>
-    applicableUnits(approved, (item.scheduledFrom ?? "").slice(0, 10))[0]?.id ?? "";
+  // Lớp đã có lịch học đã nhập ngày bắt đầu: không hỏi lại ở đây. Lớp đó học tiếp bản của nó
+  // tới hết bài; xếp tiếp (nếu còn bài) ở trang lớp, ngày tự lấy sau buổi cuối.
   const hasSessions = (item: RegistrationClass) =>
     !!item.scheduledFrom || !!item.scheduledUntil;
-  const otherUnit = (item: RegistrationClass) =>
-    hasSessions(item) && startedUnitId(item) !== unitId;
+  const otherUnit = hasSessions;
   const selectionValid = covering.length === 1 && !selected.some(otherUnit) && sessionsPerWeek != null && selected.every((item) => item.weeklySchedules.length === sessionsPerWeek);
   const ready = (result: ClassResult | undefined) =>
     generationReady(result, input, now) && (!!result?.attempt || (selectionValid && result?.contextVersion === contextVersion));
@@ -402,9 +404,7 @@ function GenerationWorkspace({
                   <Input
                     id="generate-fromDate"
                     type="date"
-                    {...form.register("fromDate", {
-                      onChange: () => form.setValue("curriculumUnitId", ""),
-                    })}
+                    {...form.register("fromDate")}
                   />
                   <FieldError message={form.formState.errors.fromDate?.message} />
                 </div>
@@ -423,16 +423,14 @@ function GenerationWorkspace({
                 <div className="space-y-1 rounded-xl bg-primary/5 p-3 text-sm">
                   <p className="font-medium">{covering[0].title}</p>
                   <p className="text-muted-foreground">
-                    Tự chọn giáo trình đã duyệt có kỳ áp dụng chứa ngày bắt đầu. Số buổi tự tính theo số bài của giáo trình.
+                    Bản {covering[0].version} đang áp dụng của khóa. Số buổi tự tính theo số bài của giáo trình, mỗi buổi một bài.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="generation-unit">Giáo trình áp dụng</Label>
+                  <p className="text-sm font-medium">Giáo trình áp dụng</p>
                   <p className="text-xs text-muted-foreground">
-                    {covering.length > 1
-                      ? "Có nhiều giáo trình cùng hiệu lực. Tải lại dữ liệu và báo Quản lý xử lý xung đột trước khi tạo lịch học."
-                      : "Ngày bắt đầu chưa nằm trong kỳ áp dụng của giáo trình đã duyệt nào. Chọn ngày khác."}
+                    Khóa chưa có giáo trình đã duyệt áp dụng.
                   </p>
                   <Button type="button" size="sm" variant="outline" onClick={() => void client.invalidateQueries({ queryKey: ["curriculum"] })}>Tải lại giáo trình</Button>
                 </div>
@@ -440,11 +438,6 @@ function GenerationWorkspace({
               <FieldError
                 message={form.formState.errors.curriculumUnitId?.message}
               />
-              {!approved.length && (
-                <p className="text-sm text-muted-foreground">
-                  Khóa chưa có giáo trình đã duyệt.
-                </p>
-              )}
               <p className="text-sm text-muted-foreground">
                 {sessionsPerWeek == null ? "Khóa chưa đặt số buổi/tuần. Quản lý cần đặt số buổi/tuần cho khóa trước khi tạo lịch học." : `Chuẩn khóa: ${sessionsPerWeek} buổi/tuần. Lớp lệch chuẩn cần sửa lịch tuần trước khi tạo lịch học.`}
               </p>
@@ -480,7 +473,7 @@ function GenerationWorkspace({
                       <span className="block text-xs font-normal text-muted-foreground">
                         {classroom.weeklySchedules.length} buổi/tuần
                         {sessionsPerWeek != null && classroom.weeklySchedules.length !== sessionsPerWeek && ` · Chưa đủ chuẩn ${sessionsPerWeek} buổi`}
-                        {otherUnit(classroom) && " · Lớp đã học theo giáo trình khác, không tạo thêm ở đây"}
+                        {otherUnit(classroom) && " · Lớp đã có lịch học, xem ở trang lớp"}
                       </span>
                     </Label>
                   </div>

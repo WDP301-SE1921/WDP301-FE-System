@@ -72,7 +72,6 @@ import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { useHubTab } from "@/hooks/use-hub-tab";
 import { apiRequest } from "@/lib/api/client";
-import { calendarDateLabel } from "@/lib/calendar-date";
 import {
   academicSubjectSchema,
   academicProgramSchema,
@@ -81,7 +80,10 @@ import {
 } from "@/lib/validators/academic-catalog";
 import type { AcademicSubject, RegistrationProgram } from "@/types/backend";
 import { GRADES, gradeLabel } from "@/constants/grades";
-import { curriculumEffectiveLabel } from "@/features/curriculum/workspace-selectors";
+import {
+  curriculumEffectiveLabel,
+  curriculumPeriodLabel,
+} from "@/features/curriculum/workspace-selectors";
 import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { registrationApi } from "../api";
@@ -254,8 +256,9 @@ function ProgramsCatalog() {
     );
   };
   const unitsByProgram = new Map<string, CurriculumUnit[]>();
-  for (const unit of [...(units.data ?? [])].sort((left, right) =>
-    left.fromDate.localeCompare(right.fromDate),
+  for (const unit of [...(units.data ?? [])].sort(
+    (left, right) =>
+      left.version - right.version || left.fromDate.localeCompare(right.fromDate),
   ))
     unitsByProgram.set(unit.programId, [
       ...(unitsByProgram.get(unit.programId) ?? []),
@@ -554,7 +557,7 @@ function ProgramsCatalog() {
                           {programUnits.map((unit) => {
                             const stage = curriculumStage(unit);
                             const effectiveLabel = curriculumEffectiveLabel(unit, today);
-                            const range = `${calendarDateLabel(unit.fromDate.slice(0, 10))} → ${calendarDateLabel(unit.toDate.slice(0, 10))}`;
+                            const range = `Bản ${unit.version} · ${curriculumPeriodLabel(unit)}`;
                             const unitAction = (
                               <Button
                                 size="sm"

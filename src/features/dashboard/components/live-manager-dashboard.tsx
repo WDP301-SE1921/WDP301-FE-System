@@ -260,12 +260,13 @@ export function LiveManagerDashboard() {
       : 0;
   const unassigned = activeClasses.filter((item) => !item.teacherId).length;
   const programsInUse = new Set(activeClasses.map((item) => item.programId));
-  const withNextTerm = new Set(
+  // Giáo trình không còn kỳ (đợt F): khóa đang có lớp chỉ cần một bản đã duyệt áp dụng.
+  const withCurriculum = new Set(
     (units.data ?? [])
-      .filter((unit) => unit.status !== "ARCHIVED" && unit.fromDate.slice(0, 10) > today)
+      .filter((unit) => unit.status === "APPROVED")
       .map((unit) => unit.programId),
   );
-  const missingNextTerm = [...programsInUse].filter((id) => !withNextTerm.has(id)).length;
+  const missingCurriculum = [...programsInUse].filter((id) => !withCurriculum.has(id)).length;
   const awaitingApproval = (units.data ?? []).filter(
     (unit) => unit.status === "PENDING_REVIEW" && !!unit.technicalReviewedAt,
   ).length;
@@ -570,7 +571,7 @@ export function LiveManagerDashboard() {
           },
           { key: "emails", label: "email gửi lỗi", count: failedEmails.data?.total ?? 0, href: `${ROUTES.MANAGER.NOTIFICATIONS}?emailStatus=FAILED` },
           { key: "approval", label: "giáo trình chờ bạn duyệt", count: awaitingApproval, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs&programFilter=review` },
-          { key: "next-term", label: "khóa chưa có giáo trình kỳ sau", count: units.data ? missingNextTerm : 0, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs` },
+          { key: "no-curriculum", label: "khóa có lớp chưa có giáo trình đã duyệt", count: units.data ? missingCurriculum : 0, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs` },
         ]}
       />
 

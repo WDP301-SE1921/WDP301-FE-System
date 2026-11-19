@@ -83,6 +83,7 @@ import {
   type TeacherSort,
 } from "../class-create-plan";
 import { classPeriodText, todayInVietnam } from "../calendar";
+import { currentCurriculum } from "../program-setup";
 import {
   openRegistrationBlocker,
   useClassStateMutation,
@@ -1508,7 +1509,7 @@ function UpcomingSessions({
   );
 }
 
-/** Giáo trình đang áp dụng của khóa (bản đã duyệt phủ hôm nay) và bản cho kỳ sau. */
+/** Giáo trình lớp đang học (hoặc bản đang áp dụng của khóa nếu lớp chưa có buổi) và bản mới hơn. */
 function CurriculumProgress({
   units,
   sessions,
@@ -1518,19 +1519,21 @@ function CurriculumProgress({
   sessions?: ScheduledSession[];
   isPending: boolean;
 }) {
-  const today = todayInVietnam();
-  const current = (units ?? []).find(
-    (unit) =>
-      unit.status === "APPROVED" &&
-      unit.fromDate.slice(0, 10) <= today &&
-      unit.toDate.slice(0, 10) >= today,
-  );
+  // Lớp đã có buổi học bản của các buổi đó tới hết bài; lớp chưa có buổi dùng bản đang áp dụng.
+  const taughtUnitId = (sessions ?? []).find((session) => session.lesson?.unitId)
+    ?.lesson?.unitId;
+  const current =
+    (units ?? []).find((unit) => unit.id === taughtUnitId) ??
+    currentCurriculum(units ?? []);
+  // Bản mới hơn của khóa (đang soạn, chờ duyệt hoặc đã duyệt sau bản lớp đang học).
   const next = (units ?? [])
     .filter(
       (unit) =>
-        unit.status !== "ARCHIVED" && unit.fromDate.slice(0, 10) > today,
+        unit.status !== "ARCHIVED" &&
+        unit.id !== current?.id &&
+        (!current || unit.version > current.version),
     )
-    .sort((left, right) => left.fromDate.localeCompare(right.fromDate))[0];
+    .sort((left, right) => right.version - left.version)[0];
   const lessons = current?._count?.lessons;
   const taught = current
     ? (sessions ?? []).filter(
@@ -1563,7 +1566,7 @@ function CurriculumProgress({
         )}
         {!isPending && !current && (
           <p className="text-muted-foreground">
-            Khóa học chưa có giáo trình đã duyệt cho hôm nay.
+            Khóa học chưa có giáo trình đã duyệt.
           </p>
         )}
         {!isPending && current && (
@@ -1571,9 +1574,8 @@ function CurriculumProgress({
             <p className="font-medium">{current.title}</p>
             <p className="text-xs text-muted-foreground">
               Bản {current.version}
-              {lessons !== undefined ? ` · ${lessons} bài` : ""} · tới{" "}
-              {calendarDateLabel(current.toDate.slice(0, 10))} · đã dạy {taught}{" "}
-              bài
+              {lessons !== undefined ? ` · ${lessons} bài` : ""} · đã dạy{" "}
+              {taught} bài
             </p>
             {lessons !== undefined && (
               <Progress
@@ -1590,7 +1592,7 @@ function CurriculumProgress({
         {!isPending && (
           <div className="space-y-1">
             <p className="font-medium">
-              {next ? `Kỳ sau: ${next.title}` : "Chưa có giáo trình kỳ sau"}
+              {next ? `Bản mới: ${next.title}` : "Chưa có bản mới"}
             </p>
             {next && (
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1600,6 +1602,9 @@ function CurriculumProgress({
                 />
                 {next._count?.lessons !== undefined && (
                   <span>{next._count.lessons} bài</span>
+                )}
+                {taughtUnitId && (
+                  <span>Lớp học tiếp bản đang học tới hết bài.</span>
                 )}
               </div>
             )}

@@ -60,24 +60,21 @@ const latestVersion = <T extends { version: number }>(items: T[]) =>
  * Giáo trình đang chuẩn bị của khóa: bản chờ duyệt, rồi bản nháp, rồi bản đã duyệt đang áp dụng
  * (hoặc áp dụng sớm nhất sắp tới), cuối cùng bản đã duyệt mới nhất. Bản lưu trữ bị bỏ qua.
  */
-export function pickWorkingUnit<T extends ContentUnit>(
-  units: T[],
-  today: string,
-): T | null {
+export function pickWorkingUnit<T extends ContentUnit>(units: T[]): T | null {
   const pending = latestVersion(
     units.filter((u) => u.status === "PENDING_REVIEW"),
   );
   if (pending) return pending;
   const draft = latestVersion(units.filter((u) => u.status === "DRAFT"));
   if (draft) return draft;
-  const approved = units.filter((u) => u.status === "APPROVED");
-  const current = approved.find(
-    (u) => day(u.fromDate) <= today && day(u.toDate) >= today,
-  );
-  const next = approved
-    .filter((u) => day(u.fromDate) > today)
-    .sort((a, b) => day(a.fromDate).localeCompare(day(b.fromDate)))[0];
-  return current ?? next ?? latestVersion(approved) ?? null;
+  // Giáo trình không còn kỳ (đợt F): bản đã duyệt mới nhất là bản đang áp dụng.
+  const approved = units
+    .filter((u) => u.status === "APPROVED")
+    .sort(
+      (a, b) =>
+        day(b.fromDate).localeCompare(day(a.fromDate)) || b.version - a.version,
+    );
+  return approved[0] ?? null;
 }
 
 /**
@@ -87,9 +84,8 @@ export function pickWorkingUnit<T extends ContentUnit>(
 export function pickViewedUnit<T extends ContentUnit>(
   units: T[],
   unitId: string | null | undefined,
-  today: string,
 ): { viewed: T | null; working: T | null } {
-  const working = pickWorkingUnit(units, today);
+  const working = pickWorkingUnit(units);
   const chosen = unitId ? units.find((u) => u.id === unitId) : undefined;
   return { viewed: chosen ?? working, working };
 }

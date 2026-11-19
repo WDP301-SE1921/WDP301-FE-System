@@ -9,7 +9,7 @@ const ERROR_TEXT: Record<string, string> = {
   AVATAR_CONFLICT:
     "Ảnh đã được thay đổi ở nơi khác. Kiểm tra lại trước khi lưu.",
   UNIT_REVISION_REQUIRED:
-    "Bài học thuộc giáo trình đã được duyệt. Chuẩn bị giáo trình mới cho kỳ tiếp theo để chỉnh sửa.",
+    "Bài học thuộc giáo trình đã được duyệt. Làm bản mới của giáo trình để chỉnh sửa.",
   UNIT_APPROVAL_REQUIRED:
     "Giáo trình cần được giáo viên duyệt nội dung và Quản lý duyệt áp dụng trước khi dùng bài học.",
   INVALID_ASSESSMENT_TYPE:
@@ -395,7 +395,7 @@ const ERROR_TEXT: Record<string, string> = {
   INVALID_OUTCOME_MAPPING:
     "Chỉ gắn mục tiêu thuộc bộ của cùng khóa học với bài học.",
   LESSON_LOCKED:
-    "Bài thuộc giáo trình đã lưu trữ nên không gắn mục tiêu được. Hãy gắn vào bài của giáo trình đang dùng hoặc của kỳ tiếp theo.",
+    "Bài thuộc giáo trình đã lưu trữ nên không gắn mục tiêu được. Hãy gắn vào bài của giáo trình đang dùng hoặc của bản mới.",
 };
 /** Lý do file nhập mục tiêu bị từ chối, theo `details.code` của BE. */
 function outcomeImportFileReason(code: unknown): string | undefined {

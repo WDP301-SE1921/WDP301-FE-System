@@ -6,10 +6,12 @@ import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { StatusBadge } from "@/components/shared/feedback/status-badge";
-import { calendarDateLabel } from "@/lib/calendar-date";
 import { ROUTES } from "@/constants/routes";
 import { ApprovalSteps, ComparisonNotice } from "./curriculum-comparison";
-import { curriculumEffectiveLabel } from "../workspace-selectors";
+import {
+  curriculumEffectiveLabel,
+  curriculumPeriodLabel,
+} from "../workspace-selectors";
 import { curriculumStage } from "../presentation";
 import { useUnitWorkspace } from "../hooks/use-unit-workspace";
 import { UnitActionsMenu } from "./unit-workspace/unit-actions-menu";
@@ -51,10 +53,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
             ? [
                 unit.program?.name ?? unit.track.subject,
                 "Khối " + unit.track.grade,
-                "Kỳ học " +
-                  calendarDateLabel(unit.fromDate.slice(0, 10)) +
-                  " – " +
-                  calendarDateLabel(unit.toDate.slice(0, 10)),
+                `Bản ${unit.version}`,
+                curriculumPeriodLabel(unit),
               ].join(" · ")
             : undefined
         }
@@ -87,7 +87,7 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                   disabled={busy}
                   onClick={() => openEditor({ kind: "revision" })}
                 >
-                  Chuẩn bị kỳ tiếp theo
+                  Làm bản mới
                 </Button>
               )}
               {hasMenu && <UnitActionsMenu ws={ws} />}
@@ -127,8 +127,8 @@ export function CurriculumUnitDetailView({ unitId }: { unitId: string }) {
                 )}
                 {unit.status === "APPROVED" && (
                   <p className="text-sm text-muted-foreground">
-                    Nội dung đã duyệt được giữ nguyên. Mọi thay đổi được chuẩn
-                    bị trong giáo trình của kỳ tiếp theo.
+                    Nội dung đã duyệt được giữ nguyên. Muốn sửa thì làm bản mới;
+                    bản mới được duyệt sẽ dùng cho các lớp tạo lịch sau đó.
                   </p>
                 )}
               </CardContent>

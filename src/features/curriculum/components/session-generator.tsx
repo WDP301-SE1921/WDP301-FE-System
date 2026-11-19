@@ -28,8 +28,10 @@ import {
 } from "../generation-storage";
 import { sessionTime } from "../session-format";
 import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
-import { defaultStartDate } from "@/features/registration-flow/program-setup";
-import { applicableUnits } from "../generation-plan";
+import {
+  currentCurriculum,
+  defaultStartDate,
+} from "@/features/registration-flow/program-setup";
 
 export function SessionGenerator({
   classroom,
@@ -57,11 +59,12 @@ export function SessionGenerator({
   const [attempt, setAttempt] = useState<GenerationAttempt | null>(
     restored.attempt,
   );
+  // Lớp đã có lịch thì ngày bắt đầu đã nhập một lần (đợt F): không hỏi lại, xếp tiếp sau buổi cuối.
+  const started = !!classroom.scheduledFrom || !!classroom.scheduledUntil;
   const form = useForm<ScheduleRangeInput>({
     resolver: zodResolver(scheduleRangeSchema),
     defaultValues: attempt?.body ?? {
-      curriculumUnitId: "",
-      // Ngày học đầu tiên sau hôm nay, hoặc sau buổi cuối đã có; sửa được.
+      // Ngày học đầu tiên sau hôm nay, hoặc sau buổi cuối đã có.
       fromDate: defaultStartDate(
         todayInVietnam(),
         classroom.scheduledUntil,
@@ -123,19 +126,16 @@ export function SessionGenerator({
   const conflicts =
     preview.data?.slots.some((slot) => slot.conflicts.length) ?? false;
   const busy = preview.isPending || generate.isPending;
-  const approved =
-    units.data?.filter((unit) => unit.status === "APPROVED") ?? [];
-  // Lớp chưa có buổi: giáo trình là bản đã duyệt có kỳ chứa ngày bắt đầu. Lớp đã khai giảng chỉ
-  // học tiếp giáo trình chứa buổi đầu tiên của nó, không bao giờ chuyển sang bản mới hơn.
-  const started = !!classroom.scheduledFrom || !!classroom.scheduledUntil;
-  const selectedUnit = started
-    ? applicableUnits(approved, (classroom.scheduledFrom ?? "").slice(0, 10))[0]
-    : applicableUnits(approved, values.fromDate ?? "")[0];
-  const lockedMissing = started && units.isSuccess && !selectedUnit;
+  // Lớp chưa có buổi dùng bản đang áp dụng của khóa. Lớp đã có buổi để BE lấy đúng bản lớp đang
+  // học (không gửi giáo trình), nên không bao giờ chuyển sang bản mới hơn giữa chừng.
+  const current = currentCurriculum(units.data ?? []);
+  const shownUnit = started
+    ? units.data?.find((unit) => unit.id === preview.data?.curriculumUnitId)
+    : current;
   useEffect(() => {
-    if (attempt) return;
-    form.setValue("curriculumUnitId", selectedUnit?.id ?? "");
-  }, [attempt, form, selectedUnit?.id]);
+    if (attempt || started) return;
+    form.setValue("curriculumUnitId", current?.id);
+  }, [attempt, form, started, current?.id]);
   async function submit(input: ScheduleRangeInput) {
     if (lock.current || busy || restored.error) return;
     if (
@@ -169,16 +169,32 @@ export function SessionGenerator({
         onSubmit={(event) => void form.handleSubmit(submit)(event)}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="schedule-from">Ngày bắt đầu</Label>
-            <Input
-              id="schedule-from"
-              type="date"
-              disabled={busy || !!attempt}
-              {...form.register("fromDate")}
-            />
-            <FieldError message={form.formState.errors.fromDate?.message} />
-          </div>
+          {started ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Xếp tiếp từ</p>
+              <p className="text-sm">
+                {calendarDateLabel(values.fromDate ?? "")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Lớp đã có lịch học
+                {classroom.scheduledUntil
+                  ? ` tới ${calendarDateLabel(classroom.scheduledUntil.slice(0, 10))}`
+                  : ""}
+                . Ngày bắt đầu đã nhập lần đầu nên không hỏi lại.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="schedule-from">Ngày bắt đầu</Label>
+              <Input
+                id="schedule-from"
+                type="date"
+                disabled={busy || !!attempt}
+                {...form.register("fromDate")}
+              />
+              <FieldError message={form.formState.errors.fromDate?.message} />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="schedule-to">Ngày kết thúc (tự tính)</Label>
             <Input
@@ -194,29 +210,27 @@ export function SessionGenerator({
             />
           </div>
         </div>
-        {lockedMissing ? (
+        {started ? (
           <p className="text-sm text-muted-foreground">
-            Lớp đã khai giảng nhưng không tìm thấy giáo trình đã duyệt mà lớp
-            đang học. Mỗi lớp chỉ học một giáo trình nên chưa thể tạo thêm lịch
-            học ở đây.
+            {shownUnit
+              ? `Giáo trình lớp đang học: ${shownUnit.title}. `
+              : "Lớp học tiếp giáo trình đang học tới hết bài. "}
+            Nếu giáo trình còn bài chưa xếp, bấm Xem trước để xếp tiếp.
           </p>
-        ) : selectedUnit ? (
+        ) : current ? (
           <p className="text-sm text-muted-foreground">
-            Giáo trình: {selectedUnit.title}
-            {started ? " (giáo trình lớp đã khai giảng)" : ""} (áp dụng{" "}
-            {calendarDateLabel(selectedUnit.fromDate.slice(0, 10))} –{" "}
-            {calendarDateLabel(selectedUnit.toDate.slice(0, 10))}). Số buổi tự
-            tính theo số bài của giáo trình, mỗi buổi một bài.
+            Giáo trình: {current.title} (bản {current.version} đang áp dụng). Số
+            buổi tự tính theo số bài của giáo trình, mỗi buổi một bài.
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {units.isSuccess && !approved.length
+            {units.isSuccess
               ? "Chưa có giáo trình đã duyệt áp dụng cho khóa học của lớp này."
-              : "Ngày bắt đầu chưa nằm trong kỳ áp dụng của giáo trình đã duyệt nào. Chọn ngày khác."}
+              : "Đang tải giáo trình…"}
           </p>
         )}
         <FieldError message={form.formState.errors.curriculumUnitId?.message} />
-        {!lockedMissing && (
+        {(started || !!current) && (
           <div className="flex flex-wrap gap-3">
             <Button
               type="button"

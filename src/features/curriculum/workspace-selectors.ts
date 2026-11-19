@@ -2,17 +2,36 @@ import { closedDaysInRange, type ClosureRange } from "./session-slots";
 import { actsAsManager, type WebRole } from "@/constants/roles";
 import type { RegistrationClass } from "@/types/backend";
 import type { CurriculumLesson, CurriculumUnit } from "@/types/curriculum";
+import { calendarDateLabel } from "@/lib/calendar-date";
 
 export function canCopyCurriculum(unit: CurriculumUnit) {
   return unit.status === "APPROVED" || (unit.status === "ARCHIVED" && !!unit.approvedAt);
 }
 
-/** Approval and being effective today are separate states. */
+/**
+ * Giáo trình không còn kỳ do người dùng nhập (đợt F, 2026-11-19): bản được duyệt áp dụng từ
+ * ngày duyệt tới khi bản mới được duyệt. `today` chỉ còn cho bản cũ đã hẹn ngày bắt đầu.
+ */
 export function curriculumEffectiveLabel(unit: CurriculumUnit, today: string) {
   if (unit.status !== "APPROVED") return null;
   if (unit.fromDate.slice(0, 10) > today) return "Chờ ngày áp dụng";
-  if (unit.toDate.slice(0, 10) < today) return "Đã hết hiệu lực";
   return "Đang áp dụng";
+}
+
+/** Thời gian áp dụng do BE tự ghi khi duyệt, thay cho "từ ngày – đến ngày" người dùng nhập. */
+export function curriculumPeriodLabel(unit: CurriculumUnit) {
+  const from = calendarDateLabel(unit.fromDate.slice(0, 10));
+  if (unit.status === "APPROVED") return `Áp dụng từ ${from}`;
+  if (unit.status === "ARCHIVED" && unit.archiveReason === "SUPERSEDED")
+    return `Đã áp dụng ${from} – ${calendarDateLabel(unit.toDate.slice(0, 10))}`;
+  if (unit.status === "ARCHIVED") return "Đã lưu trữ";
+  return "Áp dụng khi được duyệt";
+}
+
+/** Tên gợi ý cho giáo trình mới: tên bản nguồn khi sao chép, không thì theo tên khóa. */
+export function suggestUnitTitle(programName?: string, sourceTitle?: string) {
+  if (sourceTitle) return sourceTitle;
+  return programName ? `Giáo trình ${programName}` : "";
 }
 
 export function curriculumNeedsAction(
@@ -46,7 +65,7 @@ export function curriculumNextStep(unit: CurriculumUnit) {
       : `${unit.reviewerTeacher?.displayName || unit.reviewerTeacher?.email || "Giáo viên được phân công"} duyệt nội dung`;
   return unit.status === "ARCHIVED"
     ? "Đã lưu trữ"
-    : "Có thể chuẩn bị giáo trình kỳ tiếp theo";
+    : "Có thể làm bản mới khi cần sửa";
 }
 
 export function curriculumLabel(unit: CurriculumUnit) {
@@ -71,8 +90,8 @@ export function groupCurricula(units: CurriculumUnit[]) {
       ...group,
       units: [...group.units].sort(
         (a, b) =>
-          b.fromDate.localeCompare(a.fromDate) ||
           b.version - a.version ||
+          b.fromDate.localeCompare(a.fromDate) ||
           a.id.localeCompare(b.id),
       ),
     }))
@@ -93,12 +112,14 @@ export function previousCurriculum(
         candidate.id !== unit.id &&
         candidate.programId === unit.programId &&
         ["APPROVED", "ARCHIVED"].includes(candidate.status) &&
-        candidate.toDate.slice(0, 10) < unit.fromDate.slice(0, 10),
+        // Bản số nhỏ hơn (từ đợt F) hoặc bản cũ có kỳ kết thúc trước bản này.
+        (candidate.version < unit.version ||
+          candidate.toDate.slice(0, 10) < unit.fromDate.slice(0, 10)),
     )
     .sort(
       (a, b) =>
-        b.toDate.localeCompare(a.toDate) ||
         b.version - a.version ||
+        b.toDate.localeCompare(a.toDate) ||
         a.id.localeCompare(b.id),
     )[0];
   return previous ? { id: previous.id, inferred: true } : null;

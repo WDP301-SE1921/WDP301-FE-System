@@ -3,7 +3,6 @@
 import { useEffect, useId } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { StickyFormFooter } from "@/components/shared/workflows/sticky-form-footer";
-import { estimateLessons } from "../workspace-selectors";
 import { registrationApi } from "@/features/registration-flow/api";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,11 +33,6 @@ import {
   FieldError,
 } from "@/components/shared/feedback/api-feedback";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
-import {
-  addCalendarDays,
-  calendarDateLabel,
-  todayInVietnam,
-} from "@/lib/calendar-date";
 import {
   curriculumSubmitSchema,
   curriculumTechnicalReviewSchema,
@@ -323,13 +317,9 @@ export function CurriculumRevisionForm({
     "lessonSource",
     parseAsStringLiteral(["copy", "csv", "empty"]).withDefault("copy"),
   );
-  const minDate = addCalendarDays(
-    [unit.toDate.slice(0, 10), todayInVietnam()].sort().at(-1)!,
-    1,
-  );
   const form = useForm<CurriculumRevisionInput>({
     resolver: zodResolver(curriculumRevisionSchema),
-    defaultValues: { title: unit.title, fromDate: minDate, toDate: "" },
+    defaultValues: { title: unit.title },
   });
   const save = useCurriculumMutation(async (input: CurriculumRevisionInput) => {
     const result =
@@ -341,28 +331,16 @@ export function CurriculumRevisionForm({
   });
   useCurriculumFormState(form.formState.isDirty, save.isPending, onStateChange);
   const errors = form.formState.errors;
-  const fromDate = useWatch({ control: form.control, name: "fromDate" });
-  const toDate = useWatch({ control: form.control, name: "toDate" });
   const frequency = program.data?.sessionsPerWeek ?? unit.program?.sessionsPerWeek;
-  const estimate = estimateLessons(fromDate, toDate, [], frequency);
   return (
     <form
       className="space-y-4"
       noValidate
-      onSubmit={form.handleSubmit((input) => {
-        if (input.fromDate < minDate) {
-          form.setError("fromDate", {
-            message: "Chọn kỳ học bắt đầu sau kỳ hiện tại và sau hôm nay.",
-          });
-          return;
-        }
-        save.mutate(input);
-      })}
+      onSubmit={form.handleSubmit((input) => save.mutate(input))}
     >
       <p className="text-sm text-muted-foreground">
-        Sao chép bài học để chuẩn bị kỳ tiếp theo. Giáo trình đã duyệt và các
-        buổi đang sử dụng được giữ nguyên. Kỳ hiện tại kết thúc{" "}
-        {calendarDateLabel(unit.toDate.slice(0, 10))}.
+        Làm bản mới của giáo trình. Không cần nhập ngày: khi Quản lý duyệt, bản mới
+        dùng cho các lớp tạo lịch sau đó; lớp đang học bản này học tiếp tới hết bài.
       </p>
       <fieldset disabled={save.isPending} className="space-y-4">
         <div className="space-y-2">
@@ -370,18 +348,18 @@ export function CurriculumRevisionForm({
           <Select
             value={source}
             items={{
-              copy: "Sao chép kỳ này",
+              copy: "Sao chép bản này",
               csv: "Nhập từ CSV",
               empty: "Soạn từ đầu",
             }}
             onValueChange={(value) => void setSource(value as typeof source)}
           >
-            <SelectTrigger aria-label="Nguồn bài học kỳ mới">
+            <SelectTrigger aria-label="Nguồn bài học bản mới">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="copy">
-                Sao chép kỳ này ·{" "}
+                Sao chép bản này ·{" "}
                 {
                   unit.lessons.filter((lesson) => lesson.kind === "LESSON")
                     .length
@@ -401,7 +379,7 @@ export function CurriculumRevisionForm({
           </p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor={id + "-title"}>Tên giáo trình / học kỳ mới</Label>
+          <Label htmlFor={id + "-title"}>Tên bản mới</Label>
           <Input
             id={id + "-title"}
             aria-invalid={!!errors.title}
@@ -412,43 +390,8 @@ export function CurriculumRevisionForm({
             <FieldError message={errors.title?.message} />
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor={id + "-from"}>Bắt đầu áp dụng</Label>
-            <Input
-              id={id + "-from"}
-              type="date"
-              min={minDate}
-              aria-invalid={!!errors.fromDate}
-              aria-describedby={id + "-from-error"}
-              {...form.register("fromDate")}
-            />
-            <div id={id + "-from-error"}>
-              <FieldError message={errors.fromDate?.message} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={id + "-to"}>Kết thúc áp dụng</Label>
-            <Input
-              id={id + "-to"}
-              type="date"
-              min={fromDate || minDate}
-              aria-invalid={!!errors.toDate}
-              aria-describedby={id + "-to-error"}
-              {...form.register("toDate")}
-            />
-            <div id={id + "-to-error"}>
-              <FieldError message={errors.toDate?.message} />
-            </div>
-          </div>
-        </div>
         <section className="space-y-2 rounded-xl bg-muted p-4 text-sm">
           <p className="font-medium">Số buổi/tuần của khóa</p>
-          <p>
-            {estimate
-              ? `${estimate.weeks} tuần theo khoảng hiệu lực (làm tròn lên).`
-              : "Chọn khoảng hiệu lực để tính số tuần."}
-          </p>
           <Label htmlFor={id + "-weekly"}>Số buổi/tuần</Label>
           <Input
             id={id + "-weekly"}
@@ -468,7 +411,7 @@ export function CurriculumRevisionForm({
           isLoading={save.isPending}
           disabled={save.isPending}
         >
-          Tạo giáo trình cho kỳ tiếp theo
+          Tạo bản mới
         </Button>
       </fieldset>
       <ApiFeedback error={save.error} />

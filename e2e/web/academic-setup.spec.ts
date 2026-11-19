@@ -150,9 +150,8 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await page.getByRole("button", { name: "Tạo giáo trình" }).first().click();
     await pickSelect(page, page.locator("#unit-program"), new RegExp(COURSE));
     await page.locator("#unit-title").fill(UNIT_TITLE);
-    // Kỳ dài đúng 1 tuần, bắt đầu sau hôm nay: 2 buổi/tuần nên vừa đủ 2 bài.
-    await page.locator("#unit-from").fill(fromDate());
-    await page.locator("#unit-to").fill(toDate());
+    // Giáo trình không còn ô ngày (đợt F): ngày bắt đầu nhập ở bước tạo lịch của lớp.
+    await expect(page.locator("#unit-from")).toHaveCount(0);
     await page.getByRole("button", { name: "Tạo giáo trình nháp" }).click();
     await page.waitForURL((url) => unitIdFromUrl(url) !== "");
     state.unitId = unitIdFromUrl(new URL(page.url()));
@@ -235,10 +234,14 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     // Mở từ checklist thì bản xem trước có thể đã chạy sẵn; nếu chưa thì bấm "Xem trước 1 lớp".
     // Duyệt áp dụng xong màn này tự xem trước, nên nút và bảng có thể cùng hiện: lấy cái đầu tiên.
     await expect(preview.or(table).first()).toBeVisible({ timeout: 30_000 });
-    if ((await table.count()) === 0) await preview.click();
+    // Ngày bắt đầu nhập một lần ở bước tạo lịch (đợt F; giáo trình không còn kỳ). Chọn tuần chưa
+    // dùng để không trùng lịch giáo viên của lần chạy trước, rồi xem trước lại.
+    await expect(preview).toBeEnabled();
+    await page.locator("#generate-fromDate").fill(fromDate());
+    await preview.click();
     await expect(table).toBeVisible();
     const rows = table.getByRole("row");
-    // Hàng 0 là tiêu đề; 2 buổi trong kỳ 1 tuần, bài theo đúng thứ tự.
+    // Hàng 0 là tiêu đề; giáo trình 2 bài nên 2 buổi, bài theo đúng thứ tự.
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(1)).toContainText(LESSONS[0]);
     await expect(rows.nth(2)).toContainText(LESSONS[1]);
@@ -263,19 +266,15 @@ test.describe.serial("Chuẩn bị khóa: từ tạo khóa đến tạo lịch h
     await expectNoLegacyTerms(page);
   });
 
-  test("Tạo lịch học lần 2 trùng khoảng đã có buổi bị báo bằng tiếng Việt", async ({ browser }) => {
+  test("Lớp đã có lịch không bị hỏi lại ngày bắt đầu ở trang Lịch học", async ({ browser }) => {
     const page = await open(browser, ROLES.CENTER_MANAGER);
     await page.goto(
       `/manager/sessions?programId=${state.programId}&classIds=${state.classId}&unitId=${state.unitId}`,
     );
-    // Chỉ còn một ô "Ngày bắt đầu"; ngày kết thúc do hệ thống tự tính nên chỉ đọc.
-    await page.getByLabel("Ngày bắt đầu").fill(fromDate());
+    // Đợt F: ngày bắt đầu chỉ nhập ở lần tạo lịch đầu; lớp đã có lịch không tạo lại ở đây.
+    await expect(page.getByText(/Lớp đã có lịch học, xem ở trang lớp/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Xem trước 1 lớp$/ })).toBeDisabled();
     await expect(page.getByLabel("Ngày kết thúc (tự tính)")).toBeDisabled();
-    await page.getByRole("button", { name: /^Xem trước 1 lớp$/ }).click();
-    await expect(
-      page.getByText(/Lớp đã có lịch học đến ngày \d{2}\/\d{2}\/\d{4}\. Chọn ngày bắt đầu sau ngày đó\./),
-    ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Tạo lịch học cho 0 lớp" })).toBeDisabled();
   });
 
   test("Nhân viên không có nút duyệt hay tạo lịch học", async ({ browser }) => {
