@@ -544,6 +544,8 @@ function QuestionsCard({
   assignment: AssignmentDetail;
   measuredTargets: ReturnType<typeof measuredLearningTargets>;
 }) {
+  // CLO của cả bài; BE cũ chưa trả `outcomes` thì dùng cách đo theo câu như trước.
+  const assignmentTargets = assignment.outcomes ?? measuredTargets;
   return (
     <Card>
       <CardHeader>
@@ -565,11 +567,11 @@ function QuestionsCard({
             <SubmissionFile id={f.fileId} index={i} />
           </section>
         ))}
-        {measuredTargets.length > 0 && (
+        {assignmentTargets.length > 0 && (
           <section aria-label="Mục tiêu bài" className="space-y-2">
             <p className="font-medium">Mục tiêu bài</p>
             <ul className="space-y-1 text-sm">
-              {measuredTargets.map((target) => (
+              {assignmentTargets.map((target) => (
                 <li key={target.id}>
                   <span className="font-medium">{target.code}</span> ·{" "}
                   {target.title}
@@ -586,14 +588,6 @@ function QuestionsCard({
             <p className="font-medium">
               Câu {index + 1} · {question.maxScore} điểm
             </p>
-            {question.outcomeId && (
-              <Badge variant="outline">
-                Mục tiêu{" "}
-                {assignment.learningTargets?.find(
-                  (target) => target.id === question.outcomeId,
-                )?.code ?? ""}
-              </Badge>
-            )}
             <p className="whitespace-pre-wrap">{question.prompt}</p>
             {question.choices?.map((choice) => (
               <p key={choice}>{choice}</p>

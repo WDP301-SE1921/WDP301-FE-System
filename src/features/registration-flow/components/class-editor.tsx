@@ -60,6 +60,7 @@ import { TimeInput } from "@/components/shared/pickers/time-input";
 import { toast } from "@/components/ui/toast";
 import { canAccessPath } from "@/constants/role-access";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { subjectDotClass } from "@/constants/subjects";
 import { apiRequest } from "@/lib/api/client";
 import { calendarDateLabel } from "@/lib/calendar-date";
@@ -69,7 +70,20 @@ import { useCurrentTime } from "@/hooks/use-current-time";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumStage } from "@/features/curriculum/presentation";
 import { registrationApi } from "../api";
+import {
+  buildRoomOptions,
+  buildTeacherOptions,
+  byRoomName,
+  filterRoomOptions,
+  filterTeacherOptions,
+  sortRoomOptions,
+  sortTeacherOptions,
+  type RoomSort,
+  type TeacherFilter,
+  type TeacherSort,
+} from "../class-create-plan";
 import { classPeriodText, todayInVietnam } from "../calendar";
+import { currentCurriculum } from "../program-setup";
 import {
   openRegistrationBlocker,
   useClassStateMutation,
@@ -83,6 +97,7 @@ import {
   type SchedulesInput,
 } from "../schemas";
 import { ApiFeedback, FieldError } from "./api-feedback";
+import { SearchableSelect } from "./searchable-select";
 import { ClassCreateWizard } from "./class-create-wizard";
 import { MoneyInput } from "./money-input";
 import { ApiForm } from "@/components/shared/forms/api-form";
@@ -632,7 +647,6 @@ function ClassDetailsForm({
       name: classroom?.name ?? "",
       teacherId: classroom?.teacherId ?? "",
       roomId: classroom?.roomId ?? "",
-      capacity: classroom?.capacity ?? 20,
       // Lớp mới để trống học phí để người tạo phải nhập; 0 đồng vẫn hợp lệ nếu gõ 0.
       monthlyFee: classroom ? Number(classroom.monthlyFee) : Number.NaN,
     },
@@ -642,6 +656,10 @@ function ClassDetailsForm({
     void qc.invalidateQueries({ queryKey: ["registration-class"] });
     void qc.invalidateQueries({ queryKey: ["academic-program"] });
   };
+  const currentRoom = rooms.find((room) => room.id === classroom?.roomId);
+  const capacityMismatch =
+    !!classroom && !!currentRoom && classroom.capacity !== currentRoom.capacity;
+  const pickedRoomId = useWatch({ control: form.control, name: "roomId" });
   const save = useMutation({
     mutationFn: ({
       programId,
@@ -657,8 +675,10 @@ function ClassDetailsForm({
             ? {
                 ...fields,
                 teacherId: teacherId || null,
-                // Send the room only when it changes: BE re-validates the chosen room.
-                ...((roomId || null) !== (classroom.roomId ?? null)
+                // Send the room when it changes or when the class capacity differs
+                // from its room: BE re-syncs capacity whenever roomId is sent.
+                ...((roomId || null) !== (classroom.roomId ?? null) ||
+                (capacityMismatch && roomId)
                   ? { roomId: roomId || null }
                   : {}),
               }
@@ -666,7 +686,7 @@ function ClassDetailsForm({
                 ...fields,
                 programId,
                 ...(teacherId ? { teacherId } : {}),
-                ...(roomId ? { roomId } : {}),
+                roomId,
                 isOpen: false,
               },
         },
@@ -700,6 +720,28 @@ function ClassDetailsForm({
         displayName: null,
       },
     );
+  const watchedProgramId = useWatch({
+    control: form.control,
+    name: "programId",
+  });
+  const allClasses = useQuery({
+    queryKey: ["registration-classes", "wizard"],
+    queryFn: () => registrationApi.classes(),
+    retry: false,
+  });
+  // Chưa biết lịch tuần đang soạn ở form này nên chỉ xếp theo môn và số lớp, không cảnh báo trùng giờ.
+  const teacherOptions = buildTeacherOptions(
+    teacherChoices,
+    allClasses.data ?? [],
+    classroom?.program ??
+      programs.find((p) => p.id === watchedProgramId) ??
+      null,
+  );
+  const pickedRoom = rooms.find((room) => room.id === pickedRoomId);
+  const roomOptions = roomChoices.map((room) => ({
+    ...buildRoomOptions([{ ...room, isActive: true }], [], [])[0],
+    room,
+  }));
   return (
     <Card>
       <CardHeader>
@@ -709,7 +751,13 @@ function ClassDetailsForm({
         <form
           className="space-y-4"
           noValidate
-          onSubmit={form.handleSubmit((v) => save.mutate(v))}
+          onSubmit={form.handleSubmit((v) => {
+            if (!classroom && !v.roomId) {
+              form.setError("roomId", { message: "Chọn phòng học." });
+              return;
+            }
+            save.mutate(v);
+          })}
         >
           <div className={cn("grid gap-4", !classroom && "sm:grid-cols-2")}>
             <div className={cn("space-y-2", !classroom && "sm:col-span-2")}>
@@ -768,17 +816,6 @@ function ClassDetailsForm({
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="class-capacity">Sức chứa</Label>
-                <Input
-                  id="class-capacity"
-                  type="number"
-                  min={1}
-                  max={1000}
-                  {...form.register("capacity", { valueAsNumber: true })}
-                />
-                <FieldError message={form.formState.errors.capacity?.message} />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="class-fee">Học phí / tháng (VND)</Label>
                 <Controller
                   control={form.control}
@@ -810,35 +847,56 @@ function ClassDetailsForm({
                 control={form.control}
                 name="roomId"
                 render={({ field }) => (
-                  <Select
-                    value={field.value || "none"}
-                    items={[
-                      { value: "none", label: "Chưa chọn phòng" },
-                      ...roomChoices.map((room) => ({
-                        value: room.id,
-                        label: roomLabel(room),
-                      })),
+                  <SearchableSelect
+                    id="class-room"
+                    ariaLabel="Phòng học"
+                    value={field.value}
+                    selectedLabel={
+                      roomChoices
+                        .filter((room) => room.id === field.value)
+                        .map(roomLabel)[0]
+                    }
+                    onChange={field.onChange}
+                    placeholder="Chọn phòng"
+                    searchPlaceholder="Tìm theo tên phòng…"
+                    emptyText="Không có phòng phù hợp."
+                    sorts={[
+                      { id: "capacity", label: "Sức chứa tăng dần" },
+                      { id: "name", label: "Tên" },
                     ]}
-                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
-                  >
-                    <SelectTrigger id="class-room">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Chưa chọn phòng</SelectItem>
-                      {roomChoices.map((room) => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {roomLabel(room)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    search={({ query, sort }) =>
+                      sortRoomOptions(
+                        filterRoomOptions(roomOptions, query),
+                        sort as RoomSort,
+                      ).map((item) => ({
+                        value: item.id,
+                        label: roomLabel(item.room),
+                      }))
+                    }
+                  />
                 )}
               />
+              <FieldError message={form.formState.errors.roomId?.message} />
               <p className="text-xs text-muted-foreground">
-                Sức chứa phòng phải từ sĩ số lớp trở lên. Buổi học sinh mới dùng
-                phòng của lớp.
+                Sĩ số tối đa của lớp lấy theo sức chứa của phòng. Buổi học sinh
+                mới dùng phòng của lớp.
               </p>
+              {classroom && classroom.capacity != null && (
+                <p className="text-sm text-muted-foreground">
+                  {`Sĩ số tối đa: ${classroom.capacity} học sinh${currentRoom ? ` (${byRoomName(currentRoom.name)})` : ""}.`}
+                </p>
+              )}
+              {capacityMismatch && classroom && currentRoom && (
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  {`Sĩ số lớp (${classroom.capacity}) khác sức chứa phòng (${currentRoom.capacity}). Khi bấm Lưu, sĩ số sẽ đổi thành ${currentRoom.capacity} theo phòng.`}
+                </p>
+              )}
+              {classroom && pickedRoom && pickedRoom.id !== classroom.roomId && (
+                <p className="text-sm text-muted-foreground">
+                  Sau khi lưu: {pickedRoom.capacity} học sinh (
+                  {byRoomName(pickedRoom.name)}).
+                </p>
+              )}
             </div>
             <div className={cn("space-y-2", !classroom && "sm:col-span-2")}>
               <Label htmlFor="class-teacher">Giáo viên phụ trách</Label>
@@ -846,29 +904,47 @@ function ClassDetailsForm({
                 control={form.control}
                 name="teacherId"
                 render={({ field }) => (
-                  <Select
-                    value={field.value || "none"}
-                    items={[
-                      { value: "none", label: "Chưa gán giáo viên" },
-                      ...teacherChoices.map((t) => ({
-                        value: t.id,
-                        label: t.displayName ?? t.email,
-                      })),
+                  <SearchableSelect
+                    id="class-teacher"
+                    ariaLabel="Giáo viên phụ trách"
+                    value={field.value}
+                    selectedLabel={
+                      teacherOptions.find((item) => item.id === field.value)
+                        ?.label
+                    }
+                    onChange={field.onChange}
+                    noneLabel="Chưa gán giáo viên"
+                    placeholder="Chọn giáo viên"
+                    searchPlaceholder="Tìm theo tên hoặc email…"
+                    emptyText="Không có giáo viên phù hợp. Thử bỏ bớt bộ lọc."
+                    filters={[{ id: "sameSubject", label: "Cùng môn" }]}
+                    sorts={[
+                      { id: "best", label: "Phù hợp nhất" },
+                      { id: "name", label: "Tên A–Z" },
+                      { id: "load", label: "Ít lớp đang dạy" },
                     ]}
-                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
-                  >
-                    <SelectTrigger id="class-teacher">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Chưa gán giáo viên</SelectItem>
-                      {teacherChoices.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.displayName ?? t.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    search={({ query, filters, sort }) =>
+                      sortTeacherOptions(
+                        filterTeacherOptions(
+                          teacherOptions,
+                          query,
+                          filters as TeacherFilter[],
+                        ),
+                        sort as TeacherSort,
+                      ).map((item) => ({
+                        value: item.id,
+                        label: item.label,
+                        description: [
+                          item.classCount
+                            ? `Đang dạy ${item.classCount} lớp`
+                            : "Chưa dạy lớp nào",
+                          item.sameSubject ? "cùng môn" : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · "),
+                      }))
+                    }
+                  />
                 )}
               />
               <FieldError message={form.formState.errors.teacherId?.message} />
@@ -1433,7 +1509,7 @@ function UpcomingSessions({
   );
 }
 
-/** Giáo trình đang áp dụng của khóa (bản đã duyệt phủ hôm nay) và bản cho kỳ sau. */
+/** Giáo trình lớp đang học (hoặc bản đang áp dụng của khóa nếu lớp chưa có buổi) và bản mới hơn. */
 function CurriculumProgress({
   units,
   sessions,
@@ -1443,19 +1519,21 @@ function CurriculumProgress({
   sessions?: ScheduledSession[];
   isPending: boolean;
 }) {
-  const today = todayInVietnam();
-  const current = (units ?? []).find(
-    (unit) =>
-      unit.status === "APPROVED" &&
-      unit.fromDate.slice(0, 10) <= today &&
-      unit.toDate.slice(0, 10) >= today,
-  );
+  // Lớp đã có buổi học bản của các buổi đó tới hết bài; lớp chưa có buổi dùng bản đang áp dụng.
+  const taughtUnitId = (sessions ?? []).find((session) => session.lesson?.unitId)
+    ?.lesson?.unitId;
+  const current =
+    (units ?? []).find((unit) => unit.id === taughtUnitId) ??
+    currentCurriculum(units ?? []);
+  // Bản mới hơn của khóa (đang soạn, chờ duyệt hoặc đã duyệt sau bản lớp đang học).
   const next = (units ?? [])
     .filter(
       (unit) =>
-        unit.status !== "ARCHIVED" && unit.fromDate.slice(0, 10) > today,
+        unit.status !== "ARCHIVED" &&
+        unit.id !== current?.id &&
+        (!current || unit.version > current.version),
     )
-    .sort((left, right) => left.fromDate.localeCompare(right.fromDate))[0];
+    .sort((left, right) => right.version - left.version)[0];
   const lessons = current?._count?.lessons;
   const taught = current
     ? (sessions ?? []).filter(
@@ -1474,7 +1552,7 @@ function CurriculumProgress({
               variant="link"
               size="sm"
               render={
-                <Link href={ROUTES.MANAGER.CURRICULUM_UNIT(current.id)} />
+                <Link href={curriculumSetupHref({ programId: current.programId, unitId: current.id })} />
               }
             >
               Xem
@@ -1488,7 +1566,7 @@ function CurriculumProgress({
         )}
         {!isPending && !current && (
           <p className="text-muted-foreground">
-            Khóa học chưa có giáo trình đã duyệt cho hôm nay.
+            Khóa học chưa có giáo trình đã duyệt.
           </p>
         )}
         {!isPending && current && (
@@ -1496,9 +1574,8 @@ function CurriculumProgress({
             <p className="font-medium">{current.title}</p>
             <p className="text-xs text-muted-foreground">
               Bản {current.version}
-              {lessons !== undefined ? ` · ${lessons} bài` : ""} · tới{" "}
-              {calendarDateLabel(current.toDate.slice(0, 10))} · đã dạy {taught}{" "}
-              bài
+              {lessons !== undefined ? ` · ${lessons} bài` : ""} · đã dạy{" "}
+              {taught} bài
             </p>
             {lessons !== undefined && (
               <Progress
@@ -1515,7 +1592,7 @@ function CurriculumProgress({
         {!isPending && (
           <div className="space-y-1">
             <p className="font-medium">
-              {next ? `Kỳ sau: ${next.title}` : "Chưa có giáo trình kỳ sau"}
+              {next ? `Bản mới: ${next.title}` : "Chưa có bản mới"}
             </p>
             {next && (
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1525,6 +1602,9 @@ function CurriculumProgress({
                 />
                 {next._count?.lessons !== undefined && (
                   <span>{next._count.lessons} bài</span>
+                )}
+                {taughtUnitId && (
+                  <span>Lớp học tiếp bản đang học tới hết bài.</span>
                 )}
               </div>
             )}

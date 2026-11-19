@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ApiFeedback } from "@/components/shared/feedback/api-feedback";
 import { ChangeDiff } from "@/components/shared/display/change-diff";
 import { Stepper as ApprovalStepper } from "@/components/shared/workflows/stepper";
-import { todayInVietnam } from "@/lib/calendar-date";
+import { calendarDateLabel, todayInVietnam } from "@/lib/calendar-date";
 import type { CurriculumUnit, CurriculumUnitDetail } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import {
@@ -120,7 +120,14 @@ export function ApprovalSteps({ unit }: { unit: CurriculumUnit }) {
             undefined,
         },
         { label: "Quản lý duyệt áp dụng" },
-        { label: "Áp dụng", description: unit.fromDate.slice(0, 10) },
+        {
+          label: "Áp dụng",
+          // Ngày áp dụng là ngày Quản lý duyệt (đợt F); bản chưa duyệt chưa có ngày.
+          description:
+            unit.status === "APPROVED" || unit.status === "ARCHIVED"
+              ? calendarDateLabel(unit.fromDate.slice(0, 10))
+              : undefined,
+        },
       ]}
       allowNavBack={false}
     />

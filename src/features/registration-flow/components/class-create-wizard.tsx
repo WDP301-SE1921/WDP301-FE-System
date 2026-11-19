@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseAsString, useQueryState } from "nuqs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
-import { ChoiceCards } from "@/components/shared/forms/choice-cards";
 import { TimeInput } from "@/components/shared/pickers/time-input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -38,10 +37,21 @@ import { todayInVietnam } from "@/lib/calendar-date";
 import { registrationApi } from "../api";
 import { useClassStateMutation } from "../class-state";
 import {
+  buildRoomOptions,
+  byRoomName,
+  buildTeacherOptions,
   defaultEndTime,
+  filterRoomOptions,
+  filterTeacherOptions,
   findConflicts,
-  rankTeachers,
+  sortRoomOptions,
+  sortTeacherOptions,
   suggestClassName,
+  type RoomOption,
+  type RoomSort,
+  type TeacherFilter,
+  type TeacherOption,
+  type TeacherSort,
 } from "../class-create-plan";
 import { nextScheduleRange } from "../program-setup";
 import {
@@ -51,7 +61,7 @@ import {
 } from "../schemas";
 import { ApiFeedback, FieldError } from "./api-feedback";
 import { MoneyInput } from "./money-input";
-import { NumberStepper } from "./number-stepper";
+import { SearchableSelect } from "./searchable-select";
 import {
   WizardCurriculumSummary,
   WizardSessionsStep,
@@ -84,6 +94,21 @@ function defaultRows(count: number): ClassWizardInput["schedules"] {
     startTime: DEFAULT_START,
     endTime: defaultEndTime(DEFAULT_START),
   }));
+}
+
+const roomTitle = (room: RoomOption) =>
+  `${room.label} · chứa ${room.capacity} người`;
+
+function teacherNote(teacher: TeacherOption): string {
+  return [
+    teacher.classCount
+      ? `Đang dạy ${teacher.classCount} lớp`
+      : "Chưa dạy lớp nào",
+    teacher.sameSubject ? "cùng môn" : null,
+    teacher.busy ? "trùng giờ với lịch tuần đã chọn" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 const dayName = (weekday: number) =>
@@ -138,7 +163,6 @@ export function ClassCreateWizard() {
     defaultValues: {
       programId: initialProgramId,
       name: "",
-      capacity: 20,
       monthlyFee: Number.NaN,
       teacherId: NONE,
       roomId: NONE,
@@ -146,9 +170,9 @@ export function ClassCreateWizard() {
     },
   });
   const rows = useFieldArray({ control: form.control, name: "schedules" });
-  const [programId, capacity, teacherId, roomId, schedules] = useWatch({
+  const [programId, teacherId, roomId, schedules] = useWatch({
     control: form.control,
-    name: ["programId", "capacity", "teacherId", "roomId", "schedules"],
+    name: ["programId", "teacherId", "roomId", "schedules"],
   });
 
   const programChoices = (programs.data ?? []).filter(
@@ -198,10 +222,9 @@ export function ClassCreateWizard() {
         const classroom = await registrationApi.createClass({
           programId: values.programId,
           name: values.name,
-          capacity: values.capacity,
           monthlyFee: values.monthlyFee,
           ...(values.teacherId ? { teacherId: values.teacherId } : {}),
-          ...(values.roomId ? { roomId: values.roomId } : {}),
+          roomId: values.roomId,
         });
         target = { id: classroom.id, name: classroom.name };
         createdRef.current = target;
@@ -234,19 +257,8 @@ export function ClassCreateWizard() {
   });
 
   const goStep2 = async () => {
-    const ok = await form.trigger([
-      "programId",
-      "name",
-      "capacity",
-      "monthlyFee",
-    ]);
+    const ok = await form.trigger(["programId", "name", "monthlyFee"]);
     if (!ok || !program) return;
-    // Phòng đã chọn mà nhỏ hơn sĩ số mới thì bỏ chọn, để khỏi gửi phòng không hợp lệ.
-    const room = (rooms.data ?? []).find(
-      (item) => item.id === form.getValues("roomId"),
-    );
-    if (room && room.capacity < form.getValues("capacity"))
-      form.setValue("roomId", NONE);
     const key = `${program.id}:${perWeek}`;
     if (perWeek && rowsFor.current !== key) {
       rows.replace(defaultRows(perWeek));
@@ -281,12 +293,19 @@ export function ClassCreateWizard() {
     setStep(3);
   };
 
-  const ranked = rankTeachers(
+  const teacherOptions = buildTeacherOptions(
     teachers.data?.items ?? [],
     allClasses,
     program ?? null,
+    schedules ?? [],
   );
   const activeRooms = (rooms.data ?? []).filter((room) => room.isActive);
+  const roomOptions = buildRoomOptions(
+    rooms.data ?? [],
+    allClasses,
+    schedules ?? [],
+  );
+  const chosenRoom = roomOptions.find((item) => item.id === roomId);
   const conflicts = classes.data
     ? findConflicts(schedules ?? [], allClasses, {
         teacherId: teacherId || undefined,
@@ -304,7 +323,6 @@ export function ClassCreateWizard() {
     form.reset({
       programId: form.getValues("programId"),
       name: "",
-      capacity: 20,
       monthlyFee: Number.NaN,
       teacherId: NONE,
       roomId: NONE,
@@ -340,25 +358,55 @@ export function ClassCreateWizard() {
               const number = index + 1;
               const active = step === number;
               const passed = typeof step === "number" && number < step;
+              // Luật N4: bước đã qua luôn quay lại được, dữ liệu giữ nguyên. Lớp đã tạo thì bước 1–3 chỉ xem.
+              const canGoBack =
+                passed && !createClass.isPending && (!created || number > 3);
+              const chipClass = cn(
+                "flex items-center gap-2 rounded-xl border px-3 py-1.5",
+                active
+                  ? "border-primary bg-primary/5 font-medium"
+                  : passed
+                    ? "border-border"
+                    : "border-border text-muted-foreground",
+              );
               return (
                 <li
                   key={label}
                   aria-current={active ? "step" : undefined}
-                  className={cn(
-                    "flex items-center gap-2 rounded-xl border px-3 py-1.5",
-                    active
-                      ? "border-primary bg-primary/5 font-medium"
-                      : passed
-                        ? "border-border"
-                        : "border-border text-muted-foreground",
-                  )}
+                  className={canGoBack ? "contents" : chipClass}
                 >
-                  <span className="tabular-nums">{number}</span>
-                  {label}
+                  {canGoBack ? (
+                    <button
+                      type="button"
+                      onClick={() => setStep(number as Step)}
+                      className={cn(chipClass, "hover:bg-accent")}
+                      aria-label={`Quay lại bước ${number}: ${label}`}
+                    >
+                      <span className="tabular-nums">{number}</span>
+                      {label}
+                    </button>
+                  ) : (
+                    <>
+                      <span className="tabular-nums">{number}</span>
+                      {label}
+                    </>
+                  )}
                 </li>
               );
             })}
           </ol>
+          {created && typeof step === "number" && step >= 4 && (
+            <p className="text-sm text-muted-foreground">
+              Lớp đã tạo — sửa bước 1–3 ở{" "}
+              <Link
+                href={ROUTES.MANAGER.CLASS_DETAIL(created.id)}
+                className="text-primary underline"
+              >
+                trang lớp
+              </Link>
+              .
+            </p>
+          )}
           <CardTitle>
             {step === 1 && "Thông tin lớp"}
             {step === 2 && "Lịch học mỗi tuần"}
@@ -432,35 +480,6 @@ export function ClassCreateWizard() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <p
-                      id="wizard-capacity-label"
-                      className="text-sm font-medium"
-                    >
-                      Sĩ số tối đa
-                    </p>
-                    <Controller
-                      control={form.control}
-                      name="capacity"
-                      render={({ field }) => (
-                        <NumberStepper
-                          labelId="wizard-capacity-label"
-                          value={field.value}
-                          onChange={field.onChange}
-                          min={1}
-                          max={1000}
-                          startValue={20}
-                          format={(value) => `${value} học sinh`}
-                          emptyText="Chưa đặt"
-                          decreaseLabel="Giảm sĩ số"
-                          increaseLabel="Tăng sĩ số"
-                        />
-                      )}
-                    />
-                    <FieldError
-                      message={form.formState.errors.capacity?.message}
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="wizard-fee">Học phí / tháng (VND)</Label>
                     <Controller
                       control={form.control}
@@ -532,36 +551,57 @@ export function ClassCreateWizard() {
                     </AlertDescription>
                   </Alert>
                 )}
-                <Controller
-                  control={form.control}
-                  name="teacherId"
-                  render={({ field }) => (
-                    <ChoiceCards
-                      legend="Giáo viên phụ trách"
-                      value={field.value}
-                      onChange={field.onChange}
-                      columns={2}
-                      options={[
-                        {
-                          value: NONE,
-                          label: "Chưa chọn giáo viên",
-                          description:
-                            "Gán sau ở trang lớp. Chưa có giáo viên thì chưa tạo được lịch học.",
-                        },
-                        ...ranked.map(({ teacher, teaching, sameSubject }) => ({
-                          value: teacher.id,
-                          label: teacher.displayName || teacher.email,
-                          description: teaching.length
-                            ? `${sameSubject ? "Cùng môn · " : ""}Đang dạy: ${teaching
-                                .map((item) => item.name)
-                                .join(", ")}`
-                            : "Chưa dạy lớp nào",
-                        })),
-                      ]}
-                    />
-                  )}
-                />
-                {!ranked.length && !teachers.isPending && (
+                <div className="space-y-2">
+                  <Label htmlFor="wizard-teacher">Giáo viên phụ trách</Label>
+                  <Controller
+                    control={form.control}
+                    name="teacherId"
+                    render={({ field }) => (
+                      <SearchableSelect
+                        id="wizard-teacher"
+                        ariaLabel="Giáo viên phụ trách"
+                        value={field.value}
+                        selectedLabel={
+                          teacherOptions.find((item) => item.id === field.value)
+                            ?.label
+                        }
+                        onChange={field.onChange}
+                        noneLabel="Chưa chọn giáo viên"
+                        placeholder="Chọn giáo viên"
+                        searchPlaceholder="Tìm theo tên hoặc email…"
+                        emptyText="Không có giáo viên phù hợp. Thử bỏ bớt bộ lọc."
+                        filters={[
+                          { id: "sameSubject", label: "Cùng môn" },
+                          { id: "free", label: "Không trùng giờ" },
+                        ]}
+                        sorts={[
+                          { id: "best", label: "Phù hợp nhất" },
+                          { id: "name", label: "Tên A–Z" },
+                          { id: "load", label: "Ít lớp đang dạy" },
+                        ]}
+                        search={({ query, filters, sort }) =>
+                          sortTeacherOptions(
+                            filterTeacherOptions(
+                              teacherOptions,
+                              query,
+                              filters as TeacherFilter[],
+                            ),
+                            sort as TeacherSort,
+                          ).map((item) => ({
+                            value: item.id,
+                            label: item.label,
+                            description: teacherNote(item),
+                          }))
+                        }
+                      />
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Gán sau ở trang lớp cũng được. Chưa có giáo viên thì chưa
+                    tạo được lịch học.
+                  </p>
+                </div>
+                {!teacherOptions.length && !teachers.isPending && (
                   <p className="text-sm text-muted-foreground">
                     Chưa có giáo viên nào. Bạn có thể tạo lớp trước và gán sau.
                   </p>
@@ -597,40 +637,71 @@ export function ClassCreateWizard() {
                     </Button>
                   </div>
                 </div>
-                <Controller
-                  control={form.control}
-                  name="roomId"
-                  render={({ field }) => (
-                    <ChoiceCards
-                      legend="Phòng học"
-                      value={field.value}
-                      onChange={field.onChange}
-                      columns={2}
-                      options={[
-                        {
-                          value: NONE,
-                          label: "Chưa chọn phòng",
-                          description: "Chọn phòng sau ở trang lớp.",
-                        },
-                        ...activeRooms.map((room) => {
-                          const tooSmall = room.capacity < capacity;
-                          return {
-                            value: room.id,
-                            label: `${room.name} · chứa ${room.capacity} người`,
-                            disabled: tooSmall,
-                            description: tooSmall
-                              ? `Phòng chỉ chứa ${room.capacity}, lớp ${capacity}.`
+                <div className="space-y-2">
+                  <Label htmlFor="wizard-room">Phòng học</Label>
+                  <Controller
+                    control={form.control}
+                    name="roomId"
+                    render={({ field }) => (
+                      <SearchableSelect
+                        id="wizard-room"
+                        ariaLabel="Phòng học"
+                        value={field.value}
+                        selectedLabel={
+                          roomOptions.find((item) => item.id === field.value)
+                            ? roomTitle(
+                                roomOptions.find(
+                                  (item) => item.id === field.value,
+                                )!,
+                              )
+                            : undefined
+                        }
+                        onChange={field.onChange}
+                        placeholder="Chọn phòng"
+                        searchPlaceholder="Tìm theo tên phòng…"
+                        emptyText="Không có phòng phù hợp. Thử bỏ bớt bộ lọc."
+                        filters={[
+                          { id: "free", label: "Trống vào giờ học của lớp" },
+                        ]}
+                        sorts={[
+                          { id: "capacity", label: "Sức chứa tăng dần" },
+                          { id: "name", label: "Tên" },
+                        ]}
+                        search={({ query, filters, sort }) =>
+                          sortRoomOptions(
+                            filterRoomOptions(
+                              roomOptions,
+                              query,
+                              filters.includes("free"),
+                            ),
+                            sort as RoomSort,
+                          ).map((item) => ({
+                            value: item.id,
+                            label: roomTitle(item),
+                            description: item.busy
+                              ? `Trùng giờ với lớp ${item.busyWith.join(", ")}`
                               : undefined,
-                          };
-                        }),
-                      ]}
-                    />
+                          }))
+                        }
+                      />
+                    )}
+                  />
+                  {chosenRoom ? (
+                    <p className="text-sm text-muted-foreground">
+                      Sĩ số tối đa: {chosenRoom.capacity} học sinh (
+                      {byRoomName(chosenRoom.label)}).
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Sĩ số tối đa của lớp lấy theo sức chứa của phòng.
+                    </p>
                   )}
-                />
+                  <FieldError message={form.formState.errors.roomId?.message} />
+                </div>
                 {!activeRooms.length && !rooms.isPending && (
                   <p className="text-sm text-muted-foreground">
-                    Chưa có phòng học nào đang dùng. Bạn có thể tạo lớp trước và
-                    chọn phòng sau.
+                    Chưa có phòng học nào đang dùng. Hãy tạo phòng ở mục Phòng
+                    học trước khi tạo lớp.
                   </p>
                 )}
                 {conflicts.length > 0 && (

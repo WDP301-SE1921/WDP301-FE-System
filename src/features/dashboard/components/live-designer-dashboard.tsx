@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { academicApi } from "@/features/academic/api";
 import {
@@ -28,8 +29,6 @@ import {
   STATUS_TEXT,
 } from "@/features/academic/components/live-fields";
 import { curriculumApi } from "@/features/curriculum/api";
-import { estimateLessons } from "@/features/curriculum/workspace-selectors";
-import { useVietnamDate } from "@/hooks/use-vietnam-date";
 import { DashboardStatCard } from "./dashboard-stat-card";
 
 const OPEN_FEEDBACK = ["OPEN", "IN_PROGRESS"];
@@ -38,7 +37,6 @@ const OPEN_FEEDBACK = ["OPEN", "IN_PROGRESS"];
  * Course frequency gives a planning estimate; schedule previews remain authoritative.
  */
 export function LiveDesignerDashboard() {
-  const today = useVietnamDate();
   const units = useLiveQuery(["designer-dashboard-units"], (signal) =>
     curriculumApi.units(undefined, signal),
   );
@@ -58,23 +56,19 @@ export function LiveDesignerDashboard() {
   const openFeedback = (feedback.data ?? []).filter((item) =>
     OPEN_FEEDBACK.includes(item.status),
   );
-  // Sẵn sàng cho kỳ sau: bản sớm nhất bắt đầu sau hôm nay, theo từng khóa.
+  // Bản mới đang chuẩn bị (nháp hoặc chờ duyệt), bản mới nhất của mỗi khóa. Giáo trình không còn
+  // kỳ (đợt F): bản được duyệt thay bản cũ ngay cho các lớp tạo lịch sau đó.
   const nextByProgram = new Map<string, (typeof all)[number]>();
   for (const unit of all)
-    if (unit.status !== "ARCHIVED" && unit.fromDate.slice(0, 10) > today) {
+    if (unit.status === "DRAFT" || unit.status === "PENDING_REVIEW") {
       const current = nextByProgram.get(unit.programId);
-      if (!current || unit.fromDate < current.fromDate)
+      if (!current || unit.version > current.version)
         nextByProgram.set(unit.programId, unit);
     }
-  const readiness = [...nextByProgram.values()].map((unit) => {
-    const estimate = estimateLessons(
-      unit.fromDate.slice(0, 10),
-      unit.toDate.slice(0, 10),
-      [],
-      unit.program?.sessionsPerWeek,
-    );
-    return { unit, lessons: unit._count?.lessons ?? 0, weeks: estimate?.weeks, needed: estimate?.max ?? null };
-  });
+  const readiness = [...nextByProgram.values()].map((unit) => ({
+    unit,
+    lessons: unit._count?.lessons ?? 0,
+  }));
   const stat = (value: number) => (units.isPending ? "…" : value);
 
   return (
@@ -126,10 +120,10 @@ export function LiveDesignerDashboard() {
       <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Sẵn sàng cho kỳ sau theo khóa</CardTitle>
+            <CardTitle>Bản mới đang chuẩn bị theo khóa</CardTitle>
             <CardDescription>
-              Bài đã soạn và số bài dự kiến theo chuẩn số buổi/tuần của khóa.
-              Số buổi thực tế phụ thuộc lịch lớp và khoảng ngày.
+              Số bài đã soạn của bản mới. Khi được duyệt, bản mới dùng cho các lớp
+              tạo lịch sau đó; lớp đang học bản cũ học tiếp tới hết bài.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -140,31 +134,28 @@ export function LiveDesignerDashboard() {
               onRetry={() => void units.refetch()}
               data={readiness}
               emptyProps={{
-                title: "Chưa có giáo trình cho kỳ sau",
-                description: "Tạo giáo trình kỳ mới từ danh sách giáo trình.",
+                title: "Không có bản mới đang chuẩn bị",
+                description: "Làm bản mới từ trang giáo trình của khóa khi cần sửa nội dung.",
               }}
             >
               <ul className="space-y-4">
-                {readiness.map(({ unit, lessons, weeks, needed }) => {
+                {readiness.map(({ unit, lessons }) => {
                   return (
                     <li key={unit.id} className="space-y-1.5 text-sm">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <Link
-                          href={ROUTES.MANAGER.CURRICULUM_UNIT(unit.id)}
+                          href={curriculumSetupHref({ programId: unit.programId, unitId: unit.id })}
                           className="min-w-0 font-medium hover:text-primary"
                         >
                           {unit.program?.name ?? unit.title} · {unit.title}
                         </Link>
                         <span className="tabular-nums text-muted-foreground">
-                          {lessons} bài{needed !== null ? ` / dự kiến ${needed}` : " · Khóa chưa cấu hình số buổi/tuần"}
-                          {weeks ? ` · ${weeks} tuần hiệu lực` : ""}
+                          {lessons} bài
                         </span>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline">{STATUS_TEXT[unit.status] ?? unit.status}</Badge>
-                        <span>
-                          Từ {unit.fromDate.slice(0, 10).split("-").reverse().join("/")}
-                        </span>
+                        <span>Bản {unit.version}</span>
                       </div>
                     </li>
                   );

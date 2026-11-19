@@ -83,7 +83,16 @@ export interface MakeupRecord {
     session: { id: string; classId: string; startsAt: string; endsAt: string };
   };
 }
+/** CLO gắn ở cấp bài (bảng liên kết của BE, không suy từ câu hỏi). */
+export interface AssignmentOutcome {
+  id: string;
+  code: string;
+  title: string;
+  required: boolean;
+}
 export interface AssignmentSummary {
+  /** CLO của cả bài; `[]` khi chưa gắn. Bản BE cũ có thể không trả field này. */
+  outcomes?: AssignmentOutcome[];
   id: string;
   classId: string;
   title: string;

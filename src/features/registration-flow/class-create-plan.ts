@@ -162,3 +162,154 @@ export function findConflicts(
   }
   return conflicts;
 }
+
+// ---- Ô chọn giáo viên / phòng: tìm, lọc, sắp xếp (hàm thuần) ----
+
+/** Bỏ dấu tiếng Việt, hạ chữ thường, gọn khoảng trắng: "Nguyễn" khớp "nguyen". */
+export function foldVietnamese(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Mọi từ trong ô tìm đều có mặt trong chuỗi (không phân biệt dấu). Ô tìm trống thì khớp hết. */
+export function matchesQuery(haystack: string, query: string): boolean {
+  const words = foldVietnamese(query).split(" ").filter(Boolean);
+  if (!words.length) return true;
+  const text = foldVietnamese(haystack);
+  return words.every((word) => text.includes(word));
+}
+
+export interface TeacherOption {
+  id: string;
+  label: string;
+  email: string;
+  /** Số lớp đang dạy. */
+  classCount: number;
+  sameSubject: boolean;
+  /** Lịch tuần đang soạn trùng giờ với lớp khác của giáo viên này. */
+  busy: boolean;
+}
+export type TeacherFilter = "sameSubject" | "free";
+export type TeacherSort = "best" | "name" | "load";
+
+export function buildTeacherOptions(
+  teachers: readonly PlanTeacher[],
+  classes: readonly PlanClass[],
+  program: { subject: string; subjectId?: string | null } | null,
+  schedules: readonly PlanSlot[] = [],
+): TeacherOption[] {
+  return rankTeachers(teachers, classes, program).map(
+    ({ teacher, teaching, sameSubject }) => ({
+      id: teacher.id,
+      label: teacher.displayName || teacher.email,
+      email: teacher.email,
+      classCount: teaching.length,
+      sameSubject,
+      busy:
+        findConflicts(schedules, classes, { teacherId: teacher.id }).length > 0,
+    }),
+  );
+}
+
+export function filterTeacherOptions(
+  options: readonly TeacherOption[],
+  query: string,
+  filters: readonly TeacherFilter[] = [],
+): TeacherOption[] {
+  return options.filter(
+    (option) =>
+      matchesQuery(`${option.label} ${option.email}`, query) &&
+      (!filters.includes("sameSubject") || option.sameSubject) &&
+      (!filters.includes("free") || !option.busy),
+  );
+}
+
+export function sortTeacherOptions(
+  options: readonly TeacherOption[],
+  sort: TeacherSort,
+): TeacherOption[] {
+  const byName = (left: TeacherOption, right: TeacherOption) =>
+    left.label.localeCompare(right.label, "vi");
+  const compare =
+    sort === "name"
+      ? byName
+      : sort === "load"
+        ? (left: TeacherOption, right: TeacherOption) =>
+            left.classCount - right.classCount || byName(left, right)
+        : (left: TeacherOption, right: TeacherOption) =>
+            Number(right.sameSubject) - Number(left.sameSubject) ||
+            Number(left.busy) - Number(right.busy) ||
+            left.classCount - right.classCount ||
+            byName(left, right);
+  return [...options].sort(compare);
+}
+
+export interface PlanRoom {
+  id: string;
+  name: string;
+  capacity: number;
+  isActive: boolean;
+}
+export interface RoomOption {
+  id: string;
+  label: string;
+  capacity: number;
+  /** Phòng đã có lớp khác vào giờ học của lớp này. */
+  busy: boolean;
+  busyWith: string[];
+}
+export type RoomSort = "capacity" | "name";
+
+export function buildRoomOptions(
+  rooms: readonly PlanRoom[],
+  classes: readonly PlanClass[],
+  schedules: readonly PlanSlot[],
+): RoomOption[] {
+  return rooms
+    .filter((room) => room.isActive)
+    .map((room) => {
+      const names = findConflicts(schedules, classes, { roomId: room.id }).map(
+        (conflict) => conflict.className,
+      );
+      return {
+        id: room.id,
+        label: room.name,
+        capacity: room.capacity,
+        busy: names.length > 0,
+        busyWith: [...new Set(names)],
+      };
+    });
+}
+
+export function filterRoomOptions<T extends RoomOption>(
+  options: readonly T[],
+  query: string,
+  onlyFree = false,
+): T[] {
+  return options.filter(
+    (option) => matchesQuery(option.label, query) && (!onlyFree || !option.busy),
+  );
+}
+
+export function sortRoomOptions<T extends RoomOption>(
+  options: readonly T[],
+  sort: RoomSort,
+): T[] {
+  const byName = (left: T, right: T) =>
+    left.label.localeCompare(right.label, "vi");
+  return [...options].sort(
+    sort === "name"
+      ? byName
+      : (left, right) => left.capacity - right.capacity || byName(left, right),
+  );
+}
+
+/** "(theo Phòng B201)": tên phòng đã bắt đầu bằng "Phòng" thì không thêm chữ "phòng" nữa. */
+export function byRoomName(name: string): string {
+  return /^phòng\b/i.test(name.trim()) ? `theo ${name}` : `theo phòng ${name}`;
+}

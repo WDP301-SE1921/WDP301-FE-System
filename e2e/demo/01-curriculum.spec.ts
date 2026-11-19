@@ -18,6 +18,7 @@ test("01 - Giáo trình và lịch học", async ({ world, actors }) => {
   const lessons = [unique("Bài 1"), unique("Bài 2")];
   await test.step("Nhập CSV vào giáo trình thật và kiểm tra dữ liệu lưu", async () => {
     await designer.goto(`/manager/curriculum/${unit.id}`);
+    await designer.waitForURL(/\/manager\/curriculum\/setup\?/);
     await designer
       .getByRole("button", { name: "Thêm thao tác với giáo trình" })
       .click();
@@ -54,16 +55,20 @@ test("01 - Giáo trình và lịch học", async ({ world, actors }) => {
     await actors.shot(designer, "01-imported");
   });
   await test.step("Gửi duyệt; cả giao diện và API đều khóa sửa nháp", async () => {
-    await designer.getByRole("button", { name: "Gửi duyệt" }).first().click();
-    const dialog = designer.getByRole("dialog").last();
+    // Bước 4 nằm ngay trong trang: form gửi duyệt hiện trong thẻ bước, không có hộp thoại.
+    await designer.goto(`/manager/curriculum/${unit.id}?editor=submit`);
+    await designer.waitForURL(/\/manager\/curriculum\/setup\?/);
+    const form = designer
+      .locator("form")
+      .filter({ has: designer.getByLabel("Giáo viên duyệt nội dung") });
     await select(
       designer,
       "Giáo viên duyệt nội dung",
       /teacher@edugrade\.local/,
     );
-    await dialog.getByRole("button", { name: "Gửi duyệt" }).click();
+    await form.getByRole("button", { name: "Gửi duyệt" }).click();
     await expect(
-      designer.getByText(/Chờ giáo viên duyệt/).first(),
+      designer.getByRole("heading", { name: "Bước 5: Giáo viên duyệt nội dung" }),
     ).toBeVisible();
     await expect(
       designer.getByRole("button", { name: "Thêm bài học", exact: true }),
@@ -100,6 +105,7 @@ test("01 - Giáo trình và lịch học", async ({ world, actors }) => {
   await test.step("Quản lý thấy nhận xét trước khi duyệt và tạo đúng hai buổi", async () => {
     const manager = await actors.open("manager");
     await manager.goto(`/manager/curriculum/${unit.id}`);
+    await manager.waitForURL(/\/manager\/curriculum\/setup\?/);
     await expect(manager.getByText(comment, { exact: true })).toBeVisible();
     await manager
       .getByRole("button", { name: "Duyệt áp dụng", exact: true })

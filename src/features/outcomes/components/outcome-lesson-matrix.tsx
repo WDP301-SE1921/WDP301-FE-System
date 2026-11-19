@@ -18,7 +18,6 @@ import { useLiveQuery } from "@/features/academic/hooks/use-live-api";
 import { curriculumApi } from "@/features/curriculum/api";
 import { curriculumKeys } from "@/features/curriculum/hooks/use-curriculum";
 import { userFacingMessage } from "@/lib/api/error-message";
-import { formatDate } from "@/lib/format";
 import type { CurriculumUnit } from "@/types/curriculum";
 import { outcomeApi } from "../api";
 import {
@@ -79,9 +78,15 @@ export function OutcomeLessonMatrix({
       retry: false,
     })),
   });
-  const draftSets = (sets.data ?? []).filter((set) => set.status === "DRAFT");
+  // Bộ đã duyệt vẫn cho gắn bài: khóa chỉ có bộ đã duyệt vẫn phải gắn mục tiêu cho bài nháp (BE cho phép mọi bộ của khóa).
+  const draftSets = (sets.data ?? [])
+    .filter((set) => set.status === "DRAFT" || set.status === "APPROVED")
+    .sort((a, b) => Number(a.status === "APPROVED") - Number(b.status === "APPROVED"));
   const activeSet = draftSets.find((set) => set.id === setId) ?? draftSets[0];
 
+  // Bộ đã duyệt chỉ gắn được cho bài của giáo trình chưa duyệt (BE từ chối/giữ nguyên bài đã duyệt).
+  const cellLocked = (unitStatus: string) =>
+    activeSet?.status === "APPROVED" && unitStatus === "APPROVED";
   const groups = usableUnits.flatMap((unit, index) => {
     // Bài kiểm tra tháng có dãy số riêng: giữ hàng, ghi nhãn theo tháng, xếp sau bài học.
     const lessons = details[index]?.data?.lessons;
@@ -346,7 +351,7 @@ export function OutcomeLessonMatrix({
                         scope="colgroup"
                         className="border-b border-border bg-muted/40 px-3 py-2 text-left text-xs font-medium text-muted-foreground"
                       >
-                        {unit.title} · {formatDate(unit.fromDate)} – {formatDate(unit.toDate)} ·{" "}
+                        {unit.title} · Bản {unit.version} ·{" "}
                         {UNIT_STATUS_TEXT[unit.status]}
                       </th>
                     </tr>
@@ -371,7 +376,12 @@ export function OutcomeLessonMatrix({
                             <Checkbox
                               checked={!!selection.get(lesson.id)?.has(outcome.id)}
                               onCheckedChange={() => toggle(lesson.id, outcome.id)}
-                              disabled={saving}
+                              disabled={saving || cellLocked(unit.status)}
+                              title={
+                                cellLocked(unit.status)
+                                  ? "Giáo trình đã duyệt: không gắn thêm mục tiêu ở bộ đã duyệt."
+                                  : undefined
+                              }
                               aria-label={`Gắn ${outcome.code} cho ${lessonLabel(lesson)}`}
                             />
                           </td>

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { ROUTES } from "@/constants/routes";
+import { curriculumSetupHref } from "@/features/curriculum/setup-href";
 import { curriculumApi } from "@/features/curriculum/api";
 import { outcomeApi } from "@/features/outcomes/api";
 import { todayInVietnam } from "@/lib/calendar-date";
@@ -126,7 +127,7 @@ function actionHref(action: SetupAction, programId: string): string | null {
         : null;
     case "open_unit":
       return action.unitId
-        ? ROUTES.MANAGER.CURRICULUM_UNIT(action.unitId)
+        ? curriculumSetupHref({ programId, unitId: action.unitId })
         : null;
     case "curriculum":
       return `${ROUTES.MANAGER.CURRICULUM}?tab=curriculum&programId=${encodeURIComponent(programId)}`;

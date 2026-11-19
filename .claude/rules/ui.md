@@ -35,3 +35,7 @@ No sharp/square corners anywhere. Larger block → larger radius.
 | Icon container         | `rounded-full` / `rounded-2xl`        |
 
 Minimum radius `rounded-xl`. Never `rounded-none` / `rounded-sm`.
+
+## Step-by-step flows (rule N4)
+
+In wizards and other step-by-step flows a step the user has passed is always reachable (clickable step chip and a "Quay lại" button) and keeps its data until the final submit/create. Once the thing is created on the server, passed steps become read-only with a pointer to where to edit it (e.g. "Lớp đã tạo — sửa ở trang lớp").

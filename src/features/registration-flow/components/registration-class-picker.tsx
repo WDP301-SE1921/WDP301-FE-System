@@ -13,6 +13,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import type { RegistrationClass } from "@/types/backend";
 import { money, scheduleText } from "../calendar";
+import { endDayMonth, isCurriculumFinished, sessionsLeft } from "../class-end";
 
 const WEEKDAYS = {
   all: "Tất cả ngày học",
@@ -73,10 +74,14 @@ function normalizeSearch(value: string) {
 }
 
 export function RegistrationClassPicker({
-  classes,
+  classes: allClasses,
   selectedClassId,
   onSelect,
 }: RegistrationClassPickerProps) {
+  // Lớp đã học xong giáo trình không còn buổi nào để đăng ký: ẩn khỏi danh sách.
+  const classes = allClasses.filter(
+    (item) => !isCurriculumFinished(item.scheduledUntil),
+  );
   const [filters, setFilters] = useQueryStates(FILTERS);
   const subjects = [
     ...new Set(classes.map((item) => item.program.subject)),
@@ -262,6 +267,13 @@ export function RegistrationClassPicker({
                   {money(item.monthlyFee)}/tháng · Sức chứa {item.capacity} học
                   sinh
                 </span>
+                {item.scheduledUntil && (
+                  <span className="block text-sm tabular-nums">
+                    Kết thúc {endDayMonth(item.scheduledUntil)} · còn khoảng{" "}
+                    {sessionsLeft(item.scheduledUntil, item.weeklySchedules)}{" "}
+                    buổi
+                  </span>
+                )}
                 {item.availableSeats !== undefined && (
                   <span className="block text-sm">
                     Còn {item.availableSeats} chỗ trong kỳ đã chọn

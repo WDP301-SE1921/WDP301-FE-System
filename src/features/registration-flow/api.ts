@@ -129,10 +129,10 @@ export const registrationApi = {
   createClass: (body: {
     programId: string;
     name: string;
-    capacity: number;
     monthlyFee: number;
     teacherId?: string;
-    roomId?: string;
+    /** Bắt buộc: sĩ số lớp lấy theo sức chứa của phòng. */
+    roomId: string;
   }) =>
     apiRequest<RegistrationClass>("classes", {
       method: "POST",

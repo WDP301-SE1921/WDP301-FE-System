@@ -52,11 +52,15 @@ const program = await create("program", "program", "manager", "programs", {
   grade: 8,
   sessionsPerWeek: 1,
 });
+const room = await create("room", "room", "manager", "rooms", {
+  name: `${fixture.prefix} room`,
+  capacity: 3,
+});
 const classroom = await create("classroom", "class", "manager", "classes", {
   programId: program.id,
   name: `${fixture.prefix} class`,
   teacherId: session("teacher").user.id,
-  capacity: 3,
+  roomId: room.id,
   monthlyFee: 0,
 });
 if (!fixture.scheduleReady) {

@@ -260,12 +260,13 @@ export function LiveManagerDashboard() {
       : 0;
   const unassigned = activeClasses.filter((item) => !item.teacherId).length;
   const programsInUse = new Set(activeClasses.map((item) => item.programId));
-  const withNextTerm = new Set(
+  // Giáo trình không còn kỳ (đợt F): khóa đang có lớp chỉ cần một bản đã duyệt áp dụng.
+  const withCurriculum = new Set(
     (units.data ?? [])
-      .filter((unit) => unit.status !== "ARCHIVED" && unit.fromDate.slice(0, 10) > today)
+      .filter((unit) => unit.status === "APPROVED")
       .map((unit) => unit.programId),
   );
-  const missingNextTerm = [...programsInUse].filter((id) => !withNextTerm.has(id)).length;
+  const missingCurriculum = [...programsInUse].filter((id) => !withCurriculum.has(id)).length;
   const awaitingApproval = (units.data ?? []).filter(
     (unit) => unit.status === "PENDING_REVIEW" && !!unit.technicalReviewedAt,
   ).length;
@@ -398,7 +399,6 @@ export function LiveManagerDashboard() {
       : [];
   const aging = makeups.data ? makeupAging(makeups.data, today) : [];
   const agingMax = Math.max(1, ...aging.map((bucket) => bucket.count));
-  const cancelled = sessionsInRange.filter((session) => session.status === "CANCELLED").length;
 
   const setPreset = (from: string, to: string) => void setQuery({ fromDate: from, toDate: to });
   const presets = [
@@ -571,7 +571,7 @@ export function LiveManagerDashboard() {
           },
           { key: "emails", label: "email gửi lỗi", count: failedEmails.data?.total ?? 0, href: `${ROUTES.MANAGER.NOTIFICATIONS}?emailStatus=FAILED` },
           { key: "approval", label: "giáo trình chờ bạn duyệt", count: awaitingApproval, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs&programFilter=review` },
-          { key: "next-term", label: "khóa chưa có giáo trình kỳ sau", count: units.data ? missingNextTerm : 0, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs` },
+          { key: "no-curriculum", label: "khóa có lớp chưa có giáo trình đã duyệt", count: units.data ? missingCurriculum : 0, href: `${ROUTES.MANAGER.CURRICULUM}?tab=programs` },
         ]}
       />
 
@@ -1134,15 +1134,11 @@ export function LiveManagerDashboard() {
             </>
           )}
         </Panel>
-        <Panel title="Nghỉ & hủy buổi" tip="Đơn nghỉ đang chờ duyệt (hiện tại) và buổi bị hủy trong kỳ.">
+        <Panel title="Nghỉ & buổi đã chốt" tip="Đơn nghỉ đang chờ duyệt (hiện tại) và buổi đã chốt trong kỳ.">
           <dl className="space-y-3 text-sm">
             <div className="flex items-baseline justify-between gap-3">
               <dt>Đơn nghỉ chờ duyệt</dt>
               <dd className="font-semibold tabular-nums">{leaves.isPending ? "…" : leaves.isError ? "—" : (leaves.data?.length ?? 0)}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3">
-              <dt>Buổi hủy trong kỳ</dt>
-              <dd className="font-semibold tabular-nums">{rangeSessions.isPending ? "…" : rangeSessions.isError ? "—" : cancelled}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt>Buổi đã chốt trong kỳ</dt>

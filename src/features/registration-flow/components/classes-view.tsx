@@ -49,6 +49,7 @@ import {
   scheduleLines,
   scheduleText,
 } from "../calendar";
+import { endDayMonth, isCurriculumFinished } from "../class-end";
 import { canOpenRegistration, useClassStateMutation } from "../class-state";
 import { useTeacherNames } from "../teacher-names";
 
@@ -426,6 +427,11 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                             <span className="block whitespace-nowrap text-muted-foreground">
                               đến {displayDate(item.scheduledUntil)}
                             </span>
+                            {isCurriculumFinished(item.scheduledUntil) && (
+                              <Badge variant="secondary" className="mt-1">
+                                Đã học xong giáo trình
+                              </Badge>
+                            )}
                           </>
                         ) : (
                           (classPeriodText(item) ?? "—")
@@ -508,6 +514,16 @@ export function ClassesBoard({ role }: { role: ClassRole }) {
                       Học: {classPeriodText(item)}
                     </p>
                   )}
+                  {item.scheduledUntil &&
+                    (isCurriculumFinished(item.scheduledUntil) ? (
+                      <p>
+                        <Badge variant="secondary">Đã học xong giáo trình</Badge>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground tabular-nums">
+                        Kết thúc {endDayMonth(item.scheduledUntil)}
+                      </p>
+                    ))}
                   {teacher ? (
                     <p className="flex items-center gap-2 text-sm">
                       <span

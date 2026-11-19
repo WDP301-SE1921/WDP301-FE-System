@@ -1,6 +1,6 @@
 import { ApiError } from "@/lib/api/client";
 import type { ScheduleRangeInput } from "@/lib/validators/curriculum";
-import type { CurriculumUnit, SessionPreview } from "@/types/curriculum";
+import type { SessionPreview } from "@/types/curriculum";
 import type { GenerationAttempt } from "./generation-storage";
 
 export interface ClassGenerationResult {
@@ -17,21 +17,7 @@ export function sameGenerationInput(
 ) {
   return (
     a.curriculumUnitId === b.curriculumUnitId &&
-    a.fromDate === b.fromDate &&
-    a.toDate === b.toDate
-  );
-}
-export function applicableUnits(
-  units: CurriculumUnit[],
-  fromDate: string,
-  toDate: string,
-) {
-  if (!fromDate || !toDate || fromDate > toDate) return [];
-  return units.filter(
-    (unit) =>
-      unit.status === "APPROVED" &&
-      unit.fromDate.slice(0, 10) <= fromDate &&
-      unit.toDate.slice(0, 10) >= toDate,
+    a.fromDate === b.fromDate
   );
 }
 export function generationReady(

@@ -73,7 +73,6 @@ export type SchedulesInput = z.infer<typeof schedulesSchema>;
 export const registrationClassSchema = z.object({
   programId: z.string().min(1, "Chọn khóa học."),
   name: z.string().trim().min(1, "Nhập tên lớp.").max(255),
-  capacity: z.number().int().min(1).max(1000),
   monthlyFee: z
     .number({ error: "Nhập học phí mỗi tháng." })
     .min(0, "Học phí không được âm.")
@@ -84,6 +83,7 @@ export const registrationClassSchema = z.object({
 export type RegistrationClassInput = z.infer<typeof registrationClassSchema>;
 /** Wizard tạo lớp: thông tin lớp + lịch tuần. Số dòng lịch phải bằng số buổi/tuần của khóa (kiểm ở bước 2). */
 export const classWizardSchema = registrationClassSchema.extend({
+  roomId: z.string().trim().min(1, "Chọn phòng học."),
   schedules: z.array(scheduleSchema).max(14),
 });
 export type ClassWizardInput = z.infer<typeof classWizardSchema>;
