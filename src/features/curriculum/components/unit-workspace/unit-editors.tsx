@@ -204,21 +204,31 @@ export function UnitEditors({ ws }: { ws: UnitWorkspace }) {
             unit.status === "PENDING_REVIEW" && (
               <CurriculumRequestChangesForm
                 unit={unit}
+                onCancel={() =>
+                  formState.dirty ? setDiscard(true) : closeEditor()
+                }
                 onStateChange={setFormState}
                 onSaved={() => saved("Đã gửi yêu cầu chỉnh sửa.")}
               />
             )}
-          {!(editor?.kind === "submit" && canEdit) && (
-            <Button
-              variant="outline"
-              disabled={formState.busy}
-              onClick={() =>
-                formState.dirty ? setDiscard(true) : closeEditor()
-              }
-            >
-              Đóng
-            </Button>
-          )}
+          {!(editor?.kind === "submit" && canEdit) &&
+            !(
+              editor?.kind === "request-changes" &&
+              actsAsManager(role) &&
+              unit.status === "PENDING_REVIEW"
+            ) && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  disabled={formState.busy}
+                  onClick={() =>
+                    formState.dirty ? setDiscard(true) : closeEditor()
+                  }
+                >
+                  Đóng
+                </Button>
+              </div>
+            )}
         </DialogContent>
       </Dialog>
       <ConfirmDialog

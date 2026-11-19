@@ -154,62 +154,66 @@ export function AcademicCalendarView({
         }
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Select
-          value={classId || "all"}
-          items={[
-            { value: "all", label: "Tất cả lớp" },
-            ...(classes.data ?? []).map((c) => ({
-              value: c.id,
-              label: c.name,
-            })),
-          ]}
-          onValueChange={(v) => void setClassId(v === "all" ? null : String(v))}
-        >
-          <SelectTrigger
-            className="w-full sm:w-64"
-            aria-label="Lọc lịch theo lớp"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả lớp</SelectItem>
-            {classes.data?.map((c) => (
-              <SelectItem value={c.id} key={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {(actsAsManager(role) || role === "staff") && (
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Select
-            value={teacherId || "all"}
+            value={classId || "all"}
             items={[
-              { value: "all", label: "Tất cả giáo viên" },
-              ...Array.from(teacherNames, ([value, label]) => ({
-                value,
-                label,
+              { value: "all", label: "Tất cả lớp" },
+              ...(classes.data ?? []).map((c) => ({
+                value: c.id,
+                label: c.name,
               })),
             ]}
-            onValueChange={(value) =>
-              void setTeacherId(value === "all" ? null : String(value))
+            onValueChange={(v) =>
+              void setClassId(v === "all" ? null : String(v))
             }
           >
             <SelectTrigger
-              className="w-full sm:w-56"
-              aria-label="Lọc lịch theo giáo viên"
+              className="w-full sm:w-64"
+              aria-label="Lọc lịch theo lớp"
             >
-              <SelectValue />
+              <SelectValue className="truncate" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả giáo viên</SelectItem>
-              {Array.from(teacherNames, ([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
+              <SelectItem value="all">Tất cả lớp</SelectItem>
+              {classes.data?.map((c) => (
+                <SelectItem value={c.id} key={c.id}>
+                  {c.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
+          {(actsAsManager(role) || role === "staff") && (
+            <Select
+              value={teacherId || "all"}
+              items={[
+                { value: "all", label: "Tất cả giáo viên" },
+                ...Array.from(teacherNames, ([value, label]) => ({
+                  value,
+                  label,
+                })),
+              ]}
+              onValueChange={(value) =>
+                void setTeacherId(value === "all" ? null : String(value))
+              }
+            >
+              <SelectTrigger
+                className="w-full sm:w-56"
+                aria-label="Lọc lịch theo giáo viên"
+              >
+                <SelectValue className="truncate" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả giáo viên</SelectItem>
+                {Array.from(teacherNames, ([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         <Tabs
           value={view}
           onValueChange={(value) => {

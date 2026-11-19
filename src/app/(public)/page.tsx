@@ -1,3 +1,4 @@
+import { connection } from "next/server"
 import {
   BenefitsSection,
   CtaSection,
@@ -7,6 +8,8 @@ import {
 import { loadLandingData } from "@/features/landing/load-landing"
 
 export default async function LandingPage() {
+  // The API may be offline during image builds; read public data when serving a request.
+  await connection()
   const data = await loadLandingData()
   return (
     <>

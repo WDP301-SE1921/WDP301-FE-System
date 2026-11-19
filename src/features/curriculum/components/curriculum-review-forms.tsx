@@ -423,7 +423,11 @@ export function CurriculumRequestChangesForm({
   unit,
   onSaved,
   onStateChange,
-}: ReviewFormProps) {
+  onCancel,
+}: ReviewFormProps & {
+  /** Có thì chân hộp có nút Hủy cạnh nút gửi (canh phải). */
+  onCancel?: () => void;
+}) {
   const id = useId();
   const form = useForm<{ reason: string }>({
     resolver: zodResolver(reviewReasonSchema),
@@ -455,14 +459,26 @@ export function CurriculumRequestChangesForm({
           <FieldError message={form.formState.errors.reason?.message} />
         </div>
       </div>
-      <Button
-        type="submit"
-        disabled={save.isPending}
-        isLoading={save.isPending}
-      >
-        Gửi yêu cầu chỉnh sửa
-      </Button>
       <ApiFeedback error={save.error} />
+      <div className="flex flex-wrap justify-end gap-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={save.isPending}
+            onClick={onCancel}
+          >
+            Hủy
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={save.isPending}
+          isLoading={save.isPending}
+        >
+          Gửi yêu cầu chỉnh sửa
+        </Button>
+      </div>
     </form>
   );
 }
