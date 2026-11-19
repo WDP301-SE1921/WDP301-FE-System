@@ -19,11 +19,16 @@ try {
   }
 } catch {
   fixture = {
+    schemaVersion: 2,
     prefix: `E2E-PROD ${day()} ${randomUUID().slice(0, 8)}`,
     records: [],
     createdAt: new Date().toISOString(),
   };
 }
+if (fixture.schemaVersion !== 2)
+  throw new Error(
+    "An older production fixture is still retained. Run production cleanup before preparing the latest fixture; its records were not overwritten.",
+  );
 const save = () => fs.writeFileSync(file, JSON.stringify(fixture, null, 2));
 async function create(key, kind, role, route, body, method = "POST") {
   if (fixture[key]) return fixture[key];
@@ -52,6 +57,28 @@ const program = await create("program", "program", "manager", "programs", {
   grade: 8,
   sessionsPerWeek: 1,
 });
+const outcomeSet = await create(
+  "outcomeSet",
+  "outcome-set",
+  "designer",
+  "academic/outcome-sets",
+  {
+    programId: program.id,
+    level: "Lớp 8",
+  },
+);
+await create(
+  "outcome",
+  "learning-outcome",
+  "designer",
+  `academic/outcome-sets/${outcomeSet.id}/outcomes`,
+  {
+    code: "E2E-MATH-8-01",
+    title: `${fixture.prefix} solve an equation`,
+    statement: "Giải phương trình 2x + 3 = 7 và kiểm tra nghiệm x = 2.",
+    required: true,
+  },
+);
 const room = await create("room", "room", "manager", "rooms", {
   name: `${fixture.prefix} room`,
   capacity: 3,
@@ -164,8 +191,6 @@ await create(
   {
     programId: program.id,
     title: `${fixture.prefix} draft`,
-    fromDate: day(),
-    toDate: day(6),
   },
 );
 if (!fixture.session) {

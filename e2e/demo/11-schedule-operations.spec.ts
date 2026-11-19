@@ -2,6 +2,10 @@ import { test, expect, unique, day, instant } from "./world";
 
 test("11 - Dời buổi", async ({ world, actors }) => {
   const f = await world.fixture("reschedule");
+  // Rescheduling stays within a curriculum month. Keep this entire sequence away from a
+  // month boundary, including on dates such as 18/11 where offsets 12/13 cross months.
+  let anchor = 12;
+  while (day(anchor).slice(0, 7) !== day(anchor + 9).slice(0, 7)) anchor++;
   // A fresh teacher prevents genuine schedule conflicts with earlier runs of this test.
   f.users.teacher = await world.db.user.create({
     data: {
@@ -36,13 +40,13 @@ test("11 - Dời buổi", async ({ world, actors }) => {
     where: { id: f.lesson.id },
     data: { unitId: unit.id },
   });
-  const moved = await world.session(f, 12, "03:00");
+  const moved = await world.session(f, anchor, "03:00");
   await world.db.sessionParticipant.create({
     data: { sessionId: moved.id, enrollmentId: f.enrollment!.id },
   });
   await test.step("Dời buổi không đổi bài học, giữ roster và ghi lịch sử", async () => {
-    const startsAt = instant(13, "03:00").toISOString(),
-      endsAt = instant(13, "04:00").toISOString();
+    const startsAt = instant(anchor + 1, "03:00").toISOString(),
+      endsAt = instant(anchor + 1, "04:00").toISOString();
     await world.call(
       "manager",
       `academic/sessions/${moved.id}/reschedule`,
@@ -71,12 +75,21 @@ test("11 - Dời buổi", async ({ world, actors }) => {
   await test.step("Không còn hủy buổi và Ngày nghỉ: link cũ mở tab Nội dung, API trả 404", async () => {
     // Session cancel and center closures were removed on 19/11/2026.
     await manager.goto(
-      `/manager/schedule?classId=${f.classroom.id}&view=list&date=${day(13)}&session=${moved.id}&sessionTab=cancel`,
+      `/manager/schedule?classId=${f.classroom.id}&view=list&date=${day(anchor + 1)}&session=${moved.id}&sessionTab=cancel`,
     );
     const tabs = manager.getByRole("tablist", { name: "Phần của buổi học" });
-    await expect(tabs.getByRole("tab")).toHaveText(["Nội dung", "Đổi giờ", "Dạy thay"]);
-    await expect(tabs.getByRole("tab", { name: "Nội dung" })).toHaveAttribute("aria-selected", "true");
-    await expect(manager.getByRole("button", { name: "Ngày nghỉ trung tâm" })).toHaveCount(0);
+    await expect(tabs.getByRole("tab")).toHaveText([
+      "Nội dung",
+      "Đổi giờ",
+      "Dạy thay",
+    ]);
+    await expect(tabs.getByRole("tab", { name: "Nội dung" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      manager.getByRole("button", { name: "Ngày nghỉ trung tâm" }),
+    ).toHaveCount(0);
     await actors.shot(manager, "11-session-tabs");
     for (const route of [
       `academic/sessions/${moved.id}/cancel`,
@@ -85,9 +98,23 @@ test("11 - Dời buổi", async ({ world, actors }) => {
       "academic/sessions/bulk-cancel-preview",
       "academic/center-closures",
     ])
-      await world.call("manager", route, "POST", { reason: "x", sessionIds: [moved.id] }, 404);
-    await world.call("manager", "academic/center-closures", "GET", undefined, 404);
-    const saved = await world.db.classSession.findUniqueOrThrow({ where: { id: moved.id } });
+      await world.call(
+        "manager",
+        route,
+        "POST",
+        { reason: "x", sessionIds: [moved.id] },
+        404,
+      );
+    await world.call(
+      "manager",
+      "academic/center-closures",
+      "GET",
+      undefined,
+      404,
+    );
+    const saved = await world.db.classSession.findUniqueOrThrow({
+      where: { id: moved.id },
+    });
     expect(saved.status).toBe("SCHEDULED");
   });
 });

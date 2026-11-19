@@ -96,6 +96,7 @@ test("02 - Ghi danh và học phí", async ({ world, actors }) => {
     ).toBeDisabled();
     const receiptNumber = unique("BL");
     await dialog.locator("#registration-receipt-number").fill(receiptNumber);
+    await dialog.getByRole("radio", { name: /^Tiền mặt/ }).check();
     await dialog
       .getByRole("checkbox", { name: /Tôi đã kiểm tra và nhận đủ/ })
       .check();

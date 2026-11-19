@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import api from "./api.cjs";
-import files from "../demo/files.cjs";
+import files from "./files.cjs";
 const { config, runtime, call, raw, session, items, day } = api;
 const fixtureFile = `${runtime}/fixture.json`;
 const read = () => JSON.parse(fs.readFileSync(fixtureFile, "utf8"));
@@ -26,26 +26,37 @@ test("production payment receipt and actual email delivery", async ({}, info) =>
     { "Idempotency-Key": randomUUID() },
   );
   expect(response.status).toBe(409);
-  const deliveries = items(
-    await call(
-      "manager",
-      `academic/email-deliveries?search=${encodeURIComponent(config.accounts.parent)}`,
-    ),
-  );
-  const delivery = deliveries.find(
-    (e: {
-      eventType: string;
-      aggregateId?: string;
-      dedupeKey?: string;
-      recipient: string;
-      createdAt: string;
-    }) =>
-      e.eventType === "PAYMENT_CONFIRMED" &&
-      e.aggregateId === f.registration.id &&
-      e.dedupeKey === `PAYMENT_CONFIRMED:${f.registration.id}` &&
-      e.recipient === config.accounts.parent &&
-      e.createdAt >= f.createdAt,
-  );
+  const findDelivery = async () => {
+    const deliveries = items(
+      await call(
+        "manager",
+        `academic/email-deliveries?search=${encodeURIComponent(config.accounts.parent)}`,
+      ),
+    );
+    return deliveries.find(
+      (e: {
+        eventType: string;
+        aggregateId?: string;
+        dedupeKey?: string;
+        recipient: string;
+        createdAt: string;
+      }) =>
+        e.eventType === "PAYMENT_CONFIRMED" &&
+        e.aggregateId === f.registration.id &&
+        e.dedupeKey === `PAYMENT_CONFIRMED:${f.registration.id}` &&
+        e.recipient === config.accounts.parent &&
+        e.createdAt >= f.createdAt,
+    );
+  };
+  await expect
+    .poll(async () => (await findDelivery())?.status, {
+      message:
+        "This run's receipt must be sent by the production outbox worker",
+      timeout: 90_000,
+      intervals: [1000, 2000, 5000],
+    })
+    .toBe("SENT");
+  const delivery = await findDelivery();
   expect(delivery, "This run's production receipt email").toBeTruthy();
   expect(delivery.status).toBe("SENT");
   expect(delivery.attemptCount).toBeGreaterThan(0);

@@ -4,15 +4,15 @@ import local from "./settings.cjs";
 import api from "./api.cjs";
 const config = local.settings();
 const origin = new URL(config.api).origin;
-const schema = JSON.parse(
-  fs.readFileSync(`${local.runtime}/openapi.json`, "utf8"),
-);
-const auth = JSON.parse(fs.readFileSync(`${local.runtime}/auth.json`, "utf8"));
+interface Session {
+  tokens: { accessToken: string };
+}
+let auth: Record<string, Session>;
 test.beforeEach(async () => {
   for (const role of Object.keys(auth)) auth[role] = await api.ensure(role);
 });
 const placeholder = "00000000-0000-4000-8000-000000000000";
-const endpoints = Object.entries(schema.paths) as [
+type Endpoint = [
   string,
   Record<
     string,
@@ -21,7 +21,15 @@ const endpoints = Object.entries(schema.paths) as [
       parameters?: { name: string; in: string; required?: boolean }[];
     }
   >,
-][];
+];
+let endpoints: Endpoint[];
+test.beforeAll(() => {
+  const schema = JSON.parse(
+    fs.readFileSync(`${local.runtime}/openapi.json`, "utf8"),
+  );
+  endpoints = Object.entries(schema.paths) as Endpoint[];
+  auth = JSON.parse(fs.readFileSync(`${local.runtime}/auth.json`, "utf8"));
+});
 
 test("all protected API operations reject guests", async ({
   request,
@@ -61,14 +69,16 @@ test("all static GET APIs respond with authorized roles", async ({
       ? "admin"
       : route.startsWith("/api/v1/me/")
         ? "parent"
-        : route === "/api/v1/parents/search"
-          ? "staff"
-          : [
-                "/api/v1/academic/assignments",
-                "/api/v1/academic/reports",
-              ].includes(route)
-            ? "teacher"
-            : "manager";
+        : route === "/api/v1/academic/outcome-sets/import-template"
+          ? "designer"
+          : route === "/api/v1/parents/search"
+            ? "staff"
+            : [
+                  "/api/v1/academic/assignments",
+                  "/api/v1/academic/reports",
+                ].includes(route)
+              ? "teacher"
+              : "manager";
     const url = new URL(origin + route);
     if (route.includes("/analytics"))
       for (const [key, value] of Object.entries({

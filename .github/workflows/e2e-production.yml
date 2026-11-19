@@ -1,0 +1,143 @@
+name: Playwright Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "services/full create a 0 VND fixture and may send real email"
+        type: choice
+        options: [public, read-only, services, full]
+        default: public
+        required: true
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: edugrade-production-e2e
+  cancel-in-progress: false
+
+jobs:
+  production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Locate private environment file
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const file = path.join(process.env.RUNNER_TEMP, 'edugrade-production.env');
+          fs.appendFileSync(process.env.GITHUB_ENV, `E2E_PRODUCTION_ENV_FILE=${file}\n`);
+          NODE
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Prepare private environment
+        env:
+          TEAM_ENV: ${{ secrets.PRODUCTION_E2E_ENV }}
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          if (process.env.PROFILE !== 'public' && !process.env.TEAM_ENV) {
+            throw new Error('Add the private PRODUCTION_E2E_ENV repository secret before running authenticated profiles.');
+          }
+          if (process.env.TEAM_ENV) {
+            fs.writeFileSync(process.env.E2E_PRODUCTION_ENV_FILE, process.env.TEAM_ENV, { mode: 0o600 });
+          }
+          NODE
+      - name: Run production tests
+        env:
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          node <<'NODE'
+          const { spawnSync } = require('node:child_process');
+          const profiles = { public: ['--public'], 'read-only': [], services: ['--services'], full: ['--full'] };
+          const args = profiles[process.env.PROFILE];
+          if (!args) throw new Error('Unknown production profile.');
+          const result = spawnSync(process.execPath, ['e2e/production/run.mjs', ...args], { stdio: 'inherit' });
+          process.exit(result.status ?? 1);
+          NODE
+      - name: Retry owned fixture cleanup
+        if: ${{ always() && (inputs.profile == 'services' || inputs.profile == 'full') }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { spawnSync } = require('node:child_process');
+          if (fs.existsSync('e2e/.production-runtime/fixture.json')) {
+            const result = spawnSync(process.execPath, ['e2e/production/cleanup.mjs'], { stdio: 'inherit' });
+            process.exit(result.status ?? 1);
+          }
+          NODE
+      - name: Build shareable summary
+        if: always()
+        env:
+          PROFILE: ${{ inputs.profile }}
+        run: node e2e/production/report-summary.cjs
+      - name: Publish online production report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { spawnSync } = require('node:child_process');
+          if (fs.existsSync('e2e/.production-results/results.json')) {
+            const result = spawnSync(process.execPath, ['e2e/production/publish-report.cjs'], { stdio: 'inherit' });
+            process.exit(result.status ?? 1);
+          }
+          console.log('No completed report was written; previous online report retained.');
+          NODE
+      - name: Save shareable production summary
+        if: always()
+        id: summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-production-summary-${{ inputs.profile }}-${{ github.run_number }}
+          path: e2e/.production-summary/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Save full report only for private repositories
+        if: ${{ always() && github.event.repository.private == true }}
+        id: private-report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-production-${{ inputs.profile }}-${{ github.run_number }}
+          path: e2e/.production-report/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Production links and report
+        if: always()
+        env:
+          REPORT_URL: ${{ steps.summary.outputs.artifact-url }}
+          FULL_REPORT_URL: ${{ steps.private-report.outputs.artifact-url }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const lines = [
+            '### EduGrade Production',
+            '- [Web production](https://edugrade.45.77.168.110.sslip.io)',
+            '- [Admin production](https://admin.edugrade.45.77.168.110.sslip.io)',
+            '- [API health](https://api.edugrade.45.77.168.110.sslip.io/api/v1/health/ready)',
+            '- [Online production test reports](https://wdp301-se1921.github.io/WDP301-FE-System/)',
+          ];
+          if (process.env.REPORT_URL) lines.push(`- [Shareable production summary](${process.env.REPORT_URL})`);
+          if (process.env.FULL_REPORT_URL) lines.push(`- [Private full Playwright report](${process.env.FULL_REPORT_URL})`);
+          const result = 'e2e/.production-results/results.json';
+          if (fs.existsSync(result)) {
+            const { stats } = JSON.parse(fs.readFileSync(result, 'utf8'));
+            lines.push('', `Passed: ${stats.expected}; failed: ${stats.unexpected}; skipped: ${stats.skipped}; flaky: ${stats.flaky}.`);
+          }
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          NODE
+      - name: Remove private environment
+        if: always()
+        run: node -e "const file=process.env.E2E_PRODUCTION_ENV_FILE; if(file) require('node:fs').rmSync(file, { force:true })"
