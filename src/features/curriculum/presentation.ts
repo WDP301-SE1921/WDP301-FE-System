@@ -21,6 +21,7 @@ const IMPORT_DIAGNOSTIC_TEXT: Record<string, string> = {
   INVALID_CONTENT: "Nội dung bắt buộc, tối đa 50.000 ký tự.",
   INVALID_SEQUENCE: "Số thứ tự bài phải liên tục theo chế độ nhập.",
   INVALID_MONTH: "Bài học không dùng ô tháng kiểm tra. Để trống ô này.",
+  TOO_MANY_OUTCOME_CODES: "Quá nhiều mã mục tiêu cho một bài. Bớt mã ở cột Mã mục tiêu.",
 };
 
 const IMPORT_FIELD_TEXT: Record<string, string> = {
@@ -29,12 +30,22 @@ const IMPORT_FIELD_TEXT: Record<string, string> = {
   content: "Nội dung bài học",
   sequence: "Số thứ tự bài",
   monthKey: "Tháng kiểm tra",
+  outcomeCodes: "Mã mục tiêu",
 };
 
 export function curriculumImportDiagnosticText(diagnostic: {
   code: string;
   field?: string;
+  codes?: string[];
 }): string {
+  if (diagnostic.code === "AMBIGUOUS_OUTCOME_CODE")
+    return diagnostic.codes?.length
+      ? `Mã mục tiêu có ở nhiều bộ khác nhau, không biết chọn bộ nào: ${diagnostic.codes.join(", ")}`
+      : "Mã mục tiêu có ở nhiều bộ khác nhau, không biết chọn bộ nào.";
+  if (diagnostic.code === "UNKNOWN_OUTCOME_CODE")
+    return diagnostic.codes?.length
+      ? `Mã mục tiêu không có trong khóa: ${diagnostic.codes.join(", ")}`
+      : "Mã mục tiêu không có trong khóa.";
   if (Object.hasOwn(IMPORT_DIAGNOSTIC_TEXT, diagnostic.code))
     return IMPORT_DIAGNOSTIC_TEXT[diagnostic.code];
   const field = diagnostic.field;

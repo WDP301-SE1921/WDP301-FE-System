@@ -1,6 +1,6 @@
 "use client";
-import { actsAsManager } from "@/constants/roles";
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -28,11 +28,7 @@ import type { CurriculumUnit } from "@/types/curriculum";
 import { curriculumApi } from "../api";
 import { useCurriculumMutation } from "../hooks/use-curriculum";
 import { useCurriculumUnits } from "../hooks/use-curriculum";
-import { canCopyCurriculum, estimateLessons } from "../workspace-selectors";
-import { sessionsInRange } from "../readiness";
-import { useCenterClosures } from "../hooks/use-center-closures";
-import { useVietnamDate } from "@/hooks/use-vietnam-date";
-import { useCurrentRole } from "@/hooks/use-current-role";
+import { canCopyCurriculum, suggestUnitTitle } from "../workspace-selectors";
 import {
   useCurriculumFormState,
   type CurriculumFormState,
@@ -49,7 +45,6 @@ export function UnitForm({
   onSaved: (id: string, source?: "csv") => void;
   onStateChange?: (state: CurriculumFormState) => void;
 }) {
-  const role = useCurrentRole();
   const programs = useQuery({
     queryKey: ["registration-programs"],
     queryFn: registrationApi.programs,
@@ -60,10 +55,10 @@ export function UnitForm({
     defaultValues: {
       programId: unit?.programId ?? programId ?? "",
       title: unit?.title ?? "",
-      fromDate: unit?.fromDate.slice(0, 10) ?? "",
-      toDate: unit?.toDate.slice(0, 10) ?? "",
     },
   });
+  // Tên điền sẵn theo khóa (hoặc bản nguồn) cho tới khi người dùng tự sửa.
+  const [titleEdited, setTitleEdited] = useState(!!unit);
   const [source, setSource] = useQueryState(
     "lessonSource",
     parseAsStringLiteral(["copy", "csv", "empty"]).withDefault("empty"),
@@ -73,25 +68,25 @@ export function UnitForm({
     control: form.control,
     name: "programId",
   });
-  const fromDate = useWatch({ control: form.control, name: "fromDate" });
-  const toDate = useWatch({ control: form.control, name: "toDate" });
   const sources = useCurriculumUnits(selectedProgram || undefined);
-  const canReadClasses =
-    actsAsManager(role) || role === "teacher" || role === "staff";
-  const classes = useQuery({
-    queryKey: ["registration-classes", "all"],
-    queryFn: () => registrationApi.classes(),
-    enabled: canReadClasses,
-    retry: false,
-  });
-  const today = useVietnamDate();
   const copyCandidates = (sources.data ?? [])
     .filter((item) => item.programId === selectedProgram && canCopyCurriculum(item))
-    .sort((a, b) => b.fromDate.localeCompare(a.fromDate) || b.version - a.version);
+    .sort((a, b) => b.version - a.version);
+  // Mặc định sao chép bản đang áp dụng, không có thì bản mới nhất.
   const sourceUnit = copyCandidates.find((item) => item.id === copySource)
-    ?? copyCandidates.find((item) => item.status === "APPROVED" && item.fromDate.slice(0, 10) <= today && item.toDate.slice(0, 10) >= today)
-    ?? copyCandidates.find((item) => item.toDate.slice(0, 10) < today)
+    ?? copyCandidates.find((item) => item.status === "APPROVED")
     ?? copyCandidates[0];
+  const program = programs.data?.find((item) => item.id === selectedProgram);
+  const suggestedTitle = suggestUnitTitle(
+    program?.name,
+    source === "copy" ? sourceUnit?.title : undefined,
+  );
+  useEffect(() => {
+    if (titleEdited || !suggestedTitle) return;
+    form.setValue("title", suggestedTitle, {
+      shouldValidate: form.formState.isSubmitted,
+    });
+  }, [titleEdited, suggestedTitle, form]);
   // Chi tiết khóa có lớp + lịch tuần + giáo viên (BE 19/10), đọc được cả với Thiết kế giáo trình.
   const programDetail = useQuery({
     queryKey: ["curriculum", "program-readiness", selectedProgram],
@@ -99,56 +94,12 @@ export function UnitForm({
     enabled: !!selectedProgram,
     retry: false,
   });
-  const detailClasses = (programDetail.data?.classes ?? []).filter(
-    (item) => item.isActive,
-  );
-  const detailHasSchedules =
-    !!programDetail.data?.classes &&
-    detailClasses.every((item) => item.weeklySchedules !== undefined);
-  const programClasses = detailHasSchedules
-    ? detailClasses.map((item) => ({
-        isActive: item.isActive,
-        weeklySchedules: item.weeklySchedules ?? [],
-      }))
-    : (canReadClasses ? (classes.data ?? []) : []).filter(
-        (item) => item.programId === selectedProgram,
-      );
   const frequency = programDetail.data?.sessionsPerWeek;
-  const { closures } = useCenterClosures(fromDate, toDate, !!selectedProgram);
-  const estimate = estimateLessons(fromDate, toDate, programClasses, frequency, closures);
-  const exactNeeds =
-    estimate && detailHasSchedules
-      ? detailClasses
-          .filter((item) => item.weeklySchedules?.length)
-          .map((item) =>
-            sessionsInRange(item.weeklySchedules ?? [], fromDate, toDate, closures),
-          )
-      : [];
-  // Giáo viên duyệt chọn theo khóa → môn → bất kỳ (B4): lớp hay giáo viên của lớp không chặn gửi duyệt.
-  const readinessNote =
-    programDetail.data && !detailClasses.length
-      ? `Khóa ${programDetail.data.name} chưa có lớp nên chưa tính được số bài. Vẫn gửi duyệt được.`
-      : "";
-  const overlapping = (sources.data ?? []).filter(
-    (item) =>
-      item.id !== unit?.id &&
-      // Auto-archived periods stay authoritative for their dates (BE-2).
-      (item.status === "APPROVED" || item.archiveReason === "SUPERSEDED") &&
-      item.programId === selectedProgram &&
-      fromDate &&
-      toDate &&
-      item.fromDate.slice(0, 10) <= toDate &&
-      item.toDate.slice(0, 10) >= fromDate,
-  );
   const save = useCurriculumMutation(async (input: CurriculumUnitInput) => {
     const result = unit
       ? await curriculumApi.update(unit.id, input, unit.revision)
       : source === "copy" && sourceUnit
-        ? await curriculumApi.revise(sourceUnit.id, {
-            title: input.title,
-            fromDate: input.fromDate,
-            toDate: input.toDate,
-          })
+        ? await curriculumApi.revise(sourceUnit.id, { title: input.title })
         : await curriculumApi.create(input);
     onSaved(result.id, !unit && source === "csv" ? "csv" : undefined);
     return result;
@@ -159,13 +110,7 @@ export function UnitForm({
       // Ô nhập không kéo quá ~670px khi form nằm ở khung rộng (xếp trên bảng, bước khóa học).
       className="max-w-2xl space-y-4"
       noValidate
-      onSubmit={form.handleSubmit((input) => {
-        if (!unit && source === "copy" && (!sourceUnit || input.fromDate <= today || input.fromDate <= sourceUnit.toDate.slice(0, 10))) {
-          form.setError("fromDate", {message: "Chọn kỳ bắt đầu sau kỳ nguồn và sau hôm nay."});
-          return;
-        }
-        save.mutate(input);
-      })}
+      onSubmit={form.handleSubmit((input) => save.mutate(input))}
     >
       <div className="space-y-2">
         <Label htmlFor="unit-program">Khóa học</Label>
@@ -200,14 +145,6 @@ export function UnitForm({
           error={programs.error}
           retry={() => void programs.refetch()}
         />
-        {readinessNote && (
-          <p
-            role="status"
-            className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/60 dark:text-amber-200"
-          >
-            {readinessNote}
-          </p>
-        )}
       </div>
       {!unit && (
         <div className="space-y-2">
@@ -261,7 +198,7 @@ export function UnitForm({
       )}
       <section
         className="space-y-2 rounded-xl bg-muted p-4 text-sm"
-        aria-label="Kiểm tra số bài cần"
+        aria-label="Kiểm tra trước khi lưu"
       >
         <p className="font-medium">Kiểm tra trước khi {unit ? "lưu" : "tạo"}</p>
         <div className="space-y-1">
@@ -276,128 +213,35 @@ export function UnitForm({
             {frequency == null ? "Quản lý cần cấu hình số buổi/tuần tại khóa học." : "Chuẩn của khóa học; Quản lý thay đổi tại thông tin khóa."}
           </p>
         </div>
-        {estimate ? (
-          <>
-            <p>
-              {estimate.weeks} tuần học (làm tròn lên theo khoảng hiệu lực).
-            </p>
-            {exactNeeds.length ? (
-              <p>
-                Cần{" "}
-                <b>
-                  {Math.min(...exactNeeds) === Math.max(...exactNeeds)
-                    ? Math.max(...exactNeeds)
-                    : `${Math.min(...exactNeeds)}–${Math.max(...exactNeeds)}`}{" "}
-                  bài
-                </b>{" "}
-                (mỗi buổi một bài) theo lịch tuần của {exactNeeds.length} lớp
-                đang hoạt động · {estimate.minWeekly === estimate.maxWeekly
-                  ? estimate.minWeekly
-                  : `${estimate.minWeekly}–${estimate.maxWeekly}`}{" "}
-                buổi/tuần.
-              </p>
-            ) : estimate.min !== null ? (
-              <p>
-                Ước tính{" "}
-                {estimate.min === estimate.max
-                  ? estimate.min
-                  : `${estimate.min}–${estimate.max}`}{" "}
-                bài ·{" "}
-                {estimate.minWeekly === estimate.maxWeekly
-                  ? estimate.minWeekly
-                  : `${estimate.minWeekly}–${estimate.maxWeekly}`}{" "}
-                buổi/tuần {estimate.source === "course" ? "theo chuẩn khóa, số tuần làm tròn." : "theo lịch các lớp đang hoạt động."}
-              </p>
-            ) : (
-              <p>Chưa có lịch tuần của lớp để ước tính số bài cần.</p>
-            )}
-            {estimate.min !== estimate.max && (
-              <p>
-                Các lớp có số buổi/tuần khác nhau. Kiểm tra từng lớp khi sinh
-                lịch.
-              </p>
-            )}
-          </>
-        ) : (
-          <p>Chọn khoảng ngày hợp lệ để ước tính số bài cần.</p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          Ước tính tham khảo; lịch nghỉ và ngày học thực tế được kiểm tra khi
-          tạo lịch học.
-        </p>
-        {!!overlapping.length && (
-          <p className="text-amber-700 dark:text-amber-300">
-            Khoảng ngày chồng với bản đã duyệt:{" "}
-            {overlapping.map((item) => item.title).join(", ")}.
-          </p>
-        )}
         {source === "copy" &&
           sourceUnit &&
-          estimate?.min !== null &&
-          estimate?.min !== undefined &&
           sourceUnit._count?.lessons !== undefined && (
             <p>
               Bản nguồn có {sourceUnit._count.lessons} bài. Sau khi sao chép,
-              kiểm tra và điều chỉnh số bài theo lịch lớp.
+              kiểm tra và điều chỉnh nội dung các bài.
             </p>
           )}
-        {canReadClasses && <ApiFeedback
-          error={classes.error}
-          retry={() => void classes.refetch()}
-        />}
       </section>
       <div className="space-y-2">
-        <Label htmlFor="unit-title">Tên giáo trình / học kỳ</Label>
+        <Label htmlFor="unit-title">Tên giáo trình</Label>
         <Input
           id="unit-title"
-          placeholder="Ví dụ: Toán 8 – Học kỳ II năm học 2026–2027"
+          placeholder="Ví dụ: Giáo trình Toán 8"
           disabled={save.isPending}
           aria-invalid={!!form.formState.errors.title}
           aria-describedby="unit-title-error"
-          {...form.register("title")}
+          {...form.register("title", {
+            onChange: () => setTitleEdited(true),
+          })}
         />
         <div id="unit-title-error">
           <FieldError message={form.formState.errors.title?.message} />
         </div>
       </div>
-      <fieldset className="space-y-2" aria-describedby="unit-term-help">
-        <legend className="text-sm font-medium">Kỳ học áp dụng</legend>
-        <p id="unit-term-help" className="text-sm text-muted-foreground">
-          Mỗi giáo trình dùng cho một kỳ học. Các lớp của khóa học trong kỳ này
-          sẽ học theo giáo trình này: lịch học của lớp được tạo trong khoảng
-          ngày dưới đây, mỗi buổi một bài theo thứ tự.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="unit-from">Ngày bắt đầu kỳ</Label>
-            <Input
-              id="unit-from"
-              type="date"
-              disabled={save.isPending}
-              aria-invalid={!!form.formState.errors.fromDate}
-              aria-describedby="unit-from-error"
-              {...form.register("fromDate")}
-            />
-            <div id="unit-from-error">
-              <FieldError message={form.formState.errors.fromDate?.message} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="unit-to">Ngày kết thúc kỳ</Label>
-            <Input
-              id="unit-to"
-              type="date"
-              disabled={save.isPending}
-              aria-invalid={!!form.formState.errors.toDate}
-              aria-describedby="unit-to-error"
-              {...form.register("toDate")}
-            />
-            <div id="unit-to-error">
-              <FieldError message={form.formState.errors.toDate?.message} />
-            </div>
-          </div>
-        </div>
-      </fieldset>
+      <p className="text-sm text-muted-foreground">
+        Không cần nhập ngày. Khi Quản lý duyệt, giáo trình này dùng cho mọi lớp tạo lịch sau đó;
+        lớp đang học bản cũ học tiếp tới hết bài. Ngày bắt đầu học nhập ở bước tạo lịch của lớp.
+      </p>
       <ApiFeedback error={save.error} />
       <Button
         type="submit"

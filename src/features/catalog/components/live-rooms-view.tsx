@@ -47,12 +47,20 @@ function RoomsPanel() {
     retry: false,
   });
   const classesByRoom = new Map<string, string[]>();
+  /** Mọi lớp chưa xóa của phòng: BE đổi sĩ số của tất cả khi sửa sức chứa. */
+  const allClassesByRoom = new Map<string, string[]>();
   for (const classroom of classes.data ?? [])
-    if (classroom.roomId && classroom.isActive !== false)
-      classesByRoom.set(classroom.roomId, [
-        ...(classesByRoom.get(classroom.roomId) ?? []),
+    if (classroom.roomId) {
+      allClassesByRoom.set(classroom.roomId, [
+        ...(allClassesByRoom.get(classroom.roomId) ?? []),
         classroom.name,
       ]);
+      if (classroom.isActive !== false)
+        classesByRoom.set(classroom.roomId, [
+          ...(classesByRoom.get(classroom.roomId) ?? []),
+          classroom.name,
+        ]);
+    }
   const [dialog, setDialog] = useState<RoomDialogState | null>(null);
   const columns: DataTableColumn<RoomRecord>[] = [
     {
@@ -140,7 +148,7 @@ function RoomsPanel() {
                   name: "capacity",
                   label: "Sức chứa",
                   type: "number",
-                  description: "Phải từ sĩ số lớp trở lên, tối đa 10.000.",
+                  description: "Tối đa 10.000. Sĩ số lớp lấy theo sức chứa phòng.",
                 },
               ]}
               submitLabel="Thêm phòng"
@@ -185,6 +193,7 @@ function RoomsPanel() {
             <RoomDialogBody
               key={`${dialog.room.id}-${dialog.mode}`}
               {...dialog}
+              usingClasses={allClassesByRoom.get(dialog.room.id) ?? []}
               onDone={() => setDialog(null)}
             />
           )}
@@ -197,15 +206,16 @@ function RoomsPanel() {
 function RoomDialogBody({
   room,
   mode,
+  usingClasses,
   onDone,
-}: RoomDialogState & { onDone: () => void }) {
+}: RoomDialogState & { usingClasses: string[]; onDone: () => void }) {
   if (mode === "edit")
     return (
       <>
         <DialogHeader>
           <DialogTitle>Sửa phòng {room.name}</DialogTitle>
           <DialogDescription>
-            Sức chứa phải từ sĩ số các lớp đang dùng phòng trở lên.
+            Sĩ số các lớp dùng phòng sẽ đổi theo. Không hạ được thấp hơn số học sinh lớp đã giữ chỗ.
           </DialogDescription>
         </DialogHeader>
         <ApiForm
@@ -217,6 +227,20 @@ function RoomDialogBody({
           ]}
           submitLabel="Lưu phòng"
           successMessage={false}
+          preview={(value) => {
+            const next = Number(value.capacity);
+            if (
+              !usingClasses.length ||
+              !Number.isFinite(next) ||
+              next === room.capacity
+            )
+              return null;
+            return (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                Các lớp {usingClasses.join(", ")} sẽ đổi sĩ số thành {next} học sinh.
+              </p>
+            );
+          }}
           onSubmit={(value) => registrationApi.updateRoom(room.id, value)}
           onSuccess={() => {
             toast.success(`Đã lưu phòng ${room.name}.`);

@@ -7,6 +7,8 @@ export interface CurriculumLesson {
   kind: "LESSON" | "MONTHLY_TEST";
   monthKey: string | null;
   status: "DRAFT" | "APPROVED";
+  /** Mục tiêu khóa học đã gắn vào bài (BE trả trong chi tiết giáo trình); thiếu ở BE cũ. */
+  outcomeLinks?: { outcomeId: string }[];
 }
 
 export interface CurriculumUnit {
@@ -83,7 +85,15 @@ export interface SessionPreview {
   classId: string;
   curriculumUnitId: string;
   fromDate: string;
+  /** = `endDate`. */
   toDate: string;
+  /** Ngày của buổi cuối, BE tự tính theo số bài còn lại của giáo trình. */
+  endDate?: string;
+  /** Số bài (buổi) sẽ được xếp. */
+  lessonCount?: number;
+  /** FIRST_LESSON: lớp bắt đầu từ bài 1; CONTINUE: xếp tiếp sau buổi đã có. */
+  mode?: "FIRST_LESSON" | "CONTINUE";
+  startLesson?: number;
   slots: SessionPreviewSlot[];
 }
 
@@ -101,6 +111,8 @@ export interface ScheduledSession extends SessionReference {
     unitId: string | null;
     content?: string;
     sequence?: number;
+    /** CLO của bài học; chỉ có trong chi tiết buổi (`GET scheduled-sessions/:id`, nhân sự và giáo viên). */
+    outcomes?: { id: string; code: string; title: string }[];
   } | null;
 }
 
@@ -160,6 +172,8 @@ export interface ImportRow {
   title: string;
   content: string;
   monthKey: string | null;
+  /** Mã mục tiêu ghi ở cột "Mã mục tiêu"; BE cũ không trả. */
+  outcomeCodes?: string[];
 }
 export interface ImportPreview {
   previewId: string;
@@ -169,70 +183,11 @@ export interface ImportPreview {
   summary: { rows: number; validRows: number; invalidRows: number };
   rows: (Omit<ImportRow, "kind"> & {
     kind: string;
-    errors: { code: string; field: string; rowNumber: number }[];
+    errors: {
+      code: string;
+      field: string;
+      rowNumber: number;
+      codes?: string[];
+    }[];
   })[];
-}
-
-export interface CancelLessonRef {
-  id: string;
-  title: string;
-}
-export interface CancelBlocker {
-  sessionId: string;
-  code: string;
-}
-export interface ShiftedSessionInfo {
-  sessionId: string;
-  startsAt: string;
-  fromLesson: CancelLessonRef;
-  toLesson: CancelLessonRef;
-  hasAssessments: boolean;
-}
-export interface SessionCancelPreview {
-  sessionId: string;
-  classId: string;
-  shiftLessons: boolean;
-  cancellable: boolean;
-  blockers: CancelBlocker[];
-  shiftedSessions: ShiftedSessionInfo[];
-  pushedLesson: (CancelLessonRef & { sequence: number }) | null;
-  pushedLessonFits: boolean;
-}
-export interface ClassCancellation {
-  classId: string;
-  className: string;
-  cancelledSessions: { id: string; startsAt: string; endsAt: string; lesson: CancelLessonRef }[];
-  shiftedSessions: ShiftedSessionInfo[];
-  pushedLessons: (CancelLessonRef & { sequence: number; fitsInTerm: boolean })[];
-}
-export interface BulkCancelPreview {
-  total: number;
-  shiftLessons: boolean;
-  cancellable: boolean;
-  blockers: CancelBlocker[];
-  classes: ClassCancellation[];
-}
-
-export interface CenterClosure {
-  id: string;
-  fromDate: string;
-  toDate: string;
-  reason: string;
-  createdById: string;
-  revision: number;
-  createdAt: string;
-  updatedAt: string;
-}
-export interface AffectedClosureSession {
-  id: string;
-  classId: string;
-  className: string;
-  startsAt: string;
-  endsAt: string;
-  revision: number;
-  lesson: CancelLessonRef | null;
-}
-export interface CenterClosureResult extends CenterClosure {
-  affectedSessions: AffectedClosureSession[];
-  affectedTotal: number;
 }

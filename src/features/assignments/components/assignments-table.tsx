@@ -90,7 +90,10 @@ export function AssignmentsTable() {
               (sum, question) => sum + question.maxScore,
               0,
             )}{" "}
-            điểm
+            điểm ·{" "}
+            {row.assignment.outcomes?.length
+              ? row.assignment.outcomes.map((item) => item.code).join(", ")
+              : "Chưa gắn mục tiêu"}
           </p>
         </div>
       ),

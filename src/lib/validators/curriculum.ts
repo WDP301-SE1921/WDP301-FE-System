@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DAY_PATTERN, closureRangeError } from "@/features/curriculum/center-closures";
 
 const date = z.iso.date("Ngày không hợp lệ.");
 const title = z
@@ -12,25 +11,14 @@ const content = z
   .trim()
   .min(1, "Nhập nội dung.")
   .max(50000, "Nội dung tối đa 50.000 ký tự.");
-const range = { fromDate: date, toDate: date };
-
-function validRange(value: { fromDate: string; toDate: string }) {
-  const days =
-    (Date.parse(value.toDate) - Date.parse(value.fromDate)) / 86400000;
-  return days >= 0 && days <= 365;
-}
-const rangeError = {
-  message: "Ngày kết thúc phải từ ngày bắt đầu, trong khoảng tối đa 366 ngày.",
-  path: ["toDate"],
-};
-
-export const curriculumUnitSchema = z
-  .object({
-    programId: z.string().min(1, "Chọn khóa học."),
-    title,
-    ...range,
-  })
-  .refine(validRange, rangeError);
+/**
+ * Giáo trình không có kỳ (đợt F, 2026-11-19): bản được duyệt áp dụng từ ngày duyệt tới khi
+ * có bản mới. Ngày bắt đầu học chỉ nhập một lần, ở bước tạo lịch của lớp.
+ */
+export const curriculumUnitSchema = z.object({
+  programId: z.string().min(1, "Chọn khóa học."),
+  title,
+});
 export const curriculumLessonSchema = z.object({
   sequence: z
     .number()
@@ -52,16 +40,16 @@ export const curriculumTechnicalReviewSchema = z
     path: ["note"],
     message: "Nhập nội dung cần sửa trước khi trả lại giáo trình.",
   });
-export const curriculumRevisionSchema = z
-  .object({ title, ...range })
-  .refine(validRange, rangeError);
-export const scheduleRangeSchema = z
-  .object({
-    curriculumUnitId: z.string().min(1, "Chọn giáo trình đã duyệt áp dụng."),
-    previewId: z.string().min(1).optional(),
-    ...range,
-  })
-  .refine(validRange, rangeError);
+export const curriculumRevisionSchema = z.object({ title });
+/**
+ * Tạo lịch học: chỉ cần ngày bắt đầu; ngày kết thúc do BE tự tính theo số bài của giáo trình.
+ * Bỏ trống giáo trình thì BE lấy bản lớp đang học, lớp chưa có buổi thì bản đang áp dụng (đợt F).
+ */
+export const scheduleRangeSchema = z.object({
+  curriculumUnitId: z.string().min(1, "Chọn giáo trình đã duyệt áp dụng.").optional(),
+  previewId: z.string().min(1).optional(),
+  fromDate: date,
+});
 
 export type CurriculumUnitInput = z.infer<typeof curriculumUnitSchema>;
 export type CurriculumLessonInput = z.infer<typeof curriculumLessonSchema>;
@@ -95,6 +83,8 @@ export const importCommitSchema = z.object({
           .string()
           .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
           .nullable(),
+        // Mã mục tiêu của bài (cột "Mã mục tiêu"); file cũ không có cột này thì để rỗng.
+        outcomeCodes: z.array(z.string().min(1).max(64)).max(50).default([]),
       }),
     )
     .min(1)
@@ -103,12 +93,6 @@ export const importCommitSchema = z.object({
 export type ImportCommitInput = z.infer<typeof importCommitSchema>;
 const sessionRevisionSchema = reviewReasonSchema.extend({
   expectedRevision: z.number().int().min(1),
-});
-/** `shiftLessons`: true = hủy và dời bài sang buổi sau; bỏ trống = hủy, bỏ bài (hành vi cũ). */
-export const sessionCancelSchema = sessionRevisionSchema.extend({
-  shiftLessons: z.boolean().optional(),
-  /** Gia hạn bù 1 buổi cho học sinh của buổi bị hủy. */
-  extendTerm: z.boolean().optional(),
 });
 export const sessionRescheduleSchema = sessionRevisionSchema
   .extend({
@@ -120,7 +104,6 @@ export const sessionRescheduleSchema = sessionRevisionSchema
     path: ["endsAt"],
   });
 export type SessionRescheduleInput = z.infer<typeof sessionRescheduleSchema>;
-export type SessionCancelInput = z.infer<typeof sessionCancelSchema>;
 
 export const sessionActionFormSchema = reviewReasonSchema.extend({
   startsAt: z.string(),
@@ -137,7 +120,7 @@ export const curriculumImportFileSchema = z.object({
         typeof value === "object" &&
         "length" in value &&
         value.length === 1,
-      "Chọn một file CSV.",
+      "Chọn một file CSV hoặc Excel (.xlsx).",
     )
     .refine(
       (value) =>
@@ -148,22 +131,3 @@ export const curriculumImportFileSchema = z.object({
 export type CurriculumImportFileInput = z.infer<
   typeof curriculumImportFileSchema
 >;
-
-export const centerClosureFormSchema = z
-  .object({
-    fromDate: z.string().regex(DAY_PATTERN, "Chọn ngày bắt đầu."),
-    toDate: z.string().regex(DAY_PATTERN, "Chọn ngày kết thúc."),
-    reason: z.string().trim().min(1, "Chọn hoặc nhập lý do.").max(255, "Lý do tối đa 255 ký tự."),
-  })
-  .superRefine((value, context) => {
-    const message = closureRangeError(value.fromDate, value.toDate);
-    if (message) context.addIssue({ code: "custom", path: ["toDate"], message });
-  });
-export type CenterClosureFormInput = z.infer<typeof centerClosureFormSchema>;
-export const bulkCancelSchema = z.object({
-  sessionIds: z.array(z.string().min(1)).min(1).max(200),
-  shiftLessons: z.boolean().optional(),
-  extendTerm: z.boolean().optional(),
-  reason: z.string().trim().min(1, "Nhập lý do.").max(2000),
-});
-export type BulkCancelInput = z.infer<typeof bulkCancelSchema>;

@@ -10,7 +10,7 @@ export function hasSequenceGap(sequences: readonly number[]): boolean {
 export type SubmitCheckState = "ok" | "block" | "warn" | "unknown";
 
 export interface SubmitCheck {
-  key: "lessons" | "sequence" | "reviewers" | "coverage" | "outcomes";
+  key: "lessons" | "sequence" | "reviewers" | "outcomes";
   state: SubmitCheckState;
   label: string;
   /** Câu nói việc cần làm tiếp; rỗng khi đạt. */
@@ -24,11 +24,13 @@ export interface SubmitChecklistInput {
   sequences: readonly number[];
   /** `undefined` khi chưa tải xong hoặc lỗi tải. */
   reviewerCount: number | undefined;
-  /** Số buổi lớp cần nhiều nhất (hoặc dự kiến theo khóa); `null` khi chưa tính được. */
-  neededLessons: number | null;
   /** Số mục tiêu nháp chưa gắn bài; `undefined` khi chưa tải. */
   unlinkedOutcomes: number | undefined;
+  /** Bài thường chưa gắn mục tiêu nào (BE chặn gửi duyệt: LESSON_OUTCOME_MISSING). */
+  lessonsMissingOutcome?: readonly { sequence: number; title: string }[];
 }
+
+const MISSING_SHOWN = 5;
 
 export function submitChecklist(input: SubmitChecklistInput): SubmitCheck[] {
   const count = input.sequences.length;
@@ -66,19 +68,24 @@ export function submitChecklist(input: SubmitChecklistInput): SubmitCheck[] {
             : "Chưa có giáo viên nào đang hoạt động. Quản lý hãy tạo tài khoản giáo viên trong Nhân sự.",
     },
   ];
-  const short = input.neededLessons === null ? 0 : input.neededLessons - count;
-  checks.push({
-    key: "coverage",
-    state:
-      input.neededLessons === null ? "unknown" : short > 0 ? "warn" : "ok",
-    label: "Đủ bài cho số buổi của kỳ",
-    detail:
-      input.neededLessons === null
-        ? "Chưa tính được vì các lớp chưa có lịch tuần. Vẫn gửi được."
-        : short > 0
-          ? `Còn thiếu ${short} bài so với ${input.neededLessons} buổi cần. Vẫn gửi được.`
-          : "",
-  });
+  const missing = input.lessonsMissingOutcome ?? [];
+  if (missing.length) {
+    const names = missing
+      .slice(0, MISSING_SHOWN)
+      .map((lesson) => `Bài ${lesson.sequence}: ${lesson.title}`)
+      .join("; ");
+    const more =
+      missing.length > MISSING_SHOWN
+        ? ` và ${missing.length - MISSING_SHOWN} bài khác`
+        : "";
+    checks.push({
+      key: "outcomes",
+      state: "block",
+      label: "Mỗi bài đã gắn ít nhất 1 mục tiêu",
+      detail: `Còn ${missing.length} bài chưa gắn mục tiêu: ${names}${more}. Vào bước “Gắn mục tiêu vào bài” để gắn.`,
+    });
+    return checks;
+  }
   checks.push({
     key: "outcomes",
     state:

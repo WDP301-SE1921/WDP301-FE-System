@@ -1,5 +1,6 @@
 "use client";
 
+import { currentCurriculum } from "@/features/registration-flow/program-setup";
 import Link from "next/link";
 import { PageContainer } from "@/components/shared/layout/page-container";
 import { PageHeader } from "@/components/shared/layout/page-header";
@@ -126,24 +127,17 @@ export function LiveTeacherDashboard() {
   const units = useLiveQuery(["teacher-dashboard-units"], (signal) =>
     curriculumApi.units(undefined, signal),
   );
-  const unitFrom = (units.data ?? [])
-    .filter(
-      (unit) =>
-        unit.status === "APPROVED" &&
-        unit.fromDate.slice(0, 10) <= today &&
-        unit.toDate.slice(0, 10) >= today,
-    )
-    .reduce<string>(
-      (min, unit) =>
-        unit.fromDate.slice(0, 10) < min ? unit.fromDate.slice(0, 10) : min,
-      today,
-    );
-  // Buổi của giáo viên từ đầu giáo trình đang dùng để đếm bài đã dạy.
+  // Giáo trình không còn kỳ (đợt F): đếm bài đã dạy từ buổi đầu tiên của các lớp.
+  const unitFrom =
+    (classes.data ?? [])
+      .map((item) => (item.scheduledFrom ?? "").slice(0, 10))
+      .filter((date) => !!date && date < today)
+      .sort()[0] ?? today;
   const unitSessions = useLiveQuery(
     ["teacher-dashboard-unit-sessions", unitFrom, today],
     (signal) =>
       academicApi.sessions({ fromDate: unitFrom, toDate: today }, signal),
-    !!units.data,
+    !!units.data && !!classes.data,
   );
   const attendance = useLiveQuery(
     ["teacher-dashboard-attendance", attendanceFrom, today],
@@ -209,16 +203,19 @@ export function LiveTeacherDashboard() {
   );
   const progress = new Map(
     (classes.data ?? []).map((classroom) => {
-      const unit = (units.data ?? []).find(
-        (item) =>
-          item.programId === classroom.programId &&
-          item.status === "APPROVED" &&
-          item.fromDate.slice(0, 10) <= today &&
-          item.toDate.slice(0, 10) >= today,
+      // Lớp học bản của các buổi đã có; lớp chưa có buổi dùng bản đang áp dụng của khóa.
+      const ofClass = (unitSessions.data ?? []).filter(
+        (session) => session.classId === classroom.id,
       );
-      const mine = (unitSessions.data ?? []).filter(
-        (session) => session.classId === classroom.id && session.lesson?.unitId === unit?.id,
-      );
+      const taughtUnitId = ofClass.find((session) => session.lesson?.unitId)?.lesson
+        ?.unitId;
+      const unit =
+        (units.data ?? []).find((item) => item.id === taughtUnitId) ??
+        currentCurriculum(
+          (units.data ?? []).filter((item) => item.programId === classroom.programId),
+        ) ??
+        undefined;
+      const mine = ofClass.filter((session) => session.lesson?.unitId === unit?.id);
       return [
         classroom.id,
         {

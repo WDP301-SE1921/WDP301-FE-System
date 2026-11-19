@@ -66,6 +66,8 @@ test("production curriculum teacher review and manager approval", async ({
     },
   ]);
   await page.goto(`/manager/curriculum/${unit.id}`);
+  // Đường cũ chuyển sang trang giáo trình một trang.
+  await page.waitForURL(/\/manager\/curriculum\/setup\?/);
   await expect(page.locator("h1").first()).toBeVisible();
   await info.attach("reviewed production curriculum", {
     body: await page.screenshot({ fullPage: true }),

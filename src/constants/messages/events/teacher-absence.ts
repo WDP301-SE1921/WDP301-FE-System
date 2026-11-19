@@ -31,19 +31,8 @@ export const TEACHER_ABSENCE_MSG = {
   COL_STATUS: "Trạng thái",
   URGENT_BADGE: "Đột xuất",
   ACTION_ASSIGN: "Xếp dạy thay",
-  ACTION_CANCEL_SESSION: "Hủy buổi",
-  CANCEL_MODAL_TITLE: "Hủy buổi học?",
-  CANCEL_MODAL_DESC: (session: string) =>
-    `${session} sẽ bị hủy. Học sinh trong lớp được ghi nhận nghỉ có phép và cần xếp học bù; giáo viên không được tính công buổi này.`,
-  CANCEL_FIELD_REASON: "Lý do hủy buổi",
-  CANCEL_FIELD_REASON_PLACEHOLDER: "Vd: Giáo viên nghỉ đột xuất, không có giáo viên dạy thay phù hợp",
-  CANCEL_SUBMIT: "Xác nhận hủy buổi",
-  CANCEL_SUCCESS: (students: number) =>
-    `Đã hủy buổi học, ${students} học sinh cần xếp học bù`,
-  CANCEL_NOT_ALLOWED: "Chỉ hủy được buổi chưa điểm danh và chưa bị hủy",
   ADJUST_NOT_ALLOWED:
     "Chỉ ghi nhận công cho buổi đã qua, chưa điểm danh, chưa hủy và chưa được ghi nhận",
-  CANCELLED_ATTENDANCE_NOTE: "Trung tâm hủy buổi — chờ xếp học bù",
   SUBSTITUTE_REASON_PREFIX: (teacher: string) => `${teacher} báo nghỉ`,
 
   // Học bù cho buổi bị hủy (nhân viên)

@@ -258,6 +258,8 @@ const assignmentBaseSchema = z.object({
   maxAttempts: z.coerce.number().int().min(1).max(10),
   // null: bài sửa bỏ bộ mục tiêu đã gắn (BE `@IsOptional` nhận null, lưu `outcomeSetId ?? null`).
   outcomeSetId: requiredId.nullable().optional(),
+  // CLO của cả bài (BE: một bộ đã duyệt của khóa, tối đa 50, không trùng). Thiếu = BE giữ/suy từ câu hỏi cũ.
+  outcomeIds: z.array(requiredId).max(50).optional(),
   questions: z.array(questionSchema).min(1).max(100),
 });
 export const assignmentSchema =
@@ -357,8 +359,8 @@ export const assignmentEditorSchema = z
       "Hạn nộp phải ở tương lai.",
     ),
     maxAttempts: z.number().int().min(1).max(10),
-    /** Bộ CLO đã duyệt của khóa; chuỗi rỗng = bài không gắn CLO. */
-    outcomeSetId: z.string(),
+    /** CLO mà cả bài đo (cùng một bộ đã duyệt của khóa); mảng rỗng = chưa gắn (nháp vẫn lưu được). */
+    outcomeIds: z.array(z.string()),
     questions: z
       .array(
         z
@@ -370,7 +372,6 @@ export const assignmentEditorSchema = z
             rubric: z.string(),
             criteria: z.array(rubricCriterionSchema).max(30).optional(),
             maxScore: z.number().min(0.01).max(100),
-            outcomeId: z.string(),
           })
           .superRefine((value, context) => {
             const parsed = questionSchema.safeParse(toQuestionPayload(value));
@@ -387,25 +388,19 @@ export const assignmentEditorSchema = z
       .max(100),
   })
   .superRefine(validateAssessment);
-// Mục tiêu (CLO) không bắt buộc (B3): chọn bộ hay gắn từng câu đều tùy chọn. BE chỉ chặn bộ
-// chưa duyệt/sai khóa (INVALID_OUTCOME_SET) và câu gắn mục tiêu ngoài bộ (WRONG_SET).
+// CLO gắn ở cấp bài (L1): lưu nháp không bắt buộc, giao bài thì BE đòi ASSIGNMENT_OUTCOME_REQUIRED
+// khi khóa đã có bộ CLO duyệt. BE chặn id ngoài bộ đã duyệt của khóa (INVALID_OUTCOME_SET).
 export type AssignmentEditorInput = z.infer<typeof assignmentEditorSchema>;
-/** Body tạo/sửa bài tập từ form soạn bài; bỏ CLO cũ khi bài không chọn bộ CLO. */
+/** Body tạo/sửa bài tập từ form soạn bài. Luôn gửi `outcomeIds` (BE thay toàn bộ liên kết); không gửi CLO từng câu. */
 export function assignmentEditorPayload(value: AssignmentEditorInput) {
-  const { outcomeSetId, ...rest } = value;
+  const { outcomeIds, ...rest } = value;
   return {
     ...rest,
     sessionId: value.kind === "TEST" ? value.sessionId : undefined,
     testType: value.kind === "TEST" ? value.testType : undefined,
     dueAt: vietnamDateTime(value.dueAt),
-    // null để sửa bài bỏ được bộ đã gắn (BE bỏ qua field thiếu nên không xóa được bộ cũ).
-    outcomeSetId: outcomeSetId || null,
-    questions: value.questions.map((question) => ({
-      ...toQuestionPayload(question),
-      ...(outcomeSetId && question.outcomeId
-        ? { outcomeId: question.outcomeId }
-        : {}),
-    })),
+    outcomeIds,
+    questions: value.questions.map((question) => toQuestionPayload(question)),
   };
 }
 export function toQuestionPayload(value: {

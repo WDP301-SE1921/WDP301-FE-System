@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RubricEditor } from "./rubric-editor";
 import { AssignmentFilesEditor } from "./assignment-files-editor";
 import { useCurrentTime } from "@/hooks/use-current-time";
@@ -32,7 +32,7 @@ import {
   type AssignmentEditorInput,
 } from "@/lib/validators/web-workflows";
 import type { AssignmentDetail } from "@/types/academic-workflows";
-import type { OutcomeSet } from "@/types/outcomes";
+import { OutcomeMultiSelect } from "./outcome-multi-select";
 import type { RegistrationClass } from "@/types/backend";
 import { useCurrentUser } from "@/hooks/use-current-role";
 import { todayInVietnam } from "@/features/registration-flow/calendar";
@@ -42,7 +42,6 @@ import { DateTimeInput } from "@/components/shared/pickers/date-time-input";
 
 /** Mới chọn ngày hạn nộp thì điền sẵn cuối ngày, tránh hạn nộp lúc 00:00 đầu ngày. */
 const END_OF_DAY = "23:59";
-import { ConfirmDialog } from "@/components/shared/feedback/confirm-dialog";
 import { TEST_TYPE_TEXT } from "../assessment-labels";
 import { ROUTES } from "@/constants/routes";
 import { CsvDownloadButton } from "@/components/shared/actions/csv-download-button";
@@ -56,10 +55,7 @@ const emptyQuestion: AssignmentInput["questions"][number] = {
   rubric: "",
   criteria: [],
   maxScore: 10,
-  outcomeId: "",
 };
-/** Giá trị Select cho "không gắn CLO"; form lưu chuỗi rỗng. */
-const NO_OUTCOME_SET = "none";
 
 export function LiveAssignmentEditor({ id }: { id?: string }) {
   const classes = useLiveQuery(["teacher-classes"], () =>
@@ -139,7 +135,7 @@ function AssignmentEditor({
           instructions: assignment.instructions,
           dueAt: localDateTime(assignment.dueAt),
           maxAttempts: assignment.maxAttempts,
-          outcomeSetId: assignment.outcomeSetId ?? "",
+          outcomeIds: assignment.outcomes?.map((item) => item.id) ?? [],
           questions: assignment.questions.map((question) => ({
             kind: question.kind,
             prompt: question.prompt,
@@ -148,7 +144,6 @@ function AssignmentEditor({
             rubric: question.rubric ?? "",
             criteria: question.criteria ?? [],
             maxScore: question.maxScore,
-            outcomeId: question.outcomeId ?? "",
           })),
         }
       : {
@@ -159,7 +154,7 @@ function AssignmentEditor({
           instructions: "",
           dueAt: "",
           maxAttempts: 1,
-          outcomeSetId: "",
+          outcomeIds: [],
           questions: [{ ...emptyQuestion }],
         },
   });
@@ -198,42 +193,38 @@ function AssignmentEditor({
     !!selectedSessionId &&
     !availableSessions.some((session) => session.id === selectedSessionId);
   const programId = classes.find((item) => item.id === classId)?.programId;
-  const outcomeSetId = useWatch({
-    control: form.control,
-    name: "outcomeSetId",
-  });
+  const outcomeIds = useWatch({ control: form.control, name: "outcomeIds" });
   const outcomeSets = useLiveQuery(
     ["outcome-sets", programId, "APPROVED"],
     (signal) =>
       academicApi.outcomeSets(programId!, { status: "APPROVED" }, signal),
     !!programId,
   );
+  // BE nhận CLO của một bộ đã duyệt: dùng bộ bài đang gắn, không thì bộ mới nhất.
   const approvedSets = outcomeSets.data ?? [];
-  const selectedSet = approvedSets.find((set) => set.id === outcomeSetId);
-  // Mục tiêu không bắt buộc: không tự chọn bộ nào, giáo viên tự chọn nếu muốn.
-  const [confirmClear, setConfirmClear] = useState(false);
-  const chooseOutcomeSet = (value: string, confirmed = false) => {
-    const next = value === NO_OUTCOME_SET ? "" : value;
-    // Bài đã lưu có mục tiêu: bỏ chọn bộ sẽ xóa luôn mục tiêu gắn ở các câu, nên hỏi lại.
-    if (
-      !confirmed &&
-      !next &&
-      assignment?.outcomeSetId &&
-      form.getValues("outcomeSetId")
-    ) {
-      setConfirmClear(true);
-      return;
-    }
-    form.setValue("outcomeSetId", next, { shouldDirty: true });
-    const allowed = new Set(
-      approvedSets.find((set) => set.id === next)?.outcomes.map(({ id }) => id),
-    );
-    form.getValues("questions").forEach((question, index) => {
-      if (question.outcomeId && !allowed.has(question.outcomeId))
-        form.setValue(`questions.${index}.outcomeId`, "", {
-          shouldDirty: true,
-        });
-    });
+  const activeSet =
+    approvedSets.find((set) => set.id === assignment?.outcomeSetId) ??
+    approvedSets[0];
+  const outcomeOptions = activeSet?.outcomes ?? [];
+  // Chưa chỉnh tay thì mới điền sẵn từ bài học của buổi kiểm tra.
+  const outcomeTouched = useRef(!!assignment?.outcomes?.length);
+  const sessionDetail = useLiveQuery(
+    ["assignment-session-detail", selectedSessionId],
+    (signal) => academicApi.session(selectedSessionId!, signal),
+    kind === "TEST" && !!selectedSessionId && !!activeSet,
+  );
+  // Buổi đã tải mà không có bài học thì không có CLO gợi ý: xóa phần điền sẵn của buổi trước.
+  const sessionLoaded = sessionDetail.data;
+  useEffect(() => {
+    if (outcomeTouched.current || !sessionLoaded || !activeSet) return;
+    const lessonOutcomes = sessionLoaded.lesson?.outcomes ?? [];
+    const allowed = new Set(activeSet.outcomes.map(({ id }) => id));
+    const next = lessonOutcomes.map(({ id }) => id).filter((id) => allowed.has(id));
+    form.setValue("outcomeIds", next, { shouldDirty: true });
+  }, [sessionLoaded, activeSet, form]);
+  const changeOutcomes = (ids: string[]) => {
+    outcomeTouched.current = true;
+    form.setValue("outcomeIds", ids, { shouldDirty: true });
   };
   const blankOnly =
     questions.fields.length === 1 &&
@@ -247,18 +238,6 @@ function AssignmentEditor({
     ].every((value) => !value.trim());
   return (
     <>
-      <ConfirmDialog
-        open={confirmClear}
-        onOpenChange={setConfirmClear}
-        title="Bỏ mục tiêu đã gắn?"
-        description="Bài này đã gắn mục tiêu. Bỏ chọn sẽ xóa mục tiêu gắn ở mọi câu khi bạn lưu bài."
-        confirmText="Bỏ mục tiêu"
-        variant="danger"
-        onConfirm={() => {
-          chooseOutcomeSet(NO_OUTCOME_SET, true);
-          setConfirmClear(false);
-        }}
-      />
       <form
         className="space-y-4"
         noValidate
@@ -322,8 +301,12 @@ function AssignmentEditor({
                         )?.programId;
                         field.onChange(value);
                         form.setValue("sessionId", undefined);
-                        if (nextProgram !== programId)
-                          chooseOutcomeSet("", true);
+                        if (nextProgram !== programId) {
+                          outcomeTouched.current = false;
+                          form.setValue("outcomeIds", [], {
+                            shouldDirty: true,
+                          });
+                        }
                       }}
                     />
                   )}
@@ -334,16 +317,13 @@ function AssignmentEditor({
                   </p>
                 )}
                 {programId && (
-                  <OutcomeSetField
+                  <OutcomeField
                     isLoading={outcomeSets.isPending}
                     error={outcomeSets.error}
                     onRetry={() => void outcomeSets.refetch()}
-                    sets={approvedSets}
-                    value={outcomeSetId}
-                    isMissing={
-                      !!outcomeSetId && outcomeSets.isSuccess && !selectedSet
-                    }
-                    onChange={chooseOutcomeSet}
+                    options={outcomeOptions}
+                    value={outcomeIds ?? []}
+                    onChange={changeOutcomes}
                   />
                 )}
                 <Controller
@@ -526,14 +506,7 @@ function AssignmentEditor({
                     key={questions.fields[i]?.id ?? i}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted p-3 text-sm"
                   >
-                    <span>
-                      Câu {i + 1} ·{" "}
-                      {(item.outcomeId &&
-                        selectedSet?.outcomes.find(
-                          (outcome) => outcome.id === item.outcomeId,
-                        )?.code) ||
-                        "Chưa gắn mục tiêu"}
-                    </span>
+                    <span>Câu {i + 1}</span>
                     <span>
                       {item.kind === "MULTIPLE_CHOICE"
                         ? "Đáp án chuẩn"
@@ -652,41 +625,6 @@ function AssignmentEditor({
                   ) : (
                     <RubricEditor form={form} index={index} />
                   )}
-                  {selectedSet && (
-                    <>
-                      <Controller
-                        name={`questions.${index}.outcomeId`}
-                        control={form.control}
-                        render={({ field }) => (
-                          <LiveSelect
-                            label="Mục tiêu mà câu này đo (không bắt buộc)"
-                            value={field.value || NO_OUTCOME_SET}
-                            options={[
-                              {
-                                value: NO_OUTCOME_SET,
-                                label: "Không gắn mục tiêu",
-                              },
-                              ...selectedSet.outcomes.map((outcome) => ({
-                                value: outcome.id,
-                                label: `${outcome.code} · ${outcome.title}`,
-                              })),
-                            ]}
-                            onChange={(next) =>
-                              field.onChange(
-                                next === NO_OUTCOME_SET ? "" : next,
-                              )
-                            }
-                          />
-                        )}
-                      />
-                      <FieldError
-                        message={
-                          form.formState.errors.questions?.[index]?.outcomeId
-                            ?.message
-                        }
-                      />
-                    </>
-                  )}
                   <Label htmlFor={`question-${index}-max`}>Điểm tối đa</Label>
                   <Input
                     id={`question-${index}-max`}
@@ -759,7 +697,6 @@ function AssignmentEditor({
               rubric: question.rubric ?? "",
               criteria: question.criteria ?? [],
               maxScore: question.maxScore,
-              outcomeId: "",
             }));
             if (replace || blankOnly) {
               questions.replace(imported);
@@ -788,25 +725,23 @@ function AssignmentEditor({
 }
 
 /**
- * Bộ CLO của khóa học. BE chặn giao bài khi khóa đã có bộ được duyệt mà bài chưa gắn CLO;
- * lưu nháp vẫn được phép khi chọn "Không gắn CLO".
+ * CLO của cả bài. BE chặn giao bài khi khóa đã có bộ CLO duyệt mà bài chưa gắn CLO; lưu nháp thì
+ * không bắt buộc.
  */
-function OutcomeSetField({
+function OutcomeField({
   isLoading,
   error,
   onRetry,
-  sets,
+  options,
   value,
-  isMissing,
   onChange,
 }: {
   isLoading: boolean;
   error: unknown;
   onRetry: () => void;
-  sets: OutcomeSet[];
-  value: string;
-  isMissing: boolean;
-  onChange: (value: string) => void;
+  options: { id: string; code: string; title: string }[];
+  value: string[];
+  onChange: (ids: string[]) => void;
 }) {
   if (isLoading)
     return (
@@ -815,39 +750,25 @@ function OutcomeSetField({
       </p>
     );
   if (error) return <ApiFeedback error={error} retry={onRetry} />;
-  if (!sets.length && !value)
+  if (!options.length)
     return (
       <p className="text-sm text-muted-foreground">
-        Khóa học chưa có bộ mục tiêu được duyệt áp dụng. Việc gắn mục tiêu không
-        bắt buộc.
+        Khóa học chưa có bộ mục tiêu được duyệt, nên bài chưa cần gắn mục tiêu.
       </p>
     );
   return (
     <div className="space-y-2 rounded-xl bg-muted p-4">
-      <LiveSelect
-        label="Mục tiêu khóa học (không bắt buộc)"
-        value={value || NO_OUTCOME_SET}
-        options={[
-          ...sets.map((set, index) => ({
-            value: set.id,
-            label: `${set.level} · bản ${set.version}${index === 0 ? " (mới nhất)" : ""}`,
-          })),
-          { value: NO_OUTCOME_SET, label: "Không gắn mục tiêu" },
-        ]}
+      <Label>Mục tiêu (CLO) của bài này</Label>
+      <OutcomeMultiSelect
+        ariaLabel="Mục tiêu của bài"
+        options={options}
+        value={value}
         onChange={onChange}
       />
-      {isMissing ? (
-        <p role="alert" className="text-sm text-destructive">
-          Bộ mục tiêu đã chọn không còn được duyệt. Chọn lại bộ mục tiêu của
-          khóa.
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Không bắt buộc. Gắn mục tiêu để xem kết quả theo từng mục tiêu; bỏ
-          trống vẫn giao bài bình thường. Đã chọn bộ thì mỗi câu có thể gắn hoặc
-          không.
-        </p>
-      )}
+      <p className="text-sm text-muted-foreground">
+        Chọn mục tiêu mà cả bài đo, không cần chọn từng câu. Lưu nháp được khi
+        chưa chọn, nhưng phải chọn ít nhất một mục tiêu mới giao được bài.
+      </p>
     </div>
   );
 }

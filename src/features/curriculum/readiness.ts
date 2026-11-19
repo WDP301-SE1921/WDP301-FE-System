@@ -1,12 +1,11 @@
 import type { RegistrationProgram, WeeklySchedule } from "@/types/backend";
 import type { CurriculumReviewer } from "@/types/curriculum";
-import { countSlots, type ClosureRange } from "./center-closures";
-import { estimateLessons } from "./workspace-selectors";
+import { countSlots, estimateWeeks, type ClosureRange } from "./session-slots";
 
 /**
  * Số buổi một lớp có trong khoảng ngày (gồm cả hai đầu), giống `slotsForRange` của BE:
  * sinh lịch gán buổi thứ n = bài thứ n, nên đây cũng là số bài lớp đó cần.
- * `weekday` theo BE: 1 = Thứ 2 … 7 = Chủ nhật. Ngày nghỉ trung tâm (`closures`) không có buổi.
+ * `weekday` theo BE: 1 = Thứ 2 … 7 = Chủ nhật. Kỳ nghỉ Tết (`closures`, từ `tetBreaks`) không có buổi.
  */
 export function sessionsInRange(
   schedules: readonly Pick<WeeklySchedule, "weekday">[],
@@ -21,7 +20,6 @@ export interface ClassLessonNeed {
   id: string;
   name: string;
   perWeek: number;
-  needed: number;
 }
 
 export interface CurriculumReadiness {
@@ -29,21 +27,18 @@ export interface CurriculumReadiness {
   /** `null` khi BE chưa trả `teacherId` của lớp (bản BE cũ). */
   classesWithTeacher: number | null;
   reviewers: CurriculumReviewer[];
-  /** `null` khi BE chưa trả lịch tuần của lớp. */
+  /** Lớp có lịch tuần; `null` khi BE chưa trả lịch tuần của lớp. */
   needs: ClassLessonNeed[] | null;
-  maxNeeded: number;
   sessionsPerWeek: number | null;
-  plannedNeed: number | null;
   /** Lý do chưa gửi duyệt được; rỗng khi đủ điều kiện. */
   blockedReason: string;
 }
 
+export { estimateWeeks };
+
 export function curriculumReadiness(input: {
   program: RegistrationProgram | undefined;
   reviewers: CurriculumReviewer[] | undefined;
-  fromDate: string;
-  toDate: string;
-  closures?: readonly ClosureRange[];
 }): CurriculumReadiness {
   const classes = (input.program?.classes ?? []).filter((row) => row.isActive);
   const knowsTeacher = classes.every((row) => row.teacherId !== undefined);
@@ -55,12 +50,10 @@ export function curriculumReadiness(input: {
           id: row.id,
           name: row.name,
           perWeek: row.weeklySchedules!.length,
-          needed: sessionsInRange(row.weeklySchedules!, input.fromDate, input.toDate, input.closures),
         }))
-        .sort((a, b) => b.needed - a.needed || a.name.localeCompare(b.name, "vi"))
+        .sort((a, b) => b.perWeek - a.perWeek || a.name.localeCompare(b.name, "vi"))
     : null;
   const reviewers = input.reviewers ?? [];
-  const estimate = estimateLessons(input.fromDate.slice(0, 10), input.toDate.slice(0, 10), [], input.program?.sessionsPerWeek, input.closures);
   // Khóa chưa có lớp vẫn có người duyệt (B4): chỉ chặn khi không có giáo viên nào đang hoạt động.
   const blockedReason =
     input.reviewers && !reviewers.length
@@ -73,9 +66,7 @@ export function curriculumReadiness(input: {
       : null,
     reviewers,
     needs,
-    maxNeeded: Math.max(0, ...(needs ?? []).map((row) => row.needed)),
     sessionsPerWeek: input.program?.sessionsPerWeek ?? null,
-    plannedNeed: estimate?.max ?? null,
     blockedReason,
   };
 }

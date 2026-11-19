@@ -276,6 +276,26 @@ async function handle(
           "Chọn lớp và một file CSV, DOCX, PDF, JPG hoặc PNG tối đa 5 MiB.",
         );
       init.body = data;
+    } else if (
+      request.method === "POST" &&
+      /^academic\/outcome-sets\/[^/]+\/import-preview$/.test(path)
+    ) {
+      const data = await request.formData();
+      const file = data.get("file");
+      if (
+        !(file instanceof File) ||
+        !file.size ||
+        file.size > 5 * 1024 * 1024 ||
+        !/\.(xlsx|csv)$/i.test(file.name) ||
+        data.getAll("file").length !== 1 ||
+        [...data.keys()].some((field) => field !== "file")
+      )
+        throw backendError(
+          400,
+          "OUTCOME_IMPORT_FILE_INVALID",
+          "Chọn một file .xlsx hoặc .csv tối đa 5 MB.",
+        );
+      init.body = data;
     } else if (path.endsWith("/import-preview")) {
       const data = await request.formData();
       const file = data.get("file");

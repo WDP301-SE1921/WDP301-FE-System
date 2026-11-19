@@ -1,6 +1,5 @@
 "use client";
 import { actsAsManager } from "@/constants/roles";
-import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { parseAsString, useQueryState } from "nuqs";
@@ -25,7 +24,6 @@ import {
 } from "@/lib/calendar-date";
 import { useCurrentRole, useCurrentUser } from "@/hooks/use-current-role";
 import { ROUTES } from "@/constants/routes";
-import { CenterClosuresSheet } from "./center-closures-sheet";
 import { registrationApi } from "@/features/registration-flow/api";
 import {
   isSubstituteSession,
@@ -57,7 +55,6 @@ export function AcademicCalendarView({
 }) {
   const role = useCurrentRole();
   const user = useCurrentUser();
-  const [closuresOpen, setClosuresOpen] = useState(false);
   const [classId, setClassId] = useQueryState(
     "classId",
     parseAsString.withDefault(""),
@@ -138,88 +135,85 @@ export function AcademicCalendarView({
         title={isTeacherSchedule ? "Lịch dạy & điểm danh" : "Lịch học"}
         description="Lịch buổi học thực tế và nội dung đã được duyệt. Giờ hiển thị theo giờ Việt Nam."
         actions={
-          (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setClosuresOpen(true)}>
-                Ngày nghỉ trung tâm
-              </Button>
-              {actsAsManager(role) && (
-                <Button
-                  variant="outline"
-                  render={
-                    <Link
-                      href={
-                        classId
-                          ? `${ROUTES.MANAGER.SESSIONS}?${new URLSearchParams({ classId })}`
-                          : ROUTES.MANAGER.SESSIONS
-                      }
-                    />
+          actsAsManager(role) && (
+            <Button
+              variant="outline"
+              render={
+                <Link
+                  href={
+                    classId
+                      ? `${ROUTES.MANAGER.SESSIONS}?${new URLSearchParams({ classId })}`
+                      : ROUTES.MANAGER.SESSIONS
                   }
-                >
-                  Tạo lịch học
-                </Button>
-              )}
-            </div>
+                />
+              }
+            >
+              Tạo lịch học
+            </Button>
           )
         }
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Select
-          value={classId || "all"}
-          items={[
-            { value: "all", label: "Tất cả lớp" },
-            ...(classes.data ?? []).map((c) => ({
-              value: c.id,
-              label: c.name,
-            })),
-          ]}
-          onValueChange={(v) => void setClassId(v === "all" ? null : String(v))}
-        >
-          <SelectTrigger
-            className="w-full sm:w-64"
-            aria-label="Lọc lịch theo lớp"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả lớp</SelectItem>
-            {classes.data?.map((c) => (
-              <SelectItem value={c.id} key={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {(actsAsManager(role) || role === "staff") && (
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Select
-            value={teacherId || "all"}
+            value={classId || "all"}
             items={[
-              { value: "all", label: "Tất cả giáo viên" },
-              ...Array.from(teacherNames, ([value, label]) => ({
-                value,
-                label,
+              { value: "all", label: "Tất cả lớp" },
+              ...(classes.data ?? []).map((c) => ({
+                value: c.id,
+                label: c.name,
               })),
             ]}
-            onValueChange={(value) =>
-              void setTeacherId(value === "all" ? null : String(value))
+            onValueChange={(v) =>
+              void setClassId(v === "all" ? null : String(v))
             }
           >
             <SelectTrigger
-              className="w-full sm:w-56"
-              aria-label="Lọc lịch theo giáo viên"
+              className="w-full sm:w-64"
+              aria-label="Lọc lịch theo lớp"
             >
-              <SelectValue />
+              <SelectValue className="truncate" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả giáo viên</SelectItem>
-              {Array.from(teacherNames, ([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
+              <SelectItem value="all">Tất cả lớp</SelectItem>
+              {classes.data?.map((c) => (
+                <SelectItem value={c.id} key={c.id}>
+                  {c.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        )}
+          {(actsAsManager(role) || role === "staff") && (
+            <Select
+              value={teacherId || "all"}
+              items={[
+                { value: "all", label: "Tất cả giáo viên" },
+                ...Array.from(teacherNames, ([value, label]) => ({
+                  value,
+                  label,
+                })),
+              ]}
+              onValueChange={(value) =>
+                void setTeacherId(value === "all" ? null : String(value))
+              }
+            >
+              <SelectTrigger
+                className="w-full sm:w-56"
+                aria-label="Lọc lịch theo giáo viên"
+              >
+                <SelectValue className="truncate" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả giáo viên</SelectItem>
+                {Array.from(teacherNames, ([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         <Tabs
           value={view}
           onValueChange={(value) => {
@@ -285,11 +279,6 @@ export function AcademicCalendarView({
           onClose={() => void setSelected(null)}
         />
       )}
-      <CenterClosuresSheet
-        open={closuresOpen}
-        onOpenChange={setClosuresOpen}
-        canEdit={actsAsManager(role)}
-      />
     </PageContainer>
   );
 }
