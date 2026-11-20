@@ -36,8 +36,9 @@ test("full profile retains all production route and business cases", () => {
   const plan = selection(["--full"], {});
   assert.equal(plan.write, true);
   assert.equal(plan.providers, true);
-  assert.equal(plan.files.length, 9);
+  assert.equal(plan.files.length, 10);
   assert.ok(plan.files.includes("08-admin.spec.ts"));
+  assert.ok(plan.files.includes("09-contract-updates.spec.ts"));
 });
 
 test("legacy write/provider flags keep their explicit behavior", () => {

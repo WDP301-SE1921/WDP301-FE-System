@@ -70,6 +70,11 @@ test("recovery exports only synthetic ownership fields needed by cleanup", () =>
       name: `${prefix} class`,
       password: "private-password",
     },
+    room: {
+      id: "room",
+      name: `${prefix} room`,
+      internalNote: "private-room-note",
+    },
     student: {
       id: "s",
       fullName: `${prefix} child`,
@@ -79,12 +84,17 @@ test("recovery exports only synthetic ownership fields needed by cleanup", () =>
     enrollment: { id: "e", parent: "private@example.com" },
     unit: { id: "u", title: `${prefix} draft`, designerId: "private-user-id" },
     payment: { id: "private-payment", receipt: "private-receipt" },
-    cleanup: { enrollmentEnded: true, privateField: "private-token" },
+    cleanup: {
+      enrollmentEnded: true,
+      roomDeleted: false,
+      privateField: "private-token",
+    },
     tokens: { accessToken: "private-jwt" },
   });
   assert.deepEqual(safe.student, { id: "s", fullName: `${prefix} child` });
   assert.deepEqual(safe.registration, { id: "r" });
-  assert.deepEqual(safe.cleanup, { enrollmentEnded: true });
+  assert.deepEqual(safe.room, { id: "room", name: `${prefix} room` });
+  assert.deepEqual(safe.cleanup, { enrollmentEnded: true, roomDeleted: false });
   assert.doesNotMatch(
     JSON.stringify(safe),
     /private|parentEmail|password|tokens|payment/,

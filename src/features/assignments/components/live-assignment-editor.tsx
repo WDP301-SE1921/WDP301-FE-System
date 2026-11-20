@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { RubricEditor } from "./rubric-editor";
-import { AssignmentFilesEditor } from "./assignment-files-editor";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { useUnsavedChanges } from "@/components/shared/feedback/unsaved-changes-guard";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -120,7 +119,6 @@ function AssignmentEditor({
   const presetKind = search.get("kind") === "TEST" ? "TEST" : "HOMEWORK";
   const action = useLiveCommand();
   const user = useCurrentUser();
-  const [uploading, setUploading] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const form = useForm<AssignmentInput>({
     resolver: zodResolver(assignmentEditorSchema),
@@ -173,7 +171,7 @@ function AssignmentEditor({
       sum + (Number.isFinite(question?.maxScore) ? question.maxScore : 0),
     0,
   );
-  useUnsavedChanges((form.formState.isDirty || uploading) && !action.isSuccess);
+  useUnsavedChanges(form.formState.isDirty && !action.isSuccess);
   const sessions = useLiveQuery(
     ["assignment-sessions", classId],
     (signal) =>
@@ -242,7 +240,7 @@ function AssignmentEditor({
         className="space-y-4"
         noValidate
         onSubmit={form.handleSubmit((value) => {
-          if (uploading || action.isPending) return;
+          if (action.isPending) return;
           const body = assignmentEditorPayload(value);
           action.mutate(
             () =>
@@ -262,7 +260,7 @@ function AssignmentEditor({
         })}
       >
         <fieldset
-          disabled={action.isPending || uploading}
+          disabled={action.isPending}
           className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]"
         >
           <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
@@ -271,18 +269,8 @@ function AssignmentEditor({
                 <CardTitle>Thông tin chung</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Controller
-                  name="files"
-                  control={form.control}
-                  render={({ field }) => (
-                    <AssignmentFilesEditor
-                      questionCount={questions.fields.length}
-                      value={field.value ?? []}
-                      onChange={field.onChange}
-                      onBusy={setUploading}
-                    />
-                  )}
-                />
+                {/* Đã bỏ khung "Thêm file / ảnh" (20/11/2026). Tệp đã gắn ở bài cũ vẫn nằm trong
+                    form value `files` nên lưu bài không làm mất tệp. */}
                 <Controller
                   name="classId"
                   control={form.control}
@@ -474,7 +462,6 @@ function AssignmentEditor({
                   type="submit"
                   className="w-full"
                   disabled={
-                    uploading ||
                     isSessionUnavailable ||
                     (kind === "TEST" &&
                       (sessions.isPending || sessions.isError))
