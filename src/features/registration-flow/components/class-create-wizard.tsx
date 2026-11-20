@@ -9,6 +9,7 @@ import { parseAsString, useQueryState } from "nuqs";
 import { AsyncBoundary } from "@/components/shared/feedback/async-boundary";
 import { TimeInput } from "@/components/shared/pickers/time-input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,7 +34,8 @@ import { cn } from "@/lib/utils";
 import type { RegistrationProgram } from "@/types/backend";
 import { curriculumApi } from "@/features/curriculum/api";
 import { outcomeApi } from "@/features/outcomes/api";
-import { todayInVietnam } from "@/lib/calendar-date";
+import { addCalendarDays, todayInVietnam } from "@/lib/calendar-date";
+import { tetBreaks } from "@/lib/lunar-new-year";
 import { registrationApi } from "../api";
 import { useClassStateMutation } from "../class-state";
 import {
@@ -53,7 +55,7 @@ import {
   type TeacherOption,
   type TeacherSort,
 } from "../class-create-plan";
-import { nextScheduleRange } from "../program-setup";
+import { defaultStartDate, nextScheduleRange } from "../program-setup";
 import {
   classWizardSchema,
   schedulesSchema,
@@ -113,6 +115,28 @@ function teacherNote(teacher: TeacherOption): string {
 
 const dayName = (weekday: number) =>
   weekday === 7 ? "Chủ nhật" : `Thứ ${weekday + 1}`;
+
+function estimateClassDates(
+  fromDate: string,
+  lessonCount: number | undefined,
+  sessionsPerWeek: number | null | undefined,
+): {
+  estimatedWeeks: number | null;
+  estimatedEndDate: string | null;
+  hasTetBreak: boolean;
+} {
+  if (!fromDate || !lessonCount || !sessionsPerWeek || sessionsPerWeek <= 0) {
+    return { estimatedWeeks: null, estimatedEndDate: null, hasTetBreak: false };
+  }
+  const estimatedWeeks = Math.ceil(lessonCount / sessionsPerWeek);
+  const rawDays = estimatedWeeks * 7;
+  const initialEnd = addCalendarDays(fromDate, rawDays);
+  const breaks = tetBreaks(fromDate, addCalendarDays(initialEnd, 14));
+  const hasTetBreak = breaks.length > 0;
+  const extraDays = hasTetBreak ? 14 : 0;
+  const estimatedEndDate = addCalendarDays(initialEnd, extraDays);
+  return { estimatedWeeks, estimatedEndDate, hasTetBreak };
+}
 
 /**
  * Tạo lớp trong 5 bước: thông tin, lịch tuần, giáo viên và phòng (bấm "Tạo lớp" ở đây), giáo trình
@@ -197,6 +221,21 @@ export function ClassCreateWizard() {
     : null;
   const perWeek = program?.sessionsPerWeek ?? null;
   const allClasses = classes.data ?? [];
+  const approvedUnit =
+    scheduleRange && units.data
+      ? units.data.find((item) => item.id === scheduleRange.unitId)
+      : undefined;
+  const [customStartDate, setCustomStartDate] = useState<string | null>(null);
+  const startDate =
+    customStartDate ??
+    scheduleRange?.fromDate ??
+    defaultStartDate(todayInVietnam());
+
+  const { estimatedWeeks, estimatedEndDate, hasTetBreak } = estimateClassDates(
+    startDate,
+    approvedUnit?._count?.lessons,
+    perWeek,
+  );
 
   // Tên gợi ý theo khóa; ngừng tự điền khi người dùng sửa tay.
   useEffect(() => {
@@ -467,6 +506,22 @@ export function ClassCreateWizard() {
                       Tạo khóa học trước
                     </Link>
                   )}
+                  {program && (
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/80 bg-muted/40 px-3.5 py-2 text-xs">
+                      <span className="text-muted-foreground">
+                        {program.subject} · Khối {program.grade}
+                        {perWeek ? ` · ${perWeek} buổi/tuần` : ""}
+                        {approvedUnit?._count?.lessons != null
+                          ? ` · Giáo trình ${approvedUnit._count.lessons} bài`
+                          : ""}
+                      </span>
+                      {approvedUnit ? (
+                        <Badge variant="success">Giáo trình đã duyệt</Badge>
+                      ) : (
+                        <Badge variant="warning">Chưa có giáo trình duyệt</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="wizard-name">Tên lớp</Label>
@@ -506,6 +561,44 @@ export function ClassCreateWizard() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="wizard-start-date">Ngày bắt đầu</Label>
+                    <Input
+                      id="wizard-start-date"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Chọn ngày khai giảng dự kiến của lớp.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="wizard-end-date">Ngày kết thúc (tự tính)</Label>
+                  <Input
+                    id="wizard-end-date"
+                    type="date"
+                    readOnly
+                    disabled
+                    value={estimatedEndDate ?? ""}
+                    className="bg-muted cursor-not-allowed"
+                  />
+                  {program && (
+                    <p className="text-xs text-muted-foreground">
+                      {approvedUnit?._count?.lessons != null && perWeek ? (
+                        <>
+                          Khóa gồm <strong>{approvedUnit._count.lessons} bài học</strong> ({perWeek} buổi/tuần, dự kiến học trong {estimatedWeeks} tuần).
+                          {hasTetBreak ? " Đã tự động cộng thêm kỳ nghỉ Tết." : ""}
+                        </>
+                      ) : approvedUnit ? (
+                        "Khóa chưa có cấu hình số buổi mỗi tuần."
+                      ) : (
+                        "Khóa chưa có giáo trình được duyệt áp dụng nên ngày kết thúc sẽ tính sau khi duyệt giáo trình."
+                      )}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -768,6 +861,7 @@ export function ClassCreateWizard() {
                 classId={created.id}
                 hasTeacher={!!teacherId}
                 range={scheduleRange}
+                initialStartDate={startDate}
                 onBack={() => setStep(4)}
                 onFinish={(count) => {
                   setGenerated(count);
@@ -869,6 +963,9 @@ function ScheduleStep({
         />
       ))}
       <FieldError message={errors.message} />
+      <p className="text-xs text-muted-foreground">
+        Lịch trùng với giáo viên và phòng học khác sẽ được đối soát và cảnh báo ở bước 3.
+      </p>
     </div>
   );
 }

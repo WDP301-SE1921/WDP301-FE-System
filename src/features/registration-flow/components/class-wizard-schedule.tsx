@@ -130,12 +130,14 @@ export function WizardSessionsStep({
   classId,
   hasTeacher,
   range,
+  initialStartDate,
   onBack,
   onFinish,
 }: {
   classId: string;
   hasTeacher: boolean;
   range: ScheduleRangePlan | null;
+  initialStartDate?: string;
   onBack: () => void;
   /** `generated` = số buổi đã tạo, `null` khi bỏ qua để tạo lịch sau. */
   onFinish: (generated: number | null) => void;
@@ -181,6 +183,7 @@ export function WizardSessionsStep({
     <SessionsLoader
       classId={classId}
       range={range}
+      initialStartDate={initialStartDate}
       onBack={onBack}
       onFinish={onFinish}
     />
@@ -191,6 +194,7 @@ export function WizardSessionsStep({
 function SessionsLoader(props: {
   classId: string;
   range: ScheduleRangePlan;
+  initialStartDate?: string;
   onBack: () => void;
   onFinish: (generated: number | null) => void;
 }) {
@@ -218,22 +222,23 @@ function SessionsPreview({
   classId,
   range,
   weekdays,
+  initialStartDate,
   onBack,
   onFinish,
 }: {
   classId: string;
   range: ScheduleRangePlan;
   weekdays: number[];
+  initialStartDate?: string;
   onBack: () => void;
   onFinish: (generated: number | null) => void;
 }) {
   const user = useCurrentUser();
   const client = useQueryClient();
   const now = useCurrentTime();
-  // Ngày bắt đầu nhập một lần ở đây (đợt F): gợi ý ngày học đầu tiên sau hôm nay, sửa được.
-  // Giáo trình là bản đang áp dụng của khóa, không phụ thuộc ngày.
+  // Ngày bắt đầu: nhận từ bước 1 nếu có, hoặc gợi ý ngày học đầu tiên sau hôm nay.
   const [fromDate, setFromDate] = useState(() =>
-    defaultStartDate(todayInVietnam(), null, weekdays),
+    initialStartDate || defaultStartDate(todayInVietnam(), null, weekdays),
   );
   const unit = range;
   const input: ScheduleRangeInput = {
