@@ -175,30 +175,6 @@ export function currentCurriculum<
   );
 }
 
-/** Ngày học đầu tiên từ `date` trở đi theo thứ trong tuần của lớp; không có khung giờ thì giữ `date`. */
-export function firstClassDay(date: string, weekdays: number[] = []): string {
-  if (!weekdays.length) return date;
-  for (let i = 0; i < 7; i++) {
-    const candidate = shift(date, i);
-    if (weekdays.includes(isoWeekday(candidate))) return candidate;
-  }
-  return date;
-}
-
-/** Ngày bắt đầu gợi ý: ngày học đầu tiên sau hôm nay, hoặc sau buổi cuối đã có. */
-export function defaultStartDate(
-  today: string,
-  scheduledUntil?: string | null,
-  weekdays: number[] = [],
-): string {
-  let start = shift(today, 1);
-  if (scheduledUntil) {
-    const after = shift(day(scheduledUntil), 1);
-    if (after > start) start = after;
-  }
-  return firstClassDay(start, weekdays);
-}
-
 export interface ScheduleUnitOption {
   unitId: string;
   title: string;
