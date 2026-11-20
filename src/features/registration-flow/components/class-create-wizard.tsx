@@ -47,13 +47,14 @@ import {
   sortRoomOptions,
   sortTeacherOptions,
   suggestClassName,
+  type ScheduleConflict,
   type RoomOption,
   type RoomSort,
   type TeacherFilter,
   type TeacherOption,
   type TeacherSort,
 } from "../class-create-plan";
-import { nextScheduleRange } from "../program-setup";
+import { defaultStartDate, nextScheduleRange } from "../program-setup";
 import {
   classWizardSchema,
   schedulesSchema,
@@ -105,7 +106,10 @@ function teacherNote(teacher: TeacherOption): string {
       ? `Đang dạy ${teacher.classCount} lớp`
       : "Chưa dạy lớp nào",
     teacher.sameSubject ? "cùng môn" : null,
-    teacher.busy ? "trùng giờ với lịch tuần đã chọn" : null,
+    ...teacher.conflicts.map(
+      (c) =>
+        `Trùng lớp ${c.className}: ${dayName(c.weekday)} ${c.startTime}–${c.endTime}`,
+    ),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -166,13 +170,14 @@ export function ClassCreateWizard() {
       monthlyFee: Number.NaN,
       teacherId: NONE,
       roomId: NONE,
+      fromDate: defaultStartDate(todayInVietnam()),
       schedules: [],
     },
   });
   const rows = useFieldArray({ control: form.control, name: "schedules" });
-  const [programId, teacherId, roomId, schedules] = useWatch({
+  const [programId, teacherId, roomId, schedules, fromDate] = useWatch({
     control: form.control,
-    name: ["programId", "teacherId", "roomId", "schedules"],
+    name: ["programId", "teacherId", "roomId", "schedules", "fromDate"],
   });
 
   const programChoices = (programs.data ?? []).filter(
@@ -257,7 +262,12 @@ export function ClassCreateWizard() {
   });
 
   const goStep2 = async () => {
-    const ok = await form.trigger(["programId", "name", "monthlyFee"]);
+    const ok = await form.trigger([
+      "programId",
+      "name",
+      "monthlyFee",
+      "fromDate",
+    ]);
     if (!ok || !program) return;
     const key = `${program.id}:${perWeek}`;
     if (perWeek && rowsFor.current !== key) {
@@ -326,6 +336,7 @@ export function ClassCreateWizard() {
       monthlyFee: Number.NaN,
       teacherId: NONE,
       roomId: NONE,
+      fromDate: defaultStartDate(todayInVietnam()),
       schedules: [],
     });
     setStep(1);
@@ -478,6 +489,21 @@ export function ClassCreateWizard() {
                   />
                   <FieldError message={form.formState.errors.name?.message} />
                 </div>
+                <section className="space-y-2" aria-label="Thời gian học">
+                  <Label htmlFor="wizard-from-date">Ngày bắt đầu học</Label>
+                  <Input
+                    id="wizard-from-date"
+                    type="date"
+                    {...form.register("fromDate")}
+                  />
+                  <FieldError
+                    message={form.formState.errors.fromDate?.message}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ngày kết thúc tự tính theo số bài của giáo trình và lịch học
+                    mỗi tuần.
+                  </p>
+                </section>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="wizard-fee">Học phí / tháng (VND)</Label>
@@ -511,18 +537,25 @@ export function ClassCreateWizard() {
             )}
 
             {step === 2 && (
-              <ScheduleStep
-                program={program}
-                perWeek={perWeek}
-                form={form}
-                fieldCount={rows.fields.length}
-                errors={{
-                  message: form.formState.errors.schedules?.message,
-                  rows:
-                    (form.formState.errors.schedules as
-                      RowErrors[] | undefined) ?? [],
-                }}
-              />
+              <div className="space-y-4">
+                <ScheduleStep
+                  program={program}
+                  perWeek={perWeek}
+                  form={form}
+                  fieldCount={rows.fields.length}
+                  errors={{
+                    message: form.formState.errors.schedules?.message,
+                    rows:
+                      (form.formState.errors.schedules as
+                        RowErrors[] | undefined) ?? [],
+                  }}
+                />
+                <ApiFeedback
+                  error={classes.error}
+                  retry={() => void classes.refetch()}
+                />
+                <ConflictNotice conflicts={conflicts} />
+              </div>
             )}
 
             {step === 3 && (
@@ -704,26 +737,7 @@ export function ClassCreateWizard() {
                     học trước khi tạo lớp.
                   </p>
                 )}
-                {conflicts.length > 0 && (
-                  <Alert variant="warning">
-                    <AlertTitle>Có thể bị trùng giờ</AlertTitle>
-                    <AlertDescription>
-                      <ul className="list-disc pl-5">
-                        {conflicts.map((conflict, index) => (
-                          <li key={index}>
-                            {conflict.kind === "teacher"
-                              ? "Giáo viên"
-                              : "Phòng"}{" "}
-                            đã có lớp {conflict.className} vào{" "}
-                            {dayName(conflict.weekday)} {conflict.startTime}–
-                            {conflict.endTime}.
-                          </li>
-                        ))}
-                      </ul>
-                      Bạn vẫn tạo lớp được; hệ thống sẽ kiểm tra lại khi lưu.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <ConflictNotice conflicts={conflicts} />
                 <ApiFeedback error={createClass.error} />
               </div>
             )}
@@ -768,6 +782,7 @@ export function ClassCreateWizard() {
                 classId={created.id}
                 hasTeacher={!!teacherId}
                 range={scheduleRange}
+                fromDate={fromDate}
                 onBack={() => setStep(4)}
                 onFinish={(count) => {
                   setGenerated(count);
@@ -821,6 +836,27 @@ export function ClassCreateWizard() {
         </CardContent>
       </Card>
     </AsyncBoundary>
+  );
+}
+
+function ConflictNotice({ conflicts }: { conflicts: ScheduleConflict[] }) {
+  if (!conflicts.length) return null;
+  return (
+    <Alert variant="warning" aria-live="polite">
+      <AlertTitle>Trùng lịch đã có</AlertTitle>
+      <AlertDescription>
+        <ul className="list-disc pl-5">
+          {conflicts.map((conflict, index) => (
+            <li key={index}>
+              {conflict.kind === "teacher" ? "Giáo viên" : "Phòng"} đã có lớp{" "}
+              {conflict.className} vào {dayName(conflict.weekday)}{" "}
+              {conflict.startTime}–{conflict.endTime}.
+            </li>
+          ))}
+        </ul>
+        Hãy chọn khung giờ khác. Hệ thống sẽ kiểm tra lại khi lưu.
+      </AlertDescription>
+    </Alert>
   );
 }
 

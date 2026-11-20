@@ -77,7 +77,8 @@ function sameSubject(
   left: PlanClass["program"],
   right: { subject: string; subjectId?: string | null },
 ): boolean {
-  if (left.subjectId && right.subjectId) return left.subjectId === right.subjectId;
+  if (left.subjectId && right.subjectId)
+    return left.subjectId === right.subjectId;
   return normalizeSubject(left.subject) === normalizeSubject(right.subject);
 }
 
@@ -87,7 +88,8 @@ export function teacherTeaching(
   classes: readonly PlanClass[],
 ): PlanClass[] {
   return classes.filter(
-    (classroom) => classroom.isActive !== false && classroom.teacherId === teacherId,
+    (classroom) =>
+      classroom.isActive !== false && classroom.teacherId === teacherId,
   );
 }
 
@@ -112,7 +114,8 @@ export function rankTeachers<T extends PlanTeacher>(
         teacher,
         teaching,
         sameSubject:
-          !!program && teaching.some((classroom) => sameSubject(classroom.program, program)),
+          !!program &&
+          teaching.some((classroom) => sameSubject(classroom.program, program)),
       };
     })
     .sort(
@@ -147,7 +150,8 @@ export function findConflicts(
   for (const classroom of classes) {
     if (classroom.isActive === false) continue;
     const kinds: ScheduleConflict["kind"][] = [];
-    if (target.teacherId && classroom.teacherId === target.teacherId) kinds.push("teacher");
+    if (target.teacherId && classroom.teacherId === target.teacherId)
+      kinds.push("teacher");
     if (target.roomId && classroom.roomId === target.roomId) kinds.push("room");
     for (const kind of kinds)
       for (const existing of classroom.weeklySchedules ?? [])
@@ -193,6 +197,7 @@ export interface TeacherOption {
   sameSubject: boolean;
   /** Lịch tuần đang soạn trùng giờ với lớp khác của giáo viên này. */
   busy: boolean;
+  conflicts: ScheduleConflict[];
 }
 export type TeacherFilter = "sameSubject" | "free";
 export type TeacherSort = "best" | "name" | "load";
@@ -212,6 +217,7 @@ export function buildTeacherOptions(
       sameSubject,
       busy:
         findConflicts(schedules, classes, { teacherId: teacher.id }).length > 0,
+      conflicts: findConflicts(schedules, classes, { teacherId: teacher.id }),
     }),
   );
 }
@@ -292,7 +298,8 @@ export function filterRoomOptions<T extends RoomOption>(
   onlyFree = false,
 ): T[] {
   return options.filter(
-    (option) => matchesQuery(option.label, query) && (!onlyFree || !option.busy),
+    (option) =>
+      matchesQuery(option.label, query) && (!onlyFree || !option.busy),
   );
 }
 

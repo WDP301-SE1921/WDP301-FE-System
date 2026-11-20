@@ -83,6 +83,7 @@ export const registrationClassSchema = z.object({
 export type RegistrationClassInput = z.infer<typeof registrationClassSchema>;
 /** Wizard tạo lớp: thông tin lớp + lịch tuần. Số dòng lịch phải bằng số buổi/tuần của khóa (kiểm ở bước 2). */
 export const classWizardSchema = registrationClassSchema.extend({
+  fromDate: z.iso.date("Chọn ngày bắt đầu học hợp lệ."),
   roomId: z.string().trim().min(1, "Chọn phòng học."),
   schedules: z.array(scheduleSchema).max(14),
 });
