@@ -48,30 +48,25 @@ export const scheduleSchema = z
     message: "Giờ bắt đầu phải trước giờ kết thúc.",
     path: ["endTime"],
   });
-const weekdayLabel = (weekday: number) =>
-  weekday === 7 ? "Chủ nhật" : `Thứ ${weekday + 1}`;
-
 export const schedulesSchema = z
   .object({ schedules: z.array(scheduleSchema).max(14) })
   .superRefine(({ schedules }, context) => {
     schedules.forEach((slot, index) => {
-      const conflictIndex = schedules
-        .slice(0, index)
-        .findIndex(
-          (other) =>
-            other.weekday === slot.weekday &&
-            other.startTime < slot.endTime &&
-            slot.startTime < other.endTime,
-        );
-      if (conflictIndex !== -1) {
-        const other = schedules[conflictIndex];
-        const day = weekdayLabel(other.weekday);
+      if (
+        schedules
+          .slice(0, index)
+          .some(
+            (other) =>
+              other.weekday === slot.weekday &&
+              other.startTime < slot.endTime &&
+              slot.startTime < other.endTime,
+          )
+      )
         context.addIssue({
           code: "custom",
-          message: `Trùng giờ với Buổi ${conflictIndex + 1} (${day}, ${other.startTime}–${other.endTime}).`,
+          message: "Khung giờ bị trùng.",
           path: ["schedules", index, "startTime"],
         });
-      }
     });
   });
 export type SchedulesInput = z.infer<typeof schedulesSchema>;

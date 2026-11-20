@@ -18,7 +18,7 @@ export default defineConfig({
     baseURL: "http://localhost:3001",
     channel: process.env.E2E_CHANNEL ?? "msedge",
     headless: process.env.E2E_HEADED !== "1",
-    launchOptions: { slowMo: Number(process.env.E2E_SLOW_MO ?? 5000) },
+    launchOptions: { slowMo: Number(process.env.E2E_SLOW_MO ?? 100) },
     locale: "vi-VN",
     timezoneId: "Asia/Ho_Chi_Minh",
     viewport: { width: 1440, height: 900 },
