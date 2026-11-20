@@ -175,17 +175,66 @@ export function currentCurriculum<
   );
 }
 
+/** Ngày học đầu tiên từ `date` trở đi theo thứ trong tuần của lớp; không có khung giờ thì giữ `date`. */
+export function firstClassDay(date: string, weekdays: number[] = []): string {
+  if (!weekdays.length) return date;
+  for (let i = 0; i < 7; i++) {
+    const candidate = shift(date, i);
+    if (weekdays.includes(isoWeekday(candidate))) return candidate;
+  }
+  return date;
+}
+
+/** Ngày bắt đầu gợi ý: ngày học đầu tiên sau hôm nay, hoặc sau buổi cuối đã có. */
+export function defaultStartDate(
+  today: string,
+  scheduledUntil?: string | null,
+  weekdays: number[] = [],
+): string {
+  let start = shift(today, 1);
+  if (scheduledUntil) {
+    const after = shift(day(scheduledUntil), 1);
+    if (after > start) start = after;
+  }
+  return firstClassDay(start, weekdays);
+}
+
+export interface ScheduleUnitOption {
+  unitId: string;
+  title: string;
+  fromDate: string;
+  toDate: string;
+}
+
 export interface ScheduleRangePlan {
   unitId: string;
   title: string;
-  /** Ngày bắt đầu gợi ý (sửa được ở lần tạo lịch đầu). Ngày kết thúc do BE tự tính theo số bài. */
+  /** Ngày bắt đầu gợi ý (sửa được). Ngày kết thúc do BE tự tính theo số bài. */
   fromDate: string;
+  /** Kỳ áp dụng của giáo trình đã chọn. */
+  unitFromDate: string;
+  unitToDate: string;
+  /** Mọi giáo trình đã duyệt của khóa: giáo trình được chọn theo ngày bắt đầu nằm trong kỳ nào. */
+  candidates: ScheduleUnitOption[];
+}
+
+/** Giáo trình đã duyệt có kỳ áp dụng chứa `date`; null nếu ngày nằm ngoài mọi kỳ. */
+export function unitForStartDate(
+  candidates: ScheduleUnitOption[],
+  date: string,
+): ScheduleUnitOption | null {
+  return (
+    candidates.find(
+      (unit) => day(unit.fromDate) <= date && date <= day(unit.toDate),
+    ) ?? null
+  );
 }
 
 /**
- * Giáo trình và ngày bắt đầu để tạo lịch cho một lớp (wizard tạo lớp, Luồng 2). Giáo trình không
- * còn kỳ (đợt F): lớp mới dùng bản đang áp dụng của khóa. Ngày bắt đầu là ngày học đầu tiên sau
- * hôm nay (hoặc sau buổi cuối đã có). null khi khóa chưa có giáo trình đã duyệt.
+ * Giáo trình và ngày bắt đầu để tạo lịch cho một lớp (wizard tạo lớp, Luồng 2): ngày học đầu tiên
+ * sau hôm nay (hoặc sau buổi cuối đã có), giáo trình là bản đã duyệt có kỳ chứa ngày đó. Ngày nằm
+ * trước mọi kỳ thì lấy ngày học đầu tiên của kỳ sớm nhất còn lại. null khi khóa chưa có giáo
+ * trình đã duyệt còn hiệu lực.
  */
 export function nextScheduleRange(
   units: {
@@ -193,27 +242,49 @@ export function nextScheduleRange(
     title: string;
     status: string;
     fromDate: string;
-    version: number;
+    toDate: string;
   }[],
   today: string,
   scheduledUntil?: string | null,
   weekdays: number[] = [],
 ): ScheduleRangePlan | null {
-  const unit = currentCurriculum(units);
-  if (!unit) return null;
-  return {
-    unitId: unit.id,
+  const candidates: ScheduleUnitOption[] = units
+    .filter((unit) => unit.status === "APPROVED")
+    .map((unit) => ({
+      unitId: unit.id,
+      title: unit.title,
+      fromDate: day(unit.fromDate),
+      toDate: day(unit.toDate),
+    }))
+    .sort((a, b) => a.fromDate.localeCompare(b.fromDate));
+  const start = defaultStartDate(today, scheduledUntil, weekdays);
+  const pick = (unit: ScheduleUnitOption, fromDate: string) => ({
+    unitId: unit.unitId,
     title: unit.title,
-    fromDate: defaultStartDate(today, scheduledUntil, weekdays),
-  };
+    fromDate,
+    unitFromDate: unit.fromDate,
+    unitToDate: unit.toDate,
+    candidates,
+  });
+  const inside = unitForStartDate(candidates, start);
+  if (inside) return pick(inside, start);
+  for (const unit of candidates) {
+    if (unit.fromDate <= start) continue;
+    const fromDate = firstClassDay(unit.fromDate, weekdays);
+    if (fromDate <= unit.toDate) return pick(unit, fromDate);
+  }
+  return null;
 }
 
 /**
  * Lớp cần tạo lịch học: đã đủ điều kiện (giáo viên + đủ khung giờ tuần) mà chưa có buổi nào
  * (`needs`); lớp chưa biết (`unknown`, BE cũ không trả `scheduledUntil`). Số buổi do số bài của
- * giáo trình quyết định nên không so với hết kỳ nữa.
+ * giáo trình quyết định nên không so với hết kỳ nữa; `_unitToDate` giữ để không đổi chỗ gọi.
  */
-export function classesNeedingSchedule(eligible: SetupClass[]) {
+export function classesNeedingSchedule(
+  eligible: SetupClass[],
+  _unitToDate?: string,
+) {
   const needs: SetupClass[] = [];
   const unknown: SetupClass[] = [];
   for (const item of eligible) {
