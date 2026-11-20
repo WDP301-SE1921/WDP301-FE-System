@@ -2,12 +2,12 @@
   "environment": "production",
   "profile": "full",
   "hasResults": true,
-  "outcome": "passed",
-  "startTime": "2026-11-20T05:16:54.833Z",
-  "durationMs": 657546,
+  "outcome": "failed",
+  "startTime": "2026-11-20T05:59:35.226Z",
+  "durationMs": 362203,
   "counts": {
-    "passed": 99,
-    "failed": 0,
+    "passed": 98,
+    "failed": 1,
     "skipped": 0,
     "flaky": 0,
     "total": 99
@@ -19,5 +19,5 @@
     "health": "https://api.edugrade.45.77.168.110.sslip.io/api/v1/health/ready",
     "docs": "https://api.edugrade.45.77.168.110.sslip.io/api/docs"
   },
-  "runId": "a84ad8f607f06382ca226f24"
+  "runId": "9326e8ffed0b17f0be79d62f"
 }
